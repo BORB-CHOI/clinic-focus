@@ -1,0 +1,48 @@
+# --- Node / FE ---
+node_modules/
+fe/dist/
+fe/.vite/
+fe/coverage/
+*.log
+.env
+.env.local
+.env.*.local
+
+# --- Python / BE + AI ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- AWS SAM ---
+.aws-sam/
+samconfig.toml.local
+packaged.yaml
+
+# --- IDE / OS ---
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# --- Secrets ---
+*.pem
+*.key
+credentials.json
+secrets/
+
+# --- Crawler artifacts (큰 raw HTML/image) ---
+data/raw/
+data/cache/
+
+# --- Claude Code 개인 설정 ---
+.claude/settings.local.json
