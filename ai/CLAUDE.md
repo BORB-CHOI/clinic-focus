@@ -87,5 +87,5 @@
 ## 작업 원칙
 
 - LangChain·LlamaIndex 같은 무거운 프레임워크 금지 — 4 시그널 로직을 명시적으로 통제해야 함
-- Bedrock 호출은 반드시 mock 가능하게 (`@patch("ai.bedrock_client.invoke_model")`). 테스트가 실 호출 비용을 발생시키면 안 됨
+- Bedrock 호출은 반드시 mock 가능하게 (`@patch("ai.core.bedrock_client.invoke_model")`). 테스트가 실 호출 비용을 발생시키면 안 됨
 - 의료법 표현은 `medical-language-reviewer` 서브에이전트에 검수 위임 가능

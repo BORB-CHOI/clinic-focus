@@ -1,0 +1,5 @@
+# ai/ 트랙 의존성
+# Lambda zip 패키징 시 be/requirements.txt 와 합산됨
+boto3>=1.34.0
+botocore>=1.34.0
+pydantic>=2.7.0
