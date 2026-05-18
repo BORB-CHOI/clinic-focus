@@ -1,0 +1,102 @@
+import math
+import os
+
+from shared.models import ExcludedService, Location, RelatedHospital, SearchQuery, SearchResult
+
+
+def _haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    R = 6371.0
+    dlat = math.radians(lat2 - lat1)
+    dlng = math.radians(lng2 - lng1)
+    a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlng / 2) ** 2
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
+def find_related_hospitals(
+    hospital_id: str,
+    location: Location,
+    primary_focus: list[str],
+    excluded_services: list[ExcludedService],
+    limit: int = 5,
+) -> list[RelatedHospital]:
+    """상세 페이지 영역 ⑧: 같은 주력 + 빈자리 보완 병원 추천."""
+    from ai.search.vector_store import search_similar
+
+    results: list[RelatedHospital] = []
+
+    # --- same_focus 추천 ---
+    if location.lat and location.lng:
+        query = SearchQuery(
+            query_text=" ".join(primary_focus),
+            lat=location.lat,
+            lng=location.lng,
+            radius_km=3.0,
+            min_confidence=70,
+            sort="relevance",
+            limit=limit * 2,
+        )
+    else:
+        query = SearchQuery(
+            query_text=" ".join(primary_focus),
+            sido=location.sido,
+            sigungu=location.sigungu,
+            min_confidence=70,
+            sort="relevance",
+            limit=limit * 2,
+        )
+
+    same_focus_raw: list[SearchResult] = search_similar(query)
+    for r in same_focus_raw:
+        if r.hospital_id == hospital_id:
+            continue
+        dist = None
+        if location.lat and location.lng and r.distance_km is not None:
+            dist = r.distance_km
+        results.append(RelatedHospital(
+            hospital_id=r.hospital_id,
+            name="",  # BE가 DynamoDB에서 조인
+            primary_focus=r.matched_focus,
+            similarity_score=r.similarity_score or 0.0,
+            recommendation_type="same_focus",
+            distance_km=dist,
+        ))
+        if len(results) >= limit - 2:
+            break
+
+    # --- fills_gap 추천 ---
+    gap_limit = limit - len(results)
+    for excluded in excluded_services[:gap_limit]:
+        if location.lat and location.lng:
+            gap_query = SearchQuery(
+                query_text=excluded.name,
+                lat=location.lat,
+                lng=location.lng,
+                radius_km=5.0,
+                min_confidence=70,
+                sort="relevance",
+                limit=3,
+            )
+        else:
+            gap_query = SearchQuery(
+                query_text=excluded.name,
+                sido=location.sido,
+                sigungu=location.sigungu,
+                min_confidence=70,
+                sort="relevance",
+                limit=3,
+            )
+        gap_raw = search_similar(gap_query)
+        for r in gap_raw:
+            if r.hospital_id == hospital_id:
+                continue
+            results.append(RelatedHospital(
+                hospital_id=r.hospital_id,
+                name="",
+                primary_focus=r.matched_focus,
+                similarity_score=r.similarity_score or 0.0,
+                recommendation_type="fills_gap",
+                distance_km=r.distance_km,
+            ))
+            break
+
+    return results[:limit]

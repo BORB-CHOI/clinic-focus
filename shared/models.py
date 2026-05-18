@@ -1,21 +1,18 @@
-"""
-공유 Pydantic 모델 — BE·AI 양쪽에서 import.
-API 명세의 계약서 역할.
-"""
-
 from __future__ import annotations
 
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, model_validator
 
 
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------------------------
 # 크롤링 데이터
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------------------------
 
 class CrawledPage(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     url: str
     page_type: Literal["main", "about", "service", "doctors", "blog", "other"]
     html_text: str
@@ -23,111 +20,139 @@ class CrawledPage(BaseModel):
 
 
 class CrawledImage(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     url: str
     page_url: str
     alt_text: str | None = None
 
 
 class PublicData(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     license_number: str
-    name: str = ""
-    address: str = ""
-    phone: str = ""
-    lat: float | None = None
-    lng: float | None = None
-    specialists: list[str] = Field(default_factory=list)
-    registered_devices: list[str] = Field(default_factory=list)
+    specialists: list[str]
+    registered_devices: list[str]
 
 
 class CrawlData(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     hospital_id: str
     website_url: str
-    pages: list[CrawledPage] = Field(default_factory=list)
-    images: list[CrawledImage] = Field(default_factory=list)
-    public_data: PublicData | None = None
+    pages: list[CrawledPage]
+    images: list[CrawledImage]
+    public_data: PublicData
 
 
-# ─────────────────────────────────────────────
-# 분류 결과
-# ─────────────────────────────────────────────
-
-class SignalContributions(BaseModel):
-    self_claim: int = 0  # 0~100
-    vision: int = 0
-    blog: int = 0
-    reviews: int = 0
-
-
-class Confidence(BaseModel):
-    score: int = 0  # 0~100
-    level: Literal["확실", "추정", "정보 부족"] = "정보 부족"
-    signals: SignalContributions = Field(default_factory=SignalContributions)
-
+# ---------------------------------------------------------------------------
+# 4 시그널 세부 데이터
+# ---------------------------------------------------------------------------
 
 class SelfClaimSignal(BaseModel):
-    keywords: list[str] = Field(default_factory=list)
-    source_urls: list[str] = Field(default_factory=list)
-    raw_text_snippet: str = ""
+    model_config = ConfigDict(extra="forbid")
+
+    keywords: list[str]
+    primary_focus: list[str]
+    spam_score: float  # 0~1, 높을수록 도배 의심
 
 
 class VisionSignal(BaseModel):
-    total_images: int = 0
-    category_distribution: dict[str, int] = Field(default_factory=dict)
-    detected_devices: list[str] = Field(default_factory=list)
+    model_config = ConfigDict(extra="forbid")
+
+    detected_devices: list[str]
+    image_categories: dict[str, float]  # category -> 비율 (합계 1.0)
+    total_images_analyzed: int
 
 
 class BlogSignal(BaseModel):
-    total_posts: int = 0
-    topic_distribution: dict[str, int] = Field(default_factory=dict)
+    model_config = ConfigDict(extra="forbid")
+
+    total_posts: int
+    keyword_frequency: dict[str, int]  # keyword -> 등장 횟수
+    primary_topics: list[str]
 
 
 class ReviewSignal(BaseModel):
-    total_reviews: int = 0
-    keyword_frequency: dict[str, int] = Field(default_factory=dict)
+    model_config = ConfigDict(extra="forbid")
+
+    total_reviews: int
+    keyword_frequency: dict[str, int]
+    primary_topics: list[str]
 
 
 class DetailedSignals(BaseModel):
-    self_claim: SelfClaimSignal = Field(default_factory=SelfClaimSignal)
-    vision: VisionSignal = Field(default_factory=VisionSignal)
-    blog: BlogSignal = Field(default_factory=BlogSignal)
-    reviews: ReviewSignal = Field(default_factory=ReviewSignal)
+    model_config = ConfigDict(extra="forbid")
+
+    self_claim: SelfClaimSignal
+    vision: VisionSignal | None = None
+    blog: BlogSignal
+    reviews: ReviewSignal
+
+
+# ---------------------------------------------------------------------------
+# 분류 결과
+# ---------------------------------------------------------------------------
+
+class SignalContributions(BaseModel):
+    """각 시그널이 신뢰도 점수에 기여한 비중 (0~100)."""
+    model_config = ConfigDict(extra="forbid")
+
+    self_claim: int
+    vision: int
+    blog: int
+    reviews: int
+
+
+class Confidence(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    score: int  # 0~100
+    level: Literal["확실", "추정", "정보 부족"]
+    signals: SignalContributions
 
 
 class Classification(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     hospital_id: str
     standard_specialty: str
-    primary_focus: list[str] = Field(default_factory=list)
-    confidence: Confidence = Field(default_factory=Confidence)
-    detailed_signals: DetailedSignals = Field(default_factory=DetailedSignals)
-    classified_at: datetime = Field(default_factory=datetime.utcnow)
-    classifier_version: str = "v1.0"
+    primary_focus: list[str]
+    confidence: Confidence
+    detailed_signals: DetailedSignals
+    classified_at: datetime
+    classifier_version: str
 
 
-# ─────────────────────────────────────────────
-# AI 통합 상세 설명
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------------------------
+# AI 통합 상세 설명 ⭐ 핵심 결과물
+# ---------------------------------------------------------------------------
 
 class DescriptionParagraph(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     text: str
-    citations: list[Literal["self_claim", "vision", "blog", "reviews", "public_data"]] = Field(
-        default_factory=list
-    )
+    citations: list[Literal["self_claim", "vision", "blog", "reviews", "public_data"]]
 
 
 class HospitalDescription(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     hospital_id: str
     headline: str
-    paragraphs: list[DescriptionParagraph] = Field(default_factory=list)
-    one_line_summary: str = ""
-    generated_at: datetime = Field(default_factory=datetime.utcnow)
-    generator_model: str = ""
+    paragraphs: list[DescriptionParagraph]
+    one_line_summary: str
+    generated_at: datetime
+    generator_model: str
 
 
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------------------------
 # 검색
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------------------------
 
 class SearchQuery(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     query_text: str | None = None
     lat: float | None = None
     lng: float | None = None
@@ -139,134 +164,188 @@ class SearchQuery(BaseModel):
     sort: Literal["distance", "confidence", "relevance"] = "relevance"
     limit: int = 20
 
+    @model_validator(mode="after")
+    def require_query_or_location(self) -> SearchQuery:
+        if self.query_text is None and (self.lat is None or self.lng is None):
+            raise ValueError("query_text 또는 (lat, lng) 중 최소 하나 필요")
+        return self
+
 
 class SearchResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     hospital_id: str
     similarity_score: float | None = None
     distance_km: float | None = None
-    matched_focus: list[str] = Field(default_factory=list)
+    matched_focus: list[str]
     query_interpretation: str | None = None
 
 
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------------------------
 # 이미지 분석
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------------------------
 
 class ImageAnalysisResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     image_url: str
-    detected_devices: list[str] = Field(default_factory=list)
-    image_category: Literal["일반 진료", "미용 시술", "장비 사진", "건물·내부", "기타"] = "기타"
-    confidence: float = 0.0
+    detected_devices: list[str]
+    image_category: Literal["일반 진료", "미용 시술", "장비 사진", "건물·내부", "기타"]
+    confidence: float  # 0~1
 
 
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------------------------
 # 피드백
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------------------------
 
 class FeedbackEntry(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     feedback_id: str
     hospital_id: str
     device_id: str
     primary_focus: str
     verdict: Literal["agree", "disagree"]
-    received_at: datetime = Field(default_factory=datetime.utcnow)
+    received_at: datetime
 
 
 class FeedbackStats(BaseModel):
-    total_count: int = 0
-    agree_count: int = 0
-    disagree_count: int = 0
-    agree_ratio: float = 0.0
+    model_config = ConfigDict(extra="forbid")
+
+    total_count: int
+    agree_count: int
+    disagree_count: int
+    agree_ratio: float
     last_feedback_at: datetime | None = None
 
 
-# ─────────────────────────────────────────────
-# 서비스·의료진 (상세 페이지 영역 ②③)
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------------------------
+# 상세 페이지 구성 요소
+# ---------------------------------------------------------------------------
 
 class Service(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     name: str
+    category: str
     source: Literal["self_claim", "vision", "blog", "reviews", "public_data"]
 
 
 class ExcludedService(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     name: str
-    reason: str  # 예: "사이트·블로그·후기 어디에도 언급 없음"
-    confidence: float = 0.0
+    reason: str
 
 
 class Equipment(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     name: str
-    source: Literal["vision", "public_data", "both"]
-    confirmed: bool = True
+    source: Literal["vision", "public_data"]
+    confidence: float  # 0~1
 
 
 class PriceItem(BaseModel):
-    name: str
-    price: str  # "50,000원" 등 원본 텍스트
-    source_url: str = ""
+    model_config = ConfigDict(extra="forbid")
+
+    service_name: str
+    price_text: str  # 원문 그대로 ("50,000원~")
 
 
 class Doctor(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     name: str
-    specialty: str = ""
-    sub_specialty: str = ""
-    career: list[str] = Field(default_factory=list)
-    source: Literal["site", "public_data", "both"] = "site"
+    specialty: str | None = None
+    qualifications: list[str] = []
+    sub_specialty: str | None = None
+
+
+class Location(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    address: str
+    lat: float | None = None
+    lng: float | None = None
+    sido: str
+    sigungu: str
+
+
+class OperatingHours(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    weekday: str | None = None
+    saturday: str | None = None
+    sunday: str | None = None
+    holiday: str | None = None
+    lunch_break: str | None = None
+
+
+class Contact(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    phone: str | None = None
+    website_url: str | None = None
+    reservation_url: str | None = None
+
+
+class HospitalMeta(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    hospital_id: str
+    name: str
+    location: Location
+    contact: Contact
+    operating_hours: OperatingHours | None = None
+    parking: bool | None = None
 
 
 class ServicesAndDoctors(BaseModel):
-    services: list[Service] = Field(default_factory=list)
-    excluded_services: list[ExcludedService] = Field(default_factory=list)
-    equipment: list[Equipment] = Field(default_factory=list)
-    prices: list[PriceItem] = Field(default_factory=list)
-    doctors: list[Doctor] = Field(default_factory=list)
+    model_config = ConfigDict(extra="forbid")
+
+    services: list[Service]
+    excluded_services: list[ExcludedService]
+    equipment: list[Equipment]
+    prices: list[PriceItem]
+    doctors: list[Doctor]
 
 
-# ─────────────────────────────────────────────
-# 관련 병원 추천 (상세 페이지 영역 ⑧)
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------------------------
+# 관련 병원 추천
+# ---------------------------------------------------------------------------
 
 class RelatedHospital(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     hospital_id: str
     name: str
-    primary_focus: list[str] = Field(default_factory=list)
-    similarity_score: float = 0.0
-    recommendation_type: Literal["same_focus", "fills_gap"] = "same_focus"
+    primary_focus: list[str]
+    similarity_score: float
+    recommendation_type: Literal["same_focus", "fills_gap"]
     distance_km: float | None = None
 
 
-# ─────────────────────────────────────────────
-# 변경 이력 (상세 페이지 영역 ⑦)
-# ─────────────────────────────────────────────
+# ---------------------------------------------------------------------------
+# 변경 이력 / 메타
+# ---------------------------------------------------------------------------
 
-class ChangeRecord(BaseModel):
+class ClassificationChange(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     hospital_id: str
     changed_at: datetime
     previous_focus: list[str]
     new_focus: list[str]
-    reason: Literal["feedback", "human_review", "vision_reanalysis", "scheduled_update"]
-    note: str = ""
+    reason: Literal["feedback", "human_review", "vision_reanalysis", "recrawl"]
+    classifier_version: str
 
 
-# ─────────────────────────────────────────────
-# 병원 메타 (기본 정보)
-# ─────────────────────────────────────────────
+class DataMetadata(BaseModel):
+    model_config = ConfigDict(extra="forbid")
 
-class Location(BaseModel):
-    lat: float
-    lng: float
-    address: str = ""
-
-
-class HospitalMeta(BaseModel):
     hospital_id: str
-    name: str
-    address: str = ""
-    phone: str = ""
-    location: Location | None = None
-    operating_hours: dict[str, str] = Field(default_factory=dict)
-    parking: bool | None = None
-    website_url: str = ""
-    sido: str = ""
-    sigungu: str = ""
+    last_crawled_at: datetime | None = None
+    last_classified_at: datetime | None = None
+    data_sources: list[str]
+    confidence_warning: bool = False
