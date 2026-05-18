@@ -1,0 +1,46 @@
+{
+  "hospital_id": "h_test_001",
+  "website_url": "https://example-derma.kr",
+  "pages": [
+    {
+      "url": "https://example-derma.kr",
+      "page_type": "main",
+      "html_text": "○○피부과 아토피 여드름 습진 전문 진료 안내 일반 피부질환 중심의 동네 피부과입니다. 아토피 치료 여드름 치료 습진 치료 사마귀 치료 피부 상담",
+      "fetched_at": "2026-05-01T09:00:00"
+    },
+    {
+      "url": "https://example-derma.kr/about",
+      "page_type": "about",
+      "html_text": "원장 인사말 저희 ○○피부과는 2010년 개원 이래 성북구 주민들의 피부 건강을 책임져 왔습니다. 일반 피부질환 진료에 집중하며 아토피 여드름 습진 등 만성 피부질환 관리에 특화되어 있습니다.",
+      "fetched_at": "2026-05-01T09:00:05"
+    },
+    {
+      "url": "https://example-derma.kr/service",
+      "page_type": "service",
+      "html_text": "진료 안내 아토피 피부염 여드름 치료 습진 두드러기 사마귀 냉동치료 점 제거 상담 피부 알레르기 검사",
+      "fetched_at": "2026-05-01T09:00:10"
+    }
+  ],
+  "images": [
+    {
+      "url": "s3://clinic-focus-crawl-data/crawl/h_test_001/images/main_banner.jpg",
+      "page_url": "https://example-derma.kr",
+      "alt_text": "아토피 치료 전후 사진"
+    },
+    {
+      "url": "s3://clinic-focus-crawl-data/crawl/h_test_001/images/clinic_interior.jpg",
+      "page_url": "https://example-derma.kr/about",
+      "alt_text": "진료실 내부"
+    }
+  ],
+  "public_data": {
+    "license_number": "h_test_001",
+    "name": "○○피부과",
+    "address": "서울특별시 성북구 동소문로 123",
+    "phone": "02-1234-5678",
+    "lat": 37.5894,
+    "lng": 127.0167,
+    "specialists": ["피부과전문의"],
+    "registered_devices": ["냉동치료기", "더모스코프"]
+  }
+}
