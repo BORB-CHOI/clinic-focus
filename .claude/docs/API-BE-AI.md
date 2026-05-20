@@ -6,7 +6,7 @@
 
 ## 호출 방식
 
-**BE와 AI는 같은 Lambda에서 같이 돌아간다.** 모노레포의 `be/` `ai/` `shared/` 가 모두 하나의 zip으로 패키징되어 단일 Lambda에 배포된다. BE 핸들러는 AI 함수를 Python 패키지 import로 직접 호출.
+**BE와 AI는 같은 EC2 인스턴스의 단일 Python 프로세스에서 돌아간다.** 모노레포의 `be/` `ai/` `shared/` 가 한 프로세스에 함께 로드되고, BE는 AI 함수를 Python 패키지 import로 직접 호출.
 
 ```python
 # be/handlers/index_hospital.py
@@ -18,7 +18,7 @@ from shared.models import CrawlData
 - 디버깅·테스트 쉬움
 - 평가용 PoC라 개별 배포 필요성 없음, 인프라 단순화
 
-> 추후 트래픽이 커지거나 AI 모듈을 다른 서비스에서도 호출하게 되면 별도 Lambda로 분리하면 된다. 이 경우에도 본 문서의 함수 시그니처가 그대로 HTTP body 스키마로 매핑되므로 호출 코드만 바꾸면 됨 — **인터페이스 명세는 동일.**
+> 추후 트래픽이 커지거나 AI 모듈을 다른 서비스에서도 호출하게 되면 별도 서비스로 분리하면 된다. 이 경우에도 본 문서의 함수 시그니처가 그대로 HTTP body 스키마로 매핑되므로 호출 코드만 바꾸면 됨 — **인터페이스 명세는 동일.**
 
 ---
 
@@ -552,14 +552,18 @@ class FeedbackStats(BaseModel):
 
 | 변수 | 기본값 | 설명 |
 |---|---|---|
-| `AWS_REGION` | `ap-northeast-2` | Bedrock·S3 Vectors 리전 |
-| `BEDROCK_LLM_MODEL_ID` | `anthropic.claude-sonnet-4-5-20250929-v1:0` | LLM·Vision 통합 모델 |
+| `AWS_REGION` | `us-east-1` | Bedrock·S3 Vectors 리전 (개인 계정) |
+| `BEDROCK_LLM_MODEL_ID` | `us.anthropic.claude-sonnet-4-5-20250929-v1:0` | LLM·Vision (US 인퍼런스 프로파일) |
 | `BEDROCK_EMBED_MODEL_ID` | `amazon.titan-embed-text-v2:0` | 임베딩 모델 |
 | `S3_VECTOR_BUCKET` | 환경별 | 벡터 버킷 이름 |
 | `S3_VECTOR_INDEX` | `hospital-index` | 벡터 인덱스 이름 |
 | `MAX_VISION_IMAGES` | `10` | 한 번 분류 시 처리할 최대 이미지 수 |
 | `CONFIDENCE_THRESHOLD_HIGH` | `95` | "확실" 등급 임계치 |
 | `CONFIDENCE_THRESHOLD_LOW` | `70` | "정보 부족" 등급 임계치 |
+
+> AI 모듈의 Bedrock·S3 Vectors·Textract는 **개인 계정**에서 운영된다. EC2 코드는 이
+> 클라이언트들을 개인 계정 자격증명으로 생성하고, 지원 계정 서비스(DynamoDB)는 EC2
+> 인스턴스 프로파일을 쓴다.
 
 ---
 
@@ -626,9 +630,7 @@ from ai import (
 )
 from shared.models import CrawlData
 
-def lambda_handler(event, context):
-    hospital_id = event["hospital_id"]
-
+def index_hospital_pipeline(hospital_id: str):
     # 1. 크롤링 데이터 로드 (김경재 모듈)
     crawl_data: CrawlData = load_crawl_data(hospital_id)
     hospital_meta = load_hospital_meta(hospital_id)

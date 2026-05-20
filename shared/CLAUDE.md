@@ -1,6 +1,6 @@
 # shared/ — 공유 Pydantic 모델
 
-**BE와 AI의 단일 진실 (single source of truth).** 양쪽이 같은 zip에 패키징되므로 같은 `models.py`를 import 해서 쓴다. FE는 BE의 FastAPI OpenAPI 스펙에서 `openapi-typescript`로 TS 타입을 자동 생성하므로 결국 여기가 모든 타입의 출발점.
+**BE와 AI의 단일 진실 (single source of truth).** 양쪽이 같은 EC2 프로세스에서 도므로 같은 `models.py`를 import 해서 쓴다. FE는 BE의 FastAPI OpenAPI 스펙에서 `openapi-typescript`로 TS 타입을 자동 생성하므로 결국 여기가 모든 타입의 출발점.
 
 ## 정의해야 할 모델 목록
 
