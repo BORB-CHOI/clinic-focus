@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Literal, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
@@ -355,4 +355,4 @@ class DataMetadata(BaseModel):
 # 하위 호환 alias — dynamo_adapter 에서 ChangeRecord 로 참조 중
 # ---------------------------------------------------------------------------
 
-ChangeRecord = ClassificationChange
+ChangeRecord: TypeAlias = ClassificationChange
