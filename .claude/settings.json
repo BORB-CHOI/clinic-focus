@@ -1,4 +1,18 @@
 {
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const {execSync}=require('child_process');try{const b=execSync('git branch --show-current',{encoding:'utf8'}).trim();if(b==='main'||b==='master'){console.error('[HOOK] BLOCKED: main 브랜치에서 직접 수정 불가');console.error('[HOOK] feature 브랜치를 먼저 만드세요: git checkout -b feat/<작업명>');process.exit(2)}}catch(e){}console.log(d)})\"",
+            "shell": "bash"
+          }
+        ]
+      }
+    ]
+  },
   "permissions": {
     "allow": [
       "Bash(ls:*)",

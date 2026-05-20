@@ -28,8 +28,8 @@
 ```
 clinic-focus/
 ├── fe/         # 하재원 — React + Vite + TS + Tailwind + shadcn/ui + TanStack Query + 카카오맵 SDK
-├── be/         # 김경재 — FastAPI + Mangum + Pydantic + boto3 + httpx + BS4 + AWS SAM
-├── ai/         # 최비성 — Bedrock (Claude Sonnet 4.5, Titan Embed v2) + S3 Vectors + Textract
+├── be/         # 김경재 — FastAPI + uvicorn + Pydantic + boto3 + httpx + BS4 (EC2 운영)
+├── ai/         # 최비성 — Bedrock (Claude Sonnet 4.5, Titan Embed v2) + S3 Vectors + Textract (개인 계정)
 ├── shared/     # 공유 Pydantic 모델. BE·AI 양쪽에서 import. FE는 OpenAPI에서 TS 타입 자동 생성
 └── .claude/
     ├── docs/       # 4대 문서
@@ -44,19 +44,35 @@ clinic-focus/
 
 ## BE ↔ AI 호출 모델
 
-같은 Lambda zip에 같이 들어간다. BE 핸들러는 AI 함수를 Python `import`로 직접 호출 (HTTP 호출 아님). 인터페이스는 `shared/models.py`의 Pydantic 모델로 정의.
+같은 EC2 인스턴스의 단일 Python 프로세스에서 돈다. BE는 AI 함수를 Python `import`로 직접 호출 (HTTP 호출 아님). 인터페이스는 `shared/models.py`의 Pydantic 모델로 정의.
 
 ```python
 from ai import classify_hospital, generate_description
 from shared.models import CrawlData
 ```
 
+## Git 브랜치 규칙 (절대 어기지 말 것)
+
+**main 브랜치에서 직접 코드 작성 금지.** 모든 작업은 feature 브랜치에서 시작한다.
+
+```bash
+# 새 작업 시작 시 항상
+git checkout main && git pull origin main
+git checkout -b feat/<작업명>     # 기능: feat/aws-client-factory
+git checkout -b fix/<버그명>      # 버그: fix/region-hardcode
+git checkout -b refactor/<영역>   # 리팩터: refactor/dynamo-adapter
+```
+
+- `.claude/settings.json`의 PreToolUse hook이 main에서 Edit/Write를 차단한다
+- `.git/hooks/pre-commit`이 main 직접 커밋을 차단한다
+- 이 제약은 `/ship` 워크플로우(PR 생성)의 전제 조건이기도 하다
+
 ## 글로벌 코딩 원칙
 
 - **한국어 응답.** 도메인이 한국 의료라 UI 카피·로그 메시지·주석 모두 한국어가 자연스러우면 한국어로. 코드 식별자만 영어.
 - **shared/ 의 Pydantic 모델이 단일 진실.** BE·AI 한쪽에서 모델 바꾸면 다른 쪽도 동시에 따라간다. 분류 스키마는 M1 시점 동결.
 - **FastAPI OpenAPI → FE TS 타입 자동 생성.** `openapi-typescript`로. 수동 동기화 금지.
-- **수동 배포.** `aws s3 sync` (FE) / `sam build && sam deploy` (BE+AI). CI/CD 없음.
+- **수동 배포.** FE는 `aws s3 sync` (S3+CloudFront), BE+AI는 EC2에 `git pull` 후 프로세스 재시작. CI/CD 없음.
 
 ## Git 커밋 컨벤션
 
@@ -81,12 +97,24 @@ from shared.models import CrawlData
 
 `ai/`의 `generate_description` 프롬프트와 `fe/`의 UI 카피, `be/`의 자동 생성 메시지 전부 이 규칙을 따른다. 표현이 애매하면 `medical-language-reviewer` 서브에이전트에 검수 위임.
 
-## AWS 리전·모델 ID
+## AWS 계정·인프라 구조
+
+AWS 계정이 둘로 나뉜다. 어느 서비스가 어느 계정에 있는지 항상 의식할 것.
+
+| 계정 | 서비스 | 리전 | 자격증명 |
+|---|---|---|---|
+| **지원 계정** | EC2 · RDS · DynamoDB · S3 · API Gateway · Amplify · SQS · SNS | `us-east-1` | IAM Role만 (Access Key 발급 불가). EC2=`SafeInstanceProfile-{username}` |
+| **개인 계정** | Bedrock (LLM·Vision·Embedding) · S3 Vectors · Textract | `us-east-1` | 개인 계정 자격증명 (전용 프로파일/환경변수) |
+
+- **컴퓨팅은 EC2 단일.** Ubuntu, `t3.nano`~`t3.medium`. 크롤러·FastAPI API 서버·AI 오케스트레이션이 한 인스턴스의 한 프로세스에서 돈다. Lambda·SAM·Mangum 미사용 — 전국 크롤링 시 Lambda 15분 제한을 피하려는 게 EC2 전환 사유.
+- **EC2 코드의 자격증명 분리.** 지원 계정 서비스(DynamoDB·S3)는 EC2 인스턴스 프로파일로 자동 인증. AI 서비스(Bedrock·S3 Vectors·Textract)는 개인 계정 자격증명으로 boto3 클라이언트를 따로 생성해야 한다.
+- **S3 버킷 이름은 `{username}-` 접두사**로 시작.
+
+### 모델 ID
 
 | 항목 | 값 |
 |---|---|
-| 리전 | `ap-northeast-2` |
-| LLM·Vision | `anthropic.claude-sonnet-4-5-20250929-v1:0` |
+| LLM·Vision | `us.anthropic.claude-sonnet-4-5-20250929-v1:0` (US 인퍼런스 프로파일) |
 | Embedding | `amazon.titan-embed-text-v2:0` (차원 1024) |
 
 ## 멀티 에이전트 — 트랙 리더 + 서브 구조
