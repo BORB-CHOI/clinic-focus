@@ -10,7 +10,7 @@ import boto3
 
 class SQSAdapter:
     def __init__(self):
-        self._client = boto3.client("sqs", region_name=os.environ.get("AWS_REGION", "ap-northeast-2"))
+        self._client = boto3.client("sqs", region_name=os.environ.get("AWS_REGION", "us-east-1"))
         self._queue_urls: dict[str, str] = {}
 
     def _get_queue_url(self, queue_name: str) -> str:

@@ -14,7 +14,7 @@ BUCKET = os.environ.get("CRAWL_BUCKET", "clinic-focus-crawl-data")
 
 class S3Adapter:
     def __init__(self):
-        self._client = boto3.client("s3", region_name=os.environ.get("AWS_REGION", "ap-northeast-2"))
+        self._client = boto3.client("s3", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 
     def save_crawl_data(self, hospital_id: str, data: CrawlData) -> str:
         key = f"crawl/{hospital_id}/data.json"
