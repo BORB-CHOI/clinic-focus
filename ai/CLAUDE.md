@@ -6,13 +6,18 @@
 
 | 항목 | 선택 |
 |---|---|
-| 언어 | Python 3.11+ (BE와 동일 zip에 패키징) |
-| LLM·Vision | Bedrock Claude Sonnet 4.5 (`anthropic.claude-sonnet-4-5-20250929-v1:0`) |
+| 언어 | Python 3.11+ (BE와 동일 EC2 프로세스) |
+| LLM·Vision | Bedrock Claude Sonnet 4.5 (`us.anthropic.claude-sonnet-4-5-20250929-v1:0`, 개인 계정) |
 | OCR | Amazon Textract |
 | Embedding | Bedrock Titan Embed Text v2 (`amazon.titan-embed-text-v2:0`, 1024 dim) |
 | Vector store | S3 Vectors (`s3vectors:PutVectors` / `QueryVectors`) |
 | RAG 프레임워크 | **직접 구현** (LangChain 안 씀 — 4 시그널 교차 검증 로직 통제 위해) |
 | 데이터 모델 | Pydantic — `../shared/models.py` 단일 소스 |
+
+> Bedrock·S3 Vectors·Textract는 모두 **개인 계정**(리전 `us-east-1`)에서 운영된다.
+> EC2 코드는 이 클라이언트들을 개인 계정 자격증명으로 생성한다. 지원 계정 서비스
+> (DynamoDB)는 EC2 인스턴스 프로파일로 인증 — 자세한 건 `../CLAUDE.md`의
+> "AWS 계정·인프라 구조" 참조.
 
 ## 모듈 export
 

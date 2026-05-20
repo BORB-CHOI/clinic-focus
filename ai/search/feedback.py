@@ -1,7 +1,10 @@
 import os
+from datetime import datetime
+from typing import Any
 
-import boto3
+from boto3.dynamodb.conditions import Key
 
+from ai.core.aws_clients import get_dynamodb_resource
 from ai.core.exceptions import InsufficientFeedbackError
 from shared.models import Confidence, FeedbackEntry, FeedbackStats, SignalContributions
 
@@ -11,11 +14,8 @@ _HIGH = int(os.getenv("CONFIDENCE_THRESHOLD_HIGH", "95"))
 _LOW = int(os.getenv("CONFIDENCE_THRESHOLD_LOW", "70"))
 
 
-def _get_dynamodb():
-    return boto3.resource(
-        "dynamodb",
-        region_name=os.getenv("AWS_REGION", "ap-northeast-2"),
-    )
+def _get_dynamodb() -> Any:
+    return get_dynamodb_resource()
 
 
 def aggregate_feedback_stats(hospital_id: str) -> FeedbackStats:
@@ -25,13 +25,13 @@ def aggregate_feedback_stats(hospital_id: str) -> FeedbackStats:
     table = dynamodb.Table(table_name)
 
     response = table.query(
-        KeyConditionExpression=boto3.dynamodb.conditions.Key("hospital_id").eq(hospital_id),
+        KeyConditionExpression=Key("hospital_id").eq(hospital_id),
     )
     items = response.get("Items", [])
 
     while "LastEvaluatedKey" in response:
         response = table.query(
-            KeyConditionExpression=boto3.dynamodb.conditions.Key("hospital_id").eq(hospital_id),
+            KeyConditionExpression=Key("hospital_id").eq(hospital_id),
             ExclusiveStartKey=response["LastEvaluatedKey"],
         )
         items.extend(response.get("Items", []))
@@ -45,7 +45,6 @@ def aggregate_feedback_stats(hospital_id: str) -> FeedbackStats:
     if items:
         timestamps = [i.get("received_at") for i in items if i.get("received_at")]
         if timestamps:
-            from datetime import datetime
             last_at = max(datetime.fromisoformat(t) for t in timestamps)
 
     return FeedbackStats(
@@ -73,7 +72,7 @@ def recompute_confidence(
 
     item = table.get_item(Key={"hospital_id": hospital_id}).get("Item", {})
     base_score: int = item.get("confidence", {}).get("score", 70)
-    base_signals: dict = item.get("confidence", {}).get("signals", {
+    base_signals: dict[str, int] = item.get("confidence", {}).get("signals", {
         "self_claim": 25, "vision": 0, "blog": 20, "reviews": 25,
     })
 

@@ -30,7 +30,7 @@ def _table_name(name: str) -> str:
 
 class DynamoAdapter:
     def __init__(self):
-        self._resource = boto3.resource("dynamodb", region_name=os.environ.get("AWS_REGION", "ap-northeast-2"))
+        self._resource = boto3.resource("dynamodb", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 
     def _table(self, name: str):
         return self._resource.Table(_table_name(name))
@@ -38,7 +38,11 @@ class DynamoAdapter:
     # ── Hospitals ──
 
     def save_hospital_meta(self, meta: HospitalMeta) -> None:
-        self._table("Hospitals").put_item(Item=meta.model_dump(mode="json"))
+        item = meta.model_dump(mode="json")
+        # GSI "sigungu-index" 를 위해 최상위 레벨로 복사 (DynamoDB 는 중첩 키 GSI 미지원)
+        item["sigungu"] = meta.location.sigungu
+        item["sido"] = meta.location.sido
+        self._table("Hospitals").put_item(Item=item)
 
     def load_hospital_meta(self, hospital_id: str) -> HospitalMeta | None:
         resp = self._table("Hospitals").get_item(Key={"hospital_id": hospital_id})

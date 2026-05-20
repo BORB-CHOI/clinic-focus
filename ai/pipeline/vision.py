@@ -19,9 +19,8 @@ import urllib.error
 import urllib.request
 from urllib.parse import urlparse
 
-import boto3
-
 from ai.core import bedrock_client
+from ai.core.aws_clients import get_s3_client_for_images, get_textract_client
 from ai.core.exceptions import BedrockInvocationError, ImageNotFoundError
 from shared.models import ImageAnalysisResult
 
@@ -32,8 +31,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 _DEFAULT_MAX_VISION_IMAGES = 10
-_DEFAULT_AWS_REGION = "ap-northeast-2"
-_DEFAULT_MODEL_ID = "anthropic.claude-sonnet-4-5-20250929-v1:0"
+_DEFAULT_MODEL_ID = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
 
 # ---------------------------------------------------------------------------
 # 이미지 카테고리 Literal 검증용 목록
@@ -123,8 +121,7 @@ def _download_s3_image(url: str) -> bytes:
     bucket = parsed.netloc
     key = parsed.path.lstrip("/")
 
-    region = os.getenv("AWS_REGION", _DEFAULT_AWS_REGION)
-    s3 = boto3.client("s3", region_name=region)
+    s3 = get_s3_client_for_images()
     try:
         response = s3.get_object(Bucket=bucket, Key=key)
         return response["Body"].read()
@@ -226,9 +223,8 @@ def _run_textract_ocr(image_bytes: bytes, url: str) -> None:
     결과를 ImageAnalysisResult에 포함하지 않음 (현재 모델에 텍스트 필드 없음).
     Textract 호출 실패는 전체 흐름에 영향을 주지 않는다.
     """
-    region = os.getenv("AWS_REGION", _DEFAULT_AWS_REGION)
     try:
-        textract = boto3.client("textract", region_name=region)
+        textract = get_textract_client()
         response = textract.analyze_document(
             Document={"Bytes": image_bytes},
             FeatureTypes=["TABLES", "FORMS"],

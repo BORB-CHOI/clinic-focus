@@ -7,11 +7,11 @@
 | 항목 | 선택 |
 |---|---|
 | 언어 | Python 3.11+ |
-| 프레임워크 | FastAPI + Mangum (Lambda 어댑터) |
+| 프레임워크 | FastAPI + uvicorn (EC2) |
 | 데이터 검증 | Pydantic (모델은 `../shared/models.py`에 정의) |
 | AWS SDK | boto3 |
-| 크롤링 | httpx + BeautifulSoup4 (JS 렌더링은 Playwright Lambda Layer로 보강) |
-| 배포 | AWS SAM (zip, 도커 안 씀) |
+| 크롤링 | httpx + BeautifulSoup4 (JS 렌더링은 Playwright로 보강) |
+| 배포 | EC2 (git pull, 도커 안 씀) |
 
 ## 엔드포인트 (4개)
 
@@ -26,7 +26,7 @@
 
 ## AI 모듈 호출
 
-같은 Lambda zip에 들어있으므로 Python import로 호출 — **HTTP 호출 아님**:
+같은 EC2 프로세스에서 도므로 Python import로 호출 — **HTTP 호출 아님**:
 
 ```python
 from ai import (
@@ -60,7 +60,7 @@ from shared.models import CrawlData, SearchQuery
 
 `Hospitals` / `Classifications` / `Signals` / `Confidence` / `Feedback` / `ChangeHistory` / `HospitalDescriptions`. 파티션 키·GSI는 분류 스키마 v1 동결 후 확정.
 
-위치 기반 검색은 S3 Vectors 메타데이터의 `lat`/`lng`로 bounding box 1차 필터 → Lambda haversine 정확 계산.
+위치 기반 검색은 S3 Vectors 메타데이터의 `lat`/`lng`로 bounding box 1차 필터 → EC2 haversine 정확 계산.
 
 ## 응답 포맷
 
@@ -77,13 +77,16 @@ FastAPI 미들웨어에서 CloudFront 도메인 + `http://localhost:5173` 허용
 
 | 변수 | 기본값 |
 |---|---|
-| `AWS_REGION` | `ap-northeast-2` |
-| `BEDROCK_LLM_MODEL_ID` | `anthropic.claude-sonnet-4-5-20250929-v1:0` |
+| `AWS_REGION` | `us-east-1` |
+| `BEDROCK_LLM_MODEL_ID` | `us.anthropic.claude-sonnet-4-5-20250929-v1:0` |
 | `BEDROCK_EMBED_MODEL_ID` | `amazon.titan-embed-text-v2:0` |
 | `S3_VECTOR_BUCKET` / `S3_VECTOR_INDEX` | 환경별 |
 
+> Bedrock·S3 Vectors·Textract(AI 모듈)는 **개인 계정**, DynamoDB·S3는 **지원 계정**
+> (us-east-1)에 있다. 자세한 건 `../CLAUDE.md`의 "AWS 계정·인프라 구조" 참조.
+
 ## 작업 원칙
 
-- 단일 Lambda zip 가정. 함수 분리는 트래픽 늘었을 때 고민 (PoC는 모놀리식이 효율적)
+- 단일 EC2 프로세스 가정. 분리는 트래픽 늘었을 때 고민 (PoC는 모놀리식이 효율적)
 - 크롤링은 robots.txt 준수 + User-Agent 명시 + 요청 간격 조절
 - 인증 없음 (PoC). 호출 제한은 API Gateway throttling 기본값

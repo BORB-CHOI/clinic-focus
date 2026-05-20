@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from ai.search.embed import embed_text  # noqa: F401
     from ai.search.feedback import aggregate_feedback_stats, recompute_confidence  # noqa: F401
     from ai.search.related import find_related_hospitals  # noqa: F401
-    from ai.search.vector_store import index_hospital, index_hospital_with_meta, search_similar  # noqa: F401
+    from ai.search.vector_store import index_hospital, search_similar  # noqa: F401
 
 
 def __getattr__(name: str):  # noqa: ANN001, ANN202
@@ -36,7 +36,6 @@ def __getattr__(name: str):  # noqa: ANN001, ANN202
         "analyze_images":               ("ai.pipeline.vision",        "analyze_images"),
         "embed_text":                   ("ai.search.embed",           "embed_text"),
         "index_hospital":               ("ai.search.vector_store",    "index_hospital"),
-        "index_hospital_with_meta":     ("ai.search.vector_store",    "index_hospital_with_meta"),
         "search_similar":               ("ai.search.vector_store",    "search_similar"),
         "find_related_hospitals":       ("ai.search.related",         "find_related_hospitals"),
         "recompute_confidence":         ("ai.search.feedback",        "recompute_confidence"),
@@ -54,7 +53,6 @@ __all__ = [
     "generate_description",
     "embed_text",
     "index_hospital",
-    "index_hospital_with_meta",
     "search_similar",
     "analyze_images",
     "extract_services_and_doctors",

@@ -32,7 +32,9 @@ from shared.models import (
 MAX_RETRIES = 2
 
 # 프롬프트 템플릿 파일 경로
-_PROMPT_TEMPLATE_PATH = Path(__file__).parent / "prompts" / "hospital_description.md"
+# describe.py 는 ai/pipeline/ 에 있고 프롬프트는 ai/prompts/ 에 있으므로
+# parent 를 두 번 올라가 ai/ 를 기준으로 잡는다.
+_PROMPT_TEMPLATE_PATH = Path(__file__).parent.parent / "prompts" / "hospital_description.md"
 
 
 # ---------------------------------------------------------------------------
@@ -129,7 +131,12 @@ def _build_prompt(
         "specialists": specialists_text,
     }
 
-    prompt = template.format(**context)
+    # 템플릿에는 출력 JSON 스키마 예시가 그대로 들어 있어 리터럴 중괄호가 많다.
+    # str.format() 은 그 중괄호를 placeholder 로 오인해 KeyError 를 낸다.
+    # → 알려진 placeholder 키만 명시적으로 치환한다.
+    prompt = template
+    for key, value in context.items():
+        prompt = prompt.replace("{" + key + "}", str(value))
 
     if extra_instruction:
         prompt += f"\n\n## 이전 시도 실패 원인 — 반드시 수정\n\n{extra_instruction}"
@@ -246,7 +253,7 @@ def generate_description(
     """
     generator_model = os.getenv(
         "BEDROCK_LLM_MODEL_ID",
-        "anthropic.claude-sonnet-4-5-20250929-v1:0",
+        "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
     )
     generated_at = datetime.utcnow()
 
