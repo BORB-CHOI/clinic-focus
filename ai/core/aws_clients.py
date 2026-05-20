@@ -10,6 +10,7 @@ EC2 환경에서 두 개의 AWS 계정을 다룬다:
 from __future__ import annotations
 
 import os
+from typing import Any
 
 import boto3
 
@@ -52,6 +53,7 @@ def _get_ai_session() -> boto3.Session:
 _ai_region: str | None = None
 
 def _ai_region_name() -> str:
+    """개인 계정 리전명 캐시. AI_AWS_REGION 환경변수 또는 기본값 'us-east-1'."""
     global _ai_region
     if _ai_region is None:
         _ai_region = os.environ.get("AI_AWS_REGION", "us-east-1")
@@ -62,22 +64,22 @@ def _ai_region_name() -> str:
 # 공개 팩토리 함수 — AI 모듈용 (개인 계정)
 # ---------------------------------------------------------------------------
 
-def get_bedrock_runtime_client():
+def get_bedrock_runtime_client() -> Any:
     """개인 계정 Bedrock Runtime 클라이언트."""
     return _get_ai_session().client("bedrock-runtime", region_name=_ai_region_name())
 
 
-def get_s3vectors_client():
+def get_s3vectors_client() -> Any:
     """개인 계정 S3 Vectors 클라이언트."""
     return _get_ai_session().client("s3vectors", region_name=_ai_region_name())
 
 
-def get_textract_client():
+def get_textract_client() -> Any:
     """개인 계정 Textract 클라이언트."""
     return _get_ai_session().client("textract", region_name=_ai_region_name())
 
 
-def get_s3_client_for_images():
+def get_s3_client_for_images() -> Any:
     """개인 계정 S3 클라이언트 — 이미지 다운로드용 (크롤 결과 이미지가 개인 계정 S3에 있을 때)."""
     return _get_ai_session().client("s3", region_name=_ai_region_name())
 
@@ -89,18 +91,19 @@ def get_s3_client_for_images():
 _support_region: str | None = None
 
 def _support_region_name() -> str:
+    """지원 계정 리전명 캐시. AWS_REGION 환경변수 또는 기본값 'us-east-1'."""
     global _support_region
     if _support_region is None:
         _support_region = os.environ.get("AWS_REGION", "us-east-1")
     return _support_region
 
 
-def get_dynamodb_resource():
+def get_dynamodb_resource() -> Any:
     """지원 계정 DynamoDB resource (인스턴스 프로파일)."""
     return boto3.resource("dynamodb", region_name=_support_region_name())
 
 
-def get_support_s3_client():
+def get_support_s3_client() -> Any:
     """지원 계정 S3 클라이언트 (크롤 데이터 저장용)."""
     return boto3.client("s3", region_name=_support_region_name())
 
