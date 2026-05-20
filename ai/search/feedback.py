@@ -1,7 +1,8 @@
 import os
 
-import boto3
+from boto3.dynamodb.conditions import Key
 
+from ai.core.aws_clients import get_dynamodb_resource
 from ai.core.exceptions import InsufficientFeedbackError
 from shared.models import Confidence, FeedbackEntry, FeedbackStats, SignalContributions
 
@@ -12,10 +13,7 @@ _LOW = int(os.getenv("CONFIDENCE_THRESHOLD_LOW", "70"))
 
 
 def _get_dynamodb():
-    return boto3.resource(
-        "dynamodb",
-        region_name=os.getenv("AWS_REGION", "ap-northeast-2"),
-    )
+    return get_dynamodb_resource()
 
 
 def aggregate_feedback_stats(hospital_id: str) -> FeedbackStats:
@@ -25,13 +23,13 @@ def aggregate_feedback_stats(hospital_id: str) -> FeedbackStats:
     table = dynamodb.Table(table_name)
 
     response = table.query(
-        KeyConditionExpression=boto3.dynamodb.conditions.Key("hospital_id").eq(hospital_id),
+        KeyConditionExpression=Key("hospital_id").eq(hospital_id),
     )
     items = response.get("Items", [])
 
     while "LastEvaluatedKey" in response:
         response = table.query(
-            KeyConditionExpression=boto3.dynamodb.conditions.Key("hospital_id").eq(hospital_id),
+            KeyConditionExpression=Key("hospital_id").eq(hospital_id),
             ExclusiveStartKey=response["LastEvaluatedKey"],
         )
         items.extend(response.get("Items", []))
