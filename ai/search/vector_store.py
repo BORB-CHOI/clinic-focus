@@ -2,7 +2,7 @@
 vector_store.py — S3 Vectors PutVectors / QueryVectors 래퍼.
 
 공개 함수:
-  - index_hospital(hospital_id, classification, description_text) -> None
+  - index_hospital(hospital_id, classification, description_text, sido, sigungu, lat, lng) -> None
   - search_similar(query: SearchQuery) -> list[SearchResult]
 
 내부 팩토리:
@@ -149,13 +149,21 @@ def index_hospital(
     hospital_id: str,
     classification: Classification,
     description_text: str,
+    sido: str,
+    sigungu: str,
+    lat: float | None = None,
+    lng: float | None = None,
 ) -> None:
-    """병원 분류 결과를 S3 Vectors에 적재한다.
+    """병원 분류 결과를 위치 정보 포함해 S3 Vectors에 적재한다.
 
     Args:
         hospital_id: 병원 고유 ID
         classification: AI 분류 결과 (standard_specialty, primary_focus, confidence 등 포함)
         description_text: 임베딩 대상 텍스트 (generate_description 단락 합본 권장)
+        sido: 시도 (예: "서울특별시")
+        sigungu: 시군구 (예: "성북구")
+        lat: 위도 (없으면 None — 위치 기반 검색에서 제외됨)
+        lng: 경도
 
     Raises:
         BedrockInvocationError: 임베딩 호출 실패 시
@@ -163,80 +171,13 @@ def index_hospital(
     """
     bucket = os.getenv("S3_VECTOR_BUCKET")
     index_name = os.getenv("S3_VECTOR_INDEX", "hospital-index")
-
     if not bucket:
         raise S3VectorsError("환경변수 S3_VECTOR_BUCKET 이 설정되지 않았습니다.")
 
-    # 1. 임베딩 생성
     vector = embed_text(description_text)
-
-    # 2. 메타데이터 조립
-    # Classification 에서 lat/lng 는 없을 수 있음 → None 이면 키 자체를 생략
-    # (S3 Vectors range 필터는 키가 없는 벡터를 걸러낼 때 동작이 정의되지 않으므로 생략이 안전)
     metadata: dict = {
         "standard_specialty": classification.standard_specialty,
         # primary_focus 는 list → JSON string 으로 직렬화 (S3 Vectors 메타값은 스칼라만 지원)
-        "primary_focus": json.dumps(classification.primary_focus, ensure_ascii=False),
-        "confidence_score": classification.confidence.score,
-        "last_updated": datetime.now(timezone.utc).isoformat(),
-    }
-
-    # sido / sigungu 는 Classification 에 직접 없고 HospitalMeta 에 있음.
-    # index_hospital 시그니처에는 location 이 없으므로, Classification.hospital_id 만 사용.
-    # 실제 sido/sigungu 는 BE 측이 hospital_meta 를 넘기거나 별도로 enrichment 가 필요하다.
-    # 현재 명세(API-BE-AI.md)의 index_hospital 시그니처에 맞춰 Classification 에서 꺼낼 수 있는
-    # 필드만 적재하고, 위치 정보는 BE 호출 흐름에서 확장 가능하도록 빈 슬롯으로 남긴다.
-    # → BE 측에서 index_hospital 호출 전 classification 에 위치 정보를 붙여주거나,
-    #   별도 update_hospital_location() 함수를 추가하는 방식으로 확장 예정.
-    # (현재는 키를 아예 생략해 필터 오동작 방지)
-
-    # 3. PutVectors 호출
-    client = _get_s3vectors_client()
-    try:
-        client.put_vectors(
-            vectorBucketName=bucket,
-            indexName=index_name,
-            vectors=[
-                {
-                    "key": hospital_id,
-                    "data": {"float32": vector},
-                    "metadata": metadata,
-                }
-            ],
-        )
-    except botocore.exceptions.ClientError as exc:
-        error_code = exc.response["Error"]["Code"]
-        logger.error("S3 Vectors PutVectors 실패 (hospital_id=%s): %s", hospital_id, error_code)
-        raise S3VectorsError(
-            f"PutVectors 실패 (hospital_id={hospital_id}): {error_code}"
-        ) from exc
-    except Exception as exc:
-        logger.error("S3 Vectors PutVectors 실패 (hospital_id=%s): %s", hospital_id, exc)
-        raise S3VectorsError(
-            f"PutVectors 실패 (hospital_id={hospital_id}): {exc}"
-        ) from exc
-
-    logger.info("index_hospital 완료: hospital_id=%s, index=%s/%s", hospital_id, bucket, index_name)
-
-
-def index_hospital_with_meta(
-    hospital_id: str,
-    classification: Classification,
-    description_text: str,
-    sido: str,
-    sigungu: str,
-    lat: float | None = None,
-    lng: float | None = None,
-) -> None:
-    """지역·좌표까지 포함해서 S3 Vectors에 적재. BE가 HospitalMeta를 알 때 호출."""
-    bucket = os.getenv("S3_VECTOR_BUCKET")
-    index_name = os.getenv("S3_VECTOR_INDEX", "hospital-index")
-    if not bucket:
-        raise S3VectorsError("환경변수 S3_VECTOR_BUCKET 이 설정되지 않았습니다.")
-
-    vector = embed_text(description_text)
-    metadata: dict = {
-        "standard_specialty": classification.standard_specialty,
         "primary_focus": json.dumps(classification.primary_focus, ensure_ascii=False),
         "confidence_score": classification.confidence.score,
         "sido": sido,
@@ -255,10 +196,18 @@ def index_hospital_with_meta(
             indexName=index_name,
             vectors=[{"key": hospital_id, "data": {"float32": vector}, "metadata": metadata}],
         )
+    except botocore.exceptions.ClientError as exc:
+        error_code = exc.response["Error"]["Code"]
+        logger.error("S3 Vectors PutVectors 실패 (hospital_id=%s): %s", hospital_id, error_code)
+        raise S3VectorsError(f"PutVectors 실패 (hospital_id={hospital_id}): {error_code}") from exc
     except Exception as exc:
+        logger.error("S3 Vectors PutVectors 실패 (hospital_id=%s): %s", hospital_id, exc)
         raise S3VectorsError(f"PutVectors 실패 (hospital_id={hospital_id}): {exc}") from exc
 
-    logger.info("index_hospital_with_meta 완료: hospital_id=%s (%s %s)", hospital_id, sido, sigungu)
+    logger.info(
+        "index_hospital 완료: hospital_id=%s (%s %s), index=%s/%s",
+        hospital_id, sido, sigungu, bucket, index_name,
+    )
 
 
 # ---------------------------------------------------------------------------
