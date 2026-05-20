@@ -40,7 +40,7 @@ class MockDynamoAdapter:
         return self._hospitals.get(hospital_id)
 
     def list_hospitals_by_sigungu(self, sigungu: str) -> list[HospitalMeta]:
-        return [h for h in self._hospitals.values() if h.sigungu == sigungu]
+        return [h for h in self._hospitals.values() if h.location.sigungu == sigungu]
 
     # Classifications
     def save_classification(self, data: Classification) -> None:
