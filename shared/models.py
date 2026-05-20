@@ -349,3 +349,10 @@ class DataMetadata(BaseModel):
     last_classified_at: datetime | None = None
     data_sources: list[str]
     confidence_warning: bool = False
+
+
+# ---------------------------------------------------------------------------
+# 하위 호환 alias — dynamo_adapter 에서 ChangeRecord 로 참조 중
+# ---------------------------------------------------------------------------
+
+ChangeRecord = ClassificationChange
