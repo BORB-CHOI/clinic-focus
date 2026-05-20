@@ -26,7 +26,6 @@ import logging
 import math
 import os
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING
 
 import botocore.exceptions
 
@@ -34,9 +33,6 @@ from ai.core.aws_clients import get_s3vectors_client as _create_s3vectors_client
 from ai.search.embed import EMBEDDING_DIM, embed_text
 from ai.core.exceptions import BedrockInvocationError, InvalidQueryError, S3VectorsError
 from shared.models import Classification, SearchQuery, SearchResult
-
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 
