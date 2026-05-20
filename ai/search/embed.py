@@ -14,9 +14,9 @@ import logging
 import os
 from typing import TYPE_CHECKING
 
-import boto3
 import botocore.exceptions
 
+from ai.core.aws_clients import get_bedrock_runtime_client
 from ai.core.exceptions import BedrockInvocationError, TextTooLongError
 
 if TYPE_CHECKING:
@@ -44,14 +44,11 @@ def _get_embed_client() -> "BedrockRuntimeClient":
     """boto3 bedrock-runtime 클라이언트 팩토리.
 
     전역 캐싱으로 Lambda 재사용 시 재생성 비용을 줄인다.
-    테스트에서 @patch("ai.embed._get_embed_client") 로 교체 가능.
+    테스트에서 @patch("ai.search.embed._get_embed_client") 로 교체 가능.
     """
     global _embed_client
     if _embed_client is None:
-        _embed_client = boto3.client(
-            "bedrock-runtime",
-            region_name=os.getenv("AWS_REGION", "ap-northeast-2"),
-        )
+        _embed_client = get_bedrock_runtime_client()
     return _embed_client
 
 

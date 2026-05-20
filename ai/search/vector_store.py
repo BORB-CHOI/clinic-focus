@@ -28,9 +28,9 @@ import os
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-import boto3
 import botocore.exceptions
 
+from ai.core.aws_clients import get_s3vectors_client as _create_s3vectors_client
 from ai.search.embed import EMBEDDING_DIM, embed_text
 from ai.core.exceptions import BedrockInvocationError, InvalidQueryError, S3VectorsError
 from shared.models import Classification, SearchQuery, SearchResult
@@ -60,14 +60,11 @@ def _get_s3vectors_client():
     """S3 Vectors boto3 클라이언트 팩토리.
 
     전역 캐싱으로 Lambda 재사용 시 재생성 비용을 줄인다.
-    테스트에서 @patch("ai.vector_store._get_s3vectors_client") 로 교체 가능.
+    테스트에서 @patch("ai.search.vector_store._get_s3vectors_client") 로 교체 가능.
     """
     global _s3vectors_client
     if _s3vectors_client is None:
-        _s3vectors_client = boto3.client(
-            "s3vectors",
-            region_name=os.getenv("AWS_REGION", "ap-northeast-2"),
-        )
+        _s3vectors_client = _create_s3vectors_client()
     return _s3vectors_client
 
 
