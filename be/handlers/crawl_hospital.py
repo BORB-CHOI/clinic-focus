@@ -1,9 +1,8 @@
-"""병원 1개 크롤링 Lambda — SQS 트리거."""
+"""병원 1개 크롤링 — EC2 스크립트나 큐 컨슈머에서 직접 호출."""
 
 from __future__ import annotations
 
 import asyncio
-import json
 import os
 
 import httpx
@@ -16,18 +15,14 @@ from be.core.crawler import crawl_one_hospital
 INDEX_QUEUE = os.environ.get("INDEX_QUEUE_NAME", "ClinicFocusIndexQueue")
 
 
-def handler(event, context):
+def run_crawl(hospital_id: str, website_url: str) -> dict:
     """
-    SQS 트리거 Lambda.
     병원 1개 크롤링 → S3 저장 → 인덱싱 큐에 메시지 발행.
+    EC2 스크립트나 큐 컨슈머에서 직접 호출.
     """
     s3 = S3Adapter()
     sqs = SQSAdapter()
     hira = HiraAdapter()
-
-    record = json.loads(event["Records"][0]["body"])
-    hospital_id = record["hospital_id"]
-    website_url = record["website_url"]
 
     # 1. 크롤링 실행
     crawl_data = asyncio.run(_crawl(hospital_id, website_url))

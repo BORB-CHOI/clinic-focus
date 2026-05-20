@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import os
 
 from be.adapters.hira_adapter import HiraAdapter
@@ -15,18 +14,18 @@ DEFAULT_SIGUNGU_CODE = os.environ.get("SIGUNGU_CODE", "110012")
 DEFAULT_SIDO_CODE = os.environ.get("SIDO_CODE", "110000")
 
 
-def handler(event, context):
+def run_crawl_trigger(sido_code: str | None = None, sigungu_code: str | None = None) -> dict:
     """
-    수동 실행 Lambda.
-    심평원 API에서 대상 지역 병원 목록 조회 → SQS에 크롤링 메시지 발행.
+    심평원 API에서 대상 지역 병원 목록 조회 → DynamoDB에 기본 정보 저장 → (선택) SQS에 발행.
+    EC2 스크립트나 큐 컨슈머에서 직접 호출.
     """
     hira = HiraAdapter()
     sqs = SQSAdapter()
     db = DynamoAdapter()
 
-    # 이벤트에서 파라미터 추출 (없으면 기본값 = 성북구)
-    sido_code = event.get("sido_code", DEFAULT_SIDO_CODE)
-    sigungu_code = event.get("sigungu_code", DEFAULT_SIGUNGU_CODE)
+    # 파라미터 기본값 처리
+    sido_code = sido_code or DEFAULT_SIDO_CODE
+    sigungu_code = sigungu_code or DEFAULT_SIGUNGU_CODE
 
     # 1. 심평원에서 병원 목록 조회
     raw_hospitals = hira.get_hospitals_by_region(
