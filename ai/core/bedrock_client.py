@@ -1,12 +1,13 @@
 import json
 import os
+from typing import Any
 
 from ai.core.aws_clients import get_bedrock_runtime_client
 
 _bedrock_client = None
 
 
-def get_bedrock_client():
+def get_bedrock_client() -> Any:
     global _bedrock_client
     if _bedrock_client is None:
         _bedrock_client = get_bedrock_runtime_client()
