@@ -66,10 +66,11 @@ def main():
                 ExpressionAttributeValues={":url": kakao_info["place_url"]},
             )
             enriched += 1
-            if i % 20 == 0:
-                print(f"  [{i}/{len(no_url)}] 보강 중... (성공: {enriched})")
+            print(f"  [{i}/{len(no_url)}] ✅ {name} → {kakao_info['place_url']}")
         else:
             failed += 1
+            if i % 100 == 0:
+                print(f"  [{i}/{len(no_url)}] 진행 중... (성공: {enriched}, 실패: {failed})")
 
         # API 호출 제한 방지 (초당 10회 제한)
         time.sleep(0.15)

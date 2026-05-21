@@ -26,7 +26,6 @@ class KakaoAdapter:
         query = f"{name} {address}".strip()
         params = {
             "query": query,
-            "category_group_code": "HP8",  # 병원
             "size": 1,
         }
 

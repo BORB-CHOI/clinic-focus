@@ -82,17 +82,14 @@ async def main():
                 if main_text_len >= MIN_TEXT_THRESHOLD:
                     s3.save_crawl_data(hospital_id, crawl_data)
                     results["success"] += 1
-                    if i % 10 == 0:
-                        print(f"  [{i}/{len(targets)}] ✅ {name} — {total_pages}페이지, {total_images}이미지")
+                    print(f"  [{i}/{len(targets)}] ✅ {name} — {total_pages}페이지, {total_images}이미지")
                 else:
                     results["js_needed"] += 1
-                    if i % 10 == 0:
-                        print(f"  [{i}/{len(targets)}] ⚠️ {name} — JS 렌더링 필요 ({main_text_len}자)")
+                    print(f"  [{i}/{len(targets)}] ⚠️ {name} — JS 렌더링 필요 ({main_text_len}자)")
 
             except Exception as e:
                 results["failed"] += 1
-                if i % 10 == 0:
-                    print(f"  [{i}/{len(targets)}] ❌ {name} — {e}")
+                print(f"  [{i}/{len(targets)}] ❌ {name} — {e}")
 
             # 예의상 딜레이
             await asyncio.sleep(0.5)
