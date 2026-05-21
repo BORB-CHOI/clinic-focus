@@ -14,8 +14,8 @@ model: sonnet
 ## 반드시 먼저 읽을 문서
 
 - `be/CLAUDE.md` — 트랙 컨벤션
-- `.claude/docs/API-FE-BE.md` — FE에 노출하는 인터페이스
-- `.claude/docs/API-BE-AI.md` — AI 함수 호출 시그니처
+- `docs/API-FE-BE.md` — FE에 노출하는 인터페이스
+- `docs/API-BE-AI.md` — AI 함수 호출 시그니처
 - `shared/CLAUDE.md` — 공유 모델 변경 규칙
 
 ## 핵심 결과물

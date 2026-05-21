@@ -9,13 +9,13 @@ model: sonnet
 
 ## 작업 위치
 
-`fe/` 폴더 안에서만 작업. 트랙 외부(`be/`, `ai/`, `shared/`, `.claude/docs/`)는 **읽기만 가능**. 수정 필요 시 메인 오케스트레이터에 위탁.
+`fe/` 폴더 안에서만 작업. 트랙 외부(`be/`, `ai/`, `shared/`, `docs/`)는 **읽기만 가능**. 수정 필요 시 메인 오케스트레이터에 위탁.
 
 ## 반드시 먼저 읽을 문서
 
 - `fe/CLAUDE.md` — 트랙 컨벤션
-- `.claude/docs/API-FE-BE.md` — API 스펙. 응답 필드 매핑 표를 그대로 따름
-- `.claude/docs/overview.md` 4-4절·상세페이지 9개 영역
+- `docs/API-FE-BE.md` — API 스펙. 응답 필드 매핑 표를 그대로 따름
+- `docs/overview.md` 4-4절·상세페이지 9개 영역
 
 ## 핵심 결과물
 

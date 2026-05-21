@@ -55,13 +55,13 @@
 **목표:** Kiro 사용자도 `.claude/` 컨텍스트를 동일하게 가져가도록.  
 훅 실행·슬래시 커맨드는 Kiro 미지원이므로 제외. 컨텍스트 공유만.
 
-- [ ] `.claude/docs/` 4개 파일 → `docs/` 루트로 이동
+- [ ] `docs/` 4개 파일 → `docs/` 루트로 이동
   - `overview.md`
   - `dev-roadmap.md`
   - `API-FE-BE.md`
   - `API-BE-AI.md`
 
-- [ ] `.claude/docs/` 참조 경로 업데이트 (14개 파일)
+- [ ] `docs/` 참조 경로 업데이트 (14개 파일)
   - `.claude/agents/` 8개
   - `ai/CLAUDE.md`, `ai/README.md`
   - `be/CLAUDE.md`, `fe/CLAUDE.md`, `shared/CLAUDE.md`
@@ -142,7 +142,7 @@
 - [x] `be/api/hospital.py`, `be/api/search.py` — `{"data": ...}` 응답 포맷 통일
 - [x] `ai/pipeline/classify.py`, `ai/pipeline/extract.py` — `public_data=None` null 가드
 - [x] `shared/models.py` — `public_data: PublicData | None = None`
-- [x] `.claude/docs/API-BE-AI.md` — `index_hospital` 시그니처 문서 동기화
+- [x] `docs/API-BE-AI.md` — `index_hospital` 시그니처 문서 동기화
 - [x] `be/adapters/kakao_adapter.py`, `naver_map_adapter.py` 신규
 - [x] `deploy/` — systemd 서비스 파일·셋업 스크립트·README
 

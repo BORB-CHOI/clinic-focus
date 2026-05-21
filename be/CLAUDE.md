@@ -1,6 +1,6 @@
 # be/ — 백엔드 트랙 (김경재)
 
-상위 컨텍스트는 `../CLAUDE.md`, FE 인터페이스는 `../.claude/docs/API-FE-BE.md`, AI 함수 호출은 `../.claude/docs/API-BE-AI.md`.
+상위 컨텍스트는 `../CLAUDE.md`, FE 인터페이스는 `../docs/API-FE-BE.md`, AI 함수 호출은 `../docs/API-BE-AI.md`.
 
 ## 스택
 
@@ -22,7 +22,7 @@
 | `GET /api/hospitals/{id}/history` | 분류 변경 이력 |
 | `POST /api/feedback` | 익명 피드백 제출 (디바이스ID 기반 중복 방지) |
 
-응답 스키마는 `../.claude/docs/API-FE-BE.md`의 공통 데이터 타입 + 엔드포인트 섹션을 그대로 따른다.
+응답 스키마는 `../docs/API-FE-BE.md`의 공통 데이터 타입 + 엔드포인트 섹션을 그대로 따른다.
 
 ## AI 모듈 호출
 
@@ -42,7 +42,7 @@ from ai import (
 from shared.models import CrawlData, SearchQuery
 ```
 
-함수 시그니처·예외·동작 흐름은 `../.claude/docs/API-BE-AI.md` 참조. 추후 분리하더라도 시그니처가 그대로 HTTP body 스키마가 되므로 호출 코드만 바꾸면 됨.
+함수 시그니처·예외·동작 흐름은 `../docs/API-BE-AI.md` 참조. 추후 분리하더라도 시그니처가 그대로 HTTP body 스키마가 되므로 호출 코드만 바꾸면 됨.
 
 ## 새 병원 등록 파이프라인
 
@@ -67,7 +67,7 @@ from shared.models import CrawlData, SearchQuery
 성공: `{"data": {...}, "meta": {...}}`  
 에러: `{"error": {"code": "...", "message": "...", "details": ...}}`
 
-표준 에러 코드는 `../.claude/docs/API-FE-BE.md` "표준 에러 코드" 표 참조.
+표준 에러 코드는 `../docs/API-FE-BE.md` "표준 에러 코드" 표 참조.
 
 ## CORS
 

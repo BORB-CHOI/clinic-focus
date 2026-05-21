@@ -6,10 +6,10 @@
 
 작업 들어가기 전에 관련 문서를 먼저 본다. 이 CLAUDE.md는 요약·포인터일 뿐이고 진실은 아래 4개 문서에 있다.
 
-- `.claude/docs/overview.md` — 서비스 기획·문제 정의·의료법 대응·수익 모델
-- `.claude/docs/dev-roadmap.md` — 트랙 분담·기술 스택·마일스톤·평가 4요소 매핑
-- `.claude/docs/API-FE-BE.md` — 프론트 ↔ 백엔드 인터페이스
-- `.claude/docs/API-BE-AI.md` — 백엔드 ↔ AI 모듈 함수 명세
+- `docs/overview.md` — 서비스 기획·문제 정의·의료법 대응·수익 모델
+- `docs/dev-roadmap.md` — 트랙 분담·기술 스택·마일스톤·평가 4요소 매핑
+- `docs/API-FE-BE.md` — 프론트 ↔ 백엔드 인터페이스
+- `docs/API-BE-AI.md` — 백엔드 ↔ AI 모듈 함수 명세
 
 ## 성격 — 평가용 PoC
 
@@ -154,7 +154,7 @@ medical-language-reviewer (의료법) · python-reviewer (코드)
 ai-engineer 통합 보고
 ```
 
-트랙 간 의존성은 `.claude/docs/dev-roadmap.md`의 "협업 의존성" 섹션 참조.
+트랙 간 의존성은 `docs/dev-roadmap.md`의 "협업 의존성" 섹션 참조.
 
 ## 외부 자산
 

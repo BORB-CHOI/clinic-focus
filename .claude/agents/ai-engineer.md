@@ -14,8 +14,8 @@ model: sonnet
 ## 반드시 먼저 읽을 문서
 
 - `ai/CLAUDE.md` — 트랙 컨벤션, 4 시그널 교차 검증, 분류 스키마, generate_description 5규칙
-- `.claude/docs/API-BE-AI.md` — 함수 명세, 의사 코드, 비용 가이드
-- `.claude/docs/overview.md` 5절(핵심 알고리즘), 6절(의료법 대응)
+- `docs/API-BE-AI.md` — 함수 명세, 의사 코드, 비용 가이드
+- `docs/overview.md` 5절(핵심 알고리즘), 6절(의료법 대응)
 
 ## 리더로서 첫 판단 — 직접 vs 위임
 
