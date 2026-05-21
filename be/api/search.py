@@ -6,10 +6,10 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Query
+from fastapi.responses import JSONResponse
 
 from be.adapters.dynamo_adapter import DynamoAdapter
-from shared.models import SearchQuery
 
 router = APIRouter(prefix="/api/search", tags=["search"])
 db = DynamoAdapter()
@@ -35,12 +35,10 @@ def search_hospitals(
     """
     # 파라미터 검증
     if q is None and (lat is None or lng is None):
-        return {
-            "error": {
-                "code": "INVALID_PARAMETER",
-                "message": "q 또는 lat/lng 중 최소 하나는 필수입니다",
-            }
-        }
+        return JSONResponse(
+            status_code=422,
+            content={"error": {"code": "INVALID_PARAMETER", "message": "q 또는 lat/lng 중 최소 하나는 필수입니다"}},
+        )
 
     # 검색 모드 결정
     if q and lat is not None and lng is not None:
@@ -52,6 +50,23 @@ def search_hospitals(
 
     # TODO: AI 모듈 search_similar 연동 (비성님 파트 완성 후)
     # 현재는 DynamoDB에서 시군구 기반 조회로 대체
+    if q and not sigungu:
+        return JSONResponse(
+            status_code=200,
+            content={
+                "data": [],
+                "meta": {
+                    "total": 0,
+                    "limit": limit,
+                    "offset": offset,
+                    "search_mode": search_mode,
+                    "query_interpretation": None,
+                    "sort": sort,
+                    "note": "자연어 검색은 AI 모듈 연동 후 지원됩니다. sigungu 파라미터로 지역 검색을 먼저 사용하세요.",
+                },
+            },
+        )
+
     results = []
 
     if sigungu:
