@@ -206,3 +206,42 @@ export interface HospitalDetail {
   related_hospitals: RelatedHospital[];
   metadata: DataMetadata;
 }
+
+// ── 검색 (GET /api/search) ───────────────────────────────────────────
+// API-FE-BE.md "검색" 응답 기준
+// 카드용 항목은 HospitalDetail의 헤더 필드 + distance_km 만 추려서 정의
+// (상세 페이지 응답과 다른 엔드포인트라 별도 타입으로 분리)
+
+export type SearchMode = "natural" | "nearby" | "natural+nearby";
+export type SortOption = "distance" | "confidence" | "relevance";
+
+export interface SearchResultItem {
+  hospital_id: string;
+  name: string;
+  standard_specialty: string;
+  primary_focus: string[];
+  confidence: Confidence;
+  /** 위경도 검색일 때만 채워짐 */
+  distance_km: number | null;
+  location: Location;
+  website_url: string | null;
+  one_line_summary: string;
+}
+
+export interface SearchMeta {
+  total: number;
+  limit: number;
+  offset: number;
+  search_mode: SearchMode;
+  /** 자연어 쿼리 해석 결과 (자연어 검색일 때만) */
+  query_interpretation: string | null;
+  /** 위경도 검색일 때만 채워짐 */
+  center: { lat: number; lng: number } | null;
+  radius_km: number | null;
+  sort: SortOption;
+}
+
+export interface SearchResponse {
+  data: SearchResultItem[];
+  meta: SearchMeta;
+}
