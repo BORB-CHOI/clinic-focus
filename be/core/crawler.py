@@ -11,7 +11,7 @@ from urllib.parse import urljoin, urlparse
 import httpx
 from bs4 import BeautifulSoup
 
-from shared.models import CrawlData, CrawledImage, CrawledPage
+from shared.models import CrawlData, CrawledImage, CrawledPage, PublicData
 
 # 크롤링 대상 서브 페이지 패턴
 _SUBPAGE_PATTERNS: dict[str, list[str]] = {
@@ -69,7 +69,7 @@ async def crawl_one_hospital(
         website_url=website_url,
         pages=pages,
         images=images,
-        public_data=None,
+        public_data=PublicData(license_number="", specialists=[], registered_devices=[]),
     )
 
 

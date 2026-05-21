@@ -42,7 +42,7 @@ class CrawlData(BaseModel):
     website_url: str
     pages: list[CrawledPage]
     images: list[CrawledImage]
-    public_data: PublicData
+    public_data: PublicData | None = None
 
 
 # ---------------------------------------------------------------------------
