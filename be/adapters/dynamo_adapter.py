@@ -60,14 +60,24 @@ class DynamoAdapter:
     def load_hospital_meta(self, hospital_id: str) -> HospitalMeta | None:
         resp = self._table("Hospitals").get_item(Key={"hospital_id": hospital_id})
         item = resp.get("Item")
-        return HospitalMeta(**item) if item else None
+        if not item:
+            return None
+        # GSI용 최상위 필드 제거 (HospitalMeta 모델에 없음)
+        item.pop("sido", None)
+        item.pop("sigungu", None)
+        return HospitalMeta(**item)
 
     def list_hospitals_by_sigungu(self, sigungu: str) -> list[HospitalMeta]:
         resp = self._table("Hospitals").query(
             IndexName="sigungu-index",
             KeyConditionExpression=Key("sigungu").eq(sigungu),
         )
-        return [HospitalMeta(**item) for item in resp.get("Items", [])]
+        results = []
+        for item in resp.get("Items", []):
+            item.pop("sido", None)
+            item.pop("sigungu", None)
+            results.append(HospitalMeta(**item))
+        return results
 
     # ── Classifications ──
 
