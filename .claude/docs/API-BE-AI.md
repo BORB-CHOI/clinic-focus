@@ -297,6 +297,10 @@ def index_hospital(
     hospital_id: str,
     classification: Classification,
     description_text: str,
+    sido: str,
+    sigungu: str,
+    lat: float | None = None,
+    lng: float | None = None,
 ) -> None:
     ...
 ```
@@ -670,7 +674,15 @@ def index_hospital_pipeline(hospital_id: str):
     # 7. S3 Vectors 인덱싱
     #    벡터 임베딩 대상은 AI 상세 설명 본문 (검색 정확도가 가장 높음)
     embedding_text = "\n".join(p.text for p in description.paragraphs)
-    index_hospital(hospital_id, classification, embedding_text)
+    index_hospital(
+        hospital_id,
+        classification,
+        embedding_text,
+        sido=hospital_meta.location.sido,
+        sigungu=hospital_meta.location.sigungu,
+        lat=hospital_meta.location.lat,
+        lng=hospital_meta.location.lng,
+    )
 
     return {"status": "indexed", "hospital_id": hospital_id}
 ```

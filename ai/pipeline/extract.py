@@ -29,8 +29,9 @@ def _build_prompt(crawl_data: CrawlData, classification: Classification) -> str:
         for p in crawl_data.pages
         if p.html_text.strip()
     )
-    public_devices = ", ".join(crawl_data.public_data.registered_devices) or "없음"
-    specialists = ", ".join(crawl_data.public_data.specialists) or "없음"
+    public_data = crawl_data.public_data
+    public_devices = ", ".join(public_data.registered_devices) if public_data else "없음"
+    specialists = ", ".join(public_data.specialists) if public_data else "없음"
     primary_focus = ", ".join(classification.primary_focus)
     all_services = ", ".join(
         _SPECIALTY_DEFAULT_SERVICES.get(classification.standard_specialty, [])
@@ -111,7 +112,7 @@ def extract_services_and_doctors(
     # 심평원 공공 데이터 의료기기 병합
     public_devices: list[Equipment] = [
         Equipment(name=d, source="public_data", confidence=1.0)
-        for d in crawl_data.public_data.registered_devices
+        for d in (crawl_data.public_data.registered_devices if crawl_data.public_data else [])
     ]
 
     # 중복 제거 (같은 이름이면 confidence 높은 쪽 유지)

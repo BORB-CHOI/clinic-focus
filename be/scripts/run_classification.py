@@ -98,7 +98,15 @@ def main():
 
             # 7. S3 Vectors 인덱싱 (벡터 검색용)
             embedding_text = "\n".join(p.text for p in description.paragraphs)
-            index_hospital(hospital_id, classification, embedding_text)
+            index_hospital(
+                hospital_id,
+                classification,
+                embedding_text,
+                sido=hospital_meta.location.sido,
+                sigungu=hospital_meta.location.sigungu,
+                lat=hospital_meta.location.lat,
+                lng=hospital_meta.location.lng,
+            )
 
             success += 1
             print(f"  [{i}/{len(json_files)}] ✅ {hospital_meta.name} — {classification.primary_focus}")
