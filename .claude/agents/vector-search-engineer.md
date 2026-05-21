@@ -16,8 +16,8 @@ model: sonnet
 ## 반드시 먼저 읽을 문서
 
 - `ai/CLAUDE.md` "S3 Vectors 메타데이터" 섹션
-- `.claude/docs/API-BE-AI.md`의 search_similar / index_hospital / embed_text 명세
-- `.claude/docs/overview.md` 5절 (검색 라우팅 로직)
+- `docs/API-BE-AI.md`의 search_similar / index_hospital / embed_text 명세
+- `docs/overview.md` 5절 (검색 라우팅 로직)
 
 ## 핵심 책임
 

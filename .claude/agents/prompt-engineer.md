@@ -16,8 +16,8 @@ model: sonnet
 ## 반드시 먼저 읽을 문서
 
 - `ai/CLAUDE.md` "generate_description 프롬프트 원칙" 5규칙
-- `.claude/docs/API-BE-AI.md`의 generate_description 명세
-- `.claude/docs/overview.md` 6절 (의료법 대응)
+- `docs/API-BE-AI.md`의 generate_description 명세
+- `docs/overview.md` 6절 (의료법 대응)
 
 ## 절대 어기지 말 5규칙 (프롬프트에 강제)
 

@@ -1,6 +1,6 @@
 # ai/ — AI · RAG 트랙 (최비성)
 
-상위 컨텍스트는 `../CLAUDE.md`, 함수 명세는 `../.claude/docs/API-BE-AI.md`.
+상위 컨텍스트는 `../CLAUDE.md`, 함수 명세는 `../docs/API-BE-AI.md`.
 
 ## 스택
 
@@ -21,7 +21,7 @@
 
 ## 모듈 export
 
-`ai/__init__.py`가 BE에 노출하는 함수 (`../.claude/docs/API-BE-AI.md` 명세):
+`ai/__init__.py`가 BE에 노출하는 함수 (`../docs/API-BE-AI.md` 명세):
 
 - `classify_hospital(crawl_data, use_vision=True) -> Classification`
 - `generate_description(classification, detailed_signals, hospital_meta) -> HospitalDescription` ⭐ **핵심**
@@ -87,7 +87,7 @@
 
 ## 의존성·예외
 
-각 함수가 던지는 예외는 `../.claude/docs/API-BE-AI.md` 참조: `BedrockInvocationError` / `InsufficientDataError` / `DescriptionValidationError` / `S3VectorsError` / `TextTooLongError` / `ImageNotFoundError`.
+각 함수가 던지는 예외는 `../docs/API-BE-AI.md` 참조: `BedrockInvocationError` / `InsufficientDataError` / `DescriptionValidationError` / `S3VectorsError` / `TextTooLongError` / `ImageNotFoundError`.
 
 ## 작업 원칙
 
