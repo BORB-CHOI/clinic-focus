@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from be.adapters.dynamo_adapter import DynamoAdapter
 from be.core.feedback import compute_feedback_stats
@@ -32,12 +32,10 @@ def get_hospital_detail(hospital_id: str):
     """
     meta = db.load_hospital_meta(hospital_id)
     if not meta:
-        return {
-            "error": {
-                "code": "NOT_FOUND",
-                "message": "병원을 찾을 수 없습니다",
-            }
-        }
+        raise HTTPException(
+            status_code=404,
+            detail={"error": {"code": "NOT_FOUND", "message": "병원을 찾을 수 없습니다"}},
+        )
 
     classification = db.load_classification(hospital_id)
     description = db.load_description(hospital_id)
