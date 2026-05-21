@@ -357,7 +357,7 @@ def _analyze_reviews() -> ReviewSignal:
 def _infer_standard_specialty(crawl_data: CrawlData) -> str:
     """크롤링 텍스트 + 공공 데이터에서 표준 진료과목을 추론한다."""
     # 공공 데이터의 전문의 자격에서 먼저 확인
-    for specialist in crawl_data.public_data.specialists:
+    for specialist in (crawl_data.public_data.specialists if crawl_data.public_data else []):
         for specialty, keywords in _SPECIALTY_KEYWORDS.items():
             if any(kw in specialist for kw in keywords):
                 return specialty

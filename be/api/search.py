@@ -1,12 +1,15 @@
-"""검색 API 라우터."""
+"""검색 API 라우터.
+
+스펙: .claude/docs/API-FE-BE.md > 엔드포인트 > 1. 검색
+응답 형식: {"data": [...], "meta": {...}}
+"""
 
 from __future__ import annotations
 
 from fastapi import APIRouter, Query
+from fastapi.responses import JSONResponse
 
-from ai import search_similar
 from be.adapters.dynamo_adapter import DynamoAdapter
-from shared.models import SearchQuery
 
 router = APIRouter(prefix="/api/search", tags=["search"])
 db = DynamoAdapter()
@@ -17,94 +20,78 @@ def search_hospitals(
     q: str | None = Query(None, description="자연어 검색 쿼리"),
     lat: float | None = Query(None),
     lng: float | None = Query(None),
-    radius_km: float = Query(3.0),
+    radius_km: float = Query(3.0, le=30),
     sido: str | None = Query(None),
     sigungu: str | None = Query(None),
     specialty: str | None = Query(None),
     min_confidence: int = Query(70),
     sort: str = Query("relevance"),
     limit: int = Query(20, le=50),
+    offset: int = Query(0),
 ):
-    """자연어 + 위치 복합 검색."""
-    query = SearchQuery(
-        query_text=q,
-        lat=lat,
-        lng=lng,
-        radius_km=radius_km,
-        sido=sido,
-        sigungu=sigungu,
-        specialty=specialty,
-        min_confidence=min_confidence,
-        sort=sort,
-        limit=limit,
-    )
+    """자연어 + 위치 복합 검색.
 
-    # AI 모듈로 검색
-    ai_results = search_similar(query)
+    q와 lat/lng 중 최소 하나는 필수.
+    """
+    # 파라미터 검증
+    if q is None and (lat is None or lng is None):
+        return JSONResponse(
+            status_code=422,
+            content={"error": {"code": "INVALID_PARAMETER", "message": "q 또는 lat/lng 중 최소 하나는 필수입니다"}},
+        )
 
-    # DynamoDB에서 병원 기본 정보 조인
-    results = []
-    for r in ai_results:
-        meta = db.load_hospital_meta(r.hospital_id)
-        classification = db.load_classification(r.hospital_id)
-        desc = db.load_description(r.hospital_id)
+    # 검색 모드 결정
+    if q and lat is not None and lng is not None:
+        search_mode = "natural+nearby"
+    elif q:
+        search_mode = "natural"
+    else:
+        search_mode = "nearby"
 
-        results.append({
-            "hospital_id": r.hospital_id,
-            "name": meta.name if meta else "",
-            "address": meta.address if meta else "",
-            "standard_specialty": classification.standard_specialty if classification else "",
-            "primary_focus": classification.primary_focus if classification else [],
-            "confidence": classification.confidence.model_dump() if classification else None,
-            "one_line_summary": desc.one_line_summary if desc else "",
-            "similarity_score": r.similarity_score,
-            "distance_km": r.distance_km,
-            "matched_focus": r.matched_focus,
-            "query_interpretation": r.query_interpretation,
-        })
-
-    return {"results": results, "total": len(results)}
-
-
-@router.get("/nearby")
-def search_nearby(
-    lat: float = Query(..., description="사용자 위도"),
-    lng: float = Query(..., description="사용자 경도"),
-    radius_km: float = Query(3.0),
-    specialty: str | None = Query(None),
-    min_confidence: int = Query(70),
-    sort: str = Query("distance"),
-    limit: int = Query(20, le=50),
-):
-    """위치 기반 내 근처 검색."""
-    query = SearchQuery(
-        lat=lat,
-        lng=lng,
-        radius_km=radius_km,
-        specialty=specialty,
-        min_confidence=min_confidence,
-        sort=sort,
-        limit=limit,
-    )
-
-    ai_results = search_similar(query)
+    # TODO: AI 모듈 search_similar 연동 (비성님 파트 완성 후)
+    # 현재는 DynamoDB에서 시군구 기반 조회로 대체
+    if q and not sigungu:
+        return JSONResponse(
+            status_code=200,
+            content={
+                "data": [],
+                "meta": {
+                    "total": 0,
+                    "limit": limit,
+                    "offset": offset,
+                    "search_mode": search_mode,
+                    "query_interpretation": None,
+                    "sort": sort,
+                    "note": "자연어 검색은 AI 모듈 연동 후 지원됩니다. sigungu 파라미터로 지역 검색을 먼저 사용하세요.",
+                },
+            },
+        )
 
     results = []
-    for r in ai_results:
-        meta = db.load_hospital_meta(r.hospital_id)
-        classification = db.load_classification(r.hospital_id)
-        desc = db.load_description(r.hospital_id)
 
-        results.append({
-            "hospital_id": r.hospital_id,
-            "name": meta.name if meta else "",
-            "address": meta.address if meta else "",
-            "standard_specialty": classification.standard_specialty if classification else "",
-            "primary_focus": classification.primary_focus if classification else [],
-            "confidence": classification.confidence.model_dump() if classification else None,
-            "one_line_summary": desc.one_line_summary if desc else "",
-            "distance_km": r.distance_km,
-            "location": meta.location.model_dump() if meta and meta.location else None,
-        })
+    if sigungu:
+        hospitals = db.list_hospitals_by_sigungu(sigungu)
+        for meta in hospitals[offset:offset + limit]:
+            results.append({
+                "hospital_id": meta.hospital_id,
+                "name": meta.name,
+                "standard_specialty": "",  # 분류 전
+                "primary_focus": [],  # 분류 전
+                "confidence": None,  # 분류 전
+                "location": meta.location.model_dump() if meta.location else None,
+                "website_url": meta.contact.website_url,
+                "one_line_summary": "",  # AI 설명 생성 전
+                "distance_km": None,
+            })
 
-    return {"results": results, "total": len(results)}
+    return {
+        "data": results,
+        "meta": {
+            "total": len(results),
+            "limit": limit,
+            "offset": offset,
+            "search_mode": search_mode,
+            "query_interpretation": None,
+            "sort": sort,
+        },
+    }

@@ -7,7 +7,7 @@ from typing import Any
 
 import httpx
 
-from shared.models import HospitalMeta, Location, PublicData
+from shared.models import Contact, HospitalMeta, Location, PublicData
 
 # 심평원 공공 데이터 포털 API
 HIRA_BASE_URL = "https://apis.data.go.kr/B551182/hospInfoServicev2"
@@ -43,7 +43,6 @@ class HiraAdapter:
 
         while True:
             params["pageNo"] = page
-            # serviceKey는 이미 인코딩된 상태일 수 있으므로 URL에 직접 삽입
             query_parts = "&".join(f"{k}={v}" for k, v in params.items())
             url = f"{HIRA_BASE_URL}/getHospBasisList?{query_parts}"
             resp = self._client.get(url)
@@ -72,23 +71,35 @@ class HiraAdapter:
         """심평원 응답을 HospitalMeta로 변환."""
         lat = float(raw.get("YPos", 0) or 0)
         lng = float(raw.get("XPos", 0) or 0)
+        address = raw.get("addr", "")
+        sido = raw.get("sidoCdNm", "")
+        sigungu = raw.get("sgguCdNm", "")
+        phone = raw.get("telno", "")
+        website_url = raw.get("hospUrl", "") or ""
+
+        location = Location(
+            address=address,
+            lat=lat if lat else None,
+            lng=lng if lng else None,
+            sido=sido,
+            sigungu=sigungu,
+        )
+
+        contact = Contact(
+            phone=phone if phone else None,
+            website_url=website_url if website_url else None,
+        )
 
         return HospitalMeta(
             hospital_id=raw.get("ykiho", ""),
             name=raw.get("yadmNm", ""),
-            address=raw.get("addr", ""),
-            phone=raw.get("telno", ""),
-            location=Location(lat=lat, lng=lng, address=raw.get("addr", "")) if lat and lng else None,
-            website_url="",
-            sido=raw.get("sidoCdNm", ""),
-            sigungu=raw.get("sgguCdNm", ""),
+            location=location,
+            contact=contact,
         )
 
     def get_public_data(self, hospital_id: str) -> PublicData:
         """개별 병원의 전문의·의료기기 정보 조회."""
-        # 전문의 정보
         specialists = self._get_specialists(hospital_id)
-        # 의료기기 정보
         devices = self._get_registered_devices(hospital_id)
 
         return PublicData(
@@ -119,6 +130,4 @@ class HiraAdapter:
 
     def _get_registered_devices(self, hospital_id: str) -> list[str]:
         """신고된 의료기기 목록 조회."""
-        # 심평원 의료기기 API는 별도 엔드포인트
-        # PoC에서는 빈 리스트 반환, 추후 구현
         return []

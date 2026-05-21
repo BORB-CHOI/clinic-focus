@@ -43,6 +43,8 @@ secrets/
 # --- Crawler artifacts (큰 raw HTML/image) ---
 data/raw/
 data/cache/
+data/crawl/
+data/images/
 
 # --- Claude Code 개인 설정 ---
 .claude/
