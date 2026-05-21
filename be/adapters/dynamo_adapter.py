@@ -2,12 +2,25 @@
 
 from __future__ import annotations
 
+import json
 import os
 from datetime import datetime
+from decimal import Decimal
 from typing import Any
 
 import boto3
 from boto3.dynamodb.conditions import Key
+
+
+def _float_to_decimal(obj: Any) -> Any:
+    """DynamoDB는 float을 지원하지 않으므로 Decimal로 변환."""
+    if isinstance(obj, float):
+        return Decimal(str(obj))
+    elif isinstance(obj, dict):
+        return {k: _float_to_decimal(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_float_to_decimal(i) for i in obj]
+    return obj
 
 from shared.models import (
     ChangeRecord,
@@ -38,7 +51,7 @@ class DynamoAdapter:
     # ── Hospitals ──
 
     def save_hospital_meta(self, meta: HospitalMeta) -> None:
-        item = meta.model_dump(mode="json")
+        item = _float_to_decimal(meta.model_dump(mode="json"))
         # GSI "sigungu-index" 를 위해 최상위 레벨로 복사 (DynamoDB 는 중첩 키 GSI 미지원)
         item["sigungu"] = meta.location.sigungu
         item["sido"] = meta.location.sido
@@ -59,7 +72,7 @@ class DynamoAdapter:
     # ── Classifications ──
 
     def save_classification(self, data: Classification) -> None:
-        self._table("Classifications").put_item(Item=data.model_dump(mode="json"))
+        self._table("Classifications").put_item(Item=_float_to_decimal(data.model_dump(mode="json")))
 
     def load_classification(self, hospital_id: str) -> Classification | None:
         resp = self._table("Classifications").get_item(Key={"hospital_id": hospital_id})
@@ -69,7 +82,7 @@ class DynamoAdapter:
     # ── Descriptions ──
 
     def save_description(self, data: HospitalDescription) -> None:
-        self._table("HospitalDescriptions").put_item(Item=data.model_dump(mode="json"))
+        self._table("HospitalDescriptions").put_item(Item=_float_to_decimal(data.model_dump(mode="json")))
 
     def load_description(self, hospital_id: str) -> HospitalDescription | None:
         resp = self._table("HospitalDescriptions").get_item(Key={"hospital_id": hospital_id})
