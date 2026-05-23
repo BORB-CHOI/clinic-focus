@@ -158,18 +158,30 @@ def classify_hospital(
 ```
 
 #### 동작 흐름
-1. `crawl_data.pages`에서 자칭 컨셉을 LLM 프롬프트로 추출 (Bedrock Claude Sonnet 4.5)
-2. `crawl_data.images`를 Bedrock Vision으로 분석 (use_vision=False면 생략)
+
+PoC에서는 **3트랙으로 분기**한다 (자세한 건 `../ai/CLAUDE.md` "AI 트랙 3트랙 구조" 참조):
+
+- **트랙 A (룰 기반, 서울 1만 풀커버)**: 정제된 텍스트의 키워드 빈도 + 페이지 타입별 강조도로 자칭 컨셉 추출. LLM 미사용. `use_llm=False` 분기.
+- **트랙 B (LLM 시연, 10개)**: 지원 계정 Haiku/Nova로 자칭 컨셉 추출 — 룰 결과보다 정밀.
+- **트랙 C (Vision 시연, 10개)**: 개인 계정 Sonnet 4.5 Vision으로 이미지 분석. `use_vision=True` 분기.
+
+공통 흐름:
+
+1. 자칭 컨셉 추출 (트랙 A/B 중 하나)
+2. 이미지 분석 (트랙 C — `use_vision=False`면 생략, 시연 10개에만 True)
 3. 블로그 페이지의 키워드 빈도 분석
 4. 후기 키워드 빈도 분석 (수집된 후기가 있을 때)
-5. 4 시그널 교차 검증 → 신뢰도 점수 계산
+5. 4 시그널 교차 검증 → 신뢰도 점수 계산. Vision 시그널 없으면 가중치 재정규화.
 6. 자칭 도배 페널티 적용
 7. `Classification` 반환
 
 #### 의존성
-- `BEDROCK_MODEL_ID`: 환경 변수, 기본 `anthropic.claude-sonnet-4-5-20250929-v1:0`
-- `AWS_REGION`: 기본 `ap-northeast-2`
-- IAM 권한: `bedrock:InvokeModel`, `textract:AnalyzeDocument`
+
+- 트랙 A: 추가 의존성 없음 (룰만)
+- 트랙 B: `BEDROCK_LLM_MODEL_ID` (지원 계정, 예: `anthropic.claude-haiku-4-5-...`), 인스턴스 프로파일 자동 인증
+- 트랙 C: `BEDROCK_VISION_MODEL_ID` (개인 계정, `anthropic.claude-sonnet-4-5-20250929-v1:0`), 개인 계정 자격증명 (`AI_AWS_*` 환경변수)
+- `AWS_REGION`: 기본 `us-east-1`
+- IAM 권한: 지원 계정 `bedrock:InvokeModel`, 개인 계정 `bedrock:InvokeModel`
 
 #### 예외
 - `BedrockInvocationError` — Bedrock 호출 실패
@@ -206,8 +218,11 @@ def generate_description(
 ```
 
 #### 동작 흐름
+
+**PoC에서는 시연 10개 병원에만 적용** (트랙 B). 나머지 9990개는 자연어 단락 없이 룰 기반 태그·메타데이터만 제공.
+
 1. 분류 결과·신뢰도·4 시그널 원본 데이터를 구조화된 컨텍스트로 정리
-2. Bedrock Claude Sonnet 4.5에 전용 프롬프트 + 컨텍스트 입력
+2. 지원 계정 Bedrock Haiku/Nova에 전용 프롬프트 + 컨텍스트 입력
 3. 프롬프트는 다음을 강제:
    - **주체 명시 표현 의무** — "이 병원이 자기 사이트에서 ~를 메인으로 표시함" 형태만 허용
    - **출처 시그널 태그 의무** — 각 단락의 주장이 어떤 시그널에서 나왔는지 `citations` 목록 자동 첨부
@@ -217,8 +232,9 @@ def generate_description(
 5. 1문장 `one_line_summary`도 별도로 생성 (검색 카드용)
 
 #### 의존성
-- `BEDROCK_LLM_MODEL_ID`
-- IAM: `bedrock:InvokeModel`
+
+- `BEDROCK_LLM_MODEL_ID` (지원 계정, 예: `anthropic.claude-haiku-4-5-...`)
+- IAM: `bedrock:InvokeModel` (인스턴스 프로파일 자동 인증)
 - 프롬프트 템플릿 파일 (`ai/prompts/hospital_description.md`)
 
 #### 예외
@@ -391,23 +407,28 @@ def search_similar(
 
 ### 6. `analyze_images`
 
-이미지 URL 리스트를 받아 Vision + OCR로 분석. `classify_hospital` 내부에서 사용되거나, 별도로 batch 처리할 때도 호출.
+이미지 URL 리스트를 받아 Bedrock Vision으로 분석. **PoC에서는 시연 10개 병원에만 호출** (트랙 C). `classify_hospital` 내부에서 `use_vision=True`로 호출되거나, 별도 batch에서 직접 호출.
+
+OCR(이미지 안 글자 추출)도 Bedrock Vision 한 번 호출로 같이 처리한다 — 한국어 미지원으로 Textract는 사용하지 않는다.
 
 ```python
 def analyze_images(
     image_urls: list[str],
-    extract_text: bool = False,  # True면 Textract OCR 같이 수행
 ) -> list[ImageAnalysisResult]:
     ...
 ```
 
 #### 동작
-1. 각 이미지를 S3에서 가져와서 Bedrock Vision에 입력
-2. `extract_text=True`인 경우 Textract로 OCR 텍스트도 추출
+
+1. 각 이미지를 S3에서 가져와서 개인 계정 Bedrock Claude Sonnet 4.5 Vision에 입력
+2. Vision 응답에 OCR 텍스트 + 시각 해석(시술/기기 식별, 메인 강조 영역 등) 둘 다 포함
 3. 결과를 `ImageAnalysisResult` 리스트로 반환
 
 #### 의존성
-- IAM: `bedrock:InvokeModel`, `textract:AnalyzeDocument`, `s3:GetObject`
+
+- `BEDROCK_VISION_MODEL_ID` (개인 계정, `anthropic.claude-sonnet-4-5-20250929-v1:0`)
+- 개인 계정 자격증명 (`AI_AWS_*` 환경변수)
+- IAM: 개인 계정 `bedrock:InvokeModel` / 지원 계정 `s3:GetObject`
 
 #### 예외
 - `BedrockInvocationError`
@@ -556,18 +577,21 @@ class FeedbackStats(BaseModel):
 
 | 변수 | 기본값 | 설명 |
 |---|---|---|
-| `AWS_REGION` | `us-east-1` | Bedrock·S3 Vectors 리전 (개인 계정) |
-| `BEDROCK_LLM_MODEL_ID` | `us.anthropic.claude-sonnet-4-5-20250929-v1:0` | LLM·Vision (US 인퍼런스 프로파일) |
-| `BEDROCK_EMBED_MODEL_ID` | `amazon.titan-embed-text-v2:0` | 임베딩 모델 |
-| `S3_VECTOR_BUCKET` | 환경별 | 벡터 버킷 이름 |
+| `AWS_REGION` | `us-east-1` | 공통 리전 |
+| `BEDROCK_LLM_MODEL_ID` | `anthropic.claude-haiku-4-5-...` | 트랙 B용 LLM (지원 계정 Haiku/Nova 한정) |
+| `BEDROCK_VISION_MODEL_ID` | `anthropic.claude-sonnet-4-5-20250929-v1:0` | 트랙 C용 Vision (개인 계정) |
+| `BEDROCK_EMBED_MODEL_ID` | `amazon.titan-embed-text-v2:0` | 임베딩 모델 (지원 계정) |
+| `S3_VECTOR_BUCKET` | `bedrock-knowledge-base-1tvot3` | 강사 제공 벡터 버킷 (지원 계정) |
 | `S3_VECTOR_INDEX` | `hospital-index` | 벡터 인덱스 이름 |
+| `AI_AWS_ACCESS_KEY_ID` / `AI_AWS_SECRET_ACCESS_KEY` | — | 개인 계정 Sonnet 호출용 (트랙 C 시연 시) |
 | `MAX_VISION_IMAGES` | `10` | 한 번 분류 시 처리할 최대 이미지 수 |
+| `MAX_LLM_DEMO_HOSPITALS` | `10` | 트랙 B·C 시연 대상 병원 수 (지원 계정 한도) |
 | `CONFIDENCE_THRESHOLD_HIGH` | `95` | "확실" 등급 임계치 |
 | `CONFIDENCE_THRESHOLD_LOW` | `70` | "정보 부족" 등급 임계치 |
 
-> AI 모듈의 Bedrock·S3 Vectors·Textract는 **개인 계정**에서 운영된다. EC2 코드는 이
-> 클라이언트들을 개인 계정 자격증명으로 생성하고, 지원 계정 서비스(DynamoDB)는 EC2
-> 인스턴스 프로파일을 쓴다.
+> S3 Vectors · Titan Embed · Haiku/Nova 는 **지원 계정**(us-east-1) 자원으로 EC2 인스턴스
+> 프로파일로 자동 인증된다. **Sonnet 4.5(Vision 시연)만 개인 계정** 자격증명으로 boto3
+> 클라이언트를 따로 생성한다. 자세한 건 `../CLAUDE.md`의 "AWS 계정·인프라 구조" 참조.
 
 ---
 
@@ -797,12 +821,17 @@ def test_classify_mocked(mock_invoke):
 
 ## 비용 관리 가이드
 
-- **분류 1회당 예상 비용** (PoC 기준)
-  - Bedrock Claude Sonnet 4.5 (텍스트 + Vision): ~$0.05~0.20/병원
-  - Titan Embed Text v2: ~$0.0001/병원
-  - Textract: ~$0.0015/페이지 (필요한 경우만)
-- **1만 병원 PoC 총 비용**: ~$500~2,000 (변동 큼, ⚠️ 추정)
-- **비용 절감 팁**
-  - `use_vision=False`로 일부 케이스 처리
-  - 자칭 컨셉이 매우 명확한 경우 Vision 생략
-  - Haiku 모델로 1차 분류, Sonnet으로 검증하는 cascading
+PoC는 **3트랙 분리**로 비용 통제. 너희 카드 부담 거의 0.
+
+- **트랙 A (룰 기반, 서울 1만)**: 비용 0 (LLM 미사용)
+- **트랙 B (LLM 시연 10개)**: 지원 계정 Haiku/Nova — 강사 자원, 너희 카드 부담 0
+- **트랙 C (Vision 시연 10개)**: 개인 계정 Sonnet — 시행착오 3회 포함 **~$1.3**
+- **임베딩 (Titan v2, 1만 전체)**: 지원 계정 — 부담 0
+
+**PoC 총 비용 추정**: 개인 카드 ~$1~5 / 지원 계정 자원 한도 내 무료.
+
+**사업화 시 비용 (참고)** — `docs/overview.md` "운영 비용 구조" 참조. 핵심 요지:
+
+- 룰 기반은 전국 7만 병원 확장에도 비용 0
+- LLM 사용 영역도 **변경 감지(hash diff) 기반 부분 재처리**로 전수 재처리 대비 80~90% 절감
+- 전국 풀커버 운영 시 월 ~$700 수준 (변경분 LLM 재처리만)
