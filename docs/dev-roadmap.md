@@ -87,6 +87,7 @@ AWS 계정이 둘로 나뉜다 — **지원 계정**(us-east-1, IAM Role만, Acc
 | **OCR** | (미사용) | — | Textract 한국어 미지원 → Bedrock Vision으로 흡수 |
 | **프론트 호스팅** | S3 + CloudFront | 지원 | 정적 빌드 결과물 배포 + CDN 가속 |
 | **배포** | 수동 (EC2 `git pull` / `aws s3 sync`) | — | CI·CD·로드밸런싱 없음 |
+| **개발 환경** | AWS Cloud9 (Ubuntu 22.04) | 지원 | AI 트랙 작업 환경. 인스턴스 프로파일로 지원 계정 자원 자동 인증. 로컬에서 코딩 후 git push → Cloud9에서 `git pull && python` 실행하는 방식 (로컬에선 Access Key 없어 지원 계정 자원 직접 호출 불가) |
 
 ---
 
@@ -121,8 +122,8 @@ AWS 계정이 둘로 나뉜다 — **지원 계정**(us-east-1, IAM Role만, Acc
 
 ### Phase 2 (M3~6) — 베타
 
-**S3 Vectors 기반 RAG 검색 엔진**  
-병원 분류 결과·설명 텍스트를 Titan Embed Text v2로 임베딩 → S3 Vectors에 적재. 사용자가 "M자 탈모 처방받을 수 있는 강남 의원" 같이 자연어로 검색하면 쿼리를 동일 모델로 임베딩 → S3 Vectors 유사도 검색 → DynamoDB에서 메타데이터(신뢰도·위치·분류 태그) 조인 → 정렬해서 반환. S3 Vectors의 메타데이터 필터링으로 지역·신뢰도 임계치 사전 필터링 가능.
+**S3 Vectors 기반 Semantic Search 엔진** (업계 통상 "RAG"라 부르지만 엄밀히는 LLM Generation이 없는 의미 검색)  
+병원 분류 결과·설명 텍스트를 Titan Embed Text v2로 임베딩 → S3 Vectors에 적재. 사용자가 "M자 탈모 처방받을 수 있는 강남 의원" 같이 자연어로 검색하면 쿼리를 동일 모델로 임베딩 → S3 Vectors 유사도 검색 → DynamoDB에서 메타데이터(신뢰도·위치·분류 태그) 조인 → 정렬해서 반환. **사용자 검색 시점엔 LLM(Sonnet/Haiku) 호출 0건** — Titan 임베딩 1회만 도는 구조라 응답 ~200ms, 검색당 비용 ~$0.00003. LLM은 사전 단계의 `generate_description`·Vision 분석·자칭 추출에만 도는데, 이건 한 번 처리 후 정적 데이터로 6개월~1년 우려먹는다 (자세한 건 `overview.md` "4-5. 검색 동작 원리" 참조). S3 Vectors 메타데이터 필터링으로 지역·신뢰도 임계치 사전 필터링 가능.
 
 **4 시그널 교차 검증 알고리즘**  
 Phase 1의 신뢰도 점수 v1 본격화. 자칭 컨셉·Vision 결과·블로그 주제 분포·후기 키워드 빈도 4축 가중치 조정 + 정렬 검증. 한 방향 정렬된 분류만 "확실/추정"으로 노출, 엇갈린 분류는 "정보 부족" 표기.

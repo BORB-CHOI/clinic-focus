@@ -204,9 +204,11 @@ db.put_item(
 
 ---
 
-### 2. `generate_description` ⭐ **본 서비스의 핵심 함수**
+### 2. `generate_description` ⭐ **본 서비스의 핵심 함수** (시연 10개 한정)
 
 분류 결과 + 4 시그널 원본 데이터를 받아 자연어 통합 상세 설명을 생성. **FE-BE `GET /api/hospitals/{id}` 응답의 `ai_description` 필드가 이 함수의 결과.**
+
+> **PoC 한도**: 지원 계정 Bedrock 자원이 10개 병원 한도이므로 시연 10개 병원에만 호출. 나머지 9990개 병원은 `ai_description = null` 로 반환되고 FE가 자연어 단락 대신 룰 기반 태그 카드를 렌더링한다. 어느 병원이 시연 대상인지는 DynamoDB `HospitalDescriptions` 테이블에 레코드 존재 여부로 판별.
 
 ```python
 def generate_description(
@@ -357,32 +359,42 @@ def search_similar(
     ...
 ```
 
+> **호출당 LLM 0건.** Titan v2 임베딩 1회 + S3 Vectors `QueryVectors` 1회 + DynamoDB 신뢰도 조회 1회가 전부. 응답 ~200ms, 검색당 비용 약 $0.00003. 사용자 검색에 LLM(Sonnet/Haiku)이 안 도는 게 본 시스템의 비용·응답 속도 양쪽 핵심 — `overview.md` "4-5. 검색 동작 원리" 참조.
+
 #### 동작 흐름
 
 검색 모드를 입력 파라미터에 따라 분기:
 
 **자연어 단독 검색** (`query_text`만 있음):
-1. `query.query_text`를 LLM으로 해석 → 검색 의도 추출
-2. 의도를 임베딩 → S3 Vectors `QueryVectors` 호출
+
+1. `query.query_text`를 Titan v2로 임베딩 (LLM 호출 아님, ~20ms)
+2. S3 Vectors `QueryVectors` 호출 — 유사도 상위 N×3 추출
 3. 메타데이터 필터링 (`sido`, `sigungu`, `specialty`, `min_confidence`)
-4. 상위 N개 반환
+4. DynamoDB에서 신뢰도 점수 조회 → 유사도×신뢰도 종합 정렬
+5. 상위 N개 반환
 
 **위치 단독 검색** (`lat`/`lng`만 있음):
+
 1. 입력 위경도 + `radius_km`로 bounding box 계산 (예: 반경 3km → 위경도 ±0.027°)
 2. S3 Vectors 메타데이터 필터로 bounding box 내 후보 추출 (벡터 검색 없이 dummy 임베딩 + 메타 필터만)
-3. Lambda에서 haversine 공식으로 정확한 거리 재계산 → `radius_km` 내 필터링
+3. EC2에서 haversine 공식으로 정확한 거리 재계산 → `radius_km` 내 필터링
 4. `sort` 기준(`distance` 기본 / `confidence`)으로 정렬
 
 **복합 검색** (`query_text` + `lat`/`lng`):
-1. 자연어 의미 검색으로 유사도 상위 N×3개 추출
+
+1. Titan 임베딩 1회 → S3 Vectors로 의미 검색 상위 N×3개 추출
 2. 그 중 `radius_km` 내 후보만 haversine 필터링
 3. `sort` 기준으로 정렬(`relevance` 기본 / `distance` / `confidence`)
 4. 상위 N개 반환
 
+> **자연어 의도 해석에 LLM을 안 쓰는 이유**: Titan v2가 의미 좌표 공간에서 *"M자 탈모 처방"* 과 *"안드로겐성 탈모 약물치료"* 가 가깝다는 걸 안다. 학습으로 동의어·문맥을 흡수한 상태라 LLM 의도 파싱 단계가 불필요. 결과적으로 검색 응답이 200ms로 떨어진다.
+
 #### 의존성
-- Bedrock (자연어 검색 시 의도 해석 + 임베딩)
-- S3 Vectors (QueryVectors, 메타데이터 lat/lng 필터)
-- IAM: `bedrock:InvokeModel`, `s3vectors:QueryVectors`
+
+- Bedrock Titan v2 임베딩 (지원 계정, `bedrock:InvokeModel`)
+- S3 Vectors `QueryVectors` (지원 계정, `s3vectors:QueryVectors`)
+- DynamoDB 신뢰도 조회 (지원 계정)
+- **LLM(Sonnet/Haiku) 호출 없음**
 
 #### 예외
 - `BedrockInvocationError`

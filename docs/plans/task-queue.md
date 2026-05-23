@@ -20,8 +20,11 @@
 - 벡터 버킷: 지원 계정 `bedrock-knowledge-base-1tvot3`
 - 임베딩: Titan v2 (지원 계정, 전체 1만)
 - OCR: Bedrock Vision으로 흡수 (Textract 한국어 미지원으로 제거)
-- 정제: BE 책임 (페이지 간 중복 단락 제거 + 의료 사이트 잡음 블랙리스트)
+- 정제·크롤링: 전부 BE 책임 (잡음 제거 + 서울 1만 풀크롤링)
+- 검색 시점 LLM 호출 0건 (Titan 임베딩만, 응답 ~200ms)
+- 시연 10개 외 9990개는 `ai_description = null` (FE 차등 렌더링)
 - 사업화 시 갱신: hash diff 기반 부분 재처리 (전국 7만 운영 시 월 ~$700)
+- AI 트랙 개발 환경: AWS Cloud9 (지원 계정 인스턴스 프로파일 자동 인증 — 로컬에선 Access Key 없어 호출 불가)
 
 ---
 
@@ -90,13 +93,15 @@
 
 담당: 최비성
 
+> 의존성: BE의 서울 5개구 1만 풀크롤링(아래 #7) + 정제(#3) 가 끝나야 입력 데이터가 채워진다.
+
 - [ ] `ai/pipeline/classify_rule.py` 신규 — 룰 기반 자칭 컨셉 추출
   - 진료과목별 키워드 사전 (피부과: "여드름", "아토피", "보톡스" 등)
   - 키워드 빈도 + 페이지 타입별 강조도 계산
   - 4시그널 중 자칭 + 블로그 + 공공데이터 룰 기반 처리
 - [ ] 룰 기반 신뢰도 점수 산출 (LLM 결과보다 보수적)
-- [ ] `ai/scripts/classify_all_rules.py` — 서울 1만 일괄 처리 스크립트
 - [ ] `classify_hospital(crawl_data, use_llm=False)` 분기 추가
+- [ ] `ai/scripts/classify_all_rules.py` — BE가 적재한 1만 병원 크롤링 데이터 읽어서 AI 룰 분류 일괄 호출 (크롤링은 BE 책임 — #7 참조)
 
 ### 5. `feat/ai/track-bc-llm-vision-demo` (신규 — 트랙 B·C)
 
@@ -118,21 +123,72 @@
 - [ ] 재크롤링 시 페이지 본문 hash 비교 → 변경된 페이지만 다시 AI 큐에 적재
 - [ ] 변경 이력 자동 기록 (`ChangeHistory` 테이블 — 이미 스키마 있음)
 
+### 7. `feat/be/crawl-seoul-5gu-full` (신규 — 트랙 A 의존성)
+
+담당: 김경재
+
+> 트랙 A (AI 룰 분류 1만)의 입력 데이터를 채우는 BE 풀크롤링 작업. AI는 BE가 적재한 데이터를 읽어서 분류만 한다 — 크롤링 자체는 BE 영역.
+
+선행 조건:
+
+- #3 `feat/be/clean-noise` 정제 로직 완료 (안 그러면 크롤링 데이터에 잡음 60% 섞임)
+- #6 `feat/be/hash-diff-foundation` 의 `body_hash` 컬럼 (있으면 재실행 시 변경분만 처리, 없어도 1회 풀크롤링은 가능)
+
+작업:
+
+- [ ] `be/scripts/crawl_all.py` 또는 `load_seoul_5gu.py` 로 서울 5개구(강남·서초·송파·성동·중구 등 협의) 1만 병원 풀크롤링
+- [ ] 크롤링 결과를 S3에 적재 (각 병원당 `CrawlData` JSON)
+- [ ] 실패 통계 리포트 (JS 렌더링 필요·URL 없음·timeout 등 사유별 카운트)
+- [ ] 성공률 80% 이상 목표
+
 ---
 
 ## AI 트랙 AWS 세팅 todo (개인 워크북)
 
 > 최비성 개인용. PR로 안 올림. Cloud9에서 진행.
 
-- [ ] **Step 1**: Cloud9 환경 만들거나 열기 + 지원 계정 자원 확인
-  - `aws sts get-caller-identity` → 계정 ID `730335373015` 확인
+워크플로 (확정): 로컬에서 코딩 (Claude Code 풀파워) → git push → **Cloud9 브라우저 터미널에서 `git pull && python ...` 실행**. Cloud9를 IDE로 안 쓰고 "원격 실행 환경"으로만 사용. 로컬에선 지원 계정 자원 직접 호출 불가 (Role 한정, Access Key 발급 불가).
+
+### Step 1 — Cloud9 환경 + 지원 계정 자원 확인
+
+- [ ] AWS 콘솔 → Cloud9 → 강사가 만들어줬으면 Open IDE, 없으면 Create environment
+  - Name: `clinic-focus-ai`
+  - Instance type: `t3.small` (시작), 필요 시 키움
+  - Platform: Ubuntu Server 22.04 LTS
+  - Timeout: 30분 (idle 자동 stop, 비용 절약)
+- [ ] 하단 터미널에서 다음 4줄 실행:
+  - `aws sts get-caller-identity` → `Account`에 `730335373015` 확인
   - `aws s3vectors list-vector-buckets --region us-east-1` → `bedrock-knowledge-base-1tvot3` 보이는지
-  - `aws bedrock list-foundation-models --region us-east-1 --query "modelSummaries[?contains(modelId, 'titan-embed') || contains(modelId, 'haiku') || contains(modelId, 'nova')].modelId"` → Titan + Haiku/Nova 가용성
-  - `pip3 install boto3 --upgrade`
-- [ ] **Step 2**: Titan v2 임베딩 호출 hello-world
-- [ ] **Step 3**: S3 Vectors `PutVectors` + `QueryVectors` 왕복 테스트 (1024차원 더미 벡터 5개)
-- [ ] **Step 4**: Vector 스키마 설계 (ID 규칙 + 메타데이터 키 확정)
-- [ ] **Step 5**: 개인 계정 Sonnet 4.5 Access Key 발급 + Vision 호출 테스트 (Bedrock model access 활성화 → IAM User 생성 → Access Key 발급 → Cloud9 `~/.aws/credentials`에 named profile로 저장 → boto3 `Session(profile_name="personal")`)
+  - `aws bedrock list-foundation-models --region us-east-1 --query "modelSummaries[?contains(modelId, 'titan-embed') || contains(modelId, 'haiku') || contains(modelId, 'nova')].modelId"` → Titan v2 + Haiku/Nova 가용성
+  - `pip3 list | grep boto3` (없으면 `pip3 install boto3 --upgrade`)
+- [ ] 4·6·7 트랙 4.x 가용성도 같이 확인: `aws bedrock list-foundation-models --region us-east-1 --query "modelSummaries[?contains(modelId, 'claude-sonnet-4') || contains(modelId, 'claude-haiku-4') || contains(modelId, 'claude-opus-4')].[modelId,modelLifecycle.status]" --output table`
+- [ ] 레포 클론: `cd ~ && git clone https://github.com/BORB-CHOI/clinic-focus.git && cd clinic-focus`
+
+### Step 2 — Titan v2 임베딩 hello-world
+
+- [ ] 짧은 한국어·영어 문장 임베딩 호출. 1024 dim 출력 확인
+- [ ] 동일 문장 두 번 호출 시 같은 벡터 나오는지 (재현성)
+- [ ] 의미 유사 문장 ("사마귀 치료" vs "심상성 우췌 냉동요법") 코사인 유사도 측정
+
+### Step 3 — S3 Vectors PutVectors + QueryVectors 왕복
+
+- [ ] `bedrock-knowledge-base-1tvot3` 안에 인덱스 생성 또는 기존 인덱스 확인
+- [ ] 더미 벡터 5개 PutVectors (메타데이터 포함)
+- [ ] QueryVectors로 가장 가까운 벡터 검색 → 메타 필터 동작 확인
+
+### Step 4 — Vector 스키마 설계
+
+- [ ] ID 규칙: `hospital_id` 또는 `hospital_id#chunk_idx`
+- [ ] 메타데이터 키 확정: `standard_specialty` / `primary_focus` (list) / `sido` / `sigungu` / `confidence_score` / `lat` / `lng` / `last_updated`
+- [ ] 청크 전략: 병원당 1벡터(전체 요약) vs 페이지당 1벡터 결정
+
+### Step 5 — 개인 계정 Sonnet 4.5 Vision 연결
+
+- [ ] 개인 계정 콘솔에서 Bedrock model access 활성화 (Claude Sonnet 4.5)
+- [ ] IAM User `clinic-focus-ai` 생성 + `AmazonBedrockFullAccess` 부여
+- [ ] Access Key 발급
+- [ ] Cloud9 `~/.aws/credentials`에 named profile `personal`로 저장
+- [ ] boto3 `Session(profile_name="personal")` 로 Sonnet Vision 호출 — 한국어 이미지(병원 홍보 배너) 1장으로 OCR + 시각 해석 테스트
 
 ---
 

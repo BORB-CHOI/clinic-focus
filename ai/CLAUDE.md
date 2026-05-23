@@ -33,7 +33,18 @@
 - A는 1만 풀커버 베이스라인. 비용 0, 전국 7만 확장에도 비용 0.
 - B·C는 **같은 10개 병원**에 적용해 룰 결과와 비교 시연. 차별 효과를 자기 눈으로 보여주는 데모 핵심.
 - 신뢰도 점수가 트랙별로 자연스럽게 차등화됨: A만 → 50~70% "추정/정보 부족" / B·C 결합 → 80~95% "확실".
-- 정제(HTML 잡음 제거)는 **BE 책임** — `be/core/crawler.py`의 페이지 간 중복 단락 제거 + 의료 사이트 공통 잡음 블랙리스트 (modoo 안내, 개인정보취급방침, 환자권리장전, 이용약관, 404 등).
+- 정제·크롤링은 **전부 BE 책임** — `be/core/crawler.py`의 페이지 간 중복 단락 제거 + 의료 사이트 공통 잡음 블랙리스트 (modoo 안내, 개인정보취급방침, 환자권리장전, 이용약관, 404 등). AI는 BE가 적재한 깨끗한 텍스트를 읽어서 분류만 한다.
+- 시연 10개 외 9990개는 `HospitalDescription` 생성 안 함 → API 응답에 `ai_description = null`. FE는 이 경우 자연어 단락 대신 룰 기반 태그 카드로 차등 렌더링 (`../docs/API-FE-BE.md` "프론트 렌더링 가이드" 참조).
+
+## 검색 시점 동작 — **LLM 호출 0건**
+
+본 시스템은 통상 "RAG"라 부르지만 엄밀히는 **Semantic Search**다. 사용자에게 자연어 답변이 아니라 정렬된 병원 목록을 돌려주기 때문에 LLM Generation 단계가 없다.
+
+사용자 검색 시 도는 것: **Titan v2 임베딩 1회 (~20ms) + S3 Vectors QueryVectors 1회 + DynamoDB 신뢰도 조회 1회**. Sonnet/Haiku 호출 0건. 응답 ~200ms, 검색당 비용 ~$0.00003. LLM은 사전 단계(자칭 추출·`generate_description`·Vision)에만 도는데, 한 번 처리하면 정적 데이터로 우려먹는다. 자세한 건 `../docs/overview.md` "4-5. 검색 동작 원리" 참조.
+
+## 개발 환경 — AWS Cloud9
+
+로컬 PC에서는 지원 계정 자원 직접 호출 불가 (Access Key 발급 안 됨, IAM Role만 제공). **워크플로**: 로컬에서 코딩(Claude Code 풀파워) → git push → Cloud9 브라우저 터미널에서 `git pull && python ...` 실행. Cloud9 인스턴스 프로파일이 지원 계정 자원(S3 Vectors·Titan·DynamoDB·Haiku/Nova)을 자동 인증. 개인 계정 Sonnet 4.5(Vision)는 Cloud9 `~/.aws/credentials`에 named profile `personal`로 저장 후 boto3 `Session(profile_name="personal")`로 호출.
 
 ## 모듈 export
 
