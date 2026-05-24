@@ -345,6 +345,8 @@ GET /api/hospitals/{hospital_id}
       "generated_at": "2026-04-12T08:00:00Z",
       "generator_model": "anthropic.claude-sonnet-4-5-20250929-v1:0"
     },
+    // PoC 한도: 시연 10개 외 9990개 병원은 "ai_description": null 로 반환됨
+    // FE는 null이면 헤드라이너 영역을 태그 카드로 차등 렌더링 (아래 "프론트 렌더링 가이드" 참조)
 
     "services": [
       { "name": "아토피", "category": "general", "source_signals": ["self_claim", "blog", "reviews"] },
@@ -497,15 +499,30 @@ GET /api/hospitals/{hospital_id}
 | `generated_at` | 생성 시각. 시그널이 갱신되면 재생성 필요 |
 | `generator_model` | 생성에 사용된 LLM 모델 ID (재현성·감사용) |
 
+> **PoC 한도**: `ai_description`은 **시연 10개 병원만 값이 채워지고, 나머지는 `null`** 로 반환된다. 지원 계정 Bedrock 자원이 10개 한도라 `generate_description` LLM 호출도 10개 한정이기 때문 (자세한 건 `API-BE-AI.md` "2. `generate_description`" 참조). FE는 아래 차등 렌더링 로직을 따라야 한다.
+
 #### 프론트 렌더링 가이드
+
+**`ai_description`이 있을 때 (시연 10개 병원)**:
 
 - `headline`은 상세 페이지 최상단에 강조 표시
 - 각 `paragraphs[].text` 옆 또는 끝에 `citations` 시그널을 작은 배지로 표시 (예: `[사이트]` `[Vision]` `[블로그]` `[후기]`)
 - 배지 클릭 시 `detailed_signals`의 해당 키 섹션으로 스크롤 또는 모달 오픈 → 사용자가 근거 자료를 직접 검토 가능
+- **주체 명시 원칙**: `ai_description.paragraphs[].text`는 "이 병원이 자기 사이트에서 ~를 메인으로 표시함" 같은 표현만 등장하도록 최비성의 프롬프트에서 통제. 프론트는 이를 그대로 신뢰해 렌더
+
+**`ai_description`이 `null`일 때 (9990개)**:
+
+- 영역 ① 헤드라이너는 자연어 단락 대신 **태그 카드** 로 표시:
+  - 표준 진료과목 + 룰 기반 자칭 컨셉 태그 (예: `피부과 · 미용 시술 · 아토피`)
+  - 신뢰도 점수와 등급 ("추정 65%" / "정보 부족 45%")
+  - "AI 자연어 설명은 시연 대상 10개 병원에 한정" 안내 한 줄
+- 영역 ② 이하 다른 영역은 동일하게 렌더링 (룰 기반 데이터로도 다 채워짐)
+
+**공통**:
+
 - `excluded_services[].alternative_hospital_ids`는 영역 ⑧과 연결되므로, 다루지 않는 분야 옆에 "동네 대안: △△의원" 같은 링크 노출
 - `metadata.warning`이 있으면 페이지 상단에 경고 배너 표시
 - `metadata.data_completeness`가 0.6 미만이면 빈 영역은 "정보 부족" 표시
-- **주체 명시 원칙**: `ai_description.paragraphs[].text`는 "이 병원이 자기 사이트에서 ~를 메인으로 표시함" 같은 표현만 등장하도록 최비성의 프롬프트에서 통제. 프론트는 이를 그대로 신뢰해 렌더
 
 #### 에러 (404)
 ```json
