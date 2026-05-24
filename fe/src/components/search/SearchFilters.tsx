@@ -28,6 +28,8 @@ interface SearchFiltersProps {
   className?: string;
 }
 
+// 검색 필터 — 카드 컨테이너 안에 신뢰도·정렬 두 그룹을 위계 있게 배치
+// 라벨 → 칩 한 줄 구조로 굿닥/모두닥 필터 패널 톤에 맞춤
 export function SearchFilters({
   minConfidence,
   sort,
@@ -38,33 +40,35 @@ export function SearchFilters({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-x-6 gap-y-3 text-sm",
+        "rounded-lg border bg-card p-3 text-[0.85em]",
         className,
       )}
     >
-      <FilterGroup label="신뢰도">
-        {MIN_CONFIDENCE_OPTIONS.map((option) => (
-          <ToggleChip
-            key={option.value}
-            active={minConfidence === option.value}
-            onClick={() => onMinConfidenceChange(option.value)}
-          >
-            {option.label}
-          </ToggleChip>
-        ))}
-      </FilterGroup>
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-2">
+        <FilterGroup label="신뢰도">
+          {MIN_CONFIDENCE_OPTIONS.map((option) => (
+            <ToggleChip
+              key={option.value}
+              active={minConfidence === option.value}
+              onClick={() => onMinConfidenceChange(option.value)}
+            >
+              {option.label}
+            </ToggleChip>
+          ))}
+        </FilterGroup>
 
-      <FilterGroup label="정렬">
-        {SORT_OPTIONS.map((option) => (
-          <ToggleChip
-            key={option.value}
-            active={sort === option.value}
-            onClick={() => onSortChange(option.value)}
-          >
-            {option.label}
-          </ToggleChip>
-        ))}
-      </FilterGroup>
+        <FilterGroup label="정렬">
+          {SORT_OPTIONS.map((option) => (
+            <ToggleChip
+              key={option.value}
+              active={sort === option.value}
+              onClick={() => onSortChange(option.value)}
+            >
+              {option.label}
+            </ToggleChip>
+          ))}
+        </FilterGroup>
+      </div>
     </div>
   );
 }
@@ -77,8 +81,8 @@ function FilterGroup({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-xs font-medium text-muted-foreground">
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="text-[0.85em] font-medium uppercase tracking-wide text-muted-foreground">
         {label}
       </span>
       <div className="flex flex-wrap gap-1">{children}</div>
@@ -101,10 +105,10 @@ function ToggleChip({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        "rounded-full border px-2.5 py-0.5 text-xs transition-colors",
+        "rounded-full border px-3 py-0.5 text-xs font-medium transition-colors",
         active
-          ? "border-primary bg-primary text-primary-foreground"
-          : "border-input bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+          ? "border-primary bg-primary text-primary-foreground shadow-sm"
+          : "border-input bg-background text-muted-foreground hover:border-primary/40 hover:bg-accent hover:text-accent-foreground",
       )}
     >
       {children}

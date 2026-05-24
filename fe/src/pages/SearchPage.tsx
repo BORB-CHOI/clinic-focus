@@ -107,7 +107,7 @@ export default function SearchPage() {
   const baseMeta = mockSearchResponse.meta;
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-5">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">병원 검색</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -123,29 +123,35 @@ export default function SearchPage() {
         onSortChange={setSort}
       />
 
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-        <span>
-          <span className="font-semibold text-foreground">
+      <div className="flex flex-wrap items-baseline justify-between gap-2 border-b pb-2 text-xs text-muted-foreground">
+        <p>
+          <span className="text-base font-semibold text-foreground">
             {filtered.length}
           </span>
-          건
-        </span>
-        <span aria-hidden>·</span>
-        <span>{SEARCH_MODE_LABEL[baseMeta.search_mode] ?? baseMeta.search_mode}</span>
-        <span aria-hidden>·</span>
-        <span>{SORT_LABEL[sort]}</span>
-        {baseMeta.query_interpretation ? (
-          <>
-            <span aria-hidden>·</span>
-            <span>해석: {baseMeta.query_interpretation}</span>
-          </>
-        ) : null}
-        {baseMeta.radius_km !== null ? (
-          <>
-            <span aria-hidden>·</span>
-            <span>반경 {baseMeta.radius_km}km</span>
-          </>
-        ) : null}
+          <span className="ml-1">건</span>
+          {query ? (
+            <span className="ml-2 text-muted-foreground">
+              "{query}" 검색 결과
+            </span>
+          ) : null}
+        </p>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span>{SEARCH_MODE_LABEL[baseMeta.search_mode] ?? baseMeta.search_mode}</span>
+          <span aria-hidden>·</span>
+          <span>{SORT_LABEL[sort]}</span>
+          {baseMeta.query_interpretation ? (
+            <>
+              <span aria-hidden>·</span>
+              <span>해석: {baseMeta.query_interpretation}</span>
+            </>
+          ) : null}
+          {baseMeta.radius_km !== null ? (
+            <>
+              <span aria-hidden>·</span>
+              <span>반경 {baseMeta.radius_km}km</span>
+            </>
+          ) : null}
+        </div>
       </div>
 
       {filtered.length === 0 ? (
