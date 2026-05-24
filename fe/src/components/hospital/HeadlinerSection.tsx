@@ -23,7 +23,7 @@ export function HeadlinerSection({
       badge="①"
       action={<ConfidenceBadge confidence={confidence} />}
     >
-      <p className="text-2xl font-semibold leading-snug">
+      <p className="text-[1.2rem] font-semibold leading-snug">
         {ai_description.headline}
       </p>
       <p className="mt-2 text-sm text-muted-foreground">{one_line_summary}</p>
