@@ -34,12 +34,12 @@ def _get_ai_session() -> boto3.Session:
                 aws_access_key_id=access_key,
                 aws_secret_access_key=secret_key,
                 aws_session_token=session_token,
-                region_name=os.environ.get("AI_AWS_REGION", "us-east-1"),
+                region_name=os.environ.get("AI_AWS_REGION", "ap-northeast-2"),
             )
         elif profile:
             _ai_session = boto3.Session(
                 profile_name=profile,
-                region_name=os.environ.get("AI_AWS_REGION", "us-east-1"),
+                region_name=os.environ.get("AI_AWS_REGION", "ap-northeast-2"),
             )
         else:
             raise RuntimeError(
@@ -53,10 +53,10 @@ def _get_ai_session() -> boto3.Session:
 _ai_region: str | None = None
 
 def _ai_region_name() -> str:
-    """개인 계정 리전명 캐시. AI_AWS_REGION 환경변수 또는 기본값 'us-east-1'."""
+    """개인 계정 리전명 캐시. AI_AWS_REGION 환경변수 또는 기본값 'ap-northeast-2' (서울 — Sonnet 4.6 Global profile 호출용)."""
     global _ai_region
     if _ai_region is None:
-        _ai_region = os.environ.get("AI_AWS_REGION", "us-east-1")
+        _ai_region = os.environ.get("AI_AWS_REGION", "ap-northeast-2")
     return _ai_region
 
 

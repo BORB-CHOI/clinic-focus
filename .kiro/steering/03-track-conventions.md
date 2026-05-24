@@ -79,7 +79,8 @@ npx openapi-typescript http://localhost:8000/openapi.json -o src/types/api.ts
 | `AWS_REGION` | `us-east-1` (지원 계정 — 기본 세션) |
 | `AI_AWS_PROFILE` | 개인 계정 프로파일명 (Sonnet Vision 시연 한정, 예: `personal`) |
 | `AI_AWS_ACCESS_KEY_ID` / `AI_AWS_SECRET_ACCESS_KEY` | 개인 계정 액세스 키 (프로파일 대안) |
-| `BEDROCK_LLM_MODEL_ID` | 지원: `anthropic.claude-haiku-4-5-...` / 개인: `anthropic.claude-sonnet-4-5-20250929-v1:0` |
+| `AI_AWS_REGION` | 개인 계정 리전 (기본 `ap-northeast-2` 서울 — Sonnet 4.6 Global profile 호출) |
+| `BEDROCK_LLM_MODEL_ID` | 지원: `anthropic.claude-haiku-4-5-...` / 개인 Vision: `global.anthropic.claude-sonnet-4-6` (Global cross-region inference profile, foundation-model 직접 호출 불가) |
 | `BEDROCK_EMBED_MODEL_ID` | `amazon.titan-embed-text-v2:0` (KB가 자체 사용, `embed_text` 직접 호출용) |
 | `KB_ID` | `GTBJ6HLFDK` (강사 제공 KB `kmuproj-team-03`) |
 | `KB_DATA_SOURCE_ID` | `PLC6QYALDU` (`main-datasource`) |
@@ -91,7 +92,7 @@ npx openapi-typescript http://localhost:8000/openapi.json -o src/types/api.ts
 ### 계정 분리 원칙
 
 - DynamoDB · S3 · Bedrock(Haiku/Nova/Titan) · **Bedrock Knowledge Base** (지원 계정) → EC2 인스턴스 프로파일 (기본 세션)
-- Bedrock Sonnet 4.5 Vision 시연 (개인 계정) → `ai/core/aws_clients.py` 팩토리로 별도 세션
+- Bedrock Sonnet 4.6 Vision 시연 (개인 계정, 서울 리전) → `ai/core/aws_clients.py` 팩토리로 별도 세션 (`AI_AWS_REGION=ap-northeast-2`)
 
 ### Bedrock 테스트 모킹
 

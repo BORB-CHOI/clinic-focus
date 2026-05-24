@@ -12,7 +12,7 @@
 |---|---|---|---|---|
 | A. 룰 기반 분류 | 자칭 컨셉 추출 | 키워드/빈도 룰 (LLM 미사용) | — | 서울 5개구 1만 |
 | B. LLM 텍스트 시연 | 자칭 추출 + `generate_description` | Haiku 4.5 / Nova | 지원 | 10개 |
-| C. Vision 시연 | 이미지 분석 (OCR + 시각) | Sonnet 4.5 | 개인 | 10개 |
+| C. Vision 시연 | 이미지 분석 (OCR + 시각) | Sonnet 4.6 | 개인 | 10개 |
 
 확정 사항:
 
@@ -124,7 +124,7 @@
 
 - [ ] 시연 대상 10개 병원 선정 (강남구, 진료과목 다양, 사이트 풍부)
 - [ ] 트랙 B: 지원 계정 Haiku/Nova로 자칭 추출 + `generate_description`
-- [ ] 트랙 C: 개인 계정 Sonnet 4.5 Vision으로 이미지 분석
+- [ ] 트랙 C: 개인 계정 Sonnet 4.6 Vision으로 이미지 분석 (Global inference profile, 서울 리전)
 - [ ] 룰 기반 결과 vs LLM 결과 비교 출력 (발표 자료용)
 - [ ] `MAX_LLM_DEMO_HOSPITALS` 환경변수로 한도 강제
 
@@ -191,26 +191,54 @@
   - [x] `aws s3vectors list-vector-buckets --region us-east-1` → **AccessDenied 확인**. S3V 직접 호출은 안 쓰기로 결정(KB 경유)했으므로 권한 요청 불필요
   - [x] `aws bedrock list-foundation-models ...` → Titan v2 (`amazon.titan-embed-text-v2:0`) · Haiku 4.5 · Nova 라인업 전부 가용
   - [x] `pip3 install --user boto3 --upgrade` → 1.43.14 설치 완료
-- [x] Claude 4.x 가용성 확인 → Sonnet 4.5/4.6, Haiku 4.5, Opus 4.1/4.5/4.6/4.7 전부 ACTIVE. **Sonnet 4.5가 지원 계정에서도 보이지만 model access 활성화 여부는 별도 invoke 테스트 필요. 우선은 task-queue 원안대로 Sonnet=개인 계정 유지**
+- [x] Claude 4.x 가용성 확인 → Sonnet 4.5/4.6, Haiku 4.5, Opus 4.1/4.5/4.6/4.7 전부 ACTIVE. **Sonnet 4.6은 지원 계정에서도 보이지만 model access 활성화 여부는 별도 invoke 테스트 필요. task-queue 원안대로 Sonnet=개인 계정 유지** (Step 5에서 개인 계정 호출 검증 완료)
 - [x] 강사 제공 KB 발견 (`aws bedrock-agent list-knowledge-bases`) — `kmuproj-team-03` (ID `GTBJ6HLFDK`), Titan v2 + S3 Vectors storage. KB Retrieve API 권한 OK (`bedrock-agent-runtime:retrieve` 호출 성공)
 
 ### Step 2 — Titan v2 임베딩 hello-world
 
-- [ ] 짧은 한국어·영어 문장 임베딩 호출. 1024 dim 출력 확인
-- [ ] 동일 문장 두 번 호출 시 같은 벡터 나오는지 (재현성)
-- [ ] 의미 유사 문장 ("사마귀 치료" vs "심상성 우췌 냉동요법") 코사인 유사도 측정
+> 2026-05-24 완료. 재현 스크립트·실제 출력·해석 메모는 [`docs/setup/aws-onboarding.md` Step 2](../setup/aws-onboarding.md#step-2--titan-v2-임베딩-hello-world)에 정리.
 
-### Step 3 — Bedrock KB Retrieve 왕복 (S3 Vectors 직접 호출 대체)
+- [x] 짧은 한국어·영어 문장 임베딩 호출. 1024 dim 출력 확인 → KO=1024, EN=1024 ✅
+- [x] 동일 문장 두 번 호출 시 같은 벡터 나오는지 (재현성) → `normalize=True`로 비트 단위 동일 (`max|Δ|=0`) ✅. **hash diff 전략 전제 확보** (#6 PR 근거 보강)
+- [x] 의미 유사 문장 ("사마귀 치료" vs "심상성 우췌 냉동요법") 코사인 유사도 측정 → 0.2507 vs 대조군 0.1937. 의도대로 더 가까움이 나오긴 하지만 **마진 0.06으로 좁음** — Titan v2가 한국어 의학 학명에 약함. **Step 4 metadata 스키마에 `aliases` 동의어 키 또는 트랙 A 룰 단계에서 동의어 본문 주입 검토** (대응책은 aws-onboarding 2-4 참고)
+
+### Step 3 — Bedrock KB Retrieve 왕복 (S3 Vectors 직접 호출 대체) 🚧 강사 권한 요청 대기
 
 > 강사 제공 KB `kmuproj-team-03` (ID `GTBJ6HLFDK`). 내부 storage가 `bedrock-knowledge-base-1tvot3` S3 Vectors 버킷이지만 우리는 KB API만 호출.
 
+**2026-05-24 블로커**: DataSource S3 버킷 `kmuproj-02-vector`에 `SafeRole-kmuproj-10`이 `s3:PutObject` / `s3:ListBucket` / `s3:GetObject` 전부 AccessDenied. 더미 적재 불가 → 권한 받기 전까지 Step 3·4 대기, **Step 5 (개인 계정 Sonnet Vision) 먼저 진행**.
+
+**강사 권한 요청** (Slack 보낸 표현):
+
+> @NxtCloud_김유림 강사님 혹시 KB(`kmuproj-team-03`)의 DataSource S3 버킷(`kmuproj-02-vector`)에 ingest용 업로드 권한(PutObject/GetObject/ListBucket)을 경재님(02) 외에 저(10)와 재원님 Role에도 부여 가능할까요? 아니면 한 계정에만 가능할까요?
+
+상세 (강사가 되물을 시 대응용):
+
+- 대상 Role: `SafeRole-kmuproj-10` (지원 계정 `730335373015`, EC2 인스턴스 프로파일) + 재원님 Role
+- 필요 액션: `s3:PutObject`, `s3:GetObject`, `s3:ListBucket` (Delete는 강사 정책상 불가 → 운영 흐름은 덮어쓰기·soft-delete로 우회)
+- 대상 리소스:
+  - `arn:aws:s3:::kmuproj-02-vector` (ListBucket용, `s3:prefix=clinic-focus/*` 조건 가능)
+  - `arn:aws:s3:::kmuproj-02-vector/clinic-focus/*` (오브젝트 단위 — 우리 prefix 한정)
+- 근거: 강사가 만든 KB `kmuproj-team-03`(ID `GTBJ6HLFDK`)의 DataSource(`main-datasource`, ID `PLC6QYALDU`)가 이 버킷을 가리킴. KB ingest를 하려면 DataSource 버킷에 파일을 직접 올려야 함. 현재 `bedrock-agent:StartIngestionJob` 권한은 있으나 적재할 객체를 못 올림
+- 검증 방법: 권한 부여 후 `aws s3 cp test.txt s3://kmuproj-02-vector/clinic-focus/probe.txt` 성공 → `aws bedrock-agent start-ingestion-job --knowledge-base-id GTBJ6HLFDK --data-source-id PLC6QYALDU` 호출
+- 정리: 권한 받은 후 EC2에서 만든 probe 버킷 `kmuproj-10-clinic-focus-kb-probe`도 삭제 부탁 (DeleteBucket 권한 없음)
+
+**공유 KB 리스크 — Step 4 metadata 스키마에 `team_id` 필수**: KB·DataSource를 02팀과 공유하므로 retrieve 결과에 02팀 데이터가 섞일 수 있음. 모든 ingest 파일의 `metadata.json`에 `team_id: "clinic-focus"` 박고, retrieve 시 `filter = {equals: {key: "team_id", value: "clinic-focus"}}`로 거름. Step 4 스키마 항목에 추가.
+
+**Delete 권한 없는 운영 대응**:
+- 본문 갱신·hash diff → PutObject 덮어쓰기로 해결 (Delete 불필요, KB가 변경된 파일 청크 자동 재생성)
+- 폐업 병원 → soft-delete: 본문을 폐업 안내로 덮어쓰고 `metadata.status="closed"`로 retrieve 필터 제외
+- 잘못 올린 테스트 파일 → 강사에게 청소 부탁. `clinic-focus/probe/` vs `clinic-focus/prod/` prefix로 영역 분리 권장
+
+체크리스트:
+
 - [x] KB 존재 확인: `aws bedrock-agent get-knowledge-base --knowledge-base-id GTBJ6HLFDK --region us-east-1` → status ACTIVE
 - [x] DataSource 확인: `aws bedrock-agent list-data-sources --knowledge-base-id GTBJ6HLFDK --region us-east-1` → `main-datasource` (`PLC6QYALDU`)
-- [ ] DataSource S3 버킷 이름·prefix 확인 (`aws bedrock-agent get-data-source --knowledge-base-id GTBJ6HLFDK --data-source-id PLC6QYALDU --region us-east-1`)
-- [ ] 더미 텍스트 파일 1~3개를 DataSource S3에 업로드 + `metadata.json` 동봉 (메타필터 테스트용)
-- [ ] `aws bedrock-agent start-ingestion-job --knowledge-base-id GTBJ6HLFDK --data-source-id PLC6QYALDU` → 상태 COMPLETE 확인
-- [ ] `aws bedrock-agent-runtime retrieve --knowledge-base-id GTBJ6HLFDK --retrieval-query '{"text":"테스트"}'` → 결과 받기
-- [ ] 메타필터 동작 확인 — `retrievalConfiguration.vectorSearchConfiguration.filter` 로 `sigungu`/`standard_specialty` 등 필터링
+- [x] DataSource S3 버킷 이름·prefix 확인 → `s3://kmuproj-02-vector/` (prefix 없이 버킷 루트, 청크 설정은 KB 기본값)
+- [ ] 🚧 더미 텍스트 파일 1~3개를 DataSource S3에 업로드 + `metadata.json` 동봉 (메타필터 테스트용) — **S3 권한 대기**
+- [ ] 🚧 `aws bedrock-agent start-ingestion-job --knowledge-base-id GTBJ6HLFDK --data-source-id PLC6QYALDU` → 상태 COMPLETE 확인
+- [ ] 🚧 `aws bedrock-agent-runtime retrieve --knowledge-base-id GTBJ6HLFDK --retrieval-query '{"text":"테스트"}'` → 결과 받기
+- [ ] 🚧 메타필터 동작 확인 — `retrievalConfiguration.vectorSearchConfiguration.filter` 로 `sigungu`/`standard_specialty` 등 필터링
 
 ### Step 4 — DataSource S3 파일 포맷 + 메타데이터 스키마 설계
 
@@ -219,18 +247,26 @@
 - [ ] 병원 단위 파일 포맷 결정 — `{hospital_id}.txt` (또는 `.md`)
   - 내용 후보: AI 통합 설명 본문 / 룰 추출 자칭 키워드 / 원문 정제 텍스트 (셋 비교는 벡터 구성 비교 실험 시점에)
 - [ ] metadata.json 스키마 — Bedrock KB metadata 사양 따름 (각 파일별로 `{hospital_id}.txt.metadata.json` 동봉)
-  - 키: `hospital_id` / `standard_specialty` / `primary_focus` (list) / `sido` / `sigungu` / `confidence_score` (number, `>=` 필터용) / `lat` (number) / `lng` (number) / `last_updated`
+  - 키: `team_id` (필수, "clinic-focus" — 02팀과 KB 공유 시 retrieve 필터로 분리) / `hospital_id` / `standard_specialty` / `primary_focus` (list) / `sido` / `sigungu` / `confidence_score` (number, `>=` 필터용) / `lat` (number) / `lng` (number) / `last_updated` / `status` ("active" | "closed" — Delete 권한 없어 soft-delete 용) / `aliases` (list[string], 의학 학명·동의어 — Titan v2가 한국어 학명 약함 보강용, Step 2 결과 근거)
   - 필터 가능 타입은 string / number / boolean / list[string]만 (KB 사양)
-- [ ] DataSource S3 디렉토리 구조 결정 — flat (`s3://.../{hospital_id}.txt`) vs prefix (`s3://.../{sigungu}/{hospital_id}.txt`)
+- [ ] DataSource S3 디렉토리 구조 결정 — prefix 분리 권장: `clinic-focus/probe/{...}` (실험·테스트) vs `clinic-focus/prod/{hospital_id}.txt` (운영). Delete 권한 없어 영역 분리 + 강사 청소 요청 시점 명확화
 - [ ] 청크 전략 결정·비교는 **데이터 적재 후**로 보류 (BE 풀크롤링 완료 후)
 
-### Step 5 — 개인 계정 Sonnet 4.5 Vision 연결
+### Step 5 — 개인 계정 Sonnet 4.6 Vision 연결 ✅ 완료 (2026-05-24)
 
-- [ ] 개인 계정 콘솔에서 Bedrock model access 활성화 (Claude Sonnet 4.5)
-- [ ] IAM User `clinic-focus-ai` 생성 + `AmazonBedrockFullAccess` 부여
-- [ ] Access Key 발급
-- [ ] EC2 `~/.aws/credentials`에 named profile `personal`로 저장
-- [ ] boto3 `Session(profile_name="personal")` 로 Sonnet Vision 호출 — 한국어 이미지(병원 홍보 배너) 1장으로 OCR + 시각 해석 테스트
+> 재현 가이드·실측 응답 카탈로그·트러블슈팅은 [`docs/setup/aws-onboarding.md` Step 5](../setup/aws-onboarding.md#step-5--개인-계정-sonnet-46-vision-연결-서울-리전-global-cross-region-inference).
+
+- [x] 개인 계정 콘솔에서 Bedrock model access 활성화 (Claude Sonnet 4.6, 서울 리전)
+- [x] IAM User 생성 + **인라인 정책으로 Sonnet 4.6 한정 InvokeModel** (`BedrockSonnet46InvokeOnly`, 3-ARN: inference-profile + regional FM + global FM)
+- [x] Access Key 발급 + 키 노출 위험 분석 메모
+- [x] EC2 `~/.aws/credentials`에 named profile `personal`로 저장 (region `ap-northeast-2`)
+- [x] boto3 `Session(profile_name="personal")`로 `global.anthropic.claude-sonnet-4-6` 호출 → 글로웰의원 메인 페이지 캡처(512KB PNG)로 한국어 OCR + 시각 요약 성공 (input=1648 / output=752 tok)
+- [x] 재현 가이드 → `docs/setup/aws-onboarding.md`에 Step 5 5-1~5-9로 추가
+
+**핵심 결정사항 (코드·문서 일괄 갱신 필요)**:
+- 모델: `anthropic.claude-sonnet-4-5-20250929-v1:0` → **`global.anthropic.claude-sonnet-4-6`** (Global cross-region inference profile, foundation model 직접 호출 불가)
+- 개인 계정 리전: `us-east-1` → **`ap-northeast-2`** (서울 — 사용자 기존 자원 위치 일관성)
+- IAM 정책: 단일 ARN → **3-ARN 필수** (Global inference profile은 권한 평가 시 inference-profile + regional FM + global FM 3개 모두 검사. 빈 region/account의 `arn:aws:bedrock:::foundation-model/...` 누락이 가장 흔한 실수)
 
 ---
 

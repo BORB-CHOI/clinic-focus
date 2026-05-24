@@ -19,7 +19,7 @@ def invoke_model(prompt: str, model_id: str | None = None) -> dict:
     client = get_bedrock_client()
     model = model_id or os.getenv(
         "BEDROCK_LLM_MODEL_ID",
-        "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+        "global.anthropic.claude-sonnet-4-6",
     )
     body = json.dumps({
         "anthropic_version": "bedrock-2023-05-31",
@@ -35,7 +35,7 @@ def invoke_model_with_image(prompt: str, image_b64: str, media_type: str = "imag
     client = get_bedrock_client()
     model = os.getenv(
         "BEDROCK_LLM_MODEL_ID",
-        "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+        "global.anthropic.claude-sonnet-4-6",
     )
     body = json.dumps({
         "anthropic_version": "bedrock-2023-05-31",

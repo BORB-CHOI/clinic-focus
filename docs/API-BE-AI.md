@@ -165,7 +165,7 @@ PoC에서는 **3트랙으로 분기**한다 (자세한 건 `../ai/CLAUDE.md` "AI
 
 - **트랙 A (룰 기반, 서울 1만 풀커버)**: 정제된 텍스트의 키워드 빈도 + 페이지 타입별 강조도로 자칭 컨셉 추출. LLM 미사용. `use_llm=False` 분기.
 - **트랙 B (LLM 시연, 10개)**: 지원 계정 Haiku/Nova로 자칭 컨셉 추출 — 룰 결과보다 정밀.
-- **트랙 C (Vision 시연, 10개)**: 개인 계정 Sonnet 4.5 Vision으로 이미지 분석. `use_vision=True` 분기.
+- **트랙 C (Vision 시연, 10개)**: 개인 계정 Sonnet 4.6 Vision (서울 리전, Global cross-region inference profile)으로 이미지 분석. `use_vision=True` 분기.
 
 공통 흐름:
 
@@ -181,8 +181,8 @@ PoC에서는 **3트랙으로 분기**한다 (자세한 건 `../ai/CLAUDE.md` "AI
 
 - 트랙 A: 추가 의존성 없음 (룰만)
 - 트랙 B: `BEDROCK_LLM_MODEL_ID` (지원 계정, 예: `anthropic.claude-haiku-4-5-...`), 인스턴스 프로파일 자동 인증
-- 트랙 C: `BEDROCK_VISION_MODEL_ID` (개인 계정, `anthropic.claude-sonnet-4-5-20250929-v1:0`), 개인 계정 자격증명 (`AI_AWS_*` 환경변수)
-- `AWS_REGION`: 기본 `us-east-1`
+- 트랙 C: `BEDROCK_VISION_MODEL_ID` (개인 계정, `global.anthropic.claude-sonnet-4-6` — Global cross-region inference profile, foundation-model 직접 호출 불가), 개인 계정 자격증명 (`AI_AWS_*` 환경변수, `AI_AWS_REGION=ap-northeast-2`)
+- `AWS_REGION`: 지원 계정 기본 `us-east-1` (개인 계정은 `AI_AWS_REGION=ap-northeast-2`)
 - IAM 권한: 지원 계정 `bedrock:InvokeModel`, 개인 계정 `bedrock:InvokeModel`
 
 #### 예외
@@ -280,7 +280,7 @@ HospitalDescription(
     ],
     one_line_summary="일반 피부 진료 중심, 미용 시술은 거의 안 하는 동네 의원",
     generated_at=datetime.utcnow(),
-    generator_model="anthropic.claude-sonnet-4-5-20250929-v1:0",
+    generator_model="global.anthropic.claude-sonnet-4-6",
 )
 ```
 
@@ -444,15 +444,15 @@ def analyze_images(
 
 #### 동작
 
-1. 각 이미지를 S3에서 가져와서 개인 계정 Bedrock Claude Sonnet 4.5 Vision에 입력
+1. 각 이미지를 S3에서 가져와서 개인 계정 Bedrock Claude Sonnet 4.6 Vision (서울 리전, Global cross-region inference profile)에 입력
 2. Vision 응답에 OCR 텍스트 + 시각 해석(시술/기기 식별, 메인 강조 영역 등) 둘 다 포함
 3. 결과를 `ImageAnalysisResult` 리스트로 반환
 
 #### 의존성
 
-- `BEDROCK_VISION_MODEL_ID` (개인 계정, `anthropic.claude-sonnet-4-5-20250929-v1:0`)
-- 개인 계정 자격증명 (`AI_AWS_*` 환경변수)
-- IAM: 개인 계정 `bedrock:InvokeModel` / 지원 계정 `s3:GetObject`
+- `BEDROCK_VISION_MODEL_ID` (개인 계정, `global.anthropic.claude-sonnet-4-6` — Global cross-region inference profile)
+- 개인 계정 자격증명 (`AI_AWS_*` 환경변수, `AI_AWS_REGION=ap-northeast-2`)
+- IAM: 개인 계정 `bedrock:InvokeModel` (3-ARN 정책 — inference-profile + regional FM + global FM) / 지원 계정 `s3:GetObject`
 
 #### 예외
 - `BedrockInvocationError`
@@ -603,7 +603,8 @@ class FeedbackStats(BaseModel):
 |---|---|---|
 | `AWS_REGION` | `us-east-1` | 공통 리전 |
 | `BEDROCK_LLM_MODEL_ID` | `anthropic.claude-haiku-4-5-...` | 트랙 B용 LLM (지원 계정 Haiku/Nova 한정) |
-| `BEDROCK_VISION_MODEL_ID` | `anthropic.claude-sonnet-4-5-20250929-v1:0` | 트랙 C용 Vision (개인 계정) |
+| `BEDROCK_VISION_MODEL_ID` | `global.anthropic.claude-sonnet-4-6` | 트랙 C용 Vision (개인 계정, Global cross-region inference profile — foundation-model 직접 호출 불가) |
+| `AI_AWS_REGION` | `ap-northeast-2` | 개인 계정 리전 (Sonnet 4.6 호출은 서울에서) |
 | `BEDROCK_EMBED_MODEL_ID` | `amazon.titan-embed-text-v2:0` | `embed_text` 직접 호출용 임베딩 모델 (KB는 자체적으로 동일 모델 사용) |
 | `KB_ID` | `GTBJ6HLFDK` | 강사 제공 Bedrock Knowledge Base ID (`kmuproj-team-03`, 지원 계정) |
 | `KB_DATA_SOURCE_ID` | `PLC6QYALDU` | KB DataSource ID (`main-datasource`) |
@@ -616,8 +617,8 @@ class FeedbackStats(BaseModel):
 | `CONFIDENCE_THRESHOLD_LOW` | `70` | "정보 부족" 등급 임계치 |
 
 > Bedrock KB(Retrieve/StartIngestionJob) · Titan Embed · Haiku/Nova 는 **지원 계정**(us-east-1) 자원으로 EC2 인스턴스
-> 프로파일로 자동 인증된다. **Sonnet 4.5(Vision 시연)만 개인 계정** 자격증명으로 boto3
-> 클라이언트를 따로 생성한다. 자세한 건 `../CLAUDE.md`의 "AWS 계정·인프라 구조" 참조.
+> 프로파일로 자동 인증된다. **Sonnet 4.6(Vision 시연)만 개인 계정** (서울 리전 `ap-northeast-2`) 자격증명으로 boto3
+> 클라이언트를 따로 생성한다. 자세한 건 `../CLAUDE.md`의 "AWS 계정·인프라 구조" + [`setup/aws-onboarding.md` Step 5](setup/aws-onboarding.md#step-5--개인-계정-sonnet-46-vision-연결-서울-리전-global-cross-region-inference) 참조.
 
 ---
 

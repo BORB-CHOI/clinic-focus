@@ -343,7 +343,7 @@ GET /api/hospitals/{hospital_id}
         }
       ],
       "generated_at": "2026-04-12T08:00:00Z",
-      "generator_model": "anthropic.claude-sonnet-4-5-20250929-v1:0"
+      "generator_model": "global.anthropic.claude-sonnet-4-6"
     },
     // PoC 한도: 시연 10개 외 9990개 병원은 "ai_description": null 로 반환됨
     // FE는 null이면 헤드라이너 영역을 태그 카드로 차등 렌더링 (아래 "프론트 렌더링 가이드" 참조)
