@@ -57,6 +57,7 @@ export default function HospitalDetailPage() {
         excluded_services={hospital.excluded_services}
         equipment={hospital.equipment}
         prices={hospital.prices}
+        related_hospitals={hospital.related_hospitals}
       />
       <DoctorsSection doctors={hospital.doctors} />
       <ConfidenceSection
