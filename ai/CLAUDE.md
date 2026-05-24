@@ -42,9 +42,11 @@
 
 사용자 검색 시 도는 것: **Titan v2 임베딩 1회 (~20ms) + S3 Vectors QueryVectors 1회 + DynamoDB 신뢰도 조회 1회**. Sonnet/Haiku 호출 0건. 응답 ~200ms, 검색당 비용 ~$0.00003. LLM은 사전 단계(자칭 추출·`generate_description`·Vision)에만 도는데, 한 번 처리하면 정적 데이터로 우려먹는다. 자세한 건 `../docs/overview.md` "4-5. 검색 동작 원리" 참조.
 
-## 개발 환경 — AWS Cloud9
+## 개발 환경 — EC2 + VSCode Remote-SSH
 
-로컬 PC에서는 지원 계정 자원 직접 호출 불가 (Access Key 발급 안 됨, IAM Role만 제공). **워크플로**: 로컬에서 코딩(Claude Code 풀파워) → git push → Cloud9 브라우저 터미널에서 `git pull && python ...` 실행. Cloud9 인스턴스 프로파일이 지원 계정 자원(S3 Vectors·Titan·DynamoDB·Haiku/Nova)을 자동 인증. 개인 계정 Sonnet 4.5(Vision)는 Cloud9 `~/.aws/credentials`에 named profile `personal`로 저장 후 boto3 `Session(profile_name="personal")`로 호출.
+로컬 PC에서는 지원 계정 자원 직접 호출 불가 (Access Key 발급 안 됨, IAM Role만 제공). **워크플로**: 로컬 VSCode → Remote-SSH 확장으로 EC2 접속 → EC2 위에서 직접 편집·터미널·git·Claude Code 실행. UI만 로컬, 실행 컨텍스트는 전부 EC2. EC2 인스턴스 프로파일이 지원 계정 자원(S3 Vectors·Titan·DynamoDB·Haiku/Nova)을 자동 인증. 개인 계정 Sonnet 4.5(Vision)는 EC2 `~/.aws/credentials`에 named profile `personal`로 저장 후 boto3 `Session(profile_name="personal")`로 호출.
+
+> Cloud9 권한이 강사 계정에서 발급 안 된 상태라 EC2가 임시 대체 환경. Cloud9 권한 받으면 동일 워크플로(브라우저 IDE + 인스턴스 프로파일)를 Cloud9로 이전 가능.
 
 ## 모듈 export
 

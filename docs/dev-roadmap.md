@@ -87,7 +87,7 @@ AWS 계정이 둘로 나뉜다 — **지원 계정**(us-east-1, IAM Role만, Acc
 | **OCR** | (미사용) | — | Textract 한국어 미지원 → Bedrock Vision으로 흡수 |
 | **프론트 호스팅** | S3 + CloudFront | 지원 | 정적 빌드 결과물 배포 + CDN 가속 |
 | **배포** | 수동 (EC2 `git pull` / `aws s3 sync`) | — | CI·CD·로드밸런싱 없음 |
-| **개발 환경** | AWS Cloud9 (Ubuntu 22.04) | 지원 | AI 트랙 작업 환경. 인스턴스 프로파일로 지원 계정 자원 자동 인증. 로컬에서 코딩 후 git push → Cloud9에서 `git pull && python` 실행하는 방식 (로컬에선 Access Key 없어 지원 계정 자원 직접 호출 불가) |
+| **개발 환경** | EC2 + VSCode Remote-SSH | 지원 | AI 트랙 작업 환경. 로컬 VSCode가 Remote-SSH 확장으로 EC2에 접속, 편집·터미널·git·Claude Code 전부 EC2에서 실행. 인스턴스 프로파일로 지원 계정 자원 자동 인증. (Cloud9이 강사 계정에서 권한 미발급 상태 → EC2가 임시 대체. Cloud9 권한 받으면 동일 방식으로 이전 가능) |
 
 ---
 

@@ -182,7 +182,7 @@ Bedrock을 호출하고 단계별 PASS/FAIL을 출력한다. 이 세 함수는 B
    `amazon.titan-embed-text-v2:0`
 
 S3 Vectors 적재·검색과 DynamoDB를 쓰는 함수는 스모크 범위에서 제외했다.
-지원 계정 서비스(DynamoDB 등)는 Access Key를 못 받으므로 EC2/Cloud9의
+지원 계정 서비스(DynamoDB 등)는 Access Key를 못 받으므로 EC2(VSCode Remote-SSH)의
 인스턴스 프로파일 환경에서 검증한다.
 
 ## 환경 변수

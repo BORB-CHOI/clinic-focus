@@ -24,7 +24,7 @@
 - 검색 시점 LLM 호출 0건 (Titan 임베딩만, 응답 ~200ms)
 - 시연 10개 외 9990개는 `ai_description = null` (FE 차등 렌더링)
 - 사업화 시 갱신: hash diff 기반 부분 재처리 (전국 7만 운영 시 월 ~$700)
-- AI 트랙 개발 환경: AWS Cloud9 (지원 계정 인스턴스 프로파일 자동 인증 — 로컬에선 Access Key 없어 호출 불가)
+- AI 트랙 개발 환경: EC2 + VSCode Remote-SSH (로컬 VSCode가 EC2에 SSH 접속, 편집·터미널·Claude Code 전부 EC2에서 실행 — 인스턴스 프로파일 자동 인증). Cloud9 권한 미발급으로 EC2 임시 대체
 
 ---
 
@@ -145,24 +145,38 @@
 
 ## AI 트랙 AWS 세팅 todo (개인 워크북)
 
-> 최비성 개인용. PR로 안 올림. Cloud9에서 진행.
+> 최비성 개인용. PR로 안 올림. EC2 + VSCode Remote-SSH 환경에서 진행.
 
-워크플로 (확정): 로컬에서 코딩 (Claude Code 풀파워) → git push → **Cloud9 브라우저 터미널에서 `git pull && python ...` 실행**. Cloud9를 IDE로 안 쓰고 "원격 실행 환경"으로만 사용. 로컬에선 지원 계정 자원 직접 호출 불가 (Role 한정, Access Key 발급 불가).
+워크플로 (확정): **로컬 VSCode → Remote-SSH 확장으로 EC2 접속 → EC2 위에서 직접 편집·터미널·git·Claude Code 실행**. UI만 로컬, 실행 컨텍스트는 전부 EC2 (인스턴스 프로파일 자동 인증). git push/pull 왕복 없이 EC2에서 commit·push까지 한 번에. 로컬에선 지원 계정 자원 직접 호출 불가 (Role 한정, Access Key 발급 불가) — 그래서 코드 실행은 무조건 EC2에서.
 
-### Step 1 — Cloud9 환경 + 지원 계정 자원 확인
+> Cloud9 권한이 강사 계정에서 발급 안 됨. 추후 권한 받으면 동일 워크플로(브라우저 IDE + 인스턴스 프로파일)를 Cloud9로 이전 가능. 강사 요청 시 근거: (1) 로컬에서 지원 계정 자원 호출 불가 — Access Key 미발급, (2) EC2 SSH는 IDE 편의성 부족 — AI 트랙은 Bedrock 호출 반복 실험이 핵심, (3) Cloud9 인스턴스 프로파일은 EC2와 동일 권한 — 추가 권한 없음, (4) `t3.small` + 30분 idle timeout으로 비용 통제.
 
-- [ ] AWS 콘솔 → Cloud9 → 강사가 만들어줬으면 Open IDE, 없으면 Create environment
-  - Name: `clinic-focus-ai`
-  - Instance type: `t3.small` (시작), 필요 시 키움
-  - Platform: Ubuntu Server 22.04 LTS
-  - Timeout: 30분 (idle 자동 stop, 비용 절약)
-- [ ] 하단 터미널에서 다음 4줄 실행:
-  - `aws sts get-caller-identity` → `Account`에 `730335373015` 확인
+### Step 0 — VSCode Remote-SSH로 EC2 접속
+
+- [ ] BE 트랙이 띄운 EC2 인스턴스 정보 확보 (퍼블릭 IP, SSH 키, 사용자명 `ubuntu`)
+- [ ] 로컬 VSCode에 `Remote - SSH` 확장 설치 (Microsoft 공식)
+- [ ] `~/.ssh/config`에 호스트 등록:
+
+  ```ssh-config
+  Host clinic-focus-ec2
+      HostName <ec2-public-ip>
+      User ubuntu
+      IdentityFile ~/.ssh/<key>.pem
+  ```
+
+- [ ] VSCode `F1` → `Remote-SSH: Connect to Host` → `clinic-focus-ec2` → 새 창에서 좌하단 `SSH: clinic-focus-ec2` 확인
+- [ ] EC2 위에 레포 클론: `cd ~ && git clone https://github.com/BORB-CHOI/clinic-focus.git && cd clinic-focus`
+- [ ] EC2에 Claude Code 설치: `npm i -g @anthropic-ai/claude-code` (Node.js 없으면 `nvm install --lts` 먼저)
+- [ ] EC2 터미널에서 `claude` 실행 → 정상 동작 확인
+
+### Step 1 — 지원 계정 자원 가용성 확인
+
+- [ ] EC2 터미널에서 다음 4줄 실행:
+  - `aws sts get-caller-identity` → `Account`에 `730335373015` 확인 (지원 계정 인스턴스 프로파일)
   - `aws s3vectors list-vector-buckets --region us-east-1` → `bedrock-knowledge-base-1tvot3` 보이는지
   - `aws bedrock list-foundation-models --region us-east-1 --query "modelSummaries[?contains(modelId, 'titan-embed') || contains(modelId, 'haiku') || contains(modelId, 'nova')].modelId"` → Titan v2 + Haiku/Nova 가용성
   - `pip3 list | grep boto3` (없으면 `pip3 install boto3 --upgrade`)
 - [ ] 4·6·7 트랙 4.x 가용성도 같이 확인: `aws bedrock list-foundation-models --region us-east-1 --query "modelSummaries[?contains(modelId, 'claude-sonnet-4') || contains(modelId, 'claude-haiku-4') || contains(modelId, 'claude-opus-4')].[modelId,modelLifecycle.status]" --output table`
-- [ ] 레포 클론: `cd ~ && git clone https://github.com/BORB-CHOI/clinic-focus.git && cd clinic-focus`
 
 ### Step 2 — Titan v2 임베딩 hello-world
 
@@ -187,7 +201,7 @@
 - [ ] 개인 계정 콘솔에서 Bedrock model access 활성화 (Claude Sonnet 4.5)
 - [ ] IAM User `clinic-focus-ai` 생성 + `AmazonBedrockFullAccess` 부여
 - [ ] Access Key 발급
-- [ ] Cloud9 `~/.aws/credentials`에 named profile `personal`로 저장
+- [ ] EC2 `~/.aws/credentials`에 named profile `personal`로 저장
 - [ ] boto3 `Session(profile_name="personal")` 로 Sonnet Vision 호출 — 한국어 이미지(병원 홍보 배너) 1장으로 OCR + 시각 해석 테스트
 
 ---
