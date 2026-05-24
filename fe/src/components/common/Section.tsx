@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 interface SectionProps {
   id?: string;
   title: string;
-  subtitle?: string;
+  subtitle?: React.ReactNode;
   /** 영역 번호 ① ~ ⑨ */
   badge?: string;
   action?: React.ReactNode;
