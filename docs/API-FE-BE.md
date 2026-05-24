@@ -45,7 +45,7 @@
 | `NOT_FOUND` | 404 | 리소스 없음 |
 | `DUPLICATE_FEEDBACK` | 409 | 동일 디바이스에서 동일 병원에 이미 피드백 |
 | `INTERNAL_ERROR` | 500 | 서버 내부 에러 |
-| `AI_SERVICE_ERROR` | 502 | Bedrock·S3 Vectors 호출 실패 |
+| `AI_SERVICE_ERROR` | 502 | Bedrock·Knowledge Base 호출 실패 |
 
 ---
 

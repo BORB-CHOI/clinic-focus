@@ -10,13 +10,13 @@
 | LLM/Vision (시연 10개) — 지원 계정 | Bedrock Haiku 4.5 또는 Nova (강사 제공 자원, 모델·범위 제한) |
 | Vision 고품질 시연 (10개) — 개인 계정 | Bedrock Claude Sonnet 4.5 (`anthropic.claude-sonnet-4-5-20250929-v1:0`) |
 | OCR | Bedrock Vision으로 흡수 (한국어 미지원으로 Textract 제거) |
-| Embedding | Bedrock Titan Embed Text v2 (`amazon.titan-embed-text-v2:0`, 1024 dim, 지원 계정) |
-| Vector store | S3 Vectors (`s3vectors:PutVectors` / `QueryVectors`, 지원 계정) — 강사 제공 버킷 `bedrock-knowledge-base-1tvot3` |
+| Embedding | Bedrock Titan Embed Text v2 (`amazon.titan-embed-text-v2:0`, 1024 dim, 지원 계정 — KB가 자동 호출, `embed_text`는 실험·디버깅용으로만 직접 호출) |
+| Vector store | **Bedrock Knowledge Base 경유** — 강사 제공 KB `kmuproj-team-03` (ID `GTBJ6HLFDK`, 지원 계정). 내부 storage는 S3 Vectors 버킷 `bedrock-knowledge-base-1tvot3`이지만 우리는 KB API(`bedrock-agent-runtime:Retrieve`, `bedrock-agent:StartIngestionJob`)만 호출. S3 Vectors 직접 호출 ❌ (`SafeRole-kmuproj-10`에 `s3vectors:*` 권한 없음 + 강사가 KB로 셋팅함) |
 | 전체 1만 병원 텍스트 분류 | **룰 기반** (LLM 미사용, 키워드/빈도) |
 | RAG 프레임워크 | **직접 구현** (LangChain 안 씀 — 4 시그널 교차 검증 로직 통제 위해) |
 | 데이터 모델 | Pydantic — `../shared/models.py` 단일 소스 |
 
-> S3 Vectors · Titan Embed · Haiku/Nova 는 **지원 계정**(us-east-1) 자원으로 EC2 인스턴스
+> Bedrock KB(Retrieve / StartIngestionJob) · Titan Embed · Haiku/Nova 는 **지원 계정**(us-east-1) 자원으로 EC2 인스턴스
 > 프로파일로 자동 인증. Sonnet 4.5(Vision 시연용)만 **개인 계정** 자격증명으로 boto3
 > 클라이언트를 따로 생성한다. 자세한 건 `../CLAUDE.md`의 "AWS 계정·인프라 구조" 참조.
 
@@ -40,11 +40,15 @@
 
 본 시스템은 통상 "RAG"라 부르지만 엄밀히는 **Semantic Search**다. 사용자에게 자연어 답변이 아니라 정렬된 병원 목록을 돌려주기 때문에 LLM Generation 단계가 없다.
 
-사용자 검색 시 도는 것: **Titan v2 임베딩 1회 (~20ms) + S3 Vectors QueryVectors 1회 + DynamoDB 신뢰도 조회 1회**. Sonnet/Haiku 호출 0건. 응답 ~200ms, 검색당 비용 ~$0.00003. LLM은 사전 단계(자칭 추출·`generate_description`·Vision)에만 도는데, 한 번 처리하면 정적 데이터로 우려먹는다. 자세한 건 `../docs/overview.md` "4-5. 검색 동작 원리" 참조.
+사용자 검색 시 도는 것: **KB Retrieve API 1회** (내부에서 Titan v2 임베딩 + 벡터 검색을 자동 수행) **+ DynamoDB 신뢰도 조회 1회**. Sonnet/Haiku 호출 0건. 응답 ~200~500ms, 검색당 비용 ~$0.00003. LLM은 사전 단계(자칭 추출·`generate_description`·Vision)에만 도는데, 한 번 처리하면 정적 데이터로 우려먹는다. 자세한 건 `../docs/overview.md` "4-5. 검색 동작 원리" 참조.
+
+> **검색 경로 이원화**: AI 모듈(`retrieve_hospital`)은 **자연어 쿼리만** 책임진다. `sigungu=강남구 & specialty=피부과` 같은 메타 완전일치 전체 목록 조회는 BE가 DynamoDB GSI로 직접 처리하고 AI 미경유. KB Retrieve는 빈 쿼리 텍스트를 받지 못하고 `numberOfResults` 최대 100 제한이 있어 카테고리 탐색에 부적합.
 
 ## 개발 환경 — EC2 + VSCode Remote-SSH
 
-로컬 PC에서는 지원 계정 자원 직접 호출 불가 (Access Key 발급 안 됨, IAM Role만 제공). **워크플로**: 로컬 VSCode → Remote-SSH 확장으로 EC2 접속 → EC2 위에서 직접 편집·터미널·git·Claude Code 실행. UI만 로컬, 실행 컨텍스트는 전부 EC2. EC2 인스턴스 프로파일이 지원 계정 자원(S3 Vectors·Titan·DynamoDB·Haiku/Nova)을 자동 인증. 개인 계정 Sonnet 4.5(Vision)는 EC2 `~/.aws/credentials`에 named profile `personal`로 저장 후 boto3 `Session(profile_name="personal")`로 호출.
+로컬 PC에서는 지원 계정 자원 직접 호출 불가 (Access Key 발급 안 됨, IAM Role만 제공). **워크플로**: 로컬 VSCode → Remote-SSH 확장으로 EC2 접속 → EC2 위에서 직접 편집·터미널·git·Claude Code 실행. UI만 로컬, 실행 컨텍스트는 전부 EC2. EC2 인스턴스 프로파일이 지원 계정 자원(Bedrock KB · Titan · DynamoDB · Haiku/Nova)을 자동 인증. 개인 계정 Sonnet 4.5(Vision)는 EC2 `~/.aws/credentials`에 named profile `personal`로 저장 후 boto3 `Session(profile_name="personal")`로 호출.
+
+> 환경 세팅 단계별 가이드는 [`../docs/setup/aws-onboarding.md`](../docs/setup/aws-onboarding.md). 팀원 온보딩 또는 EC2 재발급 시 따라가면 됨.
 
 > Cloud9 권한이 강사 계정에서 발급 안 된 상태라 EC2가 임시 대체 환경. Cloud9 권한 받으면 동일 워크플로(브라우저 IDE + 인스턴스 프로파일)를 Cloud9로 이전 가능.
 
@@ -57,10 +61,10 @@
 - `extract_services_and_doctors(crawl_data, classification, vision_results) -> ServicesAndDoctors`
 - `find_related_hospitals(hospital_id, location, primary_focus, excluded_services, limit=5) -> list[RelatedHospital]`
 - `aggregate_feedback_stats(hospital_id) -> FeedbackStats`
-- `search_similar(query: SearchQuery) -> list[SearchResult]`
-- `index_hospital(hospital_id, classification, description_text) -> None`
+- `retrieve_hospital(query: SearchQuery) -> list[SearchResult]` — KB Retrieve 래퍼 (자연어 검색만)
+- `ingest_hospital(hospital_id, content_text, metadata, trigger_ingestion=False) -> None` — KB DataSource S3 업로드 + ingestion job
 - `recompute_confidence(hospital_id, recent_feedback) -> Confidence`
-- `embed_text(text) -> list[float]`
+- `embed_text(text) -> list[float]` — Titan v2 직접 호출 (디버깅·실험용. 운영 검색은 KB가 내부 수행)
 - `analyze_images(image_urls, extract_text=False) -> list[ImageAnalysisResult]`
 
 ## `generate_description` 프롬프트 원칙 ⭐ 절대 어기지 말 것
@@ -100,11 +104,11 @@
 안과       ├ 라식·라섹 ├ 백내장 ├ 망막 └ 일반 시력
 ```
 
-## S3 Vectors 메타데이터
+## KB 메타데이터 (Retrieve 필터링용)
 
-쿼리 단계 필터링용. PutVectors 시 함께 적재:
+`ingest_hospital` 호출 시 `{hospital_id}.txt.metadata.json` 으로 DataSource S3에 동봉. KB Retrieve `vectorSearchConfiguration.filter` 에서 필터 가능. 타입은 string / number / boolean / list[string] 만 (KB 사양).
 
-`standard_specialty` / `primary_focus` (list) / `sido` / `sigungu` / `confidence_score` (>=) / `lat` (range) / `lng` (range) / `last_updated`
+`hospital_id` (역추적 핵심) / `standard_specialty` / `primary_focus` (list) / `sido` / `sigungu` / `confidence_score` (>=) / `lat` (range, bounding box) / `lng` (range, bounding box) / `last_updated`
 
 ## 비용 의식
 
@@ -116,7 +120,7 @@
 
 ## 의존성·예외
 
-각 함수가 던지는 예외는 `../docs/API-BE-AI.md` 참조: `BedrockInvocationError` / `InsufficientDataError` / `DescriptionValidationError` / `S3VectorsError` / `TextTooLongError` / `ImageNotFoundError`.
+각 함수가 던지는 예외는 `../docs/API-BE-AI.md` 참조: `BedrockInvocationError` / `InsufficientDataError` / `DescriptionValidationError` / `KBIngestError` / `KBRetrieveError` / `TextTooLongError` / `ImageNotFoundError`.
 
 ## 작업 원칙
 
