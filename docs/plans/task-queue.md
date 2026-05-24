@@ -160,7 +160,8 @@
 
 ## AI 트랙 AWS 세팅 todo (개인 워크북)
 
-> 최비성 개인용. PR로 안 올림. EC2 + VSCode Remote-SSH 환경에서 진행.
+> 최비성 개인용 진행 큐. EC2 + VSCode Remote-SSH 환경에서 진행.
+> 팀원이 따라할 수 있는 **재현 가이드**는 별도로 [`docs/setup/aws-onboarding.md`](../setup/aws-onboarding.md) 참조 (Step 0~1 검증된 부분만 정리).
 
 워크플로 (확정): **로컬 VSCode → Remote-SSH 확장으로 EC2 접속 → EC2 위에서 직접 편집·터미널·git·Claude Code 실행**. UI만 로컬, 실행 컨텍스트는 전부 EC2 (인스턴스 프로파일 자동 인증). git push/pull 왕복 없이 EC2에서 commit·push까지 한 번에. 로컬에선 지원 계정 자원 직접 호출 불가 (Role 한정, Access Key 발급 불가) — 그래서 코드 실행은 무조건 EC2에서.
 

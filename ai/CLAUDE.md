@@ -48,6 +48,8 @@
 
 로컬 PC에서는 지원 계정 자원 직접 호출 불가 (Access Key 발급 안 됨, IAM Role만 제공). **워크플로**: 로컬 VSCode → Remote-SSH 확장으로 EC2 접속 → EC2 위에서 직접 편집·터미널·git·Claude Code 실행. UI만 로컬, 실행 컨텍스트는 전부 EC2. EC2 인스턴스 프로파일이 지원 계정 자원(Bedrock KB · Titan · DynamoDB · Haiku/Nova)을 자동 인증. 개인 계정 Sonnet 4.5(Vision)는 EC2 `~/.aws/credentials`에 named profile `personal`로 저장 후 boto3 `Session(profile_name="personal")`로 호출.
 
+> 환경 세팅 단계별 가이드는 [`../docs/setup/aws-onboarding.md`](../docs/setup/aws-onboarding.md). 팀원 온보딩 또는 EC2 재발급 시 따라가면 됨.
+
 > Cloud9 권한이 강사 계정에서 발급 안 된 상태라 EC2가 임시 대체 환경. Cloud9 권한 받으면 동일 워크플로(브라우저 IDE + 인스턴스 프로파일)를 Cloud9로 이전 가능.
 
 ## 모듈 export
