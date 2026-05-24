@@ -164,6 +164,6 @@
   ],
   "one_line_summary": "일반 피부 진료 중심, 미용 시술 관련 데이터 적음",
   "generated_at": "2026-05-18T10:30:00",
-  "generator_model": "anthropic.claude-sonnet-4-5-20250929-v1:0"
+  "generator_model": "global.anthropic.claude-sonnet-4-6"
 }
 ```

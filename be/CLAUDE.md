@@ -78,13 +78,13 @@ FastAPI 미들웨어에서 CloudFront 도메인 + `http://localhost:5173` 허용
 | 변수 | 기본값 |
 |---|---|
 | `AWS_REGION` | `us-east-1` |
-| `BEDROCK_LLM_MODEL_ID` | (지원) `anthropic.claude-haiku-4-5-...` / (개인) `anthropic.claude-sonnet-4-5-20250929-v1:0` |
+| `BEDROCK_LLM_MODEL_ID` | (지원) `anthropic.claude-haiku-4-5-...` / (개인 Vision) `global.anthropic.claude-sonnet-4-6` |
 | `BEDROCK_EMBED_MODEL_ID` | `amazon.titan-embed-text-v2:0` |
 | `KB_ID` / `KB_DATA_SOURCE_ID` | `GTBJ6HLFDK` / `PLC6QYALDU` (강사 제공 `kmuproj-team-03`) |
 | `KB_DATASOURCE_S3_BUCKET` / `KB_DATASOURCE_S3_PREFIX` | (강사 제공) — `get-data-source`로 확인 |
 
-> Bedrock KB · Bedrock(Haiku/Nova) · Titan · DynamoDB · S3는 **지원 계정**, Sonnet 4.5(Vision 시연)만
-> **개인 계정** (us-east-1)에 있다. 자세한 건 `../CLAUDE.md`의 "AWS 계정·인프라 구조" 참조.
+> Bedrock KB · Bedrock(Haiku/Nova) · Titan · DynamoDB · S3는 **지원 계정**, Sonnet 4.6(Vision 시연)만
+> **개인 계정** (서울 리전 `ap-northeast-2`)에 있다. 자세한 건 `../CLAUDE.md`의 "AWS 계정·인프라 구조" 참조.
 
 ## 작업 원칙
 

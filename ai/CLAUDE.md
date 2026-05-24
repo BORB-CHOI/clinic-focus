@@ -8,7 +8,7 @@
 |---|---|
 | 언어 | Python 3.11+ (BE와 동일 EC2 프로세스) |
 | LLM/Vision (시연 10개) — 지원 계정 | Bedrock Haiku 4.5 또는 Nova (강사 제공 자원, 모델·범위 제한) |
-| Vision 고품질 시연 (10개) — 개인 계정 | Bedrock Claude Sonnet 4.5 (`anthropic.claude-sonnet-4-5-20250929-v1:0`) |
+| Vision 고품질 시연 (10개) — 개인 계정 | Bedrock Claude Sonnet 4.6 (`global.anthropic.claude-sonnet-4-6`, Global cross-region inference profile, 서울 리전 `ap-northeast-2`) |
 | OCR | Bedrock Vision으로 흡수 (한국어 미지원으로 Textract 제거) |
 | Embedding | Bedrock Titan Embed Text v2 (`amazon.titan-embed-text-v2:0`, 1024 dim, 지원 계정 — KB가 자동 호출, `embed_text`는 실험·디버깅용으로만 직접 호출) |
 | Vector store | **Bedrock Knowledge Base 경유** — 강사 제공 KB `kmuproj-team-03` (ID `GTBJ6HLFDK`, 지원 계정). 내부 storage는 S3 Vectors 버킷 `bedrock-knowledge-base-1tvot3`이지만 우리는 KB API(`bedrock-agent-runtime:Retrieve`, `bedrock-agent:StartIngestionJob`)만 호출. S3 Vectors 직접 호출 ❌ (`SafeRole-kmuproj-10`에 `s3vectors:*` 권한 없음 + 강사가 KB로 셋팅함) |
@@ -17,8 +17,8 @@
 | 데이터 모델 | Pydantic — `../shared/models.py` 단일 소스 |
 
 > Bedrock KB(Retrieve / StartIngestionJob) · Titan Embed · Haiku/Nova 는 **지원 계정**(us-east-1) 자원으로 EC2 인스턴스
-> 프로파일로 자동 인증. Sonnet 4.5(Vision 시연용)만 **개인 계정** 자격증명으로 boto3
-> 클라이언트를 따로 생성한다. 자세한 건 `../CLAUDE.md`의 "AWS 계정·인프라 구조" 참조.
+> 프로파일로 자동 인증. Sonnet 4.6(Vision 시연용)만 **개인 계정**(서울 리전 `ap-northeast-2`) 자격증명으로 boto3
+> 클라이언트를 따로 생성한다. Global cross-region inference profile (`global.anthropic.claude-sonnet-4-6`)이라 IAM 정책에 3-ARN(inference-profile + regional FM + global FM) 필수. 자세한 건 `../CLAUDE.md`의 "AWS 계정·인프라 구조" + [`../docs/setup/aws-onboarding.md` Step 5](../docs/setup/aws-onboarding.md#step-5--개인-계정-sonnet-46-vision-연결-서울-리전-global-cross-region-inference) 참조.
 
 ## AI 트랙 3트랙 구조
 
@@ -28,7 +28,7 @@
 |---|---|---|---|---|
 | **A. 룰 기반 분류** | 자칭 컨셉 추출 (LLM 미사용) | 키워드/빈도 룰 | — | 서울 5개구 1만 |
 | **B. LLM 텍스트 시연** | 자칭 추출 + `generate_description` | Haiku 4.5 / Nova | 지원 | 10개 |
-| **C. Vision 시연** | 이미지 분석 (OCR + 시각) | Sonnet 4.5 | 개인 | 10개 |
+| **C. Vision 시연** | 이미지 분석 (OCR + 시각) | Sonnet 4.6 | 개인 | 10개 |
 
 - A는 1만 풀커버 베이스라인. 비용 0, 전국 7만 확장에도 비용 0.
 - B·C는 **같은 10개 병원**에 적용해 룰 결과와 비교 시연. 차별 효과를 자기 눈으로 보여주는 데모 핵심.
@@ -46,7 +46,7 @@
 
 ## 개발 환경 — EC2 + VSCode Remote-SSH
 
-로컬 PC에서는 지원 계정 자원 직접 호출 불가 (Access Key 발급 안 됨, IAM Role만 제공). **워크플로**: 로컬 VSCode → Remote-SSH 확장으로 EC2 접속 → EC2 위에서 직접 편집·터미널·git·Claude Code 실행. UI만 로컬, 실행 컨텍스트는 전부 EC2. EC2 인스턴스 프로파일이 지원 계정 자원(Bedrock KB · Titan · DynamoDB · Haiku/Nova)을 자동 인증. 개인 계정 Sonnet 4.5(Vision)는 EC2 `~/.aws/credentials`에 named profile `personal`로 저장 후 boto3 `Session(profile_name="personal")`로 호출.
+로컬 PC에서는 지원 계정 자원 직접 호출 불가 (Access Key 발급 안 됨, IAM Role만 제공). **워크플로**: 로컬 VSCode → Remote-SSH 확장으로 EC2 접속 → EC2 위에서 직접 편집·터미널·git·Claude Code 실행. UI만 로컬, 실행 컨텍스트는 전부 EC2. EC2 인스턴스 프로파일이 지원 계정 자원(Bedrock KB · Titan · DynamoDB · Haiku/Nova)을 자동 인증. 개인 계정 Sonnet 4.6(Vision)은 EC2 `~/.aws/credentials`에 named profile `personal`(region `ap-northeast-2`)로 저장 후 boto3 `Session(profile_name="personal")`로 호출.
 
 > 환경 세팅 단계별 가이드는 [`../docs/setup/aws-onboarding.md`](../docs/setup/aws-onboarding.md). 팀원 온보딩 또는 EC2 재발급 시 따라가면 됨.
 

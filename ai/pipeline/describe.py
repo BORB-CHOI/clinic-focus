@@ -253,7 +253,7 @@ def generate_description(
     """
     generator_model = os.getenv(
         "BEDROCK_LLM_MODEL_ID",
-        "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+        "global.anthropic.claude-sonnet-4-6",
     )
     generated_at = datetime.utcnow()
 
