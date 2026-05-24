@@ -4,6 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>clinic-focus</title>
+    <!--
+      Pretendard Variable (jsDelivr CDN, static 풀버전).
+      dynamic-subset 은 unicode-range 분기에서 한글 매칭이 빠지는 경우가
+      있어 PoC 단계에선 풀버전을 우선. 폐쇄망 시연 시 npm 패키지로 전환.
+      https://github.com/orioncactus/pretendard
+    -->
+    <link
+      rel="stylesheet"
+      as="style"
+      crossorigin
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css"
+    />
   </head>
   <body>
     <div id="root"></div>

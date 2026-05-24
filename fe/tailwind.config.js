@@ -116,6 +116,33 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      // ── 본문 폰트 ────────────────────────────────────────────────
+      // Pretendard Variable (static 풀버전) 우선. dynamic-subset 은
+      // unicode-range 분기에서 한글 매칭이 빠지는 환경이 있어 PoC 단계엔
+      // 풀버전을 사용. CDN 임포트는 index.html 의 <link>, html 의
+      // font-family 강제 적용은 src/index.css.
+      fontFamily: {
+        sans: [
+          "Pretendard Variable",
+          "Pretendard",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "system-ui",
+          "Roboto",
+          "Helvetica Neue",
+          '"Segoe UI"',
+          '"Apple SD Gothic Neo"',
+          '"Noto Sans KR"',
+          '"Malgun Gothic"',
+          "sans-serif",
+        ],
+      },
+      // 한글 가독성을 위해 자간을 미세하게 좁힘 (본문은 그대로 유지하고
+      // 제목·헤드라인 위계에서만 활용 — 페이지별 다듬기 라운드에서 적용)
+      letterSpacing: {
+        tighter: "-0.02em",
+        tight: "-0.01em",
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],

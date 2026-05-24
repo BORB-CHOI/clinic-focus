@@ -53,10 +53,23 @@
   * {
     @apply border-border;
   }
-  body {
-    @apply bg-background text-foreground;
+  html {
+    /*
+      base 폰트 크기 = 24px (브라우저 기본 16px → 1.5배).
+      모든 Tailwind 사이즈 토큰이 rem 단위라 카드·검색바·필터·신뢰도 점수가
+      일관되게 따라온다. 헤드라이너 헤드라인(text-2xl = 1.5rem)은 36px,
+      본문(text-sm = 0.875rem)은 21px 로 떨어진다.
+    */
+    font-size: 24px;
     font-family:
-      -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo",
-      "Pretendard", Roboto, "Noto Sans KR", "Helvetica Neue", Arial, sans-serif;
+      "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+      system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo",
+      "Noto Sans KR", "Malgun Gothic", sans-serif;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings:
+      "ss01", /* 가독성 좋은 0/1/I 변형 */
+      "tnum"; /* 숫자 등폭 — 거리/신뢰도 점수 정렬에 유리 */
   }
 }
