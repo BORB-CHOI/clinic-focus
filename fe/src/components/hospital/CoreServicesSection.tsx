@@ -4,6 +4,7 @@ import { Check, X, ArrowRight } from "lucide-react";
 import { Section } from "@/components/common/Section";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { HospitalThumbnail } from "@/components/common/HospitalThumbnail";
 import { cn } from "@/lib/utils";
 import type {
   Equipment,
@@ -38,6 +39,13 @@ interface CoreServicesSectionProps {
   prices: PriceItem[];
   /** 대안 병원 ID 를 이름으로 풀어주기 위한 동일 페이지의 추천 목록 */
   related_hospitals: RelatedHospital[];
+  /**
+   * Vision 분석에 쓰인 샘플 이미지 URL 목록. 시술·진료 사진 갤러리 자리.
+   * BE 측 이미지 수집 미구현이라 빈 배열일 수 있고, 그 경우 자리만 표시.
+   */
+  sample_image_urls?: string[];
+  /** 갤러리 폴백 플레이스홀더용 병원명 */
+  hospital_name?: string;
 }
 
 // ② 핵심 진료 정보 — 4 서브섹션 위계 + 헛걸음 방지 카드
@@ -59,6 +67,8 @@ export function CoreServicesSection({
   equipment,
   prices,
   related_hospitals,
+  sample_image_urls,
+  hospital_name,
 }: CoreServicesSectionProps) {
   // 카테고리별 그룹화 (등록 순서 유지)
   const grouped = services.reduce<Record<ServiceCategory, Service[]>>(
@@ -90,6 +100,19 @@ export function CoreServicesSection({
         {primary_focus.map((f) => (
           <Badge key={f}>{f}</Badge>
         ))}
+      </div>
+
+      {/* 시술·진료 사진 갤러리 자리 — Vision 분석에 사용된 샘플 이미지 */}
+      <div className="mt-5">
+        <SubHeading>병원 사진</SubHeading>
+        <p className="-mt-2 mb-3 text-xs text-muted-foreground">
+          Vision 분석에 사용된 시술·진료 사진. BE 이미지 수집 로직 미구현
+          단계에선 자리만 표시됩니다.
+        </p>
+        <ImageGallery
+          urls={sample_image_urls ?? []}
+          name={hospital_name ?? standard_specialty}
+        />
       </div>
 
       <Separator className="my-6" />
@@ -181,6 +204,42 @@ export function CoreServicesSection({
 
 function SubHeading({ children }: { children: React.ReactNode }) {
   return <h3 className="mb-3 text-sm font-semibold">{children}</h3>;
+}
+
+// 시술·진료 사진 갤러리.
+//
+// 데이터(sample_image_urls)가 비어 있으면 4칸짜리 플레이스홀더 그리드로
+// 자리만 차지. 데이터가 있을 땐 정사각 썸네일 그리드 + 마지막 칸에 +N 표시.
+const GALLERY_SLOTS = 4;
+function ImageGallery({ urls, name }: { urls: string[]; name: string }) {
+  const visible = urls.slice(0, GALLERY_SLOTS);
+  const remaining = Math.max(0, urls.length - GALLERY_SLOTS);
+  // 데이터가 없을 땐 자리 4칸을 폴백으로 채워 시각 자리 확보
+  const slots = visible.length > 0 ? visible : Array.from({ length: GALLERY_SLOTS });
+
+  return (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      {slots.map((url, i) => (
+        <div
+          key={i}
+          className="relative aspect-square overflow-hidden rounded-md border"
+        >
+          <HospitalThumbnail
+            src={typeof url === "string" ? url : null}
+            name={name}
+            shape="square"
+            className="h-full w-full"
+          />
+          {/* 마지막 슬롯에 추가 카운트 표시 */}
+          {remaining > 0 && i === GALLERY_SLOTS - 1 ? (
+            <span className="absolute inset-0 grid place-items-center bg-black/40 text-base font-semibold text-white">
+              +{remaining}
+            </span>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function EquipmentItem({ equipment }: { equipment: Equipment }) {

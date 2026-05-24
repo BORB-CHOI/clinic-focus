@@ -74,6 +74,8 @@ export default function HospitalDetailPage() {
                 ai_description={hospital.ai_description}
                 confidence={hospital.confidence}
                 one_line_summary={hospital.one_line_summary}
+                name={hospital.name}
+                thumbnail_url={hospital.thumbnail_url}
               />
               <BasicInfoSection
                 location={hospital.location}
@@ -93,6 +95,10 @@ export default function HospitalDetailPage() {
                 equipment={hospital.equipment}
                 prices={hospital.prices}
                 related_hospitals={hospital.related_hospitals}
+                sample_image_urls={
+                  hospital.detailed_signals.vision.sample_image_urls
+                }
+                hospital_name={hospital.name}
               />
               <DoctorsSection doctors={hospital.doctors} />
               <ConfidenceSection

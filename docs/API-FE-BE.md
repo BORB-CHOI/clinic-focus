@@ -64,6 +64,8 @@
   website_url: string | null;
   one_line_summary: string;       // 검색 카드용 한 줄 요약 (AI 생성)
                                   // 예: "일반 피부 진료 중심, 미용 시술은 거의 안 하는 동네 의원"
+  thumbnail_url: string | null;   // 병원 대표 이미지 URL. FE 카드 썸네일 + 헤드라이너 히어로
+                                  // 미수집 단계에서는 null. FE 는 그라데이션 + 이니셜 폴백
 }
 ```
 
@@ -205,6 +207,7 @@
   similarity_score: number;       // 0~1
   recommendation_type: "same_focus" | "fills_gap";  // 같은 주력 / 빈자리 보완
   distance_km: number | null;
+  thumbnail_url: string | null;   // 카드 썸네일용. 미수집이면 null (FE 가 폴백 처리)
 }
 ```
 
@@ -272,7 +275,8 @@ GET /api/search
         "lng": 126.9510
       },
       "website_url": "https://...",
-      "one_line_summary": "일반 피부 진료 중심, 미용 시술은 거의 안 하는 동네 의원"
+      "one_line_summary": "일반 피부 진료 중심, 미용 시술은 거의 안 하는 동네 의원",
+      "thumbnail_url": null
     }
   ],
   "meta": {
@@ -329,6 +333,7 @@ GET /api/hospitals/{hospital_id}
     "location": { ... },
     "website_url": "https://...",
     "one_line_summary": "일반 피부 진료 중심, 미용 시술은 거의 안 하는 동네 의원",
+    "thumbnail_url": null,
 
     "ai_description": {
       "headline": "○○피부과는 일반 피부 진료 중심의 동네 의원입니다.",
@@ -451,7 +456,8 @@ GET /api/hospitals/{hospital_id}
         "primary_focus": ["일반 진료 (아토피·여드름)"],
         "similarity_score": 0.91,
         "recommendation_type": "same_focus",
-        "distance_km": 0.8
+        "distance_km": 0.8,
+        "thumbnail_url": null
       },
       {
         "hospital_id": "h_ghi789",
@@ -459,7 +465,8 @@ GET /api/hospitals/{hospital_id}
         "primary_focus": ["사마귀·점 제거"],
         "similarity_score": 0.42,
         "recommendation_type": "fills_gap",
-        "distance_km": 1.2
+        "distance_km": 1.2,
+        "thumbnail_url": null
       }
     ],
 

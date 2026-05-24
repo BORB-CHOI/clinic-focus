@@ -4,6 +4,7 @@ import { ArrowRight, MapPin } from "lucide-react";
 import { Section } from "@/components/common/Section";
 import { EmptyState } from "@/components/common/EmptyState";
 import { Badge } from "@/components/ui/badge";
+import { HospitalThumbnail } from "@/components/common/HospitalThumbnail";
 import { cn } from "@/lib/utils";
 import type { RecommendationType, RelatedHospital } from "@/types/domain";
 
@@ -113,34 +114,43 @@ function RelatedCard({
         type === "fills_gap" && "border-dashed",
       )}
     >
-      <div className="flex items-center justify-between gap-2">
-        <span className="truncate font-semibold">{hospital.name}</span>
-        <ArrowRight
-          className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
-          aria-hidden
+      <div className="flex gap-3">
+        <HospitalThumbnail
+          src={hospital.thumbnail_url}
+          name={hospital.name}
+          className="h-14 w-14"
         />
-      </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <span className="truncate font-semibold">{hospital.name}</span>
+            <ArrowRight
+              className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+              aria-hidden
+            />
+          </div>
 
-      <div className="mt-1.5 flex flex-wrap gap-1">
-        {hospital.primary_focus.map((f) => (
-          <Badge key={f} variant="secondary" className="font-normal">
-            {f}
-          </Badge>
-        ))}
-      </div>
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {hospital.primary_focus.map((f) => (
+              <Badge key={f} variant="secondary" className="font-normal">
+                {f}
+              </Badge>
+            ))}
+          </div>
 
-      <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-        <span className="font-mono">유사도 {sim}%</span>
-        {hospital.distance_km != null ? (
-          <>
-            <span aria-hidden>·</span>
-            <span className="inline-flex items-center gap-0.5">
-              <MapPin className="h-3 w-3" aria-hidden />
-              {hospital.distance_km.toFixed(1)}km
-            </span>
-          </>
-        ) : null}
-      </p>
+          <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="font-mono">유사도 {sim}%</span>
+            {hospital.distance_km != null ? (
+              <>
+                <span aria-hidden>·</span>
+                <span className="inline-flex items-center gap-0.5">
+                  <MapPin className="h-3 w-3" aria-hidden />
+                  {hospital.distance_km.toFixed(1)}km
+                </span>
+              </>
+            ) : null}
+          </p>
+        </div>
+      </div>
     </Link>
   );
 }

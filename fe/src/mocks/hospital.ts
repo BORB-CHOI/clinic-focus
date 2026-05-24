@@ -32,6 +32,7 @@ export const mockHospital: HospitalDetail = {
   },
   website_url: "https://example.com",
   one_line_summary: "일반 피부 진료 중심, 미용 시술은 거의 안 하는 동네 의원",
+  thumbnail_url: null,
 
   ai_description: {
     headline: "○○피부과는 일반 피부 진료 중심의 동네 의원입니다.",
@@ -280,6 +281,7 @@ export const mockHospital: HospitalDetail = {
       similarity_score: 0.91,
       recommendation_type: "same_focus",
       distance_km: 0.8,
+      thumbnail_url: null,
     },
     {
       hospital_id: "h_jkl012",
@@ -288,6 +290,7 @@ export const mockHospital: HospitalDetail = {
       similarity_score: 0.84,
       recommendation_type: "same_focus",
       distance_km: 1.0,
+      thumbnail_url: null,
     },
     {
       hospital_id: "h_ghi789",
@@ -296,6 +299,7 @@ export const mockHospital: HospitalDetail = {
       similarity_score: 0.42,
       recommendation_type: "fills_gap",
       distance_km: 1.2,
+      thumbnail_url: null,
     },
     {
       hospital_id: "h_mno345",
@@ -304,6 +308,7 @@ export const mockHospital: HospitalDetail = {
       similarity_score: 0.31,
       recommendation_type: "fills_gap",
       distance_km: 0.9,
+      thumbnail_url: null,
     },
   ],
 
