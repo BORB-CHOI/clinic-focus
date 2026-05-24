@@ -161,7 +161,7 @@ export default function MapPage() {
       </div>
 
       {/* 메인: 지도 + 사이드 */}
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_420px]">
         {/* 지도 */}
         <div className="space-y-2">
           {HAS_KAKAO_MAP_KEY ? (
@@ -201,7 +201,7 @@ export default function MapPage() {
               ) : null}
             </h2>
             {selectedItem ? (
-              <HospitalCard item={selectedItem} />
+              <HospitalCard item={selectedItem} compact />
             ) : visibleItems.length === 0 ? (
               <EmptyState message="반경 내 병원이 없습니다 — 반경을 넓혀보세요" />
             ) : (
@@ -226,6 +226,7 @@ export default function MapPage() {
                   <li key={item.hospital_id}>
                     <HospitalCard
                       item={item}
+                      compact
                       className={cn(
                         "transition-shadow",
                         selectedId === item.hospital_id &&
