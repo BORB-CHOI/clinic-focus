@@ -153,21 +153,20 @@
 
 ### Step 0 — VSCode Remote-SSH로 EC2 접속
 
-- [ ] BE 트랙이 띄운 EC2 인스턴스 정보 확보 (퍼블릭 IP, SSH 키, 사용자명 `ubuntu`)
+- [ ] BE 트랙이 띄운 EC2 인스턴스 정보 확보 (퍼블릭 IP, SSH 키, 사용자명 — Amazon Linux는 `ec2-user`, Ubuntu는 `ubuntu`)
 - [ ] 로컬 VSCode에 `Remote - SSH` 확장 설치 (Microsoft 공식)
 - [ ] `~/.ssh/config`에 호스트 등록:
 
   ```ssh-config
   Host clinic-focus-ec2
       HostName <ec2-public-ip>
-      User ubuntu
+      User ec2-user
       IdentityFile ~/.ssh/<key>.pem
   ```
 
 - [ ] VSCode `F1` → `Remote-SSH: Connect to Host` → `clinic-focus-ec2` → 새 창에서 좌하단 `SSH: clinic-focus-ec2` 확인
 - [ ] EC2 위에 레포 클론: `cd ~ && git clone https://github.com/BORB-CHOI/clinic-focus.git && cd clinic-focus`
-- [ ] EC2에 Claude Code 설치: `npm i -g @anthropic-ai/claude-code` (Node.js 없으면 `nvm install --lts` 먼저)
-- [ ] EC2 터미널에서 `claude` 실행 → 정상 동작 확인
+- [ ] 로컬에서 쓰던 Claude Code 확장을 원격에 설치 (확장 패널에서 "Install on SSH: clinic-focus-ec2" 버튼). CLI(`npm i -g @anthropic-ai/claude-code`)는 VSCode 확장만 쓸 거면 불필요
 
 ### Step 1 — 지원 계정 자원 가용성 확인
 
