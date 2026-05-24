@@ -114,7 +114,7 @@ export default function MapPage() {
     <section className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">지도 검색</h1>
+          <h1 className="text-2xl font-bold tracking-tight">지도 검색</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             현재 위치를 중심으로 반경 내 병원을 신뢰도 색 마커로 표시합니다.
           </p>

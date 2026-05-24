@@ -19,7 +19,9 @@ export function HospitalCard({ item, className }: HospitalCardProps) {
     <Link
       to={`/hospitals/${item.hospital_id}`}
       className={cn(
-        "block rounded-lg border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        // text-[0.8em] : 카드 내부 본문은 글로벌 base 의 80% 크기. 리스트
+        // 가독성을 위해 한 단계 압축. 카드 내부 모든 자식이 em 으로 따라옴.
+        "block rounded-lg border bg-card p-4 text-[0.8em] transition-colors hover:border-primary/40 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         className,
       )}
     >

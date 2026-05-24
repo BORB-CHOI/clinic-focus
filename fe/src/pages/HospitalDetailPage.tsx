@@ -20,10 +20,10 @@ export default function HospitalDetailPage() {
   const hospital = mockHospital;
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4">
+    <div className="space-y-4">
       <header className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
-          <h1 className="text-3xl font-bold">{hospital.name}</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{hospital.name}</h1>
           <p className="text-sm text-muted-foreground">
             {hospital.location.sigungu} · {hospital.standard_specialty}
           </p>
