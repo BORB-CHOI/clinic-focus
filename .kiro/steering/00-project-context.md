@@ -24,7 +24,7 @@ inclusion: always
 clinic-focus/
 ├── fe/         React + Vite + TS + Tailwind + shadcn/ui + TanStack Query + 카카오맵 SDK
 ├── be/         FastAPI + uvicorn + Pydantic + boto3 + httpx + BS4 (EC2 운영)
-├── ai/         Bedrock (Claude Sonnet 4.5, Titan Embed v2) + S3 Vectors + Textract
+├── ai/         Bedrock (Haiku/Nova 지원·Sonnet 4.5 Vision 개인) + Titan Embed v2 + Bedrock Knowledge Base (강사 제공 `kmuproj-team-03`)
 ├── shared/     공유 Pydantic 모델 (BE·AI 양쪽 import, FE는 OpenAPI→TS 자동 생성)
 └── docs/       4대 문서 (overview, dev-roadmap, API-FE-BE, API-BE-AI)
 ```
@@ -42,13 +42,15 @@ from shared.models import CrawlData
 
 | 계정 | 서비스 | 자격증명 |
 |---|---|---|
-| **지원 계정** | EC2, DynamoDB, S3, API Gateway | EC2 인스턴스 프로파일 (액세스 키 발급 불가) |
-| **개인 계정** | Bedrock, S3 Vectors, Textract | `AI_AWS_PROFILE=personal` 또는 `AI_AWS_ACCESS_KEY_ID` |
+| **지원 계정** | EC2, DynamoDB, S3, API Gateway, Bedrock(Haiku/Nova/Titan), **Bedrock Knowledge Base (`kmuproj-team-03`)** | EC2 인스턴스 프로파일 (액세스 키 발급 불가) |
+| **개인 계정** | Bedrock (Sonnet 4.5 — Vision 시연 한정) | `AI_AWS_PROFILE=personal` 또는 `AI_AWS_ACCESS_KEY_ID` |
 
 ## 핵심 모델 ID
 
-- LLM·Vision: `us.anthropic.claude-sonnet-4-5-20250929-v1:0` (US 인퍼런스 프로파일)
-- Embedding: `amazon.titan-embed-text-v2:0` (차원 1024)
+- LLM (지원, 트랙 B 시연): `anthropic.claude-haiku-4-5-...` 또는 `amazon.nova-...`
+- Vision (개인, 트랙 C 시연): `anthropic.claude-sonnet-4-5-20250929-v1:0`
+- Embedding (지원): `amazon.titan-embed-text-v2:0` (차원 1024) — KB가 자체 사용
+- Knowledge Base ID (지원): `GTBJ6HLFDK` (`kmuproj-team-03`)
 
 ## PoC 범위 — 포함하지 않는 것
 

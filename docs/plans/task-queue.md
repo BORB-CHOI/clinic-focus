@@ -16,44 +16,59 @@
 
 확정 사항:
 
-- 벡터 도구: S3 Vectors 직접 호출 (KB 안 씀)
-- 벡터 버킷: 지원 계정 `bedrock-knowledge-base-1tvot3`
-- 임베딩: Titan v2 (지원 계정, 전체 1만)
+- **벡터 도구: Bedrock Knowledge Base 경유** (강사 제공 KB `kmuproj-team-03`, ID `GTBJ6HLFDK`). S3 Vectors 직접 호출 ❌ — `SafeRole-kmuproj-10`에 `s3vectors:*` 권한 없음이 확인됐고, 강사가 Titan v2로 셋팅한 KB를 쓰라는 가이드라 그대로 따름. KB가 내부적으로 storage로 쓰는 게 `bedrock-knowledge-base-1tvot3` S3 Vectors 버킷
+- **검색 경로 이원화** (필수):
+  - **자연어 검색**(예: "강남 사마귀 잘 보는 곳") → AI 모듈 → KB `Retrieve` API
+  - **수동 탐색**(`sigungu=강남구 & specialty=피부과` 전체 목록) → BE 모듈 → **DynamoDB GSI 직접 조회**, AI 미경유. KB Retrieve는 빈 쿼리 텍스트로는 못 돌아서 카테고리 탐색에 부적합 (`numberOfResults` 최대 100 제한도 있음)
+- **함수명·시그니처 재설계** (PR #1에서 처리):
+  - `search_similar(SearchQuery)` → `retrieve_hospital(query_text, filter)` (KB 용어로)
+  - `index_hospital(...)` → `ingest_hospital(...)` (KB DataSource S3 업로드 + `start-ingestion-job` 래핑)
+  - `embed_text(text)` → 유지 (쿼리 단독 임베딩 디버깅·실험용)
+- 임베딩: Titan v2 (KB가 자동 호출, 1024 dim, 지원 계정)
+- **벡터 구성 비교 전략**: KB 1개 안에서 셋이 **순차로** 청킹 설정 바꿔가며 비교 (강사가 KB 1개만 줘서). 비교 시점은 BE 풀크롤링 + 정제 완료 후. 비교 축: `FIXED_SIZE` / `HIERARCHICAL` / `SEMANTIC` 청킹 모드, 임베딩 입력 텍스트(본문 raw vs 자칭 키워드 추출 vs 진료과목+자칭 결합)
 - OCR: Bedrock Vision으로 흡수 (Textract 한국어 미지원으로 제거)
 - 정제·크롤링: 전부 BE 책임 (잡음 제거 + 서울 1만 풀크롤링)
-- 검색 시점 LLM 호출 0건 (Titan 임베딩만, 응답 ~200ms)
+- 검색 시점 LLM 호출 0건 (KB Retrieve가 내부에서 Titan 임베딩 1회만 호출, Sonnet/Haiku 안 거침)
 - 시연 10개 외 9990개는 `ai_description = null` (FE 차등 렌더링)
-- 사업화 시 갱신: hash diff 기반 부분 재처리 (전국 7만 운영 시 월 ~$700)
+- 사업화 시 갱신: **병원 파일 단위 hash diff** (KB ingestion이 파일 단위라 페이지별 hash는 의미 낮아짐 — 변경된 병원만 DataSource S3에 덮어쓰고 ingestion job 트리거)
 - AI 트랙 개발 환경: EC2 + VSCode Remote-SSH (로컬 VSCode가 EC2에 SSH 접속, 편집·터미널·Claude Code 전부 EC2에서 실행 — 인스턴스 프로파일 자동 인증). Cloud9 권한 미발급으로 EC2 임시 대체
 
 ---
 
 ## 다음 PR 순서
 
-### 1. `feat/ai/aws-clients` (기존 항목 — 재설계 필요)
+### 1. `feat/ai/aws-clients` (기존 항목 — 재재설계 필요)
 
 담당: 최비성
 
-> 원본 계획이 "Bedrock·S3 Vectors·Textract 모두 개인 계정" 전제였으나, 2026-05-24 결정으로 **S3 Vectors·Titan·Haiku/Nova는 지원 계정**, Sonnet 4.5(Vision)만 개인 계정으로 변경. `ai/core/aws_clients.py` 는 만들어졌으나 재설계 필요.
+> 2026-05-24 1차 재설계: "Bedrock·S3 Vectors·Textract 모두 개인 계정" → "S3 Vectors·Titan·Haiku/Nova는 지원 계정, Sonnet만 개인". **같은 날 2차 재설계 (이번 갱신)**: S3 Vectors 직접 호출 ❌ → **Bedrock KB (`bedrock-agent-runtime` / `bedrock-agent`) 경유**. 강사가 KB `kmuproj-team-03`(ID `GTBJ6HLFDK`, Titan v2 셋팅)을 만들어줬고, `SafeRole-kmuproj-10`에 `s3vectors:*` 권한이 없음이 확인됨. `ai/core/aws_clients.py`는 만들어졌으나 다시 재설계 필요.
 
-- [ ] `ai/core/aws_clients.py` 재설계
-  - 지원 계정 클라이언트 팩토리: `get_bedrock_runtime_support()` (Haiku/Nova/Titan), `get_s3vectors_client()` (인스턴스 프로파일)
+- [ ] `ai/core/aws_clients.py` 재재설계
+  - 지원 계정 클라이언트 팩토리:
+    - `get_bedrock_runtime_support()` — Haiku/Nova/Titan invoke 용 (`bedrock-runtime`)
+    - `get_bedrock_agent_runtime()` — KB Retrieve API 용 (`bedrock-agent-runtime`) ⭐ 신규
+    - `get_bedrock_agent()` — KB DataSource 관리·Ingestion Job 트리거 용 (`bedrock-agent`) ⭐ 신규
+    - `get_s3_client_support()` — KB DataSource S3 버킷 업로드 용
   - 개인 계정 클라이언트 팩토리: `get_bedrock_runtime_personal()` (Sonnet Vision 시연용, `AI_AWS_*` 환경변수)
+  - 기존 `get_s3vectors_client()` 제거 (직접 호출 안 함)
   - 기존 Textract 클라이언트 함수 제거
 
-- [ ] AI 모듈 팩토리 호출 교체 (계정 분리 반영)
+- [ ] AI 모듈 함수 시그니처·구현 재설계
+  - `ai/search/embed.py` — `embed_text()` 유지 (디버깅·실험용, 지원 계정 Titan 직접 호출)
+  - `ai/search/vector_store.py` 폐기 → **`ai/search/kb_store.py` 신규**
+    - `ingest_hospital(hospital_id, description_text, metadata)` — DataSource S3 객체 업로드 + `start_ingestion_job` 호출
+    - `retrieve_hospital(query_text, filter, limit)` — KB Retrieve API 호출
+    - 기존 `index_hospital` / `index_hospital_with_meta` / `search_similar` 제거
   - `ai/core/bedrock_client.py` — 트랙 B는 지원 / 트랙 C는 개인
-  - `ai/search/embed.py` — 지원 계정 Titan
-  - `ai/search/vector_store.py` — 지원 계정 S3 Vectors
   - `ai/pipeline/vision.py` — 개인 계정 Sonnet (Textract 호출 제거)
 
 - [ ] `ai/search/feedback.py` — DynamoDB 지원 계정 팩토리로 교체
 
-- [ ] `ai/search/vector_store.py` — `index_hospital` 시그니처 통합
-  - `sido`, `sigungu`, `lat`, `lng` 파라미터 추가
-  - `index_hospital_with_meta` 제거 (통합)
+- [ ] `ai/__init__.py` — 변경된 export
+  - 제거: `search_similar`, `index_hospital`
+  - 추가: `retrieve_hospital`, `ingest_hospital`
 
-- [ ] `ai/__init__.py` — 업데이트된 시그니처 export
+- [ ] BE 호출부도 교체 필요 — `be/handlers/*` 에서 `index_hospital` / `search_similar` 호출 부분 새 함수로 갱신 (별도 PR `refactor/be/ai-kb-rename` 권장)
 
 ### 2. `feat/be/test-fix` (기존 항목, 변동 없음)
 
@@ -117,10 +132,10 @@
 
 담당: 김경재
 
-> 사업화 시 운영 비용 통제의 핵심. PoC 단계에서 구조만 잡아두고 운영은 수동 트리거로 충분.
+> 사업화 시 운영 비용 통제. PoC 단계에서 구조만 잡아두고 운영은 수동 트리거로 충분. **KB 경유 결정 이후 단위 변경**: 페이지별 hash → **병원 파일 단위 hash** (KB ingestion이 파일 단위라 페이지별로 잘게 비교해도 결국 파일 다시 업로드해야 함).
 
-- [ ] `Hospitals` 테이블에 `body_hash` (페이지별), `crawled_at` 컬럼 추가
-- [ ] 재크롤링 시 페이지 본문 hash 비교 → 변경된 페이지만 다시 AI 큐에 적재
+- [ ] `Hospitals` 테이블에 `content_hash` (병원 통합 본문 SHA-256), `crawled_at` 컬럼 추가
+- [ ] 재크롤링 시 `content_hash` 비교 → 변경된 병원만 KB DataSource S3에 덮어쓰고 `start_ingestion_job` 트리거
 - [ ] 변경 이력 자동 기록 (`ChangeHistory` 테이블 — 이미 스키마 있음)
 
 ### 7. `feat/be/crawl-seoul-5gu-full` (신규 — 트랙 A 의존성)
@@ -153,9 +168,9 @@
 
 ### Step 0 — VSCode Remote-SSH로 EC2 접속
 
-- [ ] BE 트랙이 띄운 EC2 인스턴스 정보 확보 (퍼블릭 IP, SSH 키, 사용자명 — Amazon Linux는 `ec2-user`, Ubuntu는 `ubuntu`)
-- [ ] 로컬 VSCode에 `Remote - SSH` 확장 설치 (Microsoft 공식)
-- [ ] `~/.ssh/config`에 호스트 등록:
+- [x] BE 트랙이 띄운 EC2 인스턴스 정보 확보 (퍼블릭 IP, SSH 키, 사용자명 — Amazon Linux는 `ec2-user`, Ubuntu는 `ubuntu`)
+- [x] 로컬 VSCode에 `Remote - SSH` 확장 설치 (Microsoft 공식)
+- [x] `~/.ssh/config`에 호스트 등록:
 
   ```ssh-config
   Host clinic-focus-ec2
@@ -164,18 +179,19 @@
       IdentityFile ~/.ssh/<key>.pem
   ```
 
-- [ ] VSCode `F1` → `Remote-SSH: Connect to Host` → `clinic-focus-ec2` → 새 창에서 좌하단 `SSH: clinic-focus-ec2` 확인
-- [ ] EC2 위에 레포 클론: `cd ~ && git clone https://github.com/BORB-CHOI/clinic-focus.git && cd clinic-focus`
-- [ ] 로컬에서 쓰던 Claude Code 확장을 원격에 설치 (확장 패널에서 "Install on SSH: clinic-focus-ec2" 버튼). CLI(`npm i -g @anthropic-ai/claude-code`)는 VSCode 확장만 쓸 거면 불필요
+- [x] VSCode `F1` → `Remote-SSH: Connect to Host` → `clinic-focus-ec2` → 새 창에서 좌하단 `SSH: clinic-focus-ec2` 확인
+- [x] EC2 위에 레포 클론: `cd ~ && git clone https://github.com/BORB-CHOI/clinic-focus.git && cd clinic-focus`
+- [x] 로컬에서 쓰던 Claude Code 확장을 원격에 설치 (확장 패널에서 "Install on SSH: clinic-focus-ec2" 버튼). CLI(`npm i -g @anthropic-ai/claude-code`)는 VSCode 확장만 쓸 거면 불필요
 
 ### Step 1 — 지원 계정 자원 가용성 확인
 
-- [ ] EC2 터미널에서 다음 4줄 실행:
-  - `aws sts get-caller-identity` → `Account`에 `730335373015` 확인 (지원 계정 인스턴스 프로파일)
-  - `aws s3vectors list-vector-buckets --region us-east-1` → `bedrock-knowledge-base-1tvot3` 보이는지
-  - `aws bedrock list-foundation-models --region us-east-1 --query "modelSummaries[?contains(modelId, 'titan-embed') || contains(modelId, 'haiku') || contains(modelId, 'nova')].modelId"` → Titan v2 + Haiku/Nova 가용성
-  - `pip3 list | grep boto3` (없으면 `pip3 install boto3 --upgrade`)
-- [ ] 4·6·7 트랙 4.x 가용성도 같이 확인: `aws bedrock list-foundation-models --region us-east-1 --query "modelSummaries[?contains(modelId, 'claude-sonnet-4') || contains(modelId, 'claude-haiku-4') || contains(modelId, 'claude-opus-4')].[modelId,modelLifecycle.status]" --output table`
+- [x] EC2 터미널에서 가용성 확인: (2026-05-24 완료)
+  - [x] `aws sts get-caller-identity` → `Account=730335373015`, `SafeRole-kmuproj-10/i-0b6142523ec5b5383` 확인
+  - [x] `aws s3vectors list-vector-buckets --region us-east-1` → **AccessDenied 확인**. S3V 직접 호출은 안 쓰기로 결정(KB 경유)했으므로 권한 요청 불필요
+  - [x] `aws bedrock list-foundation-models ...` → Titan v2 (`amazon.titan-embed-text-v2:0`) · Haiku 4.5 · Nova 라인업 전부 가용
+  - [x] `pip3 install --user boto3 --upgrade` → 1.43.14 설치 완료
+- [x] Claude 4.x 가용성 확인 → Sonnet 4.5/4.6, Haiku 4.5, Opus 4.1/4.5/4.6/4.7 전부 ACTIVE. **Sonnet 4.5가 지원 계정에서도 보이지만 model access 활성화 여부는 별도 invoke 테스트 필요. 우선은 task-queue 원안대로 Sonnet=개인 계정 유지**
+- [x] 강사 제공 KB 발견 (`aws bedrock-agent list-knowledge-bases`) — `kmuproj-team-03` (ID `GTBJ6HLFDK`), Titan v2 + S3 Vectors storage. KB Retrieve API 권한 OK (`bedrock-agent-runtime:retrieve` 호출 성공)
 
 ### Step 2 — Titan v2 임베딩 hello-world
 
@@ -183,17 +199,29 @@
 - [ ] 동일 문장 두 번 호출 시 같은 벡터 나오는지 (재현성)
 - [ ] 의미 유사 문장 ("사마귀 치료" vs "심상성 우췌 냉동요법") 코사인 유사도 측정
 
-### Step 3 — S3 Vectors PutVectors + QueryVectors 왕복
+### Step 3 — Bedrock KB Retrieve 왕복 (S3 Vectors 직접 호출 대체)
 
-- [ ] `bedrock-knowledge-base-1tvot3` 안에 인덱스 생성 또는 기존 인덱스 확인
-- [ ] 더미 벡터 5개 PutVectors (메타데이터 포함)
-- [ ] QueryVectors로 가장 가까운 벡터 검색 → 메타 필터 동작 확인
+> 강사 제공 KB `kmuproj-team-03` (ID `GTBJ6HLFDK`). 내부 storage가 `bedrock-knowledge-base-1tvot3` S3 Vectors 버킷이지만 우리는 KB API만 호출.
 
-### Step 4 — Vector 스키마 설계
+- [x] KB 존재 확인: `aws bedrock-agent get-knowledge-base --knowledge-base-id GTBJ6HLFDK --region us-east-1` → status ACTIVE
+- [x] DataSource 확인: `aws bedrock-agent list-data-sources --knowledge-base-id GTBJ6HLFDK --region us-east-1` → `main-datasource` (`PLC6QYALDU`)
+- [ ] DataSource S3 버킷 이름·prefix 확인 (`aws bedrock-agent get-data-source --knowledge-base-id GTBJ6HLFDK --data-source-id PLC6QYALDU --region us-east-1`)
+- [ ] 더미 텍스트 파일 1~3개를 DataSource S3에 업로드 + `metadata.json` 동봉 (메타필터 테스트용)
+- [ ] `aws bedrock-agent start-ingestion-job --knowledge-base-id GTBJ6HLFDK --data-source-id PLC6QYALDU` → 상태 COMPLETE 확인
+- [ ] `aws bedrock-agent-runtime retrieve --knowledge-base-id GTBJ6HLFDK --retrieval-query '{"text":"테스트"}'` → 결과 받기
+- [ ] 메타필터 동작 확인 — `retrievalConfiguration.vectorSearchConfiguration.filter` 로 `sigungu`/`standard_specialty` 등 필터링
 
-- [ ] ID 규칙: `hospital_id` 또는 `hospital_id#chunk_idx`
-- [ ] 메타데이터 키 확정: `standard_specialty` / `primary_focus` (list) / `sido` / `sigungu` / `confidence_score` / `lat` / `lng` / `last_updated`
-- [ ] 청크 전략: 병원당 1벡터(전체 요약) vs 페이지당 1벡터 결정
+### Step 4 — DataSource S3 파일 포맷 + 메타데이터 스키마 설계
+
+> 청크 전략·청크 ID는 KB가 관리. 우리가 설계할 것은 **DataSource에 올릴 파일 포맷과 metadata.json 스키마**.
+
+- [ ] 병원 단위 파일 포맷 결정 — `{hospital_id}.txt` (또는 `.md`)
+  - 내용 후보: AI 통합 설명 본문 / 룰 추출 자칭 키워드 / 원문 정제 텍스트 (셋 비교는 벡터 구성 비교 실험 시점에)
+- [ ] metadata.json 스키마 — Bedrock KB metadata 사양 따름 (각 파일별로 `{hospital_id}.txt.metadata.json` 동봉)
+  - 키: `hospital_id` / `standard_specialty` / `primary_focus` (list) / `sido` / `sigungu` / `confidence_score` (number, `>=` 필터용) / `lat` (number) / `lng` (number) / `last_updated`
+  - 필터 가능 타입은 string / number / boolean / list[string]만 (KB 사양)
+- [ ] DataSource S3 디렉토리 구조 결정 — flat (`s3://.../{hospital_id}.txt`) vs prefix (`s3://.../{sigungu}/{hospital_id}.txt`)
+- [ ] 청크 전략 결정·비교는 **데이터 적재 후**로 보류 (BE 풀크롤링 완료 후)
 
 ### Step 5 — 개인 계정 Sonnet 4.5 Vision 연결
 

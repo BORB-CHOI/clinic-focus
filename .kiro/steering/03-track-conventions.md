@@ -70,28 +70,28 @@ npx openapi-typescript http://localhost:8000/openapi.json -o src/types/api.ts
 
 ## AI 트랙 (`ai/`)
 
-**스택:** Python 3.11 · boto3 (bedrock-runtime, s3vectors, textract) · Pydantic
+**스택:** Python 3.11 · boto3 (bedrock-runtime, bedrock-agent-runtime, bedrock-agent, s3) · Pydantic
 
-### 환경 변수 (AI — 개인 계정)
+### 환경 변수 (AI)
 
 | 변수 | 설명 |
 |---|---|
-| `AI_AWS_PROFILE` | `~/.aws/credentials` 프로파일명 (예: `personal`) |
-| `AI_AWS_ACCESS_KEY_ID` | 개인 계정 액세스 키 (프로파일 대안) |
-| `AI_AWS_SECRET_ACCESS_KEY` | 개인 계정 시크릿 키 |
-| `AI_AWS_REGION` | `us-east-1` |
-| `BEDROCK_LLM_MODEL_ID` | `us.anthropic.claude-sonnet-4-5-20250929-v1:0` |
-| `BEDROCK_EMBED_MODEL_ID` | `amazon.titan-embed-text-v2:0` |
-| `S3_VECTOR_BUCKET` | 벡터 버킷 이름 |
-| `S3_VECTOR_INDEX` | `hospital-index` |
+| `AWS_REGION` | `us-east-1` (지원 계정 — 기본 세션) |
+| `AI_AWS_PROFILE` | 개인 계정 프로파일명 (Sonnet Vision 시연 한정, 예: `personal`) |
+| `AI_AWS_ACCESS_KEY_ID` / `AI_AWS_SECRET_ACCESS_KEY` | 개인 계정 액세스 키 (프로파일 대안) |
+| `BEDROCK_LLM_MODEL_ID` | 지원: `anthropic.claude-haiku-4-5-...` / 개인: `anthropic.claude-sonnet-4-5-20250929-v1:0` |
+| `BEDROCK_EMBED_MODEL_ID` | `amazon.titan-embed-text-v2:0` (KB가 자체 사용, `embed_text` 직접 호출용) |
+| `KB_ID` | `GTBJ6HLFDK` (강사 제공 KB `kmuproj-team-03`) |
+| `KB_DATA_SOURCE_ID` | `PLC6QYALDU` (`main-datasource`) |
+| `KB_DATASOURCE_S3_BUCKET` / `KB_DATASOURCE_S3_PREFIX` | DataSource S3 경로 (강사 제공, `get-data-source`로 확인) |
 | `MAX_VISION_IMAGES` | 분류 1회당 최대 이미지 수 (기본 10) |
 | `CONFIDENCE_THRESHOLD_HIGH` | "확실" 등급 임계치 (기본 95) |
 | `CONFIDENCE_THRESHOLD_LOW` | "정보 부족" 등급 임계치 (기본 70) |
 
 ### 계정 분리 원칙
 
-- DynamoDB·S3 (지원 계정) → EC2 인스턴스 프로파일 (기본 세션)
-- Bedrock·S3 Vectors·Textract (개인 계정) → `ai/core/aws_clients.py` 팩토리로 별도 세션
+- DynamoDB · S3 · Bedrock(Haiku/Nova/Titan) · **Bedrock Knowledge Base** (지원 계정) → EC2 인스턴스 프로파일 (기본 세션)
+- Bedrock Sonnet 4.5 Vision 시연 (개인 계정) → `ai/core/aws_clients.py` 팩토리로 별도 세션
 
 ### Bedrock 테스트 모킹
 

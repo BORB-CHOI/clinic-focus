@@ -35,18 +35,18 @@ from ai import (
     extract_services_and_doctors,
     find_related_hospitals,
     aggregate_feedback_stats,
-    search_similar,
-    index_hospital,
+    retrieve_hospital,           # 자연어 검색 (KB Retrieve 경유). 옛 search_similar 폐기
+    ingest_hospital,             # KB DataSource 적재. 옛 index_hospital 폐기
     recompute_confidence,
 )
-from shared.models import CrawlData, SearchQuery
+from shared.models import CrawlData, SearchQuery, HospitalIngestMetadata
 ```
 
 함수 시그니처·예외·동작 흐름은 `../docs/API-BE-AI.md` 참조. 추후 분리하더라도 시그니처가 그대로 HTTP body 스키마가 되므로 호출 코드만 바꾸면 됨.
 
 ## 새 병원 등록 파이프라인
 
-`be/handlers/index_hospital.py`의 흐름:
+`be/handlers/ingest_hospital.py`의 흐름:
 
 1. 크롤링 데이터 로드 (S3 + DynamoDB)
 2. `classify_hospital(crawl_data)` → `Classification`
@@ -54,13 +54,13 @@ from shared.models import CrawlData, SearchQuery
 4. `generate_description(...)` → AI 통합 설명 ⭐
 5. `find_related_hospitals(...)` → 같은 주력 + 빈자리 보완
 6. DynamoDB 적재
-7. `index_hospital(...)` → S3 Vectors 임베딩 (대상: AI 설명 본문)
+7. `ingest_hospital(...)` → Bedrock KB DataSource S3 업로드 (배치 시 trigger_ingestion=False, 마지막에 한 번만 ingestion job 트리거)
 
 ## DynamoDB 테이블
 
 `Hospitals` / `Classifications` / `Signals` / `Confidence` / `Feedback` / `ChangeHistory` / `HospitalDescriptions`. 파티션 키·GSI는 분류 스키마 v1 동결 후 확정.
 
-위치 기반 검색은 S3 Vectors 메타데이터의 `lat`/`lng`로 bounding box 1차 필터 → EC2 haversine 정확 계산.
+**검색 경로 이원화**: 자연어 검색은 AI 모듈 `retrieve_hospital`이 KB Retrieve로 처리하고, 단순 카테고리 탐색(`sigungu=강남구 & specialty=피부과` 전체 목록)은 BE가 DynamoDB GSI로 직접 처리 (`sigungu#specialty` 같은 복합 키). 위치 기반 검색은 KB 메타필터(`lat`/`lng` bounding box) + EC2 haversine 재계산.
 
 ## 응답 포맷
 
@@ -78,12 +78,13 @@ FastAPI 미들웨어에서 CloudFront 도메인 + `http://localhost:5173` 허용
 | 변수 | 기본값 |
 |---|---|
 | `AWS_REGION` | `us-east-1` |
-| `BEDROCK_LLM_MODEL_ID` | `us.anthropic.claude-sonnet-4-5-20250929-v1:0` |
+| `BEDROCK_LLM_MODEL_ID` | (지원) `anthropic.claude-haiku-4-5-...` / (개인) `anthropic.claude-sonnet-4-5-20250929-v1:0` |
 | `BEDROCK_EMBED_MODEL_ID` | `amazon.titan-embed-text-v2:0` |
-| `S3_VECTOR_BUCKET` / `S3_VECTOR_INDEX` | 환경별 |
+| `KB_ID` / `KB_DATA_SOURCE_ID` | `GTBJ6HLFDK` / `PLC6QYALDU` (강사 제공 `kmuproj-team-03`) |
+| `KB_DATASOURCE_S3_BUCKET` / `KB_DATASOURCE_S3_PREFIX` | (강사 제공) — `get-data-source`로 확인 |
 
-> Bedrock·S3 Vectors·Textract(AI 모듈)는 **개인 계정**, DynamoDB·S3는 **지원 계정**
-> (us-east-1)에 있다. 자세한 건 `../CLAUDE.md`의 "AWS 계정·인프라 구조" 참조.
+> Bedrock KB · Bedrock(Haiku/Nova) · Titan · DynamoDB · S3는 **지원 계정**, Sonnet 4.5(Vision 시연)만
+> **개인 계정** (us-east-1)에 있다. 자세한 건 `../CLAUDE.md`의 "AWS 계정·인프라 구조" 참조.
 
 ## 작업 원칙
 
