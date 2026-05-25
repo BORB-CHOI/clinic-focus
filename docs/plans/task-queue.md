@@ -35,6 +35,22 @@
 
 ---
 
+## BE 트랙 AWS 연결 진행 가능 매트릭스
+
+> 2026-05-24 추가, 2026-05-25 갱신 (계정 분리 결정·SQS 제거·B12 unblock 반영).
+>
+> → **[`docs/plans/be-aws-wiring.md`](be-aws-wiring.md)**
+>
+> **계정 분리**: BE(`kmuproj-02`)와 AI(`kmuproj-10`)가 각자 DynamoDB·S3 따로 운영. 데이터 공유 없음. 발표 시 데이터는 BE 계정 풀커버가 정본.
+>
+> **SQS 미사용 확정**: 모놀리식 직렬 처리. 기존 `crawl_trigger.py`·`crawl_hospital.py`·`sqs_adapter.py`의 SQS 가정 코드는 별도 정리 (B10).
+>
+> **2026-05-25 KB S3 권한 unblock**: 강사가 `kmuproj-02-vector`에 `kmuproj-02`·`kmuproj-10`·`kmuproj-11` Role 권한 부여 (Put/Get/List/Delete). 단 *"누가 올렸는지 추적 불가"* 한계와 *"Delete 권한 사고 주의"* 안내 받음. → prefix 분리(`clinic-focus/prod/`, `clinic-focus/probe/`) + 운영 코드 Delete 호출 금지 + metadata `team_id` 필수 규약 박음.
+>
+> 13개 작업(B1~B13)을 권한 상태·의존성·추정 시간으로 정리. 핵심 가능 항목: DynamoDB 7테이블 생성(B1), 자체 S3 버킷 생성·`S3Adapter` boto3 전환(B4·B5), 서울 5개구 메타 적재(B3, HIRA Key 받은 후), 풀크롤링(B7), 잡음 정제(B8), hash 컬럼(B9), SQS 코드 제거(B10), KB ingest 파이프라인(B12). 아래 PR 큐 #3·#6·#7과 매핑됨.
+
+---
+
 ## 다음 PR 순서
 
 ### 1. `feat/ai/aws-clients` (기존 항목 — 재재설계 필요)
