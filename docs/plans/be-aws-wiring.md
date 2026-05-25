@@ -7,8 +7,9 @@
 > 데이터 공유 없음. 발표 시 데이터는 **BE 계정 기준 풀커버**가 정본이며
 > AI 계정의 미니 표본은 개발·튜닝용으로만 사용한다.
 >
-> **본 문서는 BE 트랙(`kmuproj-02`) 전용 작업 큐.** AI 트랙은 별도 문서
-> 진행 예정 (`docs/plans/ai-dev-subset.md`, 향후 PR).
+> **본 문서는 BE 트랙(`kmuproj-02`) 전용 작업 큐.** AI 트랙의 dev 계정 셋업·미니
+> 표본 적재 작업은 [`task-queue.md` "AI 트랙 AWS 세팅 todo" Step 6](task-queue.md#step-6--ai-개인-dev-계정-e2e-ddb--s3--28개--85개-미니-크롤링--진행-중)
+> 에 통합. BE는 BE 자기 계정에서 풀커버, AI는 AI 계정에서 미니 85개 (강남구 4과목).
 
 ---
 
@@ -39,6 +40,7 @@
 | **B8** | 페이지 단위 본문 정제 (잡음 60% 제거) | — (순수 로직) | — | B6 (샘플 검증용) | 4~6시간 |
 | **B9** | content_hash + crawled_at 컬럼 추가 (Hospitals) | DynamoDB | ✅ OK | B1 | 1시간 |
 | **B10** | SQS 가정 코드 제거 (`crawl_trigger.py`·`crawl_hospital.py`·`sqs_adapter.py`) | — | — | 없음 | 1~2시간 |
+| **B11-pre** | `crawl_all.py` TABLE_PREFIX 미적용 패치 (AI 발견) | — | — | 없음 | 10분 |
 | **B11** | ai `index_hospital` → `ingest_hospital` rename 흡수 | — | — | AI PR #1 머지 후 | 30분 |
 | **B12** | KB DataSource S3 ingest 파이프라인 가동 | `kmuproj-02-vector` (공유) | ✅ OK (2026-05-25 강사 권한 부여) | B7, B11 | 1~2시간 |
 | **B13** | `feat/be/test-fix` (mock_adapters 버그) | — | — | 없음 | 30분 |
@@ -298,6 +300,22 @@ crawler.py (원문 그대로 적재) ──→ S3
 **검토 필요**: `crawl_trigger.py`·`crawl_hospital.py`의 역할이 모놀리식 흐름에서 의미 있는지 vs `crawl_all.py`로 단일화할지 — handler 추상화는 SQS 컨슈머 가정에서 나온 거라, 큐 빼면 handler 계층 자체가 사라지는 게 자연스러움. **권장: 두 handler 파일 통째로 폐기, `crawl_all.py`만 남김**.
 
 ---
+
+### B11-pre. `crawl_all.py` TABLE_PREFIX 미적용 패치 ⚠️ AI 트랙 발견 (2026-05-25)
+
+**상태**: `be/scripts/crawl_all.py:35` 가 `dynamodb.Table("Hospitals")` 로 **테이블 이름 하드코딩**. `TABLE_PREFIX` 환경변수 미적용. AI 트랙이 자기 dev 계정에서 미니 크롤링 돌리려고 보다가 발견. BE 풀커버 시에도 `TABLE_PREFIX=kmuproj-02-clinic-` 쓰면 동일 영향.
+
+**패치**: `_table_name` 헬퍼(`be/adapters/dynamo_adapter.py:40`) 재사용 또는 인라인 prefix 적용.
+
+```python
+# Before
+table = dynamodb.Table("Hospitals")
+# After
+prefix = os.environ.get("TABLE_PREFIX", "")
+table = dynamodb.Table(f"{prefix}Hospitals")
+```
+
+AI 트랙이 Step 6-3 작업 중 패치 예정. BE 풀크롤링 전 동일 패치 확인 필요.
 
 ### B11. ai `index_hospital` → `ingest_hospital` rename 흡수 (AI PR #1 머지 후)
 

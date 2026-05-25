@@ -284,6 +284,85 @@
 - 개인 계정 리전: `us-east-1` → **`ap-northeast-2`** (서울 — 사용자 기존 자원 위치 일관성)
 - IAM 정책: 단일 ARN → **3-ARN 필수** (Global inference profile은 권한 평가 시 inference-profile + regional FM + global FM 3개 모두 검사. 빈 region/account의 `arn:aws:bedrock:::foundation-model/...` 누락이 가장 흔한 실수)
 
+### Step 6 — AI 개인 dev 계정 e2e: DDB + S3 + 28개 + 85개 미니 크롤링 🚧 진행 중
+
+> 목적: AI 트랙이 **AWS 위에서 자기 데이터로 분류·임베딩·KB ingest 실험을 돌릴 수 있는 최소 환경** 구성. 발표 정본 데이터는 BE 트랙(`kmuproj-02`) 풀커버를 따르고, AI는 강남구 4과목 ~85개 미니 표본으로 알고리즘 튜닝·검증.
+> 계정 분리(2026-05-25) 이후 AI는 `kmuproj-10` 자기 DDB·S3에서 작업. BE 자원 의존 없음.
+
+**2026-05-25 발견 (블로커·결정)**:
+
+- `SafeRole-kmuproj-10` 정책에 `dynamodb:CreateTable` 액션 **자체가 없음**. prefix 문제 아님. 어떤 이름으로 시도해도 `no identity-based policy allows the dynamodb:CreateTable action`. → 사용자가 **AWS 콘솔(GUI)로 직접 7테이블 수동 생성** (Step 6-1)
+- 자원 작명 규칙은 username prefix(`kmuproj-10-*`). DDB·S3·EC2 모두 동일. 강사 정책 일관성 확인됨 (예: `kmucloud-10-Orders`, `kmuproj-02-team3-backend` 등). `TABLE_PREFIX=kmuproj-10-clinic-` / S3 `kmuproj-10-clinic-focus-crawl`로 통일
+- BE 코드의 `be/scripts/crawl_all.py:35`가 `dynamodb.Table("Hospitals")` 로 **`TABLE_PREFIX` 미적용 하드코딩** — Step 6-7 진행 시 함께 패치 필요
+- BE 담당자 운영 테이블로 보이는 `kmuproj-02-team3-backend`(single-table-design, PK=`hospital_id`+SK=`entity`, 3124 items) 존재 확인. **현 코드는 7-table 가정 유지** — 우리(AI)는 그 가정을 따른다. BE 담당자가 single-table 전환했는지는 BE 담당자가 판단·코드 동기화할 일이며, AI 트랙이 단독으로 따라가지 않음 (PoC 범위 초과)
+
+**Step 6-1. DDB 7테이블 수동 생성 (AWS 콘솔)** 🚧
+
+코드 가정(`be/scripts/setup_dynamodb.py`·`be/adapters/dynamo_adapter.py`)과 정확히 일치해야 함. 콘솔에서 만들 때 아래 스펙대로:
+
+| 테이블 이름 | PK | SK | GSI | Billing |
+|---|---|---|---|---|
+| `kmuproj-10-clinic-Hospitals` | `hospital_id` (S) | — | **`sigungu-index`**: PK=`sigungu` (S), Projection=ALL | PAY_PER_REQUEST |
+| `kmuproj-10-clinic-Classifications` | `hospital_id` (S) | — | — | PAY_PER_REQUEST |
+| `kmuproj-10-clinic-HospitalDescriptions` | `hospital_id` (S) | — | — | PAY_PER_REQUEST |
+| `kmuproj-10-clinic-ServicesAndDoctors` | `hospital_id` (S) | — | — | PAY_PER_REQUEST |
+| `kmuproj-10-clinic-RelatedHospitals` | `hospital_id` (S) | — | — | PAY_PER_REQUEST |
+| `kmuproj-10-clinic-Feedback` | `hospital_id` (S) | `feedback_id` (S) | — | PAY_PER_REQUEST |
+| `kmuproj-10-clinic-ChangeHistory` | `hospital_id` (S) | `changed_at` (S) | — | PAY_PER_REQUEST |
+
+GSI `sigungu-index`는 `list_hospitals_by_sigungu`(`be/adapters/dynamo_adapter.py:71`)가 필수로 사용. 콘솔 "Indexes" 탭에서 추가 — Partition key `sigungu` (String), Projection type **All attributes**.
+
+체크리스트:
+
+- [ ] AWS 콘솔(`us-east-1`) DynamoDB → 위 표대로 7테이블 + 1 GSI 수동 생성
+- [ ] `.env`의 `TABLE_PREFIX=kmuproj-10-clinic-` 확정 (이미 적용된 상태에서 검증)
+- [ ] `aws dynamodb list-tables --region us-east-1 | grep kmuproj-10-clinic-` 로 7개 확인
+- [ ] `.env.example` 의 `TABLE_PREFIX=` 빈값 + 코멘트(BE=`kmuproj-02-clinic-` / AI=`kmuproj-10-clinic-`) 반영 (2026-05-25 갱신 완료)
+- [ ] BE 담당자에게 동일 수동 생성 안내 (BE는 자기 계정에서 `kmuproj-02-clinic-*`)
+
+**Step 6-2. S3 버킷 생성** ⏳
+
+- [ ] `aws s3 mb s3://kmuproj-10-clinic-focus-crawl --region us-east-1` (자기 username prefix라 권한 OK 예상). 실패 시 콘솔 수동
+- [ ] `.env`의 `S3_CRAWL_BUCKET=kmuproj-10-clinic-focus-crawl` 확인
+- [ ] 이미지 별도 버킷 안 만들고 같은 버킷 `images/` prefix로 둠 (PoC 단순화). 풀크롤링 1만 × 30 이미지 부담은 AI 트랙엔 무관 — 85개 × 30 = 2550장 수준이라 무시
+
+**Step 6-3. S3Adapter boto3 전환** ⏳
+
+> 결정 (2026-05-25, 사용자): **save_crawl_data·load_crawl_data·save_raw_html·save_image 전부 boto3 전환** (옵션 A, 통째). 로컬 fallback 없음.
+
+- [ ] `be/adapters/s3_adapter.py` 재작성:
+  - `s3.put_object` / `s3.get_object` (404 → None)
+  - `S3_CRAWL_BUCKET` env 필수, 없으면 명시적 에러 (조용한 fallback 금지)
+  - raw HTML: `raw/{hospital_id}/{safe_filename}.html`, images: `images/{hospital_id}/{filename}`
+  - **P0.5 적용** — `CrawlData.pages=[]`·`images=[]`·`public_data=None` 들어와도 `model_dump_json` 그대로 통과해서 적재. 빈 객체가 정상 경로
+- [ ] `be/scripts/crawl_all.py:35` 의 `dynamodb.Table("Hospitals")` 하드코딩을 `TABLE_PREFIX` 적용으로 패치 (`_table_name` 헬퍼 재사용 또는 인라인 prefix)
+- [ ] smoke test: 28개 중 1개를 put → get → CrawlData 재검증
+
+**Step 6-4. `be/data/crawl_results/` 28개 → S3 마이그레이션** ⏳
+
+- [ ] `be/scripts/migrate_local_crawl_to_s3.py` 신규 (일회성). glob로 28개 로드 → `S3Adapter.save_crawl_data` 호출
+- [ ] `aws s3 ls s3://kmuproj-10-clinic-focus-crawl/crawl/ | wc -l` 로 28 확인
+- [ ] 마이그레이션 후 [be/data/crawl_results 처리](#bedatacrawl_results-처리) 항목 닫기 → `.gitignore` 추가 → 삭제 (정제 검증은 S3에서)
+
+**Step 6-5. `ai/scripts/load_dev_subset.py` 신규 — HIRA 강남구 4과목 ~85개 적재** ⏳
+
+> 결정 (2026-05-25, 사용자): **과목별 동일 표본 N개** (URL 필터링 X). URL 없는 병원도 포함해서 P0.5(`crawler._empty_crawl_data` 폴백) 검증 겸용.
+
+- [ ] 진료과목 코드 확인 (HIRA dgsbjtCd):
+  - 피부과 / 정형외과 / 이비인후과 / 안과 4종 + 강남구 시군구 코드(`110001`)
+- [ ] HIRA `getHospBasisList` → 강남구 전체 조회 → 자체 필터:
+  - 진료과목별 ~22개씩 = 88개 (반올림 후 결과 ~85±5)
+  - 같은 병원이 여러 과목에 걸리면 dedupe (`ykiho` 기준)
+- [ ] `HospitalMeta` 변환 + `DynamoAdapter.save_hospital_meta` 적재
+- [ ] 통계 출력: 과목별 카운트 / URL 보유율 / 좌표 누락률 → P0.5 검증 기준선
+
+**Step 6-6. 85개 미니 크롤링** ⏳
+
+- [ ] `be/scripts/crawl_all.py` 실행 (Step 6-3에서 prefix 패치된 버전). DDB scan → URL 있는 병원만 → 자체 사이트 크롤링 → S3 적재
+- [ ] 예상 시간 ~20분 (85개 × 평균 13초 = 18분). 백그라운드 실행 + 로그 모니터링
+- [ ] 결과 통계: 성공 / JS 렌더링 필요 / 실패 — 성공률 60% 이상이면 후속 알고리즘 작업 진입 가능
+- [ ] **P0.5 검증** — URL 없는 병원은 자동 스킵, 자체 사이트 크롤링 실패한 병원은 `_empty_crawl_data` 로 빈 CrawlData 적재 (현 `crawler.py:60` 이미 처리)
+
 ---
 
 ## be/data/crawl_results 처리
