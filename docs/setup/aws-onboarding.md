@@ -693,10 +693,115 @@ PY
 
 ---
 
+## Step 6 — DynamoDB 7테이블 수동 생성 (AWS 콘솔)
+
+> 2026-05-25 재현 가이드. `SafeRole-kmuproj-10` (지원 계정 AI 트랙)은 `dynamodb:CreateTable` 권한이 **없음** — `be/scripts/setup_dynamodb.py` 같은 자동화 스크립트는 AccessDeniedException. **AWS 콘솔에서 직접 7개 생성**한다. 다른 트랙(`kmuproj-XX`)도 자기 계정 권한 정책에 CreateTable이 없으면 같은 우회 필요.
+
+### 6-1. 작명 규칙 (확정)
+
+강사 정책상 자원 이름은 **본인 username prefix**(`kmuproj-XX-*`)로 시작해야 한다. `list-tables` 결과에서 다른 팀이 `kmucloud-10-Orders`, `kmuproj-02-team3-backend`, `kmuai-03-platform-status-cache` 같은 명명 규칙 사용 중 — 동일 규칙. DynamoDB·S3·EC2 인스턴스 이름 전부 적용.
+
+본 프로젝트 AI 트랙 prefix: **`kmuproj-10-clinic-`** (`TABLE_PREFIX` 환경변수에 그대로 박힘).
+
+### 6-2. 콘솔에서 생성할 7테이블 스펙
+
+코드 가정(`be/scripts/setup_dynamodb.py` + `be/adapters/dynamo_adapter.py`)과 **정확히 일치**해야 e2e 가능.
+
+| 테이블 이름 | PK | SK | GSI | Billing |
+|---|---|---|---|---|
+| `kmuproj-10-clinic-Hospitals` | `hospital_id` (S) | — | **`sigungu-index`**: PK=`sigungu` (S), Projection=ALL | PAY_PER_REQUEST |
+| `kmuproj-10-clinic-Classifications` | `hospital_id` (S) | — | — | PAY_PER_REQUEST |
+| `kmuproj-10-clinic-HospitalDescriptions` | `hospital_id` (S) | — | — | PAY_PER_REQUEST |
+| `kmuproj-10-clinic-ServicesAndDoctors` | `hospital_id` (S) | — | — | PAY_PER_REQUEST |
+| `kmuproj-10-clinic-RelatedHospitals` | `hospital_id` (S) | — | — | PAY_PER_REQUEST |
+| `kmuproj-10-clinic-Feedback` | `hospital_id` (S) | `feedback_id` (S) | — | PAY_PER_REQUEST |
+| `kmuproj-10-clinic-ChangeHistory` | `hospital_id` (S) | `changed_at` (S) | — | PAY_PER_REQUEST |
+
+> **GSI `sigungu-index` 필수** — `be/adapters/dynamo_adapter.py:71`의 `list_hospitals_by_sigungu`가 이 GSI로 query. 만들지 않으면 `ValidationException: The table does not have the specified index`.
+
+### 6-3. 콘솔 절차 (`Hospitals` 기준 한 번만 예시)
+
+1. AWS 콘솔 → DynamoDB → 리전 `us-east-1` 확인
+2. **Create table**
+3. Table name: `kmuproj-10-clinic-Hospitals`
+4. Partition key: `hospital_id`, type **String**
+5. Sort key: 비움
+6. **Customize settings**:
+   - Read/write capacity settings → **On-demand** (PAY_PER_REQUEST와 동일)
+7. **Indexes** → Create index:
+   - Partition key: `sigungu`, type **String**
+   - Sort key: 비움
+   - Index name: `sigungu-index`
+   - Projected attributes: **All**
+8. Create table → 상태 `Active` 대기 (보통 30초)
+9. 나머지 6개도 동일 방식. GSI 없는 5개는 Step 7 스킵. Feedback·ChangeHistory는 SK 추가.
+
+### 6-4. 검증
+
+```bash
+aws dynamodb list-tables --region us-east-1 | grep kmuproj-10-clinic-
+```
+
+7개가 다 나와야 OK. 권한이 약해서 `ListTables`가 다른 팀 테이블도 같이 보이는데 `grep`으로 우리 prefix만 거름.
+
+### 6-5. 환경변수 확정
+
+`.env` 의 `TABLE_PREFIX=kmuproj-10-clinic-` (끝에 하이픈 포함) 확인. `be/adapters/dynamo_adapter.py`가 `f"{TABLE_PREFIX}{name}"` 으로 조합하므로 prefix 뒤에 테이블 이름이 바로 붙는다.
+
+### 6-6. 트러블슈팅
+
+**Q. `setup_dynamodb.py` 가 AccessDeniedException으로 멈춤**
+
+- 원인: `SafeRole-kmuproj-10` 정책에 `dynamodb:CreateTable` action 자체가 없음. prefix 문제 아님 — 어떤 이름으로 시도해도 동일 에러
+- 해결: 본 Step 6의 콘솔 수동 생성 절차로 우회. 자동화 스크립트는 BE 트랙(`kmuproj-02`) 같이 권한 있는 계정에서만 사용
+
+**Q. 다른 계정(BE 담당자 등)이 만든 비슷한 이름 테이블이 보임 (`kmuproj-02-team3-backend` 등)**
+
+- 강사 정책상 같은 계정 내 모든 테이블이 `ListTables`에는 보임. 권한은 prefix·account별로 분리되어 있으니 무시. 본인이 만든 것만 read/write 가능
+- BE 풀커버 데이터는 BE 계정에 있고, AI 미니 표본은 AI 계정에 있다. 데이터 공유 없음 (계정 분리 결정)
+
+**Q. 콘솔에서 `Region not supported` 에러**
+
+- 리전이 `ap-northeast-2`(서울)로 잡혀 있을 가능성. 지원 계정 자원은 무조건 **`us-east-1`**. 콘솔 우상단 리전 선택기로 변경
+
+---
+
+## Step 7 — AI 자체 S3 버킷 생성
+
+### 7-1. 버킷 생성
+
+```bash
+aws s3 mb s3://kmuproj-10-clinic-focus-crawl --region us-east-1
+```
+
+자기 username prefix 버킷이라 권한 OK 예상. 실패 시:
+
+- AccessDenied → AWS 콘솔 → S3 → Create bucket → name `kmuproj-10-clinic-focus-crawl`, region `us-east-1`, 나머지 기본값
+- BucketAlreadyExists → 글로벌 네임스페이스 충돌. 다른 이름 시도 (`kmuproj-10-clinic-crawl` 등) 후 `.env` 갱신
+
+### 7-2. 검증
+
+```bash
+aws s3 ls | grep kmuproj-10
+echo "---"
+# 권한 확인 — 더미 객체 put → get → delete
+echo "ping" | aws s3 cp - s3://kmuproj-10-clinic-focus-crawl/probe.txt
+aws s3 cp s3://kmuproj-10-clinic-focus-crawl/probe.txt -
+aws s3 rm s3://kmuproj-10-clinic-focus-crawl/probe.txt
+```
+
+put·get·delete 셋 다 성공해야 `S3Adapter` boto3 전환 가능.
+
+### 7-3. 환경변수
+
+`.env` 의 `S3_CRAWL_BUCKET=kmuproj-10-clinic-focus-crawl` 확인. `.env.example` 의 같은 변수는 의도적으로 비워둬서 BE·AI 담당자가 각자 채우게 함 (자기 username prefix).
+
+---
+
 ## 다음 단계
 
-이후 Step·재현 가이드는 `docs/plans/task-queue.md` "AI 트랙 AWS 세팅 todo" 섹션 참조.
-Step 3·4는 강사 권한 수령 후 본 문서에 추가 예정.
+이후 Step·재현 가이드는 `docs/plans/task-queue.md` "AI 트랙 AWS 세팅 todo" 섹션 참조 (Step 6은 task-queue Step 6-1·6-2 작업의 콘솔 절차 가이드).
+KB Retrieve·DataSource 적재(원래 task-queue Step 3·4)는 강사 권한 수령 후 본 문서에 별도 Step으로 추가 예정.
 
 ## 관련 문서
 
