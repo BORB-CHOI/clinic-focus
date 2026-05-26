@@ -29,12 +29,48 @@ load_env()
 import boto3  # noqa: E402
 
 from be.adapters.dynamo_adapter import DynamoAdapter  # noqa: E402
+from be.adapters.s3_adapter import S3Adapter  # noqa: E402
 
 
-def _build_content_text(meta, classification, description) -> str:
-    """KB가 임베딩할 본문. 한국어 자연어로 풀어쓴 통합 텍스트."""
+# KB DataSource 본문 — 길이 자르기 없이 전체 박는다.
+# - KB가 자동으로 청크 분할(기본 300토큰)하므로 우리가 자를 이유 없음
+# - 본문 위쪽이 사이트 공통 네비/메뉴라 단순 길이 자르기는 정보 손실이 큼
+# - HTML 잡음 정제(중복 단락 제거·블랙리스트)는 BE 이슈 #13 머지 후 들어옴
+#   — 그 전까지는 노이즈 섞인 채로 진행. 정제 후 재-ingest 시 본문이 깨끗해질 예정
+
+
+def _site_excerpts(crawl_data) -> str:
+    """크롤된 페이지 텍스트를 page_type 별로 묶어 통째 반환.
+
+    page_type 별 우선순위 정렬 — service·about 우선, main 그 다음, blog/doctors 마지막.
+    이렇게 하면 본문 위쪽엔 정보 밀도 높은 페이지가, KB가 청크 분할 후 임베딩 시점에
+    유의미한 단락이 더 잘 보존됨.
+    """
+    if not crawl_data or not crawl_data.pages:
+        return ""
+    priority = {"service": 0, "about": 1, "main": 2, "doctors": 3, "blog": 4, "other": 5}
+    sorted_pages = sorted(crawl_data.pages, key=lambda p: priority.get(p.page_type, 9))
+    blocks = []
+    for p in sorted_pages:
+        text = (p.html_text or "").strip()
+        if not text:
+            continue
+        blocks.append(f"[{p.page_type}] {p.url}\n{text}")
+    return "\n\n".join(blocks)
+
+
+def _build_content_text(meta, classification, description, crawl_data) -> str:
+    """KB가 임베딩할 본문. 한국어 자연어로 풀어쓴 통합 텍스트.
+
+    구성:
+      1. 메타·분류 요약 (HIRA + 분류 결과)
+      2. AI 설명 단락 (generate_description)
+      3. 자체 사이트 페이지 발췌 (자칭 컨셉의 원문, 사마귀·냉동치료 같은 구체 시술명 매칭용)
+    """
     paragraphs = "\n\n".join(p.text for p in description.paragraphs)
     focus = ", ".join(classification.primary_focus) if classification.primary_focus else "특정 분야 없음"
+    site_text = _site_excerpts(crawl_data)
+    site_block = f"\n\n[병원 자기 사이트 발췌]\n{site_text}" if site_text else ""
     return f"""병원 이름: {meta.name}
 지역: {meta.location.sido} {meta.location.sigungu}
 주소: {meta.location.address}
@@ -42,7 +78,7 @@ def _build_content_text(meta, classification, description) -> str:
 주력 분야: {focus}
 신뢰도: {classification.confidence.score}
 
-{paragraphs}
+{paragraphs}{site_block}
 """
 
 
@@ -84,6 +120,7 @@ def main() -> None:
 
     db = DynamoAdapter()
     s3 = boto3.client("s3", region_name=os.environ.get("AWS_REGION", "us-east-1"))
+    crawl_store = S3Adapter()  # 현재 로컬 FS 구현. 이슈 #23 머지 후 boto3 로 자동 전환.
 
     # 모든 Hospitals 스캔 후 Classifications + HospitalDescriptions 있는 것만 ingest
     scan_resp = db._table("Hospitals").scan()
@@ -98,12 +135,13 @@ def main() -> None:
         meta = db.load_hospital_meta(hospital_id)
         classification = db.load_classification(hospital_id)
         description = db.load_description(hospital_id)
+        crawl_data = crawl_store.load_crawl_data(hospital_id)  # None 가능 — 본문에서 자동 스킵
 
         if not (meta and classification and description):
             skipped += 1
             continue
 
-        content = _build_content_text(meta, classification, description)
+        content = _build_content_text(meta, classification, description, crawl_data)
         metadata = _build_metadata(meta, classification)
 
         text_key = f"{prefix}{hospital_id}.txt"

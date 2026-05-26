@@ -63,3 +63,12 @@
 - **2) 저장 경로**: 로컬 FS → `S3Adapter` boto3 (`s3://kmuproj-10-clinic-focus-crawl/crawl/{hospital_id}.json`)
 - **3),4)**: 독립 스크립트 → `be/handlers/index_hospital.py:run_index_pipeline` 한 함수가 classify + describe + ingest 통합 호출
 - **5)**: 임시 `search.sh` → `ai.retrieve_hospital(query: SearchQuery)` 정식 함수 (`docs/API-BE-AI.md` 명세)
+
+## 본체 `ingest_hospital` 구현 시 주의점 (scratch 검증으로 확인된 사실)
+
+1. **KB 본문은 자르지 말 것** — `vectorIngestionConfiguration: {}` 셋팅이라 KB가 기본 청크 분할(보통 300토큰) 자동 처리. 우리가 1KB·8KB 같은 한도로 자르면 정보 손실. 통째 박고 KB에 맡길 것. (2026-05-26 실측: kb_ingest.py 초안에서 1KB 자르기 했다가 사이트 공통 네비/메뉴만 들어가는 사고)
+2. **본문에 자체 사이트 텍스트 필수** — DDB 의 분류·설명만으론 구체 시술명(사마귀·냉동치료기 같은) 매칭 불가. `crawl_data.pages[*].html_text` 가 본문에 반드시 들어가야 함. **page_type 우선순위** (service·about · main · doctors · blog) 로 정렬 권장 (정보 밀도 높은 페이지부터)
+3. **HTML 잡음 정제는 BE 이슈 [#13](https://github.com/BORB-CHOI/clinic-focus/issues/13) 의존** — 현재 페이지 텍스트가 사이트 공통 네비/푸터 반복 포함 (페이지마다 첫 500자가 거의 같은 메뉴). 우리 AI 트랙이 임시 정제하면 BE 본체와 충돌. 이슈 #13 머지 후 재-ingest 필요
+4. **부정 문장 매칭 함정** — `generate_description` 이 "X 정보 없음"이라고 적은 부정 문장도 임베딩 공간에서 X 쿼리와 매칭됨. 약점·주의 단락은 의도 그대로 노출되지만 점수 1위로 잡혀서 사용자가 혼동할 수 있음. 부정 단락을 별도 필드/메타로 분리 검토 (현재는 무시)
+5. **빈 metadata 값 거절** — `primary_focus: []` 같은 빈 리스트는 KB 가 invalid metadata 로 거절. dict 에서 키 자체 제외 필요. `lat`/`lng=None` 도 동일. 자세한 건 [`docs/API-BE-AI.md`](../../docs/API-BE-AI.md) `ingest_hospital` 섹션
+6. **데이터 한계 솔직 인정** — 강남 미용 피부과 14개 표본에서 "사마귀" 검색 시 매칭 약한 건 사이트가 안 적어둬서. 사이트가 안 적은 정보는 4시그널(자칭·블로그·후기·Vision)이 풀 자리. 이슈 [#18](https://github.com/BORB-CHOI/clinic-focus/issues/18) 외부 시그널 크롤러가 들어와야 본격 해결
