@@ -58,9 +58,72 @@ from shared.models import CrawlData, SearchQuery, HospitalIngestMetadata
 
 ## DynamoDB 테이블
 
-`Hospitals` / `Classifications` / `Signals` / `Confidence` / `Feedback` / `ChangeHistory` / `HospitalDescriptions`. 파티션 키·GSI는 분류 스키마 v1 동결 후 확정.
+### 왜 DynamoDB
 
-**검색 경로 이원화**: 자연어 검색은 AI 모듈 `retrieve_hospital`이 KB Retrieve로 처리하고, 단순 카테고리 탐색(`sigungu=강남구 & specialty=피부과` 전체 목록)은 BE가 DynamoDB GSI로 직접 처리 (`sigungu#specialty` 같은 복합 키). 위치 기반 검색은 KB 메타필터(`lat`/`lng` bounding box) + EC2 haversine 재계산.
+RDS도 가용했지만 우리 access pattern과 워크로드가 DDB에 맞음:
+
+- **본문은 S3, 메타는 DDB** — `CrawlData` 본문(~1MB+)을 S3에 두고 `hospital_id`로만 인덱싱하는 게 DDB의 정석 패턴. RDS면 BLOB 칼럼이 비대해짐
+- **Single-table-design** — `PK=hospital_id` 하나로 한 병원의 모든 entity(메타·크롤링·분류·설명)를 `Query` 1회. RDS면 JOIN + N+1
+- **Idle $0** — 크롤링 + 시연 외엔 트래픽 없음. RDS `db.t4g.micro` ~$13/월이 부담
+- **스키마 자유** — `shared/models.py` 자주 바뀜. 마이그레이션 없는 게 큼
+- **SQL 강점 무의미** — 자연어 검색 = Bedrock KB, 카테고리 필터 = GSI 1개. 복합 WHERE·JOIN 쓸 일 없음
+
+자세한 비교·솔직한 한계는 `../docs/dev-roadmap.md` "왜 DynamoDB인가 (RDS 대신)" 섹션 참조.
+
+### ERD — 7-table 가정 (AI 트랙 사용 형태)
+
+코드(`be/scripts/setup_dynamodb.py`, `be/adapters/dynamo_adapter.py`)와 AI 트랙 자기 계정(`kmuproj-10-clinic-*`)이 따르는 구조. PK/SK 전부 String.
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ Hospitals                                               │
+│   PK: hospital_id                                       │
+│   attrs: name, location{sido,sigungu,address,lat,lng},  │
+│          phone, website_url, standard_specialty, ...    │
+│                                                         │
+│   GSI: sigungu-index                                    │
+│     PK: sigungu  → Projection: ALL                      │
+│     용도: list_hospitals_by_sigungu (카테고리 탐색)     │
+└─────────────────────────────────────────────────────────┘
+        │ hospital_id (논리적 FK, 명시 관계 없음)
+        ├─────────────────┬─────────────────┬──────────┐
+        ▼                 ▼                 ▼          ▼
+┌──────────────────┐ ┌──────────────────┐ ┌─────────┐ ┌──────────────────┐
+│ Classifications  │ │HospitalDescript- │ │Services │ │ RelatedHospitals │
+│ PK: hospital_id  │ │ions              │ │AndDoctors│ │ PK: hospital_id │
+│ attrs: standard_ │ │ PK: hospital_id  │ │PK: hosp.│ │ attrs: same_focus│
+│   specialty,     │ │ attrs: ai_desc,  │ │_id      │ │   [], gap_fill[] │
+│   primary_focus, │ │   generated_at,  │ │attrs:   │ │                  │
+│   confidence,    │ │   source_tags    │ │ services│ │                  │
+│   signals{...}   │ │                  │ │ [], doc-│ │                  │
+└──────────────────┘ └──────────────────┘ │ tors[], │ └──────────────────┘
+                                          │ devices │
+                                          └─────────┘
+        │
+        ├─────────────────┐
+        ▼                 ▼
+┌──────────────────┐ ┌──────────────────────────┐
+│ Feedback         │ │ ChangeHistory            │
+│ PK: hospital_id  │ │ PK: hospital_id          │
+│ SK: feedback_id  │ │ SK: changed_at (ISO8601) │
+│ attrs: device_id,│ │ attrs: field, old, new,  │
+│   thumb (👍/👎), │ │   reason, signal_source  │
+│   timestamp      │ │                          │
+└──────────────────┘ └──────────────────────────┘
+```
+
+- **관계는 DDB에 명시 안 됨** — `hospital_id` 동일성으로만 연결. JOIN은 코드에서 (`Hospitals.get` + `Classifications.get` 등 병렬 호출)
+- **GSI는 `Hospitals.sigungu-index` 1개** — `list_hospitals_by_sigungu`([be/adapters/dynamo_adapter.py:71](../be/adapters/dynamo_adapter.py#L71))가 유일한 비-PK 쿼리
+- **SK가 있는 테이블 2개** — `Feedback` (한 병원 여러 피드백), `ChangeHistory` (시간순 이력)
+- **테이블 prefix**: BE=`kmuproj-02-clinic-`, AI=`kmuproj-10-clinic-` (계정 분리, 2026-05-25)
+
+### BE 실 운영 분기 — Single-table
+
+위 7-table은 **코드 가정**이고, BE 담당자(김경재)는 실제 `kmuproj-02-team3-backend` **단일 테이블**로 운영 중 (확인: 3,124 items, PK=`hospital_id`+SK=`entity`). entity 값으로 `META`/`CRAWL`/`CLASSIFICATION`/... 를 구분해서 한 테이블에 통합. AI 트랙은 7-table 가정 유지 (PoC 범위 + 분담), single-table 전환 동기화는 BE가 판단.
+
+### 검색 경로 이원화
+
+자연어 검색은 AI 모듈 `retrieve_hospital`이 KB Retrieve로 처리하고, 단순 카테고리 탐색(`sigungu=강남구 & specialty=피부과` 전체 목록)은 BE가 DynamoDB GSI로 직접 처리 (`sigungu#specialty` 같은 복합 키). 위치 기반 검색은 KB 메타필터(`lat`/`lng` bounding box) + EC2 haversine 재계산.
 
 ## 응답 포맷
 

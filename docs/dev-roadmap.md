@@ -89,6 +89,20 @@ AWS 계정이 둘로 나뉜다 — **지원 계정**(us-east-1, IAM Role만, Acc
 | **배포** | 수동 (EC2 `git pull` / `aws s3 sync`) | — | CI·CD·로드밸런싱 없음 |
 | **개발 환경** | EC2 + VSCode Remote-SSH | 지원 | AI 트랙 작업 환경. 로컬 VSCode가 Remote-SSH 확장으로 EC2에 접속, 편집·터미널·git·Claude Code 전부 EC2에서 실행. 인스턴스 프로파일로 지원 계정 자원 자동 인증. (Cloud9이 강사 계정에서 권한 미발급 상태 → EC2가 임시 대체. Cloud9 권한 받으면 동일 방식으로 이전 가능) |
 
+### 왜 DynamoDB인가 (RDS 대신)
+
+RDS도 지원 계정에서 가용하지만 DynamoDB를 택한 근거는 **우리 워크로드의 형태**가 RDB의 강점과 어긋난다는 것:
+
+1. **S3 + DDB 분리가 정석 패턴** — 크롤링 본문(`crawl_data.json`, 페이지당 1MB+)은 S3에, 인덱싱 가능한 메타·분류 결과는 DDB에. RDS에 BLOB/TEXT 큰 칼럼 박는 건 백업 부풀음·성능 저하 안티패턴.
+2. **Single-table-design 친화성** — `PK=hospital_id`로 한 병원의 모든 entity(메타·크롤링·분류·설명)를 `Query` 1회로 가져옴. RDS면 4~5개 테이블 JOIN + N+1 방지 코드 필요. (BE는 실제 `kmuproj-02-team3-backend` 단일 테이블로 운영 중)
+3. **간헐적 트래픽** — 크롤링은 며칠에 한 번 몇 시간, 그 외엔 발표 시연 잠깐. DDB on-demand는 idle 시 $0, RDS `db.t4g.micro`는 항상 ~$13/월.
+4. **스키마 변경 자유** — `shared/models.py`가 PoC 중 자주 바뀜 (예: P0.5 `pages=[]`/`images=[]` 빈 객체 허용). DDB는 그대로 박고, RDS면 매번 마이그레이션.
+5. **RDS의 SQL 강점이 무의미** — 자연어 검색은 Bedrock KB가 처리하고 카테고리 필터는 GSI 1개로 충분. 복합 `WHERE`·풀텍스트·JOIN을 쓸 access pattern 자체가 없음.
+
+**약점도 명시**: 1억 건 + 초당 수만 TPS가 아닌 한 성능 차이는 없고, GSI 미설계 필드로는 못 찾는 제약이 있음. 우리는 access pattern이 단순해서 이 제약에 안 걸림.
+
+**솔직한 보완**: 초기 선택은 "AWS 매니지드 풀스택 어필 + idle $0"라는 약한 근거로 진행됐고, 위 근거 1·2·3은 BE 산출물(single-table 운영 + S3 본문 적재)을 본 뒤 사후 정리한 것. 결과적으로 워크로드와 맞아서 유지.
+
 ---
 
 ## 최비성 트랙 — AI · RAG
