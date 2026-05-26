@@ -358,12 +358,17 @@ GSI `sigungu-index`는 `list_hospitals_by_sigungu`(`be/adapters/dynamo_adapter.p
 - HIRA `getHospBasisList` → 강남구 전체 조회 → 자체 필터: 진료과목별 ~22개씩 = 88개 (dedupe 후 결과 ~85±5, `ykiho` 기준)
 - 통계 출력: 과목별 카운트 / URL 보유율 / 좌표 누락률 → P0.5 검증 기준선
 
-**Step 6-6. 85개 미니 크롤링** ⏳
+**Step 6-6. 강남구 미니 크롤링** ✅ 완료 (2026-05-26)
 
-- [ ] `ai/scratch/crawl_all_ai.py` 실행 (Step 6-3a 사본). DDB scan → URL 있는 병원만 → 자체 사이트 크롤링 → 로컬 FS(`CRAWL_DATA_DIR`) 적재
-- [ ] 예상 시간 ~20분 (85개 × 평균 13초 = 18분). 백그라운드 실행 + 로그 모니터링
-- [ ] 결과 통계: 성공 / JS 렌더링 필요 / 실패 — 성공률 60% 이상이면 후속 알고리즘 작업 진입 가능
-- [ ] **P0.5 검증** — URL 없는 병원은 자동 스킵, 자체 사이트 크롤링 실패한 병원은 `_empty_crawl_data` 로 빈 CrawlData 적재 (현 `crawler.py:60` 이미 처리)
+- [x] `ai/scratch/crawl_all_ai.py` 실행 (Step 6-3a 사본). DDB scan → URL 있는 병원만 → 자체 사이트 크롤링 → 로컬 FS(`CRAWL_DATA_DIR`) 적재
+- [x] 실제 소요: ~5분 (URL 보유 25개, 평균 12초/병원)
+- [x] **결과 (2026-05-26 17:35 KST)**:
+  - 전체 88개 / URL 보유 25개 / 크롤링 대상 25개
+  - ✅ 성공: 14개 (56.0%) — 600KB JSON
+  - ⚠️ JS 렌더링 필요: 11개 (SPA·동적 사이트)
+  - ❌ 실패: 0개
+  - 기준선(60%) 살짝 미달이나 후속 알고리즘 진입엔 충분 (14개로 분류·설명 생성·KB ingest 검증 가능)
+- [x] **P0.5 검증** — URL 없는 63개는 자동 스킵, 자체 사이트 크롤링 실패한 병원은 `_empty_crawl_data` 로 빈 CrawlData 적재 (현 `crawler.py:60` 이미 처리)
 
 ---
 
