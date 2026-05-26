@@ -1,87 +1,244 @@
-"""DynamoDB에 저장된 병원 중 홈페이지 URL 없는 병원을 카카오/네이버로 보강."""
+"""강남구 병원 홈페이지 URL 보강 — 네이버 + 카카오 2단계 (async).
 
+실행 순서:
+  1단계: 네이버 지역 검색 API → search_hospital_multi_query (쿼리 다변화)
+  2단계: 카카오 로컬 검색 API → place_url → Playwright 렌더링 → 홈페이지 링크 추출
+
+URL 발견 후 URLValidator로 검증 → 유효한 경우만 DynamoDB 저장.
+
+실행 전 .env 확인:
+  NAVER_MAP_CLIENT_ID, NAVER_MAP_CLIENT_SECRET  (1단계 필수)
+  KAKAO_REST_API_KEY                            (2단계 필수)
+"""
+
+from __future__ import annotations
+
+import asyncio
 import os
 import sys
 import time
+
+# 터미널에 즉시 출력 (버퍼링 끄기)
+sys.stdout.reconfigure(line_buffering=True)
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), ".env"))
 
-import boto3
-from be.adapters.kakao_adapter import KakaoAdapter
 from be.adapters.dynamo_adapter import DynamoAdapter
+from be.adapters.kakao_adapter import KakaoAdapter
+from be.adapters.kakao_place_renderer import KakaoPlaceRenderer
+from be.adapters.naver_map_adapter import NaverMapAdapter
+from be.core.browser_manager import BrowserManager
+from be.core.url_validator import URLValidator
 
 
-def main():
-    kakao = KakaoAdapter()
-    db = DynamoAdapter()
+NAVER_KEY = os.environ.get("NAVER_MAP_CLIENT_ID", "")
+KAKAO_KEY = os.environ.get("KAKAO_REST_API_KEY", "")
 
-    print("=" * 60)
-    print("홈페이지 URL 보강 (카카오 로컬 검색)")
-    print("=" * 60)
+# 네이버 link 필드에서 실제 홈페이지로 인정하지 않을 도메인들
+# 네이버 블로그는 병원의 공식 온라인 채널로 인정 — 자칭 컨셉 추출 소스로 유효
+NAVER_SKIP_DOMAINS = ("map.naver.com", "search.naver.com", "news.naver.com")
 
-    # DynamoDB에서 URL 없는 병원 조회
-    dynamodb = boto3.resource("dynamodb", region_name=os.environ.get("AWS_REGION", "us-east-1"))
-    table = dynamodb.Table("Hospitals")
 
-    # 전체 스캔 (PoC 규모라 괜찮음)
-    all_items = []
-    resp = table.scan()
-    all_items.extend(resp.get("Items", []))
-    while "LastEvaluatedKey" in resp:
-        resp = table.scan(ExclusiveStartKey=resp["LastEvaluatedKey"])
-        all_items.extend(resp.get("Items", []))
+def _is_real_website(url: str) -> bool:
+    """실제 병원 홈페이지 URL인지 판단.
+    blog.naver.com은 허용 — 홈페이지 없는 병원의 공식 채널로 인정.
+    """
+    if not url or not url.startswith("http"):
+        return False
+    return not any(d in url for d in NAVER_SKIP_DOMAINS)
 
-    # URL 없는 병원 필터
-    no_url = []
-    for item in all_items:
-        contact = item.get("contact", {})
-        url = contact.get("website_url")
-        if not url:
-            no_url.append(item)
 
-    print(f"  전체 병원: {len(all_items)}개")
-    print(f"  URL 없는 병원: {len(no_url)}개")
-    print("-" * 60)
+async def run_step1_naver(
+    db: DynamoAdapter,
+    no_url: list,
+    validator: URLValidator,
+    *,
+    dry_run: bool = False,
+) -> tuple[int, int, list]:
+    """1단계: 네이버 지역 검색 (쿼리 다변화) → 홈페이지 URL 보강.
 
-    # 카카오 검색으로 URL 보강
-    enriched = 0
-    failed = 0
+    Returns:
+        (naver_found, validation_rejected, still_missing)
+    """
+    if not NAVER_KEY:
+        print("  ⚠️  NAVER_MAP_CLIENT_ID 미설정 — 1단계 건너뜀")
+        return 0, 0, no_url
 
-    for i, item in enumerate(no_url, 1):
-        name = item.get("name", "")
-        location = item.get("location", {})
-        address = location.get("address", "")
+    naver = NaverMapAdapter()
+    found = 0
+    rejected = 0
+    still_missing = []
+    total = len(no_url)
+    start_time = time.time()
 
-        kakao_info = kakao.search_hospital(name, address)
+    for i, hospital in enumerate(no_url, 1):
+        result = naver.search_hospital_multi_query(hospital.name, hospital.location.address)
+        link = (result or {}).get("link", "")
 
-        if kakao_info and kakao_info.get("place_url"):
-            # DynamoDB 업데이트 — contact.website_url에 카카오맵 URL 저장
-            hospital_id = item["hospital_id"]
-            table.update_item(
-                Key={"hospital_id": hospital_id},
-                UpdateExpression="SET contact.website_url = :url",
-                ExpressionAttributeValues={":url": kakao_info["place_url"]},
-            )
-            enriched += 1
-            print(f"  [{i}/{len(no_url)}] ✅ {name} → {kakao_info['place_url']}")
+        if _is_real_website(link):
+            # URL 유효성 검증
+            validated_url = await validator.validate(link)
+            if validated_url:
+                if not dry_run:
+                    db.update_website_url(hospital.hospital_id, validated_url)
+                found += 1
+                print(f"  [{i}/{total}] ✅ {hospital.name} → {validated_url}")
+            else:
+                rejected += 1
+                still_missing.append(hospital)
         else:
-            failed += 1
-            if i % 100 == 0:
-                print(f"  [{i}/{len(no_url)}] 진행 중... (성공: {enriched}, 실패: {failed})")
+            still_missing.append(hospital)
 
-        # API 호출 제한 방지 (초당 10회 제한)
-        time.sleep(0.15)
+        # 50개마다 진행률 + ETA 출력
+        if i % 50 == 0:
+            elapsed = time.time() - start_time
+            rate = i / elapsed if elapsed > 0 else 0
+            remaining_count = total - i
+            eta_seconds = remaining_count / rate if rate > 0 else 0
+            eta_min = int(eta_seconds // 60)
+            eta_sec = int(eta_seconds % 60)
+            pct = i / total * 100
+            print(
+                f"  📊 [{i}/{total}] {pct:.0f}% | "
+                f"발견: {found} | 검증실패: {rejected} | "
+                f"속도: {rate:.1f}건/초 | ETA: {eta_min}분 {eta_sec}초"
+            )
+
+    return found, rejected, still_missing
+
+
+async def run_step2_kakao(
+    db: DynamoAdapter,
+    no_url: list,
+    validator: URLValidator,
+    *,
+    dry_run: bool = False,
+) -> tuple[int, int]:
+    """2단계: 카카오 로컬 검색 → Playwright 장소 페이지 렌더링 → 홈페이지 URL 보강.
+
+    Returns:
+        (kakao_found, validation_rejected)
+    """
+    if not KAKAO_KEY:
+        print("  ⚠️  KAKAO_REST_API_KEY 미설정 — 2단계 건너뜀")
+        return 0, 0
+
+    kakao = KakaoAdapter()
+    found = 0
+    rejected = 0
+    total = len(no_url)
+    start_time = time.time()
+
+    async with BrowserManager() as bm:
+        renderer = KakaoPlaceRenderer(bm)
+
+        for i, hospital in enumerate(no_url, 1):
+            kakao_info = kakao.search_hospital(hospital.name, hospital.location.address)
+            place_url = (kakao_info or {}).get("place_url", "")
+
+            if not place_url:
+                await asyncio.sleep(0.15)
+            else:
+                # Playwright로 카카오 장소 페이지에서 홈페이지 URL 추출
+                homepage = await renderer.extract_homepage_url(place_url)
+
+                if homepage:
+                    # URL 유효성 검증
+                    validated_url = await validator.validate(homepage)
+                    if validated_url:
+                        if not dry_run:
+                            db.update_website_url(hospital.hospital_id, validated_url)
+                        found += 1
+                        print(f"  [{i}/{total}] ✅ {hospital.name} → {validated_url}")
+                    else:
+                        rejected += 1
+
+                await asyncio.sleep(0.5)  # Playwright는 느리므로 0.5초 간격
+
+            # 20개마다 진행률 + ETA 출력
+            if i % 20 == 0:
+                elapsed = time.time() - start_time
+                rate = i / elapsed if elapsed > 0 else 0
+                remaining_count = total - i
+                eta_seconds = remaining_count / rate if rate > 0 else 0
+                eta_min = int(eta_seconds // 60)
+                eta_sec = int(eta_seconds % 60)
+                pct = i / total * 100
+                print(
+                    f"  📊 [{i}/{total}] {pct:.0f}% | "
+                    f"발견: {found} | 검증실패: {rejected} | "
+                    f"속도: {rate:.1f}건/초 | ETA: {eta_min}분 {eta_sec}초"
+                )
+
+    return found, rejected
+
+
+async def main() -> None:
+    db = DynamoAdapter()
+    validator = URLValidator()
+
+    print("=" * 60)
+    print("홈페이지 URL 보강 — 강남구")
+    print("=" * 60)
+
+    # 1. 강남구 전체 META 조회 (sigungu-index GSI)
+    print("\nDynamoDB에서 강남구 병원 조회 중...")
+    hospitals = db.list_hospitals_by_sigungu("강남구")
+
+    with_url = [h for h in hospitals if h.contact.website_url]
+    no_url   = [h for h in hospitals if not h.contact.website_url]
+
+    print(f"  전체: {len(hospitals)}개")
+    print(f"  기존 URL 있음: {len(with_url)}개 (스킵)")
+    print(f"  URL 없음 → 보강 대상: {len(no_url)}개")
+
+    # ── 1단계: 네이버 (쿼리 다변화) ──────────────────────────────
+    print(f"\n[ 1단계 ] 네이버 지역 검색 — 쿼리 다변화 ({len(no_url)}개 대상)")
+    print("-" * 60)
+    naver_found, naver_rejected, still_missing = await run_step1_naver(
+        db, no_url, validator
+    )
+    print(f"  → 네이버 발견: {naver_found}개 / 검증 실패: {naver_rejected}개 / 잔여: {len(still_missing)}개")
+
+    # ── 2단계: 카카오 (Playwright) ─────────────────────────────
+    print(f"\n[ 2단계 ] 카카오 장소 페이지 Playwright 렌더링 ({len(still_missing)}개 대상)")
+    print("-" * 60)
+    kakao_found, kakao_rejected = await run_step2_kakao(
+        db, still_missing, validator
+    )
+    print(f"  → 카카오 발견: {kakao_found}개 / 검증 실패: {kakao_rejected}개")
+
+    # ── 최종 리포트 ────────────────────────────────────────────
+    total_found = naver_found + kakao_found
+    total_rejected = naver_rejected + kakao_rejected
+    total_with_url = len(with_url) + total_found
+    total = len(hospitals)
+    remaining = total - total_with_url
+    hit_rate = (total_found / len(no_url) * 100) if no_url else 0.0
 
     print("\n" + "=" * 60)
-    print("URL 보강 완료!")
-    print(f"  ✅ 보강 성공: {enriched}개")
-    print(f"  ❌ 검색 실패: {failed}개")
-    print(f"  📍 총 크롤링 가능 병원: {enriched + 62}개 (기존 62 + 보강 {enriched})")
+    print("최종 리포트")
+    print("=" * 60)
+    print(f"  ┌─────────────────────────────────────────┐")
+    print(f"  │ 소스별 발견 수                          │")
+    print(f"  ├─────────────────────────────────────────┤")
+    print(f"  │ 기존 URL (심평원 등):  {len(with_url):>5}개           │")
+    print(f"  │ 네이버 보강:          +{naver_found:>4}개           │")
+    print(f"  │ 카카오 보강:          +{kakao_found:>4}개           │")
+    print(f"  ├─────────────────────────────────────────┤")
+    print(f"  │ 검증 거부 (총):        {total_rejected:>5}개           │")
+    print(f"  │   - 네이버 검증 실패:  {naver_rejected:>5}개           │")
+    print(f"  │   - 카카오 검증 실패:  {kakao_rejected:>5}개           │")
+    print(f"  ├─────────────────────────────────────────┤")
+    print(f"  │ 히트율 (보강 대상 중): {hit_rate:>6.1f}%          │")
+    print(f"  │ 크롤링 가능 (총):     {total_with_url:>5}개 / {total}개  │")
+    print(f"  │ 잔여 (URL 없음):      {remaining:>5}개           │")
+    print(f"  └─────────────────────────────────────────┘")
     print("=" * 60)
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

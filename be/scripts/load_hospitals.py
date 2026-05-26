@@ -18,7 +18,7 @@ def main():
     db = DynamoAdapter()
 
     sido_code = os.environ.get("SIDO_CODE", "110000")  # 서울
-    sigungu_code = os.environ.get("SIGUNGU_CODE", "110012")  # 성북구
+    sigungu_code = os.environ.get("SIGUNGU_CODE", "110001")  # 강남구
 
     print("=" * 60)
     print(f"심평원 API → DynamoDB 적재")

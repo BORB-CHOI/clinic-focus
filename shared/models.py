@@ -17,6 +17,7 @@ class CrawledPage(BaseModel):
     page_type: Literal["main", "about", "service", "doctors", "blog", "other"]
     html_text: str
     fetched_at: datetime
+    render_method: Literal["static", "playwright"] = "static"
 
 
 class CrawledImage(BaseModel):
