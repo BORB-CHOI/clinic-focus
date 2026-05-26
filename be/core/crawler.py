@@ -3,15 +3,21 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import re
 from datetime import datetime
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 from urllib.parse import urljoin, urlparse
 
 import httpx
 from bs4 import BeautifulSoup
 
 from shared.models import CrawlData, CrawledImage, CrawledPage, PublicData
+
+if TYPE_CHECKING:
+    from be.core.browser_manager import BrowserManager
+
+logger = logging.getLogger(__name__)
 
 # 서브 페이지 분류 키워드
 _PAGE_TYPE_KEYWORDS: dict[str, list[str]] = {
@@ -44,27 +50,72 @@ async def crawl_one_hospital(
     hospital_id: str,
     website_url: str,
     http_client: httpx.AsyncClient,
+    browser_manager: "BrowserManager | None" = None,
 ) -> CrawlData:
-    """병원 1개 사이트 크롤링. CrawlData 반환."""
+    """병원 1개 사이트 크롤링. CrawlData 반환.
+
+    browser_manager가 제공되면 정적 크롤링 실패(< 100자) 시 Playwright 폴백 사용.
+    """
+    from be.core.js_renderer import JSRenderer
+
     pages: list[CrawledPage] = []
     images: list[CrawledImage] = []
     visited_urls: set[str] = set()
+
+    # JS 렌더러 초기화 (browser_manager가 있을 때만)
+    js_renderer: JSRenderer | None = None
+    if browser_manager is not None:
+        js_renderer = JSRenderer(browser_manager)
+
+    # 메인 페이지가 JS 렌더링을 필요로 했는지 추적
+    use_playwright = False
 
     # 도메인 제한 (외부 사이트로 나가지 않도록)
     parsed_base = urlparse(website_url)
     base_domain = parsed_base.netloc
 
-    # 1. 메인 페이지 fetch (raw HTML 포함)
+    # 1. 메인 페이지 fetch (정적 먼저 시도)
     main_result = await _fetch_page_raw(http_client, website_url)
-    if not main_result:
+    render_method: Literal["static", "playwright"] = "static"
+
+    if main_result:
+        raw_html, text, soup = main_result
+    else:
+        text = ""
+        soup = None
+        raw_html = ""
+
+    # 정적 결과가 없거나 텍스트 < 100자 → JS 폴백 시도
+    if len(text) < 100 and js_renderer is not None:
+        logger.info("Static text too short (%d chars) for %s, trying JS render", len(text), website_url)
+        js_result = await js_renderer.render_and_extract(website_url)
+        if js_result is not None:
+            js_text, js_soup = js_result
+            if len(js_text) >= 100:
+                text = js_text
+                soup = js_soup
+                render_method = "playwright"
+                use_playwright = True
+                logger.info("JS render succeeded for %s (%d chars)", website_url, len(js_text))
+            else:
+                logger.warning("JS render also short (%d chars) for %s, skipping", len(js_text), website_url)
+        else:
+            logger.warning("JS render failed for %s, skipping", website_url)
+
+    # 메인 페이지 결과 판정:
+    # - browser_manager가 있을 때: 100자 미만이면 빈 결과 (render_failed)
+    # - browser_manager가 없을 때: soup만 있으면 기존 동작 유지 (하위 호환)
+    if soup is None:
+        return _empty_crawl_data(hospital_id, website_url)
+    if len(text) < 100 and browser_manager is not None:
         return _empty_crawl_data(hospital_id, website_url)
 
-    raw_html, text, soup = main_result
     main_page = CrawledPage(
         url=website_url,
         page_type="main",
         html_text=text,
         fetched_at=datetime.utcnow(),
+        render_method=render_method,
     )
     pages.append(main_page)
     visited_urls.add(website_url)
@@ -87,13 +138,30 @@ async def crawl_one_hospital(
 
         await asyncio.sleep(REQUEST_DELAY)
 
-        sub_result = await _fetch_page_raw(http_client, link_url)
-        if not sub_result:
-            continue
+        sub_render_method: Literal["static", "playwright"] = "static"
+        sub_text: str = ""
+        sub_soup: BeautifulSoup | None = None
 
-        sub_raw, sub_text, sub_soup = sub_result
+        if use_playwright and js_renderer is not None:
+            # 메인 페이지가 JS 필요했으면 서브페이지도 Playwright 사용
+            js_sub_result = await js_renderer.render_and_extract(link_url)
+            if js_sub_result is not None:
+                sub_text, sub_soup = js_sub_result
+                sub_render_method = "playwright"
+            # Playwright 실패 시 정적 폴백
+            if not sub_text:
+                sub_result = await _fetch_page_raw(http_client, link_url)
+                if sub_result:
+                    _, sub_text, sub_soup = sub_result
+                    sub_render_method = "static"
+        else:
+            # 정적 크롤링
+            sub_result = await _fetch_page_raw(http_client, link_url)
+            if sub_result:
+                _, sub_text, sub_soup = sub_result
+                sub_render_method = "static"
 
-        # 텍스트가 너무 짧으면 스킵 (JS 렌더링 필요 사이트)
+        # 텍스트가 너무 짧으면 스킵
         if len(sub_text) < 50:
             continue
 
@@ -102,11 +170,12 @@ async def crawl_one_hospital(
             page_type=page_type,
             html_text=sub_text,
             fetched_at=datetime.utcnow(),
+            render_method=sub_render_method,
         )
         pages.append(sub_page)
 
         # 서브 페이지 이미지도 수집
-        if len(images) < MAX_IMAGES:
+        if len(images) < MAX_IMAGES and sub_soup is not None:
             sub_images = _extract_images(sub_soup, link_url)
             remaining = MAX_IMAGES - len(images)
             images.extend(sub_images[:remaining])
