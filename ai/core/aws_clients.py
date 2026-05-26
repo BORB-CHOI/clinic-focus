@@ -2,8 +2,11 @@
 ai/core/aws_clients.py — 계정별 boto3 세션 팩토리.
 
 EC2 환경에서 두 개의 AWS 계정을 다룬다:
-  - 지원 계정: EC2 인스턴스 프로파일로 자동 인증 (DynamoDB, S3)
-  - 개인 계정: AI_AWS_* 환경변수로 명시적 인증 (Bedrock, S3 Vectors, Textract)
+  - 지원 계정 (us-east-1, 인스턴스 프로파일): DynamoDB, S3, Bedrock 텍스트(Haiku/Nova), Titan Embed v2, Bedrock KB
+  - 개인 계정 (ap-northeast-2, AI_AWS_*): Bedrock Vision (Sonnet 4.6 Global inference profile) — 시연 한정
+
+CLAUDE.md "AWS 계정·인프라 구조" 표 참조. 텍스트 분류·설명·임베딩은 모두 지원 계정,
+Vision(이미지 분석)만 개인 계정. get_bedrock_runtime_client(use_vision=...) 로 분기.
 
 모든 AI 모듈은 이 팩토리를 통해서만 boto3 클라이언트를 만든다.
 """
@@ -64,8 +67,17 @@ def _ai_region_name() -> str:
 # 공개 팩토리 함수 — AI 모듈용 (개인 계정)
 # ---------------------------------------------------------------------------
 
-def get_bedrock_runtime_client() -> Any:
-    """개인 계정 Bedrock Runtime 클라이언트."""
+def get_bedrock_runtime_client(use_vision: bool = False) -> Any:
+    """Bedrock Runtime 클라이언트.
+
+    2026-05-26 결정: 강사 계정 정책이 inference profile(cross-region) 라우팅을
+    deny 해서 Haiku 4.5/Sonnet 4.6 호출 불가 → 텍스트도 개인 계정으로 통합.
+    Titan Embed v2 임베딩만 강사 계정 us-east-1 on-demand 가능하지만 KB가
+    내부 호출하므로 우리가 직접 부를 일은 거의 없음.
+
+    use_vision 파라미터는 호출처 호환을 위해 유지하되 현재는 둘 다 개인 계정.
+    추후 강사 정책 완화되면 텍스트만 다시 지원 계정으로 분리 가능.
+    """
     return _get_ai_session().client("bedrock-runtime", region_name=_ai_region_name())
 
 
