@@ -326,39 +326,41 @@ GSI `sigungu-index`는 `list_hospitals_by_sigungu`(`be/adapters/dynamo_adapter.p
 - [ ] `.env`의 `S3_CRAWL_BUCKET=kmuproj-10-clinic-focus-crawl` 확인
 - [ ] 이미지 별도 버킷 안 만들고 같은 버킷 `images/` prefix로 둠 (PoC 단순화). 풀크롤링 1만 × 30 이미지 부담은 AI 트랙엔 무관 — 85개 × 30 = 2550장 수준이라 무시
 
-**Step 6-3. S3Adapter boto3 전환** ⏳
+**Step 6-3. S3Adapter boto3 전환 + crawl_all prefix 패치 → BE 위임** ⏭️ ([#23](https://github.com/BORB-CHOI/clinic-focus/issues/23) 발행, AI 트랙 비차단)
 
-> 결정 (2026-05-25, 사용자): **save_crawl_data·load_crawl_data·save_raw_html·save_image 전부 boto3 전환** (옵션 A, 통째). 로컬 fallback 없음.
+> 변경 (2026-05-26, 사용자): 이 두 패치는 **BE 공용 코드 영역**이라 AI 트랙이 단독 수정하면 BE 운영(single-table) 흐름과 어긋남. **GitHub 이슈로 BE 담당자에게 위임**하고, AI는 `ai/scratch/`에서 로컬 사본으로 우회해 e2e 진행.
 
-- [ ] `be/adapters/s3_adapter.py` 재작성:
-  - `s3.put_object` / `s3.get_object` (404 → None)
-  - `S3_CRAWL_BUCKET` env 필수, 없으면 명시적 에러 (조용한 fallback 금지)
-  - raw HTML: `raw/{hospital_id}/{safe_filename}.html`, images: `images/{hospital_id}/{filename}`
-  - **P0.5 적용** — `CrawlData.pages=[]`·`images=[]`·`public_data=None` 들어와도 `model_dump_json` 그대로 통과해서 적재. 빈 객체가 정상 경로
-- [ ] `be/scripts/crawl_all.py:35` 의 `dynamodb.Table("Hospitals")` 하드코딩을 `TABLE_PREFIX` 적용으로 패치 (`_table_name` 헬퍼 재사용 또는 인라인 prefix)
-- [ ] smoke test: 28개 중 1개를 put → get → CrawlData 재검증
+- 작업 대상: `be/adapters/s3_adapter.py` boto3 전환 + `be/scripts/crawl_all.py:35` `TABLE_PREFIX` 적용
+- 처리: 단일 GitHub 이슈 [#23](https://github.com/BORB-CHOI/clinic-focus/issues/23) 발행 완료 (#13·#18과 직교 명시)
+- AI 트랙은 Step 6-3a로 우회 (아래)
 
-**Step 6-4. `be/data/crawl_results/` 28개 → S3 마이그레이션** ⏳
+**Step 6-3a. AI 트랙 e2e 우회 — `ai/scratch/`** 🚧
 
-- [ ] `be/scripts/migrate_local_crawl_to_s3.py` 신규 (일회성). glob로 28개 로드 → `S3Adapter.save_crawl_data` 호출
-- [ ] `aws s3 ls s3://kmuproj-10-clinic-focus-crawl/crawl/ | wc -l` 로 28 확인
-- [ ] 마이그레이션 후 [be/data/crawl_results 처리](#bedatacrawl_results-처리) 항목 닫기 → `.gitignore` 추가 → 삭제 (정제 검증은 S3에서)
+> `ai/scratch/`는 e2e 검증 끝나면 삭제할 임시 작업 폴더. `.gitignore` 대신 임시 README로 의도 명시(BE PR 머지되면 삭제).
 
-**Step 6-5. `ai/scripts/load_dev_subset.py` 신규 — HIRA 강남구 4과목 ~85개 적재** ⏳
+- [ ] `ai/scratch/` 폴더 생성 + `README.md` (목적·삭제 시점·BE 이슈 링크)
+- [ ] `ai/scratch/load_dev_subset.py` — HIRA 강남구 4과목 ~85개 → `HospitalMeta` 변환 → DDB 적재 (Step 6-5 본체를 이 폴더로)
+- [ ] `ai/scratch/crawl_all_ai.py` — `be/scripts/crawl_all.py` 로컬 사본, `dynamodb.Table(f"{TABLE_PREFIX}Hospitals")` 로 prefix 적용. BE 본체는 안 건드림
+- [ ] `S3Adapter`는 현 로컬 FS 버전 그대로 사용 (`CRAWL_DATA_DIR=/home/ec2-user/clinic-focus/data/crawl`). 같은 EC2 프로세스라 e2e 검증엔 충분 — S3 boto3 전환은 BE 이슈 머지 후 폴드인
 
-> 결정 (2026-05-25, 사용자): **과목별 동일 표본 N개** (URL 필터링 X). URL 없는 병원도 포함해서 P0.5(`crawler._empty_crawl_data` 폴백) 검증 겸용.
+**Step 6-4. `be/data/crawl_results/` 28개 → S3 마이그레이션** ❌ 폐기 (2026-05-26)
 
-- [ ] 진료과목 코드 확인 (HIRA dgsbjtCd):
-  - 피부과 / 정형외과 / 이비인후과 / 안과 4종 + 강남구 시군구 코드(`110001`)
-- [ ] HIRA `getHospBasisList` → 강남구 전체 조회 → 자체 필터:
-  - 진료과목별 ~22개씩 = 88개 (반올림 후 결과 ~85±5)
-  - 같은 병원이 여러 과목에 걸리면 dedupe (`ykiho` 기준)
-- [ ] `HospitalMeta` 변환 + `DynamoAdapter.save_hospital_meta` 적재
-- [ ] 통계 출력: 과목별 카운트 / URL 보유율 / 좌표 누락률 → P0.5 검증 기준선
+> 결정 (2026-05-26, 사용자): 28개는 BE 계정 ykiho 기반이라 AI 계정 데이터와 어차피 매핑 안 됨. **버리고 85개로 처음부터 시작**.
+
+- 28개 파일은 정제 검증 끝나면 `.gitignore` + 삭제 (issue #13 본문의 부수 요청 그대로)
+- 마이그레이션 스크립트 불필요
+
+**Step 6-5. HIRA 강남구 4과목 ~85개 적재** ⏳ → Step 6-3a로 통합
+
+> Step 6-3a `load_dev_subset.py` 작업 항목 참조. (별도 Step 유지 안 함 — 동일 작업)
+
+- 진료과목 코드 (HIRA dgsbjtCd): 피부과 / 정형외과 / 이비인후과 / 안과 4종 + 강남구 시군구 코드(`110001`)
+- HIRA `getHospBasisList` → 강남구 전체 조회 → 자체 필터: 진료과목별 ~22개씩 = 88개 (dedupe 후 결과 ~85±5, `ykiho` 기준)
+- 통계 출력: 과목별 카운트 / URL 보유율 / 좌표 누락률 → P0.5 검증 기준선
 
 **Step 6-6. 85개 미니 크롤링** ⏳
 
-- [ ] `be/scripts/crawl_all.py` 실행 (Step 6-3에서 prefix 패치된 버전). DDB scan → URL 있는 병원만 → 자체 사이트 크롤링 → S3 적재
+- [ ] `ai/scratch/crawl_all_ai.py` 실행 (Step 6-3a 사본). DDB scan → URL 있는 병원만 → 자체 사이트 크롤링 → 로컬 FS(`CRAWL_DATA_DIR`) 적재
 - [ ] 예상 시간 ~20분 (85개 × 평균 13초 = 18분). 백그라운드 실행 + 로그 모니터링
 - [ ] 결과 통계: 성공 / JS 렌더링 필요 / 실패 — 성공률 60% 이상이면 후속 알고리즘 작업 진입 가능
 - [ ] **P0.5 검증** — URL 없는 병원은 자동 스킵, 자체 사이트 크롤링 실패한 병원은 `_empty_crawl_data` 로 빈 CrawlData 적재 (현 `crawler.py:60` 이미 처리)
