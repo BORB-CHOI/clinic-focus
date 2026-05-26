@@ -16,8 +16,8 @@ model: sonnet
 ## 반드시 먼저 읽을 문서
 
 - `ai/CLAUDE.md` 비용 의식 섹션 (`MAX_VISION_IMAGES`)
-- `.claude/docs/API-BE-AI.md`의 analyze_images / extract_services_and_doctors 명세
-- `.claude/docs/overview.md` 5절 (4 시그널 중 Vision 가중치 30%)
+- `docs/API-BE-AI.md`의 analyze_images / extract_services_and_doctors 명세
+- `docs/overview.md` 5절 (4 시그널 중 Vision 가중치 30%)
 
 ## 핵심 책임
 

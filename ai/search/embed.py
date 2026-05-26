@@ -48,7 +48,7 @@ def _get_embed_client() -> "BedrockRuntimeClient":
     """
     global _embed_client
     if _embed_client is None:
-        _embed_client = get_bedrock_runtime_client()
+        _embed_client = get_bedrock_runtime_client(use_vision=False)
     return _embed_client
 
 

@@ -4,7 +4,7 @@
 
 ## 정의해야 할 모델 목록
 
-자세한 필드는 `../.claude/docs/API-BE-AI.md` "공유 Pydantic 모델" 섹션 참조. 줄여 보면:
+자세한 필드는 `../docs/API-BE-AI.md` "공유 Pydantic 모델" 섹션 참조. 줄여 보면:
 
 - 크롤링: `CrawlData`, `CrawledPage`, `CrawledImage`, `PublicData`
 - 분류: `Classification`, `Confidence`, `SignalContributions`, `DetailedSignals`, `SelfClaimSignal`, `VisionSignal`, `BlogSignal`, `ReviewSignal`

@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 _DEFAULT_MAX_VISION_IMAGES = 10
-_DEFAULT_MODEL_ID = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
+_DEFAULT_MODEL_ID = "global.anthropic.claude-sonnet-4-6"
 
 # ---------------------------------------------------------------------------
 # 이미지 카테고리 Literal 검증용 목록

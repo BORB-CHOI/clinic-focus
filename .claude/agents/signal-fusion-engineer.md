@@ -16,8 +16,8 @@ model: sonnet
 ## 반드시 먼저 읽을 문서
 
 - `ai/CLAUDE.md` "4 시그널 교차 검증" 표 (25/30/20/25 가중치)
-- `.claude/docs/API-BE-AI.md`의 classify_hospital / recompute_confidence 명세
-- `.claude/docs/overview.md` 5절 (분류 알고리즘) + 6절 (자칭 도배 페널티 의도)
+- `docs/API-BE-AI.md`의 classify_hospital / recompute_confidence 명세
+- `docs/overview.md` 5절 (분류 알고리즘) + 6절 (자칭 도배 페널티 의도)
 
 ## 4 시그널과 가중치 (기본값)
 

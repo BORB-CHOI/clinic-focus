@@ -336,9 +336,10 @@ class ClassificationChange(BaseModel):
 
     hospital_id: str
     changed_at: datetime
-    previous_focus: list[str]
-    new_focus: list[str]
-    reason: Literal["feedback", "human_review", "vision_reanalysis", "recrawl"]
+    from_focus: list[str]
+    to_focus: list[str]
+    reason: Literal["feedback_accumulated", "human_review", "vision_reanalysis", "scheduled_recrawl"]
+    notes: str | None = None
     classifier_version: str
 
 

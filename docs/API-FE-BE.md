@@ -45,7 +45,7 @@
 | `NOT_FOUND` | 404 | 리소스 없음 |
 | `DUPLICATE_FEEDBACK` | 409 | 동일 디바이스에서 동일 병원에 이미 피드백 |
 | `INTERNAL_ERROR` | 500 | 서버 내부 에러 |
-| `AI_SERVICE_ERROR` | 502 | Bedrock·S3 Vectors 호출 실패 |
+| `AI_SERVICE_ERROR` | 502 | Bedrock·Knowledge Base 호출 실패 |
 
 ---
 
@@ -64,6 +64,8 @@
   website_url: string | null;
   one_line_summary: string;       // 검색 카드용 한 줄 요약 (AI 생성)
                                   // 예: "일반 피부 진료 중심, 미용 시술은 거의 안 하는 동네 의원"
+  thumbnail_url: string | null;   // 병원 대표 이미지 URL. FE 카드 썸네일 + 헤드라이너 히어로
+                                  // 미수집 단계에서는 null. FE 는 그라데이션 + 이니셜 폴백
 }
 ```
 
@@ -205,6 +207,7 @@
   similarity_score: number;       // 0~1
   recommendation_type: "same_focus" | "fills_gap";  // 같은 주력 / 빈자리 보완
   distance_km: number | null;
+  thumbnail_url: string | null;   // 카드 썸네일용. 미수집이면 null (FE 가 폴백 처리)
 }
 ```
 
@@ -272,7 +275,8 @@ GET /api/search
         "lng": 126.9510
       },
       "website_url": "https://...",
-      "one_line_summary": "일반 피부 진료 중심, 미용 시술은 거의 안 하는 동네 의원"
+      "one_line_summary": "일반 피부 진료 중심, 미용 시술은 거의 안 하는 동네 의원",
+      "thumbnail_url": null
     }
   ],
   "meta": {
@@ -329,6 +333,7 @@ GET /api/hospitals/{hospital_id}
     "location": { ... },
     "website_url": "https://...",
     "one_line_summary": "일반 피부 진료 중심, 미용 시술은 거의 안 하는 동네 의원",
+    "thumbnail_url": null,
 
     "ai_description": {
       "headline": "○○피부과는 일반 피부 진료 중심의 동네 의원입니다.",
@@ -343,8 +348,10 @@ GET /api/hospitals/{hospital_id}
         }
       ],
       "generated_at": "2026-04-12T08:00:00Z",
-      "generator_model": "anthropic.claude-sonnet-4-5-20250929-v1:0"
+      "generator_model": "global.anthropic.claude-sonnet-4-6"
     },
+    // PoC 한도: 시연 10개 외 9990개 병원은 "ai_description": null 로 반환됨
+    // FE는 null이면 헤드라이너 영역을 태그 카드로 차등 렌더링 (아래 "프론트 렌더링 가이드" 참조)
 
     "services": [
       { "name": "아토피", "category": "general", "source_signals": ["self_claim", "blog", "reviews"] },
@@ -451,7 +458,8 @@ GET /api/hospitals/{hospital_id}
         "primary_focus": ["일반 진료 (아토피·여드름)"],
         "similarity_score": 0.91,
         "recommendation_type": "same_focus",
-        "distance_km": 0.8
+        "distance_km": 0.8,
+        "thumbnail_url": null
       },
       {
         "hospital_id": "h_ghi789",
@@ -459,7 +467,8 @@ GET /api/hospitals/{hospital_id}
         "primary_focus": ["사마귀·점 제거"],
         "similarity_score": 0.42,
         "recommendation_type": "fills_gap",
-        "distance_km": 1.2
+        "distance_km": 1.2,
+        "thumbnail_url": null
       }
     ],
 
@@ -497,15 +506,30 @@ GET /api/hospitals/{hospital_id}
 | `generated_at` | 생성 시각. 시그널이 갱신되면 재생성 필요 |
 | `generator_model` | 생성에 사용된 LLM 모델 ID (재현성·감사용) |
 
+> **PoC 한도**: `ai_description`은 **시연 10개 병원만 값이 채워지고, 나머지는 `null`** 로 반환된다. 지원 계정 Bedrock 자원이 10개 한도라 `generate_description` LLM 호출도 10개 한정이기 때문 (자세한 건 `API-BE-AI.md` "2. `generate_description`" 참조). FE는 아래 차등 렌더링 로직을 따라야 한다.
+
 #### 프론트 렌더링 가이드
+
+**`ai_description`이 있을 때 (시연 10개 병원)**:
 
 - `headline`은 상세 페이지 최상단에 강조 표시
 - 각 `paragraphs[].text` 옆 또는 끝에 `citations` 시그널을 작은 배지로 표시 (예: `[사이트]` `[Vision]` `[블로그]` `[후기]`)
 - 배지 클릭 시 `detailed_signals`의 해당 키 섹션으로 스크롤 또는 모달 오픈 → 사용자가 근거 자료를 직접 검토 가능
+- **주체 명시 원칙**: `ai_description.paragraphs[].text`는 "이 병원이 자기 사이트에서 ~를 메인으로 표시함" 같은 표현만 등장하도록 최비성의 프롬프트에서 통제. 프론트는 이를 그대로 신뢰해 렌더
+
+**`ai_description`이 `null`일 때 (9990개)**:
+
+- 영역 ① 헤드라이너는 자연어 단락 대신 **태그 카드** 로 표시:
+  - 표준 진료과목 + 룰 기반 자칭 컨셉 태그 (예: `피부과 · 미용 시술 · 아토피`)
+  - 신뢰도 점수와 등급 ("추정 65%" / "정보 부족 45%")
+  - "AI 자연어 설명은 시연 대상 10개 병원에 한정" 안내 한 줄
+- 영역 ② 이하 다른 영역은 동일하게 렌더링 (룰 기반 데이터로도 다 채워짐)
+
+**공통**:
+
 - `excluded_services[].alternative_hospital_ids`는 영역 ⑧과 연결되므로, 다루지 않는 분야 옆에 "동네 대안: △△의원" 같은 링크 노출
 - `metadata.warning`이 있으면 페이지 상단에 경고 배너 표시
 - `metadata.data_completeness`가 0.6 미만이면 빈 영역은 "정보 부족" 표시
-- **주체 명시 원칙**: `ai_description.paragraphs[].text`는 "이 병원이 자기 사이트에서 ~를 메인으로 표시함" 같은 표현만 등장하도록 최비성의 프롬프트에서 통제. 프론트는 이를 그대로 신뢰해 렌더
 
 #### 에러 (404)
 ```json

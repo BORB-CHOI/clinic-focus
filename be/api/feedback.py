@@ -12,6 +12,7 @@ import uuid
 from datetime import datetime
 
 from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from be.adapters.dynamo_adapter import DynamoAdapter
@@ -34,12 +35,10 @@ def submit_feedback(req: FeedbackRequest):
     """1-tap 피드백 제출. 익명 + device_id 기반 중복 방지."""
     # 중복 체크
     if db.check_duplicate_feedback(req.hospital_id, req.device_id):
-        return {
-            "error": {
-                "code": "DUPLICATE_FEEDBACK",
-                "message": "이 디바이스에서 해당 병원에 이미 피드백을 제출했습니다",
-            }
-        }
+        return JSONResponse(
+            status_code=409,
+            content={"error": {"code": "DUPLICATE_FEEDBACK", "message": "이 디바이스에서 해당 병원에 이미 피드백을 제출했습니다"}},
+        )
 
     # 피드백 저장
     entry = FeedbackEntry(

@@ -16,7 +16,13 @@ def should_recompute(feedback_list: list[FeedbackEntry]) -> bool:
 def compute_feedback_stats(feedback_list: list[FeedbackEntry]) -> FeedbackStats:
     """피드백 리스트에서 통계 계산."""
     if not feedback_list:
-        return FeedbackStats()
+        return FeedbackStats(
+            total_count=0,
+            agree_count=0,
+            disagree_count=0,
+            agree_ratio=0.0,
+            last_feedback_at=None,
+        )
 
     agree = sum(1 for f in feedback_list if f.verdict == "agree")
     disagree = sum(1 for f in feedback_list if f.verdict == "disagree")

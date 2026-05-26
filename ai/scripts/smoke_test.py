@@ -9,17 +9,16 @@ end-to-end로 동작하는지 확인한다.
 사전 조건:
     1. 개인 계정 자격증명 설정 (aws configure 기본 프로파일 또는 AWS_PROFILE)
        — Bedrock·S3 Vectors·Textract 는 개인 계정에서 운영
-    2. us-east-1 리전에서 아래 모델 액세스 활성화 (Bedrock 콘솔)
-       - us.anthropic.claude-sonnet-4-5-20250929-v1:0
-       - amazon.titan-embed-text-v2:0
+    2. ap-northeast-2 리전(서울)에서 아래 모델 액세스 활성화 (Bedrock 콘솔)
+       - global.anthropic.claude-sonnet-4-6  (Global cross-region inference profile)
+       - amazon.titan-embed-text-v2:0       (임베딩은 지원 계정 us-east-1)
 
 검증 대상:
     1. embed_text             — Titan Embed v2 (가장 저렴, 연결 확인용)
-    2. classify_hospital      — Claude Sonnet 4.5 (4 시그널 분류)
-    3. generate_description   — Claude Sonnet 4.5 (의료법 5규칙, 프롬프트 경로·치환 버그 수정 검증)
+    2. classify_hospital      — Claude Sonnet 4.6 (4 시그널 분류)
+    3. generate_description   — Claude Sonnet 4.6 (의료법 5규칙, 프롬프트 경로·치환 버그 수정 검증)
 
-S3 Vectors 적재·검색(index_hospital / search_similar)은 벡터 버킷이 있어야
-하므로 이 스모크 테스트 범위에서 제외한다.
+KB 적재·검색(ingest_hospital / retrieve_hospital)은 강사 권한 수령 후 별도 검증.
 """
 
 from __future__ import annotations
@@ -149,7 +148,7 @@ def main() -> int:
 
     _step("embed_text (Titan Embed v2)", _t_embed)
 
-    # 2. classify_hospital — Claude Sonnet 4.5
+    # 2. classify_hospital — Claude Sonnet 4.6
     crawl = _build_sample_crawl_data()
 
     def _t_classify():
@@ -163,7 +162,7 @@ def main() -> int:
         )
         return c
 
-    classification = _step("classify_hospital (Claude Sonnet 4.5)", _t_classify)
+    classification = _step("classify_hospital (Claude Sonnet 4.6)", _t_classify)
 
     # 3. generate_description — 프롬프트 경로·치환 버그 수정 검증 포함
     if classification is not None:

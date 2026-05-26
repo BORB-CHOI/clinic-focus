@@ -1,11 +1,11 @@
 # ai/ — AI · RAG 트랙
 
 clinic-focus의 AI·RAG 모듈. 병원 크롤링 데이터를 받아 **4 시그널 교차 검증으로
-주력 분야를 분류**하고, **자연어 통합 설명을 생성**하며, **S3 Vectors 기반
-검색**을 제공한다.
+주력 분야를 분류**하고, **자연어 통합 설명을 생성**하며, **Bedrock Knowledge Base 기반
+자연어 검색**을 제공한다.
 
 > 운영 규칙·프롬프트 원칙은 [`CLAUDE.md`](./CLAUDE.md), 함수 명세는
-> [`../.claude/docs/API-BE-AI.md`](../.claude/docs/API-BE-AI.md) 참조.
+> [`../docs/API-BE-AI.md`](../docs/API-BE-AI.md) 참조.
 > 이 README는 "지금 무엇이 되어 있고 어떻게 확인하나"에 집중한다.
 
 ## 이건 서버가 아니다
@@ -20,21 +20,28 @@ from ai import classify_hospital, generate_description
 → AI 파트를 "구동"한다는 건 서버를 띄우는 게 아니라 **함수를 호출하거나
 테스트를 돌리는 것**이다.
 
-## 현재 상태 (2026-05-20)
+## 현재 상태 (2026-05-24 갱신)
 
-### 구현 완료 — 공개 함수 전부
+### 구현 완료 — 공개 함수
 
 | 함수 | 파일 | 역할 |
 | --- | --- | --- |
 | `classify_hospital` | `pipeline/classify.py` | 4 시그널 교차 검증 분류 + 신뢰도 |
 | `generate_description` ⭐ | `pipeline/describe.py` | 자연어 통합 설명 (의료법 5규칙) |
 | `extract_services_and_doctors` | `pipeline/extract.py` | 진료 항목·의료기기·의료진 추출 |
-| `analyze_images` | `pipeline/vision.py` | Bedrock Vision + Textract |
-| `embed_text` | `search/embed.py` | Titan Embed v2 (1024차원) |
-| `index_hospital` / `index_hospital_with_meta` | `search/vector_store.py` | S3 Vectors 적재 |
-| `search_similar` | `search/vector_store.py` | 자연어·위치·복합 검색 |
-| `find_related_hospitals` | `search/related.py` | 같은 주력 + 빈자리 보완 추천 |
+| `analyze_images` | `pipeline/vision.py` | Bedrock Vision (Textract 제거됨 — 한국어 미지원) |
+| `embed_text` | `search/embed.py` | Titan Embed v2 (1024차원). 디버깅·실험용 — 운영 검색은 KB 내부 처리 |
+| `find_related_hospitals` | `search/related.py` | 같은 주력 + 빈자리 보완 추천 (KB Retrieve 경유로 재설계 예정) |
 | `recompute_confidence` / `aggregate_feedback_stats` | `search/feedback.py` | 피드백 반영 |
+
+### 재설계 대기 — PR `feat/ai/aws-clients`에서 처리 예정
+
+| 옛 함수 | 새 함수 | 변경 사유 |
+| --- | --- | --- |
+| `index_hospital` / `index_hospital_with_meta` (`search/vector_store.py`) | `ingest_hospital` (`search/kb_store.py` 신규) | S3 Vectors 직접 호출 → Bedrock KB DataSource S3 업로드 + ingestion job |
+| `search_similar` (`search/vector_store.py`) | `retrieve_hospital` (`search/kb_store.py`) | 자연어 검색은 KB Retrieve API 경유. 수동 카테고리 탐색은 BE DynamoDB GSI로 분리 |
+
+> **2026-05-24 결정** — 강사 제공 KB `kmuproj-team-03` (ID `GTBJ6HLFDK`, Titan v2 셋팅) 사용으로 전환. `SafeRole-kmuproj-10`에 `s3vectors:*` 권한 없음이 확인됐고, 강사가 KB로 셋팅한 흐름을 따르는 것이 가이드와 일치. 자세한 건 `../docs/plans/task-queue.md` "진행 중인 결정사항" 참조.
 
 > **2026-05-20 수정 완료** — `generate_description`의 프롬프트 버그 2건:
 > (1) 템플릿 파일 경로가 `ai/pipeline/prompts/`를 가리키던 문제,
@@ -77,7 +84,7 @@ from ai import classify_hospital, generate_description
 | `classify.py` | `classify_hospital` — 4 시그널 교차 검증, 자칭 도배 페널티, 신뢰도 점수 산출 |
 | `describe.py` | `generate_description` — 자연어 통합 설명, 의료법 5규칙 강제 + 재시도 검증 |
 | `extract.py` | `extract_services_and_doctors` — 진료 항목 · 다루지 않는 분야 · 기기 · 의료진 추출 |
-| `vision.py` | `analyze_images` — Bedrock Vision 이미지 분석 + Textract OCR 보조 |
+| `vision.py` | `analyze_images` — Bedrock Vision 이미지 분석 (OCR 포함, Textract 미사용) |
 
 ### `prompts/`
 
@@ -89,9 +96,10 @@ from ai import classify_hospital, generate_description
 
 | 파일 | 설명 |
 | --- | --- |
-| `embed.py` | `embed_text` — Titan Embed v2 호출, 1024차원 벡터 |
-| `vector_store.py` | `index_hospital` · `search_similar` — S3 Vectors 적재·검색 (자연어/위치/복합 모드) |
-| `related.py` | `find_related_hospitals` — 같은 주력 + 빈자리 보완 병원 추천 |
+| `embed.py` | `embed_text` — Titan Embed v2 직접 호출, 1024차원 벡터 (디버깅·실험용) |
+| `vector_store.py` | (PR `feat/ai/aws-clients`에서 폐기 예정) — 기존 `index_hospital` · `search_similar`의 S3 Vectors 직접 호출 구현 |
+| `kb_store.py` (신규 예정) | `ingest_hospital` · `retrieve_hospital` — Bedrock KB DataSource S3 업로드 + Retrieve API |
+| `related.py` | `find_related_hospitals` — KB Retrieve 경유 추천 (재설계 예정) |
 | `feedback.py` | `aggregate_feedback_stats` · `recompute_confidence` — 피드백 집계 · 신뢰도 재계산 |
 
 ### `scripts/`
@@ -104,13 +112,12 @@ from ai import classify_hospital, generate_description
 
 ## 데이터는 어디에 (BE와의 경계)
 
-AWS 계정이 둘로 나뉜다 — AI 서비스(Bedrock·S3 Vectors·Textract)는 **개인 계정**,
-정형 데이터·원본 저장은 **지원 계정**(us-east-1)에 있다. 별도 "AI 전용 DB"는 없다.
+AWS 계정이 둘로 나뉜다 — **개인 계정**(서울 리전 `ap-northeast-2`)에는 Sonnet 4.6 Vision(트랙 C 시연)만, 나머지 AI 자원(Bedrock KB · Titan · Haiku/Nova)과 정형 데이터·원본 저장은 **지원 계정**(us-east-1)에 있다. 별도 "AI 전용 DB"는 없다.
 
 | 저장소 | 계정 | 소유 | AI의 접근 |
 | --- | --- | --- | --- |
 | DynamoDB | 지원 | BE | `aggregate_feedback_stats`·`recompute_confidence`가 boto3로 직접 read |
-| S3 Vectors | 개인 | AI | `index_hospital` / `search_similar`가 read·write |
+| Bedrock KB (`kmuproj-team-03`, ID `GTBJ6HLFDK`) | 지원 | 강사 제공 / AI 사용 | `ingest_hospital`이 DataSource S3에 write + ingestion 트리거, `retrieve_hospital`이 Retrieve API read |
 | S3 (원본 HTML·이미지) | 지원 | BE | `analyze_images`가 `s3://` 이미지 read |
 
 분류·설명 결과(`Classification`·`HospitalDescription` 등)는 AI가 Pydantic
@@ -177,23 +184,24 @@ Bedrock을 호출하고 단계별 PASS/FAIL을 출력한다. 이 세 함수는 B
 계정)만 쓰므로 개인 계정 자격증명만 있으면 로컬에서도 검증된다. 사전 조건:
 
 1. 개인 계정 자격증명 설정 — `aws configure`(기본 프로파일) 또는 `AWS_PROFILE` 환경변수
-2. `us-east-1`에서 모델 액세스 활성화 (Bedrock 콘솔):
-   `us.anthropic.claude-sonnet-4-5-20250929-v1:0`,
-   `amazon.titan-embed-text-v2:0`
+2. `ap-northeast-2`(서울)에서 Sonnet 4.6 모델 액세스 활성화 (Bedrock 콘솔). 호출은 inference profile 경유:
+   `global.anthropic.claude-sonnet-4-6` (Vision, 개인 계정)
+   `amazon.titan-embed-text-v2:0` (임베딩은 지원 계정 `us-east-1`)
 
-S3 Vectors 적재·검색과 DynamoDB를 쓰는 함수는 스모크 범위에서 제외했다.
-지원 계정 서비스(DynamoDB 등)는 Access Key를 못 받으므로 EC2/Cloud9의
+KB 적재·검색(`ingest_hospital`/`retrieve_hospital`)과 DynamoDB를 쓰는 함수는 스모크 범위에서 제외했다.
+지원 계정 서비스(KB·DynamoDB 등)는 Access Key를 못 받으므로 EC2(VSCode Remote-SSH)의
 인스턴스 프로파일 환경에서 검증한다.
 
 ## 환경 변수
 
 | 변수 | 기본값 | 설명 |
 | --- | --- | --- |
-| `AWS_REGION` | `us-east-1` | Bedrock·S3 Vectors 리전 (개인 계정) |
-| `BEDROCK_LLM_MODEL_ID` | `us.anthropic.claude-sonnet-4-5-20250929-v1:0` | LLM·Vision |
-| `BEDROCK_EMBED_MODEL_ID` | `amazon.titan-embed-text-v2:0` | 임베딩 |
-| `S3_VECTOR_BUCKET` | 환경별 | 벡터 버킷 (미설정 시 `S3VectorsError`) |
-| `S3_VECTOR_INDEX` | `hospital-index` | 벡터 인덱스 이름 |
+| `AWS_REGION` | `us-east-1` | Bedrock·KB 리전 (지원 계정) |
+| `BEDROCK_LLM_MODEL_ID` | (지원) `anthropic.claude-haiku-4-5-...` / (개인 Vision) `global.anthropic.claude-sonnet-4-6` | 트랙 B/C 분기. Sonnet 4.6은 Global cross-region inference profile (foundation-model 직접 호출 불가). 개인 계정 호출은 서울 리전 `ap-northeast-2` |
+| `BEDROCK_EMBED_MODEL_ID` | `amazon.titan-embed-text-v2:0` | `embed_text` 직접 호출용 (KB는 자체적으로 동일 모델 사용) |
+| `KB_ID` | `GTBJ6HLFDK` | Bedrock Knowledge Base ID (강사 제공 `kmuproj-team-03`) |
+| `KB_DATA_SOURCE_ID` | `PLC6QYALDU` | KB DataSource ID (`main-datasource`) |
+| `KB_DATASOURCE_S3_BUCKET` / `KB_DATASOURCE_S3_PREFIX` | (강사 제공) | DataSource S3 경로 (`get-data-source`로 확인) |
 | `MAX_VISION_IMAGES` | `10` | 분류 1회 최대 Vision 이미지 수 |
 | `CONFIDENCE_THRESHOLD_HIGH` | `95` | "확실" 등급 임계치 |
 | `CONFIDENCE_THRESHOLD_LOW` | `70` | "정보 부족" 등급 임계치 |
