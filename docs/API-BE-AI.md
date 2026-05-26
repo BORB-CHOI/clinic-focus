@@ -336,7 +336,7 @@ class HospitalIngestMetadata(BaseModel):
 
 #### 동작
 1. `content_text`를 DataSource S3 버킷에 `{hospital_id}.txt`로 업로드
-2. 같은 prefix에 `{hospital_id}.txt.metadata.json` 동봉 (KB metadata 사양: 필터 가능 타입은 string/number/boolean/list[string]만)
+2. 같은 prefix에 `{hospital_id}.txt.metadata.json` 동봉 (포맷은 아래 "메타데이터 파일 포맷" 참조)
 3. `trigger_ingestion=True`면 `bedrock-agent:StartIngestionJob` 호출. 배치 적재 시 False로 두고 마지막에 한 번만 트리거
 4. KB가 자동으로: 청크 분할(KB 설정대로) → Titan v2 임베딩 → S3 Vectors 인덱스 적재
 
@@ -349,18 +349,46 @@ class HospitalIngestMetadata(BaseModel):
 #### 예외
 - `KBIngestError` — S3 업로드 또는 ingestion job 트리거 실패
 
+#### 메타데이터 파일 포맷
+
+`{hospital_id}.txt.metadata.json` 의 본문은 **단순 dict** 형식 (List 형식 아님). 2026-05-26 실측으로 확정 — 14개 ingest 후 `numberOfDocumentsFailed: 0` 통과. 출처: AWS 공식 문서 "Add metadata to your files" + 실측.
+
+```json
+{
+  "metadataAttributes": {
+    "team_id": "clinic-focus",
+    "hospital_id": "JDQ4...",
+    "name": "하나이비인후과병원",
+    "standard_specialty": "이비인후과",
+    "primary_focus": ["코·수면호흡", "알레르기·비염"],
+    "sido": "서울",
+    "sigungu": "강남구",
+    "confidence_score": 56,
+    "lat": 37.4979277,
+    "lng": 127.0429904
+  }
+}
+```
+
+**제약 — 2026-05-26 실측으로 확인된 함정**:
+
+1. **값 타입**: string / number / boolean / list[string] 만 허용 (KB 공식 사양)
+2. **빈 리스트 `[]` 거절**: KB가 `"invalid metadata attributes"`로 거절함. 빈 리스트 필드는 **dict에서 아예 제외** (`None`/`""`/0 도 같은 패턴 가능성 있음 — 미검증)
+3. **List-form 형식 거절**: `[{"key": ..., "value": {"type": "STRING", "stringValue": ...}}]` 같은 List/typed-value 형식은 `"metadata file is not in valid JSON format"`로 거절됨. 그 형식은 KB의 다른 API(Retrieve filter expression)용이고 metadata 파일용 아님
+
 #### 메타데이터 키 (KB Retrieve 필터링용)
 
 | 키 | 타입 | 비고 |
 |---|---|---|
+| `team_id` | string | 필수 — `"clinic-focus"` 고정. KB가 02팀과 공유라 retrieve 시 `team_id=clinic-focus` 필터로 격리 |
 | `hospital_id` | string | 필터 가능 (역추적용 핵심) |
 | `standard_specialty` | string | 필터 가능 |
-| `primary_focus` | list[string] | 필터 가능 (`stringContains` 등) |
+| `primary_focus` | list[string] | 필터 가능 (`stringContains` 등). **비어있으면 키 자체 제외** |
 | `sido` | string | 필터 가능 |
 | `sigungu` | string | 필터 가능 |
 | `confidence_score` | number | 필터 가능 (`>=` 비교) |
-| `lat` | number | 필터 가능 (bounding box용) |
-| `lng` | number | 필터 가능 (bounding box용) |
+| `lat` | number | 필터 가능 (bounding box용). null이면 키 제외 |
+| `lng` | number | 필터 가능 (bounding box용). null이면 키 제외 |
 | `last_updated` | string | 비필터 |
 
 ---

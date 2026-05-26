@@ -284,7 +284,7 @@
 - 개인 계정 리전: `us-east-1` → **`ap-northeast-2`** (서울 — 사용자 기존 자원 위치 일관성)
 - IAM 정책: 단일 ARN → **3-ARN 필수** (Global inference profile은 권한 평가 시 inference-profile + regional FM + global FM 3개 모두 검사. 빈 region/account의 `arn:aws:bedrock:::foundation-model/...` 누락이 가장 흔한 실수)
 
-### Step 6 — AI 개인 dev 계정 e2e: DDB + S3 + 28개 + 85개 미니 크롤링 🚧 진행 중
+### Step 6 — AI 개인 dev 계정 e2e: DDB + S3 + 14개 분류·설명·KB ingest·자연어 검색 ✅ 1차 완료 (2026-05-26)
 
 > 목적: AI 트랙이 **AWS 위에서 자기 데이터로 분류·임베딩·KB ingest 실험을 돌릴 수 있는 최소 환경** 구성. 발표 정본 데이터는 BE 트랙(`kmuproj-02`) 풀커버를 따르고, AI는 강남구 4과목 ~85개 미니 표본으로 알고리즘 튜닝·검증.
 > 계정 분리(2026-05-25) 이후 AI는 `kmuproj-10` 자기 DDB·S3에서 작업. BE 자원 의존 없음.
@@ -369,6 +369,35 @@ GSI `sigungu-index`는 `list_hospitals_by_sigungu`(`be/adapters/dynamo_adapter.p
   - ❌ 실패: 0개
   - 기준선(60%) 살짝 미달이나 후속 알고리즘 진입엔 충분 (14개로 분류·설명 생성·KB ingest 검증 가능)
 - [x] **P0.5 검증** — URL 없는 63개는 자동 스킵, 자체 사이트 크롤링 실패한 병원은 `_empty_crawl_data` 로 빈 CrawlData 적재 (현 `crawler.py:60` 이미 처리)
+
+**Step 6-7. AI 분류·설명 14개 일괄 (`ai/scratch/classify_all.py`)** ✅ 완료 (2026-05-26)
+
+> 발견 — 강사 계정 Bedrock 정책 한계: Claude 4 패밀리는 inference profile 필수인데 us-east-2/us-west-2 라우팅이 explicit deny 됨. **텍스트 LLM 도 개인 계정 ap-northeast-2 으로 통합** (Haiku 4.5 Global profile 동작 확인, `ai/core/aws_clients.py` 수정). 시각 모델(Sonnet 4.6)은 개인 계정 콘솔 AWS Marketplace 구독 미완료라 Vision 시그널 자동 fallback.
+
+- [x] `classify_hospital` + `generate_description` 14/14 통과 (591초, 병원당 평균 42초)
+- [x] DDB 적재: Classifications 14 + HospitalDescriptions 14
+- [x] `describe.py` 에 마크다운 코드블록(```json ... ```) 자동 벗기기 추가 (Haiku 4.5 가 종종 감싸서 응답)
+- [x] BE 위임: `be/scripts/_utils.load_env` 인라인 주석 미처리 버그 → 이슈 [#24](https://github.com/BORB-CHOI/clinic-focus/issues/24)
+- [x] 미해결 — 신뢰도 로직 약점 2건 (`ai/scratch/run-log-2026-05-26.md` 참조). `primary_focus=[]` + `confidence=100` 케이스 (강남우태하피부과·개포센트럴이비인후과)
+
+**Step 6-8. KB DataSource S3 ingest 14개 (`ai/scratch/kb_ingest.py`)** ✅ 완료 (2026-05-26)
+
+> 실측으로 KB metadata 파일 포맷 확정 — `metadataAttributes` 는 **단순 dict** (List 아님). 빈 리스트 거절. 자세한 건 [`docs/API-BE-AI.md` `ingest_hospital` 섹션](../../docs/API-BE-AI.md) 참조.
+
+- [x] `clinic-focus/prod/{hospital_id}.txt` + `{hospital_id}.txt.metadata.json` 14쌍 업로드 (`kmuproj-02-vector` 버킷)
+- [x] `StartIngestionJob` 호출 → 두 차례 시행착오 (List-form 형식 거절 → dict 형식·빈 primary_focus 거절) 후 `numberOfDocumentsFailed: 0` 통과
+- [x] `team_id="clinic-focus"` 메타 필수 (02팀과 KB 공유 — Retrieve 필터로 격리)
+
+**Step 6-9. 자연어 검색 e2e (`ai/scratch/retrieve_test.py`)** ✅ 완료 (2026-05-26)
+
+- [x] `bedrock-agent-runtime:Retrieve` 호출 (LLM 0건 — Titan 임베딩만)
+- [x] `vectorSearchConfiguration.filter` 로 `team_id=clinic-focus` 격리
+- [x] 4개 쿼리 검증:
+  - `"여드름 잘 보는 피부과"` → 눈피부과의원/강남고운세상피부과의원 (피부과 우선)
+  - `"코골이 비염 수술"` → 하나이비인후과병원 (코·수면호흡, 알레르기·비염)
+  - `"백내장 라식 수술"` → 강남아이메디안과의원 (라식·라섹, 백내장)
+  - `"강남 보톡스 필러"` → 강남고운세상피부과의원 (본문에 "보톡스/필러" 명시한 곳을 정확히 잡음)
+- [x] 의미 거리 자연어 매칭 동작 확인 — `"코골이" ≈ "수면호흡"`, `"보톡스" ≈ "미용 시술"`
 
 ---
 
