@@ -1,12 +1,15 @@
 import { cn } from "@/lib/utils";
 import type { Confidence, ConfidenceLevel } from "@/types/domain";
 
-// 신뢰도 등급별 색상: 확실=초록 / 추정=노랑 / 정보 부족=회색 (fe/CLAUDE.md 명시)
+// 신뢰도 등급별 색상: 확실=에메랄드 / 추정=앰버 / 정보 부족=슬레이트
+// (모던 SaaS 톤. 4단계 스케일 50/100/500/700 의 의미 매핑은 tailwind.config.js 참조)
 const LEVEL_STYLE: Record<ConfidenceLevel, string> = {
-  확실: "bg-confidence-high/15 text-confidence-high border-confidence-high/30",
-  추정: "bg-confidence-medium/15 text-confidence-medium border-confidence-medium/40",
+  확실:
+    "bg-confidence-high-50 text-confidence-high-700 border-confidence-high-100",
+  추정:
+    "bg-confidence-medium-50 text-confidence-medium-700 border-confidence-medium-100",
   "정보 부족":
-    "bg-confidence-low/15 text-confidence-low border-confidence-low/30",
+    "bg-confidence-low-50 text-confidence-low-700 border-confidence-low-100",
 };
 
 interface ConfidenceBadgeProps {

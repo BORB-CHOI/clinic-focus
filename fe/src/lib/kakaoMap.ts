@@ -163,14 +163,15 @@ export function loadKakaoMaps(): Promise<KakaoMapsApi> {
 }
 
 // ── 신뢰도 색 마커 이미지 ────────────────────────────────────────────
-// Tailwind 토큰 confidence.{high,medium,low} 와 같은 HSL 값을 SVG 에
-// 직접 박아 색상 정합성 유지.
+// Tailwind 토큰 confidence.{high,medium,low}.500 와 동일한 hue 를 SVG 에
+// 직접 박아 색상 정합성 유지 (모던 SaaS 톤: 에메랄드 + 앰버 + 슬레이트).
+// 토큰 변경 시 tailwind.config.js 와 본 객체를 함께 갱신.
 import type { ConfidenceLevel } from "@/types/domain";
 
 const CONFIDENCE_HEX: Record<ConfidenceLevel, string> = {
-  확실: "#16a34a", //  hsl(142 76% 36%) ≈ green-600
-  추정: "#eab308", //  hsl(45 93% 47%)  ≈ yellow-500
-  "정보 부족": "#6b7280", // hsl(220 9% 46%) ≈ gray-500
+  확실: "#10a667", //  hsl(151 81% 36%) ≈ 묵직한 그린
+  추정: "#ea7c0c", //  hsl(28 92% 48%)  ≈ 따뜻한 오렌지
+  "정보 부족": "#48536a", // hsl(215 19% 35%) ≈ 짙은 슬레이트
 };
 
 const MARKER_W = 28;

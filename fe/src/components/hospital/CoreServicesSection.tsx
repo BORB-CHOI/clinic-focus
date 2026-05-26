@@ -1,13 +1,17 @@
 import { Link } from "react-router-dom";
+import { Check, X, ArrowRight } from "lucide-react";
 
 import { Section } from "@/components/common/Section";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { HospitalThumbnail } from "@/components/common/HospitalThumbnail";
+import { cn } from "@/lib/utils";
 import type {
   Equipment,
   ExcludedReason,
   ExcludedService,
   PriceItem,
+  RelatedHospital,
   Service,
   ServiceCategory,
 } from "@/types/domain";
@@ -33,9 +37,28 @@ interface CoreServicesSectionProps {
   excluded_services: ExcludedService[];
   equipment: Equipment[];
   prices: PriceItem[];
+  /** 대안 병원 ID 를 이름으로 풀어주기 위한 동일 페이지의 추천 목록 */
+  related_hospitals: RelatedHospital[];
+  /**
+   * Vision 분석에 쓰인 샘플 이미지 URL 목록. 시술·진료 사진 갤러리 자리.
+   * BE 측 이미지 수집 미구현이라 빈 배열일 수 있고, 그 경우 자리만 표시.
+   */
+  sample_image_urls?: string[];
+  /** 갤러리 폴백 플레이스홀더용 병원명 */
+  hospital_name?: string;
 }
 
-// ② 핵심 진료 정보
+// ② 핵심 진료 정보 — 4 서브섹션 위계 + 헛걸음 방지 카드
+//
+// 위계:
+//   1) 분류 태그 (표준 진료과목 + 주력 분야)         — 한 줄 요약
+//   2) 다루는 진료 항목 (카테고리별 그룹)              — 일반/미용/수술/검사
+//   3) 보유 의료기기 (○/✗)                            — 시술 결정 근거
+//   4) 비급여 가격 (있을 때만)                         — 사전 정보
+//   5) 다루지 않는 분야 + 대안 병원 (헛걸음 방지)      — 본 서비스 핵심 카피
+//
+// 5)의 alternative_hospital_ids 는 related_hospitals 에서 이름을 매핑.
+// 매핑이 안 되면 ID 그대로 노출 (BE 응답 누락 폴백).
 export function CoreServicesSection({
   standard_specialty,
   primary_focus,
@@ -43,7 +66,11 @@ export function CoreServicesSection({
   excluded_services,
   equipment,
   prices,
+  related_hospitals,
+  sample_image_urls,
+  hospital_name,
 }: CoreServicesSectionProps) {
+  // 카테고리별 그룹화 (등록 순서 유지)
   const grouped = services.reduce<Record<ServiceCategory, Service[]>>(
     (acc, s) => {
       acc[s.category] = acc[s.category] ?? [];
@@ -53,6 +80,13 @@ export function CoreServicesSection({
     {} as Record<ServiceCategory, Service[]>,
   );
 
+  // 보유 / 미보유 분리. 미보유는 헛걸음 방지 정보라 별도 노출
+  const equipmentAvailable = equipment.filter((e) => e.available);
+  const equipmentMissing = equipment.filter((e) => !e.available);
+
+  // 대안 병원 이름 매핑
+  const altById = new Map(related_hospitals.map((h) => [h.hospital_id, h]));
+
   return (
     <Section
       id="section-core-services"
@@ -60,22 +94,40 @@ export function CoreServicesSection({
       badge="②"
       subtitle="이 병원이 사이트·후기·이미지에서 어떤 진료를 메인으로 표시하는지"
     >
+      {/* 1) 분류 태그 */}
       <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="secondary">{standard_specialty}</Badge>
+        <Badge variant="outline">{standard_specialty}</Badge>
         {primary_focus.map((f) => (
           <Badge key={f}>{f}</Badge>
         ))}
       </div>
 
-      <div className="mt-6 space-y-4">
+      {/* 시술·진료 사진 갤러리 자리 — Vision 분석에 사용된 샘플 이미지 */}
+      <div className="mt-5">
+        <SubHeading>병원 사진</SubHeading>
+        <p className="-mt-2 mb-3 text-xs text-muted-foreground">
+          Vision 분석에 사용된 시술·진료 사진. BE 이미지 수집 로직 미구현
+          단계에선 자리만 표시됩니다.
+        </p>
+        <ImageGallery
+          urls={sample_image_urls ?? []}
+          name={hospital_name ?? standard_specialty}
+        />
+      </div>
+
+      <Separator className="my-6" />
+
+      {/* 2) 다루는 진료 항목 */}
+      <SubHeading>다루는 진료 항목</SubHeading>
+      <div className="space-y-4">
         {(Object.keys(grouped) as ServiceCategory[]).map((cat) => (
           <div key={cat}>
-            <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
+            <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
               {CATEGORY_LABEL[cat]}
-            </h3>
-            <div className="flex flex-wrap gap-2">
+            </h4>
+            <div className="flex flex-wrap gap-1.5">
               {grouped[cat].map((s) => (
-                <Badge key={s.name} variant="outline">
+                <Badge key={s.name} variant="secondary" className="font-normal">
                   {s.name}
                 </Badge>
               ))}
@@ -86,85 +138,179 @@ export function CoreServicesSection({
 
       <Separator className="my-6" />
 
-      <div>
-        <h3 className="mb-2 text-sm font-semibold">보유 의료기기</h3>
-        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {equipment.map((e) => (
-            <li
-              key={e.name}
-              className="flex items-center justify-between rounded-md border bg-background px-3 py-2 text-sm"
-            >
-              <span className={e.available ? "" : "text-muted-foreground line-through"}>
-                {e.name}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {e.available ? "보유" : "미보유"}
-              </span>
-            </li>
-          ))}
-        </ul>
+      {/* 3) 보유 의료기기 — 보유/미보유 분리해서 의미 명시 */}
+      <SubHeading>보유 의료기기</SubHeading>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {equipmentAvailable.map((e) => (
+          <EquipmentItem key={e.name} equipment={e} />
+        ))}
       </div>
+      {equipmentMissing.length > 0 ? (
+        <div className="mt-4">
+          <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            미보유 (확인됨)
+          </h4>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {equipmentMissing.map((e) => (
+              <EquipmentItem key={e.name} equipment={e} />
+            ))}
+          </div>
+        </div>
+      ) : null}
 
+      {/* 4) 비급여 가격 — 있을 때만 */}
       {prices.length > 0 ? (
         <>
           <Separator className="my-6" />
-          <div>
-            <h3 className="mb-2 text-sm font-semibold">비급여 가격</h3>
-            <ul className="space-y-1 text-sm">
-              {prices.map((p) => (
-                <li
-                  key={p.service_name}
-                  className="flex items-center justify-between"
-                >
-                  <span>{p.service_name}</span>
-                  <span className="font-mono text-muted-foreground">
-                    {p.price_range}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <SubHeading>비급여 가격</SubHeading>
+          <ul className="divide-y rounded-md border bg-background">
+            {prices.map((p) => (
+              <li
+                key={p.service_name}
+                className="flex items-center justify-between px-3 py-2 text-sm"
+              >
+                <span>{p.service_name}</span>
+                <span className="font-mono text-muted-foreground">
+                  {p.price_range}
+                </span>
+              </li>
+            ))}
+          </ul>
         </>
       ) : null}
 
+      {/* 5) 다루지 않는 분야 — 헛걸음 방지 */}
       {excluded_services.length > 0 ? (
         <>
           <Separator className="my-6" />
-          <div>
-            <h3 className="mb-2 text-sm font-semibold">다루지 않는 분야</h3>
-            <ul className="space-y-2 text-sm">
-              {excluded_services.map((ex) => (
-                <li key={ex.name} className="rounded-md border bg-muted/40 p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{ex.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {EXCLUDED_REASON_LABEL[ex.reason]}
-                    </span>
-                  </div>
-                  {ex.alternative_hospital_ids.length > 0 ? (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      동네 대안:{" "}
-                      {ex.alternative_hospital_ids.map((id, i) => (
-                        <span key={id}>
-                          <Link
-                            to={`/hospitals/${id}`}
-                            className="underline-offset-2 hover:underline"
-                          >
-                            {id}
-                          </Link>
-                          {i < ex.alternative_hospital_ids.length - 1
-                            ? ", "
-                            : null}
-                        </span>
-                      ))}
-                    </p>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          </div>
+          <SubHeading>다루지 않는 분야</SubHeading>
+          <p className="-mt-2 mb-3 text-xs text-muted-foreground">
+            이 병원이 메인으로 표시하지 않거나 장비가 없는 진료입니다.
+          </p>
+          <ul className="space-y-2">
+            {excluded_services.map((ex) => (
+              <ExcludedItem
+                key={ex.name}
+                excluded={ex}
+                altById={altById}
+              />
+            ))}
+          </ul>
         </>
       ) : null}
     </Section>
+  );
+}
+
+function SubHeading({ children }: { children: React.ReactNode }) {
+  return <h3 className="mb-3 text-sm font-semibold">{children}</h3>;
+}
+
+// 시술·진료 사진 갤러리.
+//
+// 데이터(sample_image_urls)가 비어 있으면 4칸짜리 플레이스홀더 그리드로
+// 자리만 차지. 데이터가 있을 땐 정사각 썸네일 그리드 + 마지막 칸에 +N 표시.
+const GALLERY_SLOTS = 4;
+function ImageGallery({ urls, name }: { urls: string[]; name: string }) {
+  const visible = urls.slice(0, GALLERY_SLOTS);
+  const remaining = Math.max(0, urls.length - GALLERY_SLOTS);
+  // 데이터가 없을 땐 자리 4칸을 폴백으로 채워 시각 자리 확보
+  const slots = visible.length > 0 ? visible : Array.from({ length: GALLERY_SLOTS });
+
+  return (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      {slots.map((url, i) => (
+        <div
+          key={i}
+          className="relative aspect-square overflow-hidden rounded-md border"
+        >
+          <HospitalThumbnail
+            src={typeof url === "string" ? url : null}
+            name={name}
+            shape="square"
+            className="h-full w-full"
+          />
+          {/* 마지막 슬롯에 추가 카운트 표시 */}
+          {remaining > 0 && i === GALLERY_SLOTS - 1 ? (
+            <span className="absolute inset-0 grid place-items-center bg-black/40 text-base font-semibold text-white">
+              +{remaining}
+            </span>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function EquipmentItem({ equipment }: { equipment: Equipment }) {
+  const Icon = equipment.available ? Check : X;
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-between gap-2 rounded-md border bg-background px-3 py-2 text-sm",
+        equipment.available
+          ? "border-confidence-high-100"
+          : "border-dashed",
+      )}
+    >
+      <div className="flex items-center gap-2 min-w-0">
+        <span
+          className={cn(
+            "grid h-5 w-5 shrink-0 place-items-center rounded-full",
+            equipment.available
+              ? "bg-confidence-high-50 text-confidence-high-700"
+              : "bg-muted text-muted-foreground",
+          )}
+          aria-hidden
+        >
+          <Icon className="h-3 w-3" strokeWidth={3} />
+        </span>
+        <span
+          className={cn(
+            "truncate",
+            !equipment.available && "text-muted-foreground",
+          )}
+        >
+          {equipment.name}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function ExcludedItem({
+  excluded,
+  altById,
+}: {
+  excluded: ExcludedService;
+  altById: Map<string, RelatedHospital>;
+}) {
+  return (
+    <li className="rounded-md border border-dashed bg-muted/30 p-3 text-sm">
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-medium">{excluded.name}</span>
+        <span className="text-xs text-muted-foreground">
+          {EXCLUDED_REASON_LABEL[excluded.reason]}
+        </span>
+      </div>
+      {excluded.alternative_hospital_ids.length > 0 ? (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
+          <span className="text-muted-foreground">동네 대안:</span>
+          {excluded.alternative_hospital_ids.map((id) => {
+            const hospital = altById.get(id);
+            return (
+              <Link
+                key={id}
+                to={`/hospitals/${id}`}
+                className="inline-flex items-center gap-1 rounded-full border border-input bg-background px-2 py-0.5 transition-colors hover:border-primary/40 hover:bg-accent hover:text-accent-foreground"
+              >
+                {hospital?.name ?? id}
+                <ArrowRight className="h-3 w-3" aria-hidden />
+              </Link>
+            );
+          })}
+        </div>
+      ) : null}
+    </li>
   );
 }

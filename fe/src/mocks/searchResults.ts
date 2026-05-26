@@ -6,6 +6,9 @@ import type { SearchResponse, SearchResultItem } from "@/types/domain";
 //
 // 첫 항목은 상세 페이지 Mock(`h_abc123`)과 같은 ID라
 // 카드 클릭만으로 상세 페이지 9영역 데모로 이어진다
+//
+// thumbnail_url 은 BE 이미지 수집 로직 미구현이라 모두 null —
+// 카드·헤드라이너의 그라데이션 + 이니셜 플레이스홀더가 대신 그려진다.
 const mockSearchItems: SearchResultItem[] = [
   {
     hospital_id: "h_abc123",
@@ -29,6 +32,7 @@ const mockSearchItems: SearchResultItem[] = [
     website_url: "https://example.com",
     one_line_summary:
       "일반 피부 진료 중심, 미용 시술은 거의 안 하는 동네 의원",
+    thumbnail_url: null,
   },
   {
     hospital_id: "h_def456",
@@ -52,6 +56,7 @@ const mockSearchItems: SearchResultItem[] = [
     website_url: "https://example.com/def",
     one_line_summary:
       "이 병원이 자기 사이트에서 소아 아토피 진료 사례를 메인으로 소개함",
+    thumbnail_url: null,
   },
   {
     hospital_id: "h_ghi789",
@@ -75,6 +80,7 @@ const mockSearchItems: SearchResultItem[] = [
     website_url: "https://example.com/ghi",
     one_line_summary:
       "이 병원이 자기 사이트에서 보톡스·필러·레이저를 메인으로 표시함",
+    thumbnail_url: null,
   },
   {
     hospital_id: "h_jkl012",
@@ -98,6 +104,7 @@ const mockSearchItems: SearchResultItem[] = [
     website_url: "https://example.com/jkl",
     one_line_summary:
       "이 병원이 자기 블로그에서 M자 탈모 처방 사례를 다룸",
+    thumbnail_url: null,
   },
   {
     hospital_id: "h_mno345",
@@ -121,6 +128,7 @@ const mockSearchItems: SearchResultItem[] = [
     website_url: null,
     one_line_summary:
       "이 병원이 공식 신고한 의료기기 목록에 사마귀 냉동치료기가 포함됨",
+    thumbnail_url: null,
   },
   {
     hospital_id: "h_pqr678",
@@ -144,6 +152,7 @@ const mockSearchItems: SearchResultItem[] = [
     website_url: null,
     one_line_summary:
       "사이트가 없어 자칭 컨셉을 확인하기 어려움 — 직접 병원에 문의 권장",
+    thumbnail_url: null,
   },
 ];
 

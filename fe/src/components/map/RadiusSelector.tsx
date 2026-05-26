@@ -17,20 +17,27 @@ export function RadiusSelector({
   className,
 }: RadiusSelectorProps) {
   return (
-    <div className={cn("flex items-center gap-2 text-sm", className)}>
-      <span className="text-xs font-medium text-muted-foreground">반경</span>
-      <div className="flex flex-wrap gap-1">
+    <div className={cn("flex items-center gap-2", className)}>
+      <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+        반경
+      </span>
+      <div
+        role="radiogroup"
+        aria-label="검색 반경"
+        className="inline-flex items-center gap-0.5 rounded-full border bg-card p-0.5"
+      >
         {RADIUS_OPTIONS.map((km) => (
           <button
             key={km}
             type="button"
             onClick={() => onChange(km)}
-            aria-pressed={value === km}
+            role="radio"
+            aria-checked={value === km}
             className={cn(
-              "rounded-full border px-2.5 py-0.5 text-xs transition-colors",
+              "rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors",
               value === km
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-input bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
             )}
           >
             {km < 1 ? `${km * 1000}m` : `${km}km`}

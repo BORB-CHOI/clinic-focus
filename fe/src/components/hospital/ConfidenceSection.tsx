@@ -2,6 +2,7 @@ import { Section } from "@/components/common/Section";
 import { ConfidenceBadge } from "@/components/common/ConfidenceBadge";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { SIGNAL_LABEL, detailedSignalAnchorId } from "@/lib/signals";
 import type {
   Confidence,
@@ -21,19 +22,58 @@ const SIGNAL_KEYS: (keyof ConfidenceSignals)[] = [
   "reviews",
 ];
 
-function SignalBar({ label, value }: { label: string; value: number }) {
+// 시그널별 색 토큰 클래스 — 헤드라이너 SignalChip 과 동일한 hue.
+// 진행바 배경/채움/텍스트 모두 한 hue 의 4단계로 묶여 화면 곳곳의 시그널이
+// 색으로 즉시 식별된다.
+const SIGNAL_BAR_STYLE: Record<keyof ConfidenceSignals, {
+  track: string;
+  fill: string;
+  label: string;
+}> = {
+  self_claim: {
+    track: "bg-signal-self-claim-50",
+    fill: "bg-signal-self-claim-500",
+    label: "text-signal-self-claim-700",
+  },
+  vision: {
+    track: "bg-signal-vision-50",
+    fill: "bg-signal-vision-500",
+    label: "text-signal-vision-700",
+  },
+  blog: {
+    track: "bg-signal-blog-50",
+    fill: "bg-signal-blog-500",
+    label: "text-signal-blog-700",
+  },
+  reviews: {
+    track: "bg-signal-reviews-50",
+    fill: "bg-signal-reviews-500",
+    label: "text-signal-reviews-700",
+  },
+};
+
+function SignalBar({
+  signal,
+  value,
+}: {
+  signal: keyof ConfidenceSignals;
+  value: number;
+}) {
   const pct = Math.min(100, Math.max(0, value));
+  const style = SIGNAL_BAR_STYLE[signal];
   return (
     <div>
       <div className="mb-1 flex items-center justify-between text-xs">
-        <span className="text-muted-foreground">{label}</span>
-        <span className="font-mono">{value}</span>
+        <span className={cn("font-medium", style.label)}>
+          {SIGNAL_LABEL[signal]}
+        </span>
+        <span className="font-mono text-muted-foreground">{value}</span>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+      <div className={cn("h-2 w-full overflow-hidden rounded-full", style.track)}>
         <div
-          className="h-full bg-primary"
+          className={cn("h-full rounded-full transition-all", style.fill)}
           style={{ width: `${pct}%` }}
-          aria-label={`${label} ${value}`}
+          aria-label={`${SIGNAL_LABEL[signal]} ${value}`}
         />
       </div>
     </div>
@@ -41,7 +81,9 @@ function SignalBar({ label, value }: { label: string; value: number }) {
 }
 
 // ④ 신뢰도·근거 — 데모 핵심 영역
-// 헤드라이너 citations 배지 클릭의 스크롤 타깃
+//
+// 헤드라이너 citations 배지 클릭의 스크롤 타깃이 펼침 구간에 있다.
+// 펼침 구간 헤더에 시그널 색 띠를 둬 ① → ④ 시각 연결을 강화.
 export function ConfidenceSection({
   confidence,
   detailed_signals,
@@ -54,23 +96,19 @@ export function ConfidenceSection({
       subtitle="이 분류가 어떤 시그널의 어떤 근거로 만들어졌는지"
       action={<ConfidenceBadge confidence={confidence} />}
     >
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {SIGNAL_KEYS.map((k) => (
-          <SignalBar
-            key={k}
-            label={SIGNAL_LABEL[k]}
-            value={confidence.signals[k]}
-          />
+          <SignalBar key={k} signal={k} value={confidence.signals[k]} />
         ))}
       </div>
 
       <Separator className="my-6" />
 
-      <div
-        id={detailedSignalAnchorId("self_claim")}
-        className="scroll-mt-20 space-y-2"
+      <DetailBlock
+        signal="self_claim"
+        title="자칭 컨셉"
+        sourceUrl={detailed_signals.self_claim.source_url}
       >
-        <h3 className="text-sm font-semibold">[사이트] 자칭 컨셉</h3>
         <div className="flex flex-wrap gap-1">
           {detailed_signals.self_claim.extracted_keywords.map((k) => (
             <Badge key={k} variant="outline">
@@ -78,26 +116,22 @@ export function ConfidenceSection({
             </Badge>
           ))}
         </div>
-        <blockquote className="rounded-md border-l-2 bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+        <blockquote className="mt-3 rounded-md border-l-2 border-signal-self-claim-500 bg-signal-self-claim-50 px-3 py-2 text-sm text-signal-self-claim-700">
           {detailed_signals.self_claim.source_text}
         </blockquote>
-      </div>
+      </DetailBlock>
 
       <Separator className="my-6" />
 
-      <div
-        id={detailedSignalAnchorId("vision")}
-        className="scroll-mt-20 space-y-2"
-      >
-        <h3 className="text-sm font-semibold">[Vision] 이미지 분포</h3>
-        <ul className="space-y-1 text-sm">
+      <DetailBlock signal="vision" title="이미지 분포">
+        <ul className="space-y-1.5 text-sm">
           {Object.entries(detailed_signals.vision.image_distribution).map(
             ([key, ratio]) => (
               <li key={key} className="flex items-center gap-3">
                 <span className="w-20 text-muted-foreground">{key}</span>
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-signal-vision-50">
                   <div
-                    className="h-full bg-primary/70"
+                    className="h-full rounded-full bg-signal-vision-500"
                     style={{ width: `${Math.round(ratio * 100)}%` }}
                   />
                 </div>
@@ -109,28 +143,25 @@ export function ConfidenceSection({
           )}
         </ul>
         {detailed_signals.vision.detected_devices.length > 0 ? (
-          <p className="text-xs text-muted-foreground">
+          <p className="mt-2 text-xs text-muted-foreground">
             감지된 장비: {detailed_signals.vision.detected_devices.join(", ")}
           </p>
         ) : null}
-      </div>
+      </DetailBlock>
 
       <Separator className="my-6" />
 
-      <div
-        id={detailedSignalAnchorId("blog")}
-        className="scroll-mt-20 space-y-2"
+      <DetailBlock
+        signal="blog"
+        title={`주제 분포 (${detailed_signals.blog.total_posts}건)`}
       >
-        <h3 className="text-sm font-semibold">
-          [블로그] 주제 분포 ({detailed_signals.blog.total_posts}건)
-        </h3>
-        <ul className="space-y-1 text-sm">
+        <ul className="space-y-1.5 text-sm">
           {detailed_signals.blog.top_topics.map((t) => (
             <li key={t.topic} className="flex items-center gap-3">
               <span className="w-20 text-muted-foreground">{t.topic}</span>
-              <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+              <div className="h-2 flex-1 overflow-hidden rounded-full bg-signal-blog-50">
                 <div
-                  className="h-full bg-primary/70"
+                  className="h-full rounded-full bg-signal-blog-500"
                   style={{ width: `${Math.round(t.frequency * 100)}%` }}
                 />
               </div>
@@ -140,17 +171,14 @@ export function ConfidenceSection({
             </li>
           ))}
         </ul>
-      </div>
+      </DetailBlock>
 
       <Separator className="my-6" />
 
-      <div
-        id={detailedSignalAnchorId("reviews")}
-        className="scroll-mt-20 space-y-2"
+      <DetailBlock
+        signal="reviews"
+        title={`키워드 (${detailed_signals.reviews.review_count}건)`}
       >
-        <h3 className="text-sm font-semibold">
-          [후기] 키워드 ({detailed_signals.reviews.review_count}건)
-        </h3>
         <div className="flex flex-wrap gap-1">
           {detailed_signals.reviews.top_keywords.map((k) => (
             <Badge key={k} variant="outline">
@@ -158,7 +186,47 @@ export function ConfidenceSection({
             </Badge>
           ))}
         </div>
-      </div>
+      </DetailBlock>
     </Section>
+  );
+}
+
+// 펼침 구간 컨테이너 — 좌측 시그널 색 띠로 ① 헤드라이너 citation 과 시각 연결
+function DetailBlock({
+  signal,
+  title,
+  sourceUrl,
+  children,
+}: {
+  signal: keyof ConfidenceSignals;
+  title: string;
+  sourceUrl?: string;
+  children: React.ReactNode;
+}) {
+  const style = SIGNAL_BAR_STYLE[signal];
+  return (
+    <div
+      id={detailedSignalAnchorId(signal)}
+      className="scroll-mt-20 border-l-2 pl-4"
+      style={{ borderColor: "currentColor" }}
+    >
+      <div className={cn("flex items-center gap-2", style.label)}>
+        <span className="text-[10px] uppercase tracking-wider">
+          [{SIGNAL_LABEL[signal]}]
+        </span>
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        {sourceUrl ? (
+          <a
+            href={sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+          >
+            출처 ↗
+          </a>
+        ) : null}
+      </div>
+      <div className="mt-3">{children}</div>
+    </div>
   );
 }

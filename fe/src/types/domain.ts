@@ -134,6 +134,8 @@ export interface RelatedHospital {
   similarity_score: number;
   recommendation_type: RecommendationType;
   distance_km: number | null;
+  /** 카드 썸네일용. null 이면 플레이스홀더 */
+  thumbnail_url: string | null;
 }
 
 export type DataSource =
@@ -191,6 +193,12 @@ export interface HospitalDetail {
   location: Location;
   website_url: string | null;
   one_line_summary: string;
+  /**
+   * 병원 대표 이미지 URL. 헤드라이너 히어로 + 검색·관련·지도 사이드 카드의
+   * 좌측 썸네일에서 동일 출처로 사용. null 이면 그라데이션 + 이니셜 플레이스홀더.
+   * BE 측 이미지 수집·저장 로직은 미구현 상태로 FE 는 자리만 비워둠.
+   */
+  thumbnail_url: string | null;
 
   ai_description: AiDescription;
   services: Service[];
@@ -226,6 +234,8 @@ export interface SearchResultItem {
   location: Location;
   website_url: string | null;
   one_line_summary: string;
+  /** 병원 대표 이미지 URL. 카드 좌측 썸네일에서 사용. null 이면 플레이스홀더 */
+  thumbnail_url: string | null;
 }
 
 export interface SearchMeta {
