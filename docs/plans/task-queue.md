@@ -284,7 +284,7 @@
 - 개인 계정 리전: `us-east-1` → **`ap-northeast-2`** (서울 — 사용자 기존 자원 위치 일관성)
 - IAM 정책: 단일 ARN → **3-ARN 필수** (Global inference profile은 권한 평가 시 inference-profile + regional FM + global FM 3개 모두 검사. 빈 region/account의 `arn:aws:bedrock:::foundation-model/...` 누락이 가장 흔한 실수)
 
-### Step 6 — AI 개인 dev 계정 e2e: DDB + S3 + 28개 + 85개 미니 크롤링 🚧 진행 중
+### Step 6 — AI 개인 dev 계정 e2e: DDB + S3 + 14개 분류·설명·KB ingest·자연어 검색 ✅ 1차 완료 (2026-05-26)
 
 > 목적: AI 트랙이 **AWS 위에서 자기 데이터로 분류·임베딩·KB ingest 실험을 돌릴 수 있는 최소 환경** 구성. 발표 정본 데이터는 BE 트랙(`kmuproj-02`) 풀커버를 따르고, AI는 강남구 4과목 ~85개 미니 표본으로 알고리즘 튜닝·검증.
 > 계정 분리(2026-05-25) 이후 AI는 `kmuproj-10` 자기 DDB·S3에서 작업. BE 자원 의존 없음.
@@ -326,42 +326,78 @@ GSI `sigungu-index`는 `list_hospitals_by_sigungu`(`be/adapters/dynamo_adapter.p
 - [ ] `.env`의 `S3_CRAWL_BUCKET=kmuproj-10-clinic-focus-crawl` 확인
 - [ ] 이미지 별도 버킷 안 만들고 같은 버킷 `images/` prefix로 둠 (PoC 단순화). 풀크롤링 1만 × 30 이미지 부담은 AI 트랙엔 무관 — 85개 × 30 = 2550장 수준이라 무시
 
-**Step 6-3. S3Adapter boto3 전환** ⏳
+**Step 6-3. S3Adapter boto3 전환 + crawl_all prefix 패치 → BE 위임** ⏭️ ([#23](https://github.com/BORB-CHOI/clinic-focus/issues/23) 발행, AI 트랙 비차단)
 
-> 결정 (2026-05-25, 사용자): **save_crawl_data·load_crawl_data·save_raw_html·save_image 전부 boto3 전환** (옵션 A, 통째). 로컬 fallback 없음.
+> 변경 (2026-05-26, 사용자): 이 두 패치는 **BE 공용 코드 영역**이라 AI 트랙이 단독 수정하면 BE 운영(single-table) 흐름과 어긋남. **GitHub 이슈로 BE 담당자에게 위임**하고, AI는 `ai/scratch/`에서 로컬 사본으로 우회해 e2e 진행.
 
-- [ ] `be/adapters/s3_adapter.py` 재작성:
-  - `s3.put_object` / `s3.get_object` (404 → None)
-  - `S3_CRAWL_BUCKET` env 필수, 없으면 명시적 에러 (조용한 fallback 금지)
-  - raw HTML: `raw/{hospital_id}/{safe_filename}.html`, images: `images/{hospital_id}/{filename}`
-  - **P0.5 적용** — `CrawlData.pages=[]`·`images=[]`·`public_data=None` 들어와도 `model_dump_json` 그대로 통과해서 적재. 빈 객체가 정상 경로
-- [ ] `be/scripts/crawl_all.py:35` 의 `dynamodb.Table("Hospitals")` 하드코딩을 `TABLE_PREFIX` 적용으로 패치 (`_table_name` 헬퍼 재사용 또는 인라인 prefix)
-- [ ] smoke test: 28개 중 1개를 put → get → CrawlData 재검증
+- 작업 대상: `be/adapters/s3_adapter.py` boto3 전환 + `be/scripts/crawl_all.py:35` `TABLE_PREFIX` 적용
+- 처리: 단일 GitHub 이슈 [#23](https://github.com/BORB-CHOI/clinic-focus/issues/23) 발행 완료 (#13·#18과 직교 명시)
+- AI 트랙은 Step 6-3a로 우회 (아래)
 
-**Step 6-4. `be/data/crawl_results/` 28개 → S3 마이그레이션** ⏳
+**Step 6-3a. AI 트랙 e2e 우회 — `ai/scratch/`** 🚧
 
-- [ ] `be/scripts/migrate_local_crawl_to_s3.py` 신규 (일회성). glob로 28개 로드 → `S3Adapter.save_crawl_data` 호출
-- [ ] `aws s3 ls s3://kmuproj-10-clinic-focus-crawl/crawl/ | wc -l` 로 28 확인
-- [ ] 마이그레이션 후 [be/data/crawl_results 처리](#bedatacrawl_results-처리) 항목 닫기 → `.gitignore` 추가 → 삭제 (정제 검증은 S3에서)
+> `ai/scratch/`는 e2e 검증 끝나면 삭제할 임시 작업 폴더. `.gitignore` 대신 임시 README로 의도 명시(BE PR 머지되면 삭제).
 
-**Step 6-5. `ai/scripts/load_dev_subset.py` 신규 — HIRA 강남구 4과목 ~85개 적재** ⏳
+- [ ] `ai/scratch/` 폴더 생성 + `README.md` (목적·삭제 시점·BE 이슈 링크)
+- [ ] `ai/scratch/load_dev_subset.py` — HIRA 강남구 4과목 ~85개 → `HospitalMeta` 변환 → DDB 적재 (Step 6-5 본체를 이 폴더로)
+- [ ] `ai/scratch/crawl_all_ai.py` — `be/scripts/crawl_all.py` 로컬 사본, `dynamodb.Table(f"{TABLE_PREFIX}Hospitals")` 로 prefix 적용. BE 본체는 안 건드림
+- [ ] `S3Adapter`는 현 로컬 FS 버전 그대로 사용 (`CRAWL_DATA_DIR=/home/ec2-user/clinic-focus/data/crawl`). 같은 EC2 프로세스라 e2e 검증엔 충분 — S3 boto3 전환은 BE 이슈 머지 후 폴드인
 
-> 결정 (2026-05-25, 사용자): **과목별 동일 표본 N개** (URL 필터링 X). URL 없는 병원도 포함해서 P0.5(`crawler._empty_crawl_data` 폴백) 검증 겸용.
+**Step 6-4. `be/data/crawl_results/` 28개 → S3 마이그레이션** ❌ 폐기 (2026-05-26)
 
-- [ ] 진료과목 코드 확인 (HIRA dgsbjtCd):
-  - 피부과 / 정형외과 / 이비인후과 / 안과 4종 + 강남구 시군구 코드(`110001`)
-- [ ] HIRA `getHospBasisList` → 강남구 전체 조회 → 자체 필터:
-  - 진료과목별 ~22개씩 = 88개 (반올림 후 결과 ~85±5)
-  - 같은 병원이 여러 과목에 걸리면 dedupe (`ykiho` 기준)
-- [ ] `HospitalMeta` 변환 + `DynamoAdapter.save_hospital_meta` 적재
-- [ ] 통계 출력: 과목별 카운트 / URL 보유율 / 좌표 누락률 → P0.5 검증 기준선
+> 결정 (2026-05-26, 사용자): 28개는 BE 계정 ykiho 기반이라 AI 계정 데이터와 어차피 매핑 안 됨. **버리고 85개로 처음부터 시작**.
 
-**Step 6-6. 85개 미니 크롤링** ⏳
+- 28개 파일은 정제 검증 끝나면 `.gitignore` + 삭제 (issue #13 본문의 부수 요청 그대로)
+- 마이그레이션 스크립트 불필요
 
-- [ ] `be/scripts/crawl_all.py` 실행 (Step 6-3에서 prefix 패치된 버전). DDB scan → URL 있는 병원만 → 자체 사이트 크롤링 → S3 적재
-- [ ] 예상 시간 ~20분 (85개 × 평균 13초 = 18분). 백그라운드 실행 + 로그 모니터링
-- [ ] 결과 통계: 성공 / JS 렌더링 필요 / 실패 — 성공률 60% 이상이면 후속 알고리즘 작업 진입 가능
-- [ ] **P0.5 검증** — URL 없는 병원은 자동 스킵, 자체 사이트 크롤링 실패한 병원은 `_empty_crawl_data` 로 빈 CrawlData 적재 (현 `crawler.py:60` 이미 처리)
+**Step 6-5. HIRA 강남구 4과목 ~85개 적재** ⏳ → Step 6-3a로 통합
+
+> Step 6-3a `load_dev_subset.py` 작업 항목 참조. (별도 Step 유지 안 함 — 동일 작업)
+
+- 진료과목 코드 (HIRA dgsbjtCd): 피부과 / 정형외과 / 이비인후과 / 안과 4종 + 강남구 시군구 코드(`110001`)
+- HIRA `getHospBasisList` → 강남구 전체 조회 → 자체 필터: 진료과목별 ~22개씩 = 88개 (dedupe 후 결과 ~85±5, `ykiho` 기준)
+- 통계 출력: 과목별 카운트 / URL 보유율 / 좌표 누락률 → P0.5 검증 기준선
+
+**Step 6-6. 강남구 미니 크롤링** ✅ 완료 (2026-05-26)
+
+- [x] `ai/scratch/crawl_all_ai.py` 실행 (Step 6-3a 사본). DDB scan → URL 있는 병원만 → 자체 사이트 크롤링 → 로컬 FS(`CRAWL_DATA_DIR`) 적재
+- [x] 실제 소요: ~5분 (URL 보유 25개, 평균 12초/병원)
+- [x] **결과 (2026-05-26 17:35 KST)**:
+  - 전체 88개 / URL 보유 25개 / 크롤링 대상 25개
+  - ✅ 성공: 14개 (56.0%) — 600KB JSON
+  - ⚠️ JS 렌더링 필요: 11개 (SPA·동적 사이트)
+  - ❌ 실패: 0개
+  - 기준선(60%) 살짝 미달이나 후속 알고리즘 진입엔 충분 (14개로 분류·설명 생성·KB ingest 검증 가능)
+- [x] **P0.5 검증** — URL 없는 63개는 자동 스킵, 자체 사이트 크롤링 실패한 병원은 `_empty_crawl_data` 로 빈 CrawlData 적재 (현 `crawler.py:60` 이미 처리)
+
+**Step 6-7. AI 분류·설명 14개 일괄 (`ai/scratch/classify_all.py`)** ✅ 완료 (2026-05-26)
+
+> 발견 — 강사 계정 Bedrock 정책 한계: Claude 4 패밀리는 inference profile 필수인데 us-east-2/us-west-2 라우팅이 explicit deny 됨. **텍스트 LLM 도 개인 계정 ap-northeast-2 으로 통합** (Haiku 4.5 Global profile 동작 확인, `ai/core/aws_clients.py` 수정). 시각 모델(Sonnet 4.6)은 개인 계정 콘솔 AWS Marketplace 구독 미완료라 Vision 시그널 자동 fallback.
+
+- [x] `classify_hospital` + `generate_description` 14/14 통과 (591초, 병원당 평균 42초)
+- [x] DDB 적재: Classifications 14 + HospitalDescriptions 14
+- [x] `describe.py` 에 마크다운 코드블록(```json ... ```) 자동 벗기기 추가 (Haiku 4.5 가 종종 감싸서 응답)
+- [x] BE 위임: `be/scripts/_utils.load_env` 인라인 주석 미처리 버그 → 이슈 [#24](https://github.com/BORB-CHOI/clinic-focus/issues/24)
+- [x] 미해결 — 신뢰도 로직 약점 2건 (`ai/scratch/run-log-2026-05-26.md` 참조). `primary_focus=[]` + `confidence=100` 케이스 (강남우태하피부과·개포센트럴이비인후과)
+
+**Step 6-8. KB DataSource S3 ingest 14개 (`ai/scratch/kb_ingest.py`)** ✅ 완료 (2026-05-26)
+
+> 실측으로 KB metadata 파일 포맷 확정 — `metadataAttributes` 는 **단순 dict** (List 아님). 빈 리스트 거절. 자세한 건 [`docs/API-BE-AI.md` `ingest_hospital` 섹션](../../docs/API-BE-AI.md) 참조.
+
+- [x] `clinic-focus/prod/{hospital_id}.txt` + `{hospital_id}.txt.metadata.json` 14쌍 업로드 (`kmuproj-02-vector` 버킷)
+- [x] `StartIngestionJob` 호출 → 두 차례 시행착오 (List-form 형식 거절 → dict 형식·빈 primary_focus 거절) 후 `numberOfDocumentsFailed: 0` 통과
+- [x] `team_id="clinic-focus"` 메타 필수 (02팀과 KB 공유 — Retrieve 필터로 격리)
+
+**Step 6-9. 자연어 검색 e2e (`ai/scratch/retrieve_test.py`)** ✅ 완료 (2026-05-26)
+
+- [x] `bedrock-agent-runtime:Retrieve` 호출 (LLM 0건 — Titan 임베딩만)
+- [x] `vectorSearchConfiguration.filter` 로 `team_id=clinic-focus` 격리
+- [x] 4개 쿼리 검증:
+  - `"여드름 잘 보는 피부과"` → 눈피부과의원/강남고운세상피부과의원 (피부과 우선)
+  - `"코골이 비염 수술"` → 하나이비인후과병원 (코·수면호흡, 알레르기·비염)
+  - `"백내장 라식 수술"` → 강남아이메디안과의원 (라식·라섹, 백내장)
+  - `"강남 보톡스 필러"` → 강남고운세상피부과의원 (본문에 "보톡스/필러" 명시한 곳을 정확히 잡음)
+- [x] 의미 거리 자연어 매칭 동작 확인 — `"코골이" ≈ "수면호흡"`, `"보톡스" ≈ "미용 시술"`
 
 ---
 

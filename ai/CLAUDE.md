@@ -106,9 +106,9 @@
 
 ## KB 메타데이터 (Retrieve 필터링용)
 
-`ingest_hospital` 호출 시 `{hospital_id}.txt.metadata.json` 으로 DataSource S3에 동봉. KB Retrieve `vectorSearchConfiguration.filter` 에서 필터 가능. 타입은 string / number / boolean / list[string] 만 (KB 사양).
+JSON 포맷·키 표·실측으로 확인된 KB 함정(빈 리스트 거절·List-form 거절·`team_id` 필수)은 [`../docs/API-BE-AI.md` `ingest_hospital` 섹션](../docs/API-BE-AI.md#4-ingest_hospital) 참조.
 
-`hospital_id` (역추적 핵심) / `standard_specialty` / `primary_focus` (list) / `sido` / `sigungu` / `confidence_score` (>=) / `lat` (range, bounding box) / `lng` (range, bounding box) / `last_updated`
+요약: `metadataAttributes` 는 단순 dict. 필드는 `team_id`(필수) · `hospital_id` · `standard_specialty` · `primary_focus` · `sido` · `sigungu` · `confidence_score` · `lat` · `lng`.
 
 ## 비용 의식
 

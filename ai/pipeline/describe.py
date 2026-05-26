@@ -176,9 +176,15 @@ def _parse_and_validate(
     규칙 2 (citations 비어선 안 됨) 추가 검사 포함.
     파싱 또는 검증 실패 시 DescriptionValidationError.
     """
-    # JSON 파싱
+    # JSON 파싱 — 마크다운 코드블록(```json ... ```)으로 감싸 오는 경우 벗긴다.
+    text_to_parse = raw_text.strip()
+    if text_to_parse.startswith("```"):
+        # 첫 줄(```json 또는 ```) 제거 + 마지막 ``` 제거
+        text_to_parse = text_to_parse.split("\n", 1)[1] if "\n" in text_to_parse else text_to_parse[3:]
+        if text_to_parse.rstrip().endswith("```"):
+            text_to_parse = text_to_parse.rstrip()[:-3].rstrip()
     try:
-        data = json.loads(raw_text)
+        data = json.loads(text_to_parse)
     except json.JSONDecodeError as e:
         raise DescriptionValidationError(
             f"응답이 유효한 JSON이 아님: {e}\n원본 텍스트 앞 500자: {raw_text[:500]}"
