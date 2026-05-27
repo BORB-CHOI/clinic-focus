@@ -141,10 +141,12 @@ SK = `entity` (S)
   - [x] AI 버킷 `kmuproj-10-clinic-focus-crawl/crawl/` 에 sync 완료
   - [x] Pydantic `CrawlData` 검증 통과 (샘플 1건, pages=10/images=30)
   - [ ] **장기 — BE 가 PutObject 시점에 양쪽 버킷에 mirror 자동화 (옵션 A)** — BE 협조 필요. 풀커버(1만) 진입 전 합의
-- [ ] **분류 스키마 확장 — V2 풀커버 진입 시 차단 요인**
-  - 현재 4과목 (피부과·정형외과·이비인후과·안과) PoC 스키마. 강남 502개 (BE mirror) 에는 내과·소아과·산부인과·가정의학과·비뇨의학과·정신건강의학과·치과 등 미커버 과목 다수
-  - 실 데이터에서 진료과목 분포 측정 → 상위 N과목 추가 + 각 과목별 세부 분류(4~6) 정의
-  - Phase C 룰 기반 분류기 구현 전 의사결정 — `ai/CLAUDE.md` "분류 스키마" 섹션 갱신, BE DDB GSI 키·FE 컴포넌트 props 동시 영향
+- [x] **분류 스키마 확장 — V2 풀커버 진입 차단 해제** (2026-05-27)
+  - 강남 502개 S3 mirror + HIRA 종별 분포 + 의원 99개 본문 키워드 매칭 + 민간 3사(NHIS·닥터나우·굿닥·모두닥) 분류 체계 비교
+  - 결론: `standard_specialty` 22 후보군 확정 (양방 16 + 한의원·치과 평탄화 2 + 종합·요양·보건소·기타 4). 표본 약 94% 커버
+  - `primary_focus` 는 자율(`list[str]` 자유 문자열) 유지 — 룰 기반 분류기가 본문에서 자유 추출
+  - `ai/CLAUDE.md` "분류 스키마" 박스 갱신 + 분석 노트 [`ai/scratch/specialty-schema-analysis-2026-05-27.md`](../../ai/scratch/specialty-schema-analysis-2026-05-27.md) 박음
+  - **후속**: BE 담당자에 22 후보군 공유 + GSI `sigungu_specialty` 검증 추가 요청 / FE 검색 필터 옵션 22개로 갱신 / `be/adapters/hira_adapter.py` `_get_specialists` 정정 (현 `getHospBasisList` 호출은 `dgsbjtCdNm` 필드가 응답에 없어 항상 빈 리스트 반환)
 - [ ] 외부 API 키 발급
   - [ ] 네이버 개발자센터 — 검색 API (블로그·플레이스)
   - [ ] 카카오 — 로컬 API (`kakao_adapter.py` 이미 사용 중) + 추가 리뷰 접근 검토
