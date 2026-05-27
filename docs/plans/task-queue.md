@@ -130,13 +130,12 @@ SK = `entity` (S)
   - 신규 모델: `NaverPlace` · `NaverBlogPost` · `KakaoPlace` · `GoogleReviews` · `ExternalSignalBundle`
   - `CrawlData` 외에 `ExternalCrawlData` 모델 (네이버/카카오/구글 합쳐)
   - `HospitalIngestMetadata` 에 `aliases`·`status`·`last_external_crawl_at` 추가
-- [ ] **DDB 단일 테이블 마이그레이션**
-  - [ ] `be/scripts/setup_dynamodb_single.py` 신규 — 위 §3 스키마로 1테이블 + GSI 2개 생성
-  - [ ] `be/adapters/dynamo_adapter.py` 전면 재작성 — 7개 테이블 메서드를 entity SK 기반 단일 어댑터로
-  - [ ] AI/BE 양쪽 `dynamodb.Table("Hospitals")` 류 호출을 새 어댑터 메서드(`get_entity`·`put_entity`·`query_hospital_entities`) 로 교체
-  - [ ] 기존 AI 14개 데이터 (7-table) → 단일 테이블 이관 스크립트 (`migrate_7table_to_single.py`)
-  - [ ] 검증: 자연어 검색 4쿼리가 새 어댑터에서도 동작
-  - [ ] 옛 7-table 폐기 (콘솔 수동 삭제)
+- [x] **DDB 단일 테이블 마이그레이션** (Phase A 1차, 2026-05-27)
+  - [x] `be/adapters/dynamo_adapter.py` 전면 재작성 — 7개 테이블 메서드를 entity SK 기반 단일 어댑터로 (`get_entity`/`put_entity`/`query_hospital_entities`/`iter_all_hospital_ids` 등 generic primitives + typed helper 유지)
+  - [x] AI/BE 양쪽 `dynamodb.Table("Hospitals")` 류 호출을 새 어댑터 메서드로 교체 (`ai/scratch/kb_ingest.py` 한 곳)
+  - [x] 옛 7-table 폐기 (콘솔 수동 삭제, AI 트랙 14개 데이터 폐기 — 이관 안 함)
+  - [ ] **신규 V2 단일 테이블 콘솔 수동 생성** — `kmuproj-10-clinic-Main`, 절차는 [`../setup/aws-onboarding.md`](../setup/aws-onboarding.md) Step 6 (SafeRole 에 CreateTable 권한 없음 → 자동화 스크립트 불가)
+  - [ ] 검증: BE 크롤링 1만 데이터 받은 후 자연어 검색 4쿼리 회귀
 - [ ] 외부 API 키 발급
   - [ ] 네이버 개발자센터 — 검색 API (블로그·플레이스)
   - [ ] 카카오 — 로컬 API (`kakao_adapter.py` 이미 사용 중) + 추가 리뷰 접근 검토
@@ -367,8 +366,8 @@ Phase G (인프라·운영 마무리)
 | 3 | KB Retrieve 왕복 + S3 ingest 권한 | ✅ |
 | 4 | DataSource 파일·metadata 스키마 | ✅ |
 | 5 | 개인 계정 Sonnet 4.6 Vision (Marketplace 구독 대기) | △ |
-| 6 | DDB 7테이블 + 88개 적재 + 14개 분류·설명·KB ingest·자연어 검색 | ✅ PR [#25](https://github.com/BORB-CHOI/clinic-focus/pull/25) |
-| 7 | **single-table 재설계 + 14개 이관** | ⏳ Phase A |
+| 6 | DDB 7테이블 + 88개 적재 + 14개 분류·설명·KB ingest·자연어 검색 | ✅ PR [#25](https://github.com/BORB-CHOI/clinic-focus/pull/25) (V2 전환과 함께 옛 7-table·14개 폐기) |
+| 7 | single-table 재설계 — 어댑터 재작성 + 옛 7-table 폐기 + 콘솔 수동 V2 생성 | ✅ 2026-05-27 |
 | 8 | **외부 3소스 (네이버·카카오·구글) 적재** | ⏳ Phase B |
 | 9 | **4 시그널 본문 합쳐 재 ingest** | ⏳ Phase C |
 
