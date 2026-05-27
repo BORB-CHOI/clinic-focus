@@ -1,0 +1,130 @@
+[
+  {
+    "data": {
+      "visitorReviews": {
+        "items": [
+          {
+            "id": "66ce54aa7e7306c1cf7d7295",
+            "reviewId": "66ce54aa7e7306c1cf7d7299",
+            "rating": null,
+            "author": {
+              "id": "ygjt",
+              "nickname": "엄지손톱68",
+              "from": "NAVER",
+              "imageUrl": "https://phinf.pstatic.net/contact/20190423_116/1555996276664cScdN_PNG/1753.png",
+              "objectId": "601e2a9417a3d46045b8a537",
+              "url": "https://m.place.naver.com/my/601e2a9417a3d46045b8a537/review?v=2",
+              "borderImageUrl": null
+            },
+            "body": "보건소",
+            "visitCount": 1,
+            "viewCount": 7281,
+            "visited": "24.7.31.수",
+            "visitedDate": "2024.07.31.",
+            "created": "24.8.28.수",
+            "themes": null,
+            "votedKeywords": [],
+            "userIdno": "ygjt",
+            "loginIdno": "",
+            "nickname": null,
+            "reactionStat": {
+              "totalCount": 0,
+              "typeCount": [
+                {
+                  "name": "fun",
+                  "count": 0
+                },
+                {
+                  "name": "helpful",
+                  "count": 0
+                },
+                {
+                  "name": "wannago",
+                  "count": 0
+                },
+                {
+                  "name": "cool",
+                  "count": 0
+                }
+              ]
+            }
+          },
+          {
+            "id": "65b45c9709117a7eda116944",
+            "reviewId": "65b45c9709117a7eda11695e",
+            "rating": null,
+            "author": {
+              "id": "2tn8R",
+              "nickname": "junfood",
+              "from": "NAVER",
+              "imageUrl": "https://phinf.pstatic.net/contact/31/2014/5/26/junfood_1401113607179.jpg",
+              "objectId": "5d3afa18a0d07ea00b429b9b",
+              "url": "https://m.place.naver.com/my/5d3afa18a0d07ea00b429b9b/review?v=2",
+              "borderImageUrl": null
+            },
+            "body": "보건증\n",
+            "visitCount": 1,
+            "viewCount": 9400,
+            "visited": "24.1.17.수",
+            "visitedDate": "2024.01.17.",
+            "created": "24.1.27.토",
+            "themes": null,
+            "votedKeywords": [],
+            "userIdno": "2tn8R",
+            "loginIdno": "",
+            "nickname": null,
+            "reactionStat": {
+              "totalCount": 0,
+              "typeCount": [
+                {
+                  "name": "fun",
+                  "count": 0
+                },
+                {
+                  "name": "helpful",
+                  "count": 0
+                },
+                {
+                  "name": "wannago",
+                  "count": 0
+                },
+                {
+                  "name": "cool",
+                  "count": 0
+                }
+              ]
+            }
+          }
+        ],
+        "starDistribution": null,
+        "total": 2,
+        "score": null
+      }
+    }
+  },
+  {
+    "data": {
+      "visitorReviewStats": {
+        "id": "619469917",
+        "name": null,
+        "review": {
+          "avgRating": 0,
+          "totalCount": 2,
+          "scores": [],
+          "starDistribution": null,
+          "imageReviewCount": 0,
+          "authorCount": 0,
+          "maxSingleReviewScoreCount": null,
+          "maxScoreWithMaxCount": null
+        },
+        "analysis": {
+          "themes": [],
+          "menus": [],
+          "votedKeyword": null
+        },
+        "visitorReviewsTotal": 2,
+        "ratingReviewsTotal": null
+      }
+    }
+  }
+]

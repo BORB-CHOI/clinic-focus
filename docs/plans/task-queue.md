@@ -225,6 +225,24 @@ SK = `entity` (S)
 >
 > **사실 11 — Vision 입력 (박스 2 raw)**: `s3://kmuproj-10-clinic-focus-crawl/crawl/` 의 강남 502개 중 10개 무작위 표집 분석. 이미지 총 **300장(모든 사이트가 정확히 30장 cap)**, URL 패턴 잡음 의심 **78장(26%)**, 시술 힌트 URL/alt 매칭 **35장(11%)**, alt 보유 **164장(54%)**. 사이트별 잡음률 0~100% 편차 — `gn.chihyu.co.kr` 0%, `aesophospital.com` 3%, `re-bom.com` 100%. `re-bom.com` 의 `menu_2_1_2_manualTherapy.png` (alt="도수치료") 는 URL `menu_` 패턴 때문에 잡음 분류됐으나 실제 시술 카테고리 그리드 — **URL 패턴 단독 잡음 룰은 거짓 양성 다발**, alt 텍스트가 결정적 시그널.
 >
+> **사실 12 — `getPhotoViewerItems` + `getPhotoTabFilters` (사용자 후속 캡처 기반 4건 실측)**: 네이버 사진 탭이 노출하는 photos[] 가 박스 1·2 양쪽에 시그널 추가. 표본:
+>
+> | 병원 | photos 총 | ibu(공식) | visitor(후기) | ugc(블로그) | unique blog 시드 |
+> |---|---|---|---|---|---|
+> | 자생한방 강남 | 46 | 3 | 4 | 39 | (미집계, 다음 세션) |
+> | 더서울 성북 | 61 | 20 | 1 | 40 | 9 |
+> | 위담 강남 | 60 | 20 | 0 | 40 | 7 |
+> | 정릉아동보건지소(619469917) | 20 | 1 | 0 | 19 | 4 |
+>
+> 각 사진의 `photoType`:
+> - `ibu` = 병원이 네이버 플레이스에 직접 올린 공식 사진 (= 자칭 시그널 raw, `businessName` 박힘)
+> - `visitor` = 방문자 후기 사진 (`text` 에 후기 본문 일부)
+> - `ugc` = 외부 블로그 사진. `externalLink.url` 에 `blog.naver.com/.../{postId}` 박혀 있음 (= **블로그 시그널 시드 URL 을 네이버가 큐레이션해서 줌** — `v1/search/blog` 검색보다 정확한 매칭)
+>
+> `getPhotoTabFilters` 의 `AI View.subTabFilters`: 자생한방 강남만 `(내부, INTERIOR)`·`(외부, EXTERIOR)` 두 카테고리 노출(나머지 3건은 AI View 탭 자체 없음). 사진 양·카테고리에 따라 노출. **네이버가 이미 사진을 자동 분류했음 = 박스 2 Vision 트랙에 직접 시그널 추가** (외부 시설/내부 시설/시술 결과 등).
+>
+> **실측 코드·query·응답 raw 저장**: [`ai/scratch/naver-place-probe-2026-05-28/`](../../ai/scratch/naver-place-probe-2026-05-28/) (README + probe_search·probe_reviews·probe_photos 실행 스크립트 + queries/*.graphql 4개 + samples/*.json 9개). 다음 세션이 코드 디테일 재현 시 이 폴더만 보면 됨.
+>
 > **운영 비용·제약 추가 메모 (수치 raw)**:
 > - **EC2 부담**: 1건당 headless Chromium 18~25초. 1만 풀커버 시 단일 EC2 직렬 처리 = ~50~70시간. 병렬화·헤드리스 풀 운영 필요
 > - **Playwright Chromium 시스템 의존성** (현 EC2 에 설치 완료): `atk at-spi2-atk nss cups-libs libdrm libXcomposite libXdamage libXrandr libXfixes libXScrnSaver libxkbcommon mesa-libgbm pango cairo alsa-lib`

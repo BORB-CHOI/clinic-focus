@@ -1,0 +1,27 @@
+# 사용자 캡처 그대로. photoViewer 와 같은 페이로드 배열에 함께 보냄.
+#
+# variables:
+#   input.businessId / businessType / cursors / dateRange / excludeAuthorIds / excludeClipIds / excludeSection
+#   (photoViewer 와 동일)
+#
+# 실측 (자생한방 강남):
+#   tabFilters: '업체' (subs=[]), 'AI View' (subs=[(내부,INTERIOR), (외부,EXTERIOR)]), '리뷰' (subs=[])
+# 실측 (더서울·위담·619469917):
+#   AI View 탭 없음 → 사진 수·카테고리에 따라 노출 여부 가변
+#
+# ★ AI View subTabFilters.code = 네이버가 사진 자동 분류한 결과 (INTERIOR/EXTERIOR 등)
+#    병원 카테고리는 두 가지뿐. 다른 카테고리(미용 등) 에서는 더 세분화될 가능성.
+
+query getPhotoTabFilters($input: PhotoTabFiltersInput) {
+  photoTabFilters(input: $input) {
+    tabFilters {
+      item        # "업체" | "AI View" | "리뷰"
+      imgUrl
+      subTabFilters {
+        item      # "내부" / "외부" 등
+        imgUrl
+        code      # "INTERIOR" / "EXTERIOR" 등
+      }
+    }
+  }
+}
