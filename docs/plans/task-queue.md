@@ -84,16 +84,12 @@
 - [ ] `GET /api/hospitals/{id}/history` — `ChangeHistory` 조회 ([API-FE-BE §3](../API-FE-BE.md#3-분류-변경-이력))
 - [ ] `POST /api/feedback` — 디바이스ID 중복 방지 + 201/409 응답 ([API-FE-BE §4](../API-FE-BE.md#4-피드백-제출))
 
-**G. DDB 인프라**
+**G. DDB·CORS·환경 마무리**
 
-- [ ] BE 자기 계정(`kmuproj-02`)에 7테이블 수동 생성 (콘솔 절차는 [`../setup/aws-onboarding.md` Step 6](../setup/aws-onboarding.md#step-6--dynamodb-7테이블-수동-생성-aws-콘솔))
-- [ ] BE 자기 계정 S3 버킷 `kmuproj-02-clinic-focus-crawl` 생성
-- [ ] `ChangeHistory` 자동 INSERT 로직 (`classify_hospital` 결과 변경 시)
-
-**H. CORS·환경변수 마무리**
-
+- [ ] ⭐ **0순위 결정 — DDB 형태 통일.** BE는 single-table(`kmuproj-02-team3-backend`, PK=`hospital_id`+SK=`entity`, 3124 items) 가동 중인데 `be/scripts/setup_dynamodb.py`+`be/adapters/dynamo_adapter.py`는 7-table 가정. FastAPI 4개 엔드포인트가 어느 어댑터를 쓰는지 확정 안 됨. 택1: (a) AI도 single-table로 전환 / (b) `dynamo_adapter.py`를 single-table로 교체하고 AI 7-table 유지하려면 별도 어댑터 / (c) 양쪽 가정 동시 지원. 이거 정해야 §F 본체 진입 가능
+- [ ] `ChangeHistory` 자동 INSERT 로직 (`classify_hospital` 결과 변경 시) — 위 결정 따라 single-table entity 또는 별 테이블에 적재
 - [ ] `be/handlers/api.py` CORS `allow_origins=["*"]` → CloudFront 도메인 + `localhost:5173` 한정
-- [ ] `.env.example` BE 자기 계정 변수 (`TABLE_PREFIX=kmuproj-02-clinic-`, `S3_CRAWL_BUCKET=kmuproj-02-clinic-focus-crawl`) 주석 갱신
+- [ ] `.env.example` BE 자기 계정 변수 (`TABLE_PREFIX=kmuproj-02-clinic-` 또는 single-table 이름, `S3_CRAWL_BUCKET=kmuproj-02-clinic-focus-crawl`) 주석 갱신
 
 ### FE 트랙 (하재원)
 
