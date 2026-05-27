@@ -141,10 +141,12 @@ SK = `entity` (S)
   - [x] AI 버킷 `kmuproj-10-clinic-focus-crawl/crawl/` 에 sync 완료
   - [x] Pydantic `CrawlData` 검증 통과 (샘플 1건, pages=10/images=30)
   - [ ] **장기 — BE 가 PutObject 시점에 양쪽 버킷에 mirror 자동화 (옵션 A)** — BE 협조 필요. 풀커버(1만) 진입 전 합의
-- [ ] **분류 스키마 확장 — V2 풀커버 진입 시 차단 요인**
-  - 현재 4과목 (피부과·정형외과·이비인후과·안과) PoC 스키마. 강남 502개 (BE mirror) 에는 내과·소아과·산부인과·가정의학과·비뇨의학과·정신건강의학과·치과 등 미커버 과목 다수
-  - 실 데이터에서 진료과목 분포 측정 → 상위 N과목 추가 + 각 과목별 세부 분류(4~6) 정의
-  - Phase C 룰 기반 분류기 구현 전 의사결정 — `ai/CLAUDE.md` "분류 스키마" 섹션 갱신, BE DDB GSI 키·FE 컴포넌트 props 동시 영향
+- [x] **분류 스키마 확장 — V2 풀커버 진입 차단 해제** (2026-05-27)
+  - 강남 502개 S3 mirror + HIRA 종별 분포 + 의원 99개 본문 키워드 매칭 + 민간 3사(NHIS·닥터나우·굿닥·모두닥) 분류 체계 비교
+  - 결론: `standard_specialty` 22 후보군 확정 (양방 16 + 한의원·치과 평탄화 2 + 종합·요양·보건소·기타 4). 표본 약 94% 커버
+  - `primary_focus` 는 자율(`list[str]` 자유 문자열) 유지 — 룰 기반 분류기가 본문에서 자유 추출
+  - `ai/CLAUDE.md` "분류 스키마" 박스 갱신 + 분석 노트 [`ai/scratch/specialty-schema-analysis-2026-05-27.md`](../../ai/scratch/specialty-schema-analysis-2026-05-27.md) 박음
+  - **후속**: BE 담당자에 22 후보군 공유 + GSI `sigungu_specialty` 검증 추가 요청 / FE 검색 필터 옵션 22개로 갱신 / `be/adapters/hira_adapter.py` `_get_specialists` 정정 (현 `getHospBasisList` 호출은 `dgsbjtCdNm` 필드가 응답에 없어 항상 빈 리스트 반환)
 - [ ] 외부 API 키 발급
   - [ ] 네이버 개발자센터 — 검색 API (블로그·플레이스)
   - [ ] 카카오 — 로컬 API (`kakao_adapter.py` 이미 사용 중) + 추가 리뷰 접근 검토
@@ -157,21 +159,43 @@ SK = `entity` (S)
 
 ### Phase B — 외부 시그널 크롤러 4종 (BE)
 
+> ⚠️ **Phase B 진입 전 결정 — 후기 시그널 전략** (2026-05-27 추가, 다음 세션 1순위 의제)
+>
+> 4 시그널 中 후기(25%) 는 본 서비스 핵심 차별점인데, 공식 API 로는 **구글 Places (Reviews 5건/병원)** 만 합법 커버 가능. 네이버 플레이스·카카오맵 리뷰는 **비공식 엔드포인트** 만 존재. 사용자 실측(2026-05-27 브라우저 네트워크 캡처)으로 확인된 네이버 엔드포인트:
+>
+> | 호출 | 엔드포인트 | 응답 |
+> |---|---|---|
+> | 카테고리 검색 | `GET map.naver.com/p/api/search/allSearch?query=병원&searchCoord=...&boundary=...` | place_id · 이름 · 주소 · 카테고리 · 좌표 · `reviewCount` · `placeReviewCount` · 영업시간 · 썸네일 · 홈페이지 |
+> | 세션 토큰 | `POST ncpt.naver.com/v2/tokens?q={ts}&tid={...}` | (필수성 미검증 — 토큰 없이도 동작하는지 다음 세션 실측) |
+> | 방문자 리뷰 | `POST pcmap-api.place.naver.com/graphql` (`visitorReviews` query) | 본문 · 평점 · 작성자 익명ID · 방문 카테고리 키워드 · 이미지 · 작성일 |
+>
+> 카카오맵도 같은 패턴 (`place.map.kakao.com/main/v/{id}` · `comment/v/{id}`) — 다음 세션 캡처 필요.
+>
+> **본 서비스 정의상 후기 시그널은 가장 중요한 외부 데이터.** 단 본격 구현 전 다음 결정 필요:
+>
+> 1. 토큰 발급(`ncpt.naver.com`)이 필수인지 — 비로그인·토큰 없이 graphql 호출 가능한지 실측
+> 2. 이용약관·robots.txt 검토 — 자동화 수집 금지 조항 강도
+> 3. 의료법 §56③ 룰은 그대로 유효 — 후기 본문 raw 는 **DDB 저장 + 임베딩·AI 자연어 설명 생성 입력으로만 사용**, 화면 노출은 키워드 빈도만 (사용자 직접 확인)
+> 4. 개인정보 — 응답에 `loginIdno`/`userIdno`/`nickname` 들어옴. **비로그인 호출 시 본인 ID 안 들어옴** (사용자 로그인 상태에서 캡처해서 그렇게 보였음). 그래도 닉네임·작성자 ID 는 마스킹 + raw 미저장 권장
+> 5. 표본 범위 — 1만 풀스케일 vs 시연 10개 한정 (운영 안정성·토큰 깨짐 위험 가늠)
+>
+> 다음 세션 1순위 의제: 위 5개 실측·결정 → 본 박스 권고안으로 갱신 → `naver_place_crawler`·`kakao_crawler` 항목 구현 방향 확정. 본 박스가 풀릴 때까지 두 항목은 보류.
+
 - [ ] `be/core/crawlers/site_crawler.py` (현 `crawler.py`) — 자체 사이트, **HTML 잡음 정제 추가** (이슈 [#13](https://github.com/BORB-CHOI/clinic-focus/issues/13))
   - 페이지 간 중복 단락 자동 검출 (한 사이트에서 N회 이상 반복 = 푸터/메뉴 판정)
   - 잡음 블랙리스트 (modoo 안내·개인정보취급방침·환자권리장전·이용약관·비급여 고지·404·Copyright)
   - 정제 후 100자 미만 → "정보 부족" 마크
-- [ ] `be/core/crawlers/naver_place_crawler.py` 신규
+- [ ] `be/core/crawlers/naver_place_crawler.py` 신규 — **위 후기 시그널 전략 박스 결정 후 진입**
   - 검색 → `place_id` 매칭 → 영업시간·전화·사진·총 방문자 수·키워드 통계 추출
-  - 리뷰 본문 수집 (의료법 §56③ 회피 — 키워드 빈도만 저장, 개별 후기 본문 노출 금지)
+  - 리뷰 본문 수집 (의료법 §56③ 회피 — DDB raw 저장 + 임베딩·AI 설명 입력으로만, 화면 노출은 키워드 빈도만)
   - `NAVER#PLACE` + `NAVER#PLACE#REVIEWS` entity 적재
 - [ ] `be/core/crawlers/naver_blog_crawler.py` 신규
   - 네이버 검색 API `v1/search/blog` — 쿼리 `{병원명} {지역명} {진료과목}`
   - 상위 30~50개 포스트 URL → 본문 추출 (httpx + BS4)
   - 키워드 빈도 + 주제 분포 (TF-IDF 또는 Bedrock 임베딩 클러스터링)
   - `NAVER#BLOG` entity 적재
-- [ ] `be/core/crawlers/kakao_crawler.py` 확장 (현 `kakao_adapter.py`·`kakao_place_renderer.py` 기반)
-  - 로컬 API 카테고리 HP8 (이미) + 장소 상세 페이지에서 리뷰 추출
+- [ ] `be/core/crawlers/kakao_crawler.py` 확장 (현 `kakao_adapter.py`·`kakao_place_renderer.py` 기반) — **위 후기 시그널 전략 박스 결정 후 진입**
+  - 로컬 API 카테고리 HP8 (이미) + 장소 상세 페이지에서 리뷰 추출 (비공식 `place.map.kakao.com/main/v/{id}` · `comment/v/{id}`)
   - `KAKAO#PLACE` + `KAKAO#REVIEWS` entity 적재
 - [ ] `be/core/crawlers/google_places_crawler.py` 신규
   - Places API: `findPlaceFromText` → `place_id` → `place/details` (`reviews` 필드 5개 한정 — 무료 tier)
@@ -180,7 +204,7 @@ SK = `entity` (S)
 - [ ] **hash diff 기반 부분 재처리** (이슈 [#13](https://github.com/BORB-CHOI/clinic-focus/issues/13) 후반부)
   - 각 entity 에 `content_hash` 컬럼 추가
   - 재크롤링 시 hash 동일하면 KB 재 ingest 스킵
-- [ ] 의료법 후기 처리 룰 — 리뷰 본문은 DDB 에 저장하되 **키워드 빈도로만 임베딩·노출**. 개별 후기 본문 직접 노출 절대 금지
+- [ ] 의료법 후기 처리 룰 — 리뷰 본문 raw 는 DDB 저장 + **임베딩·AI 자연어 설명 생성 입력으로만 사용** (KB ingest 본문에 포함 가능). 화면 노출은 **키워드 빈도·태그·`visitCategories` 만** — 개별 후기 본문 직접 노출 절대 금지
 
 ### Phase C — AI 본체화 + 4 시그널 통합
 
