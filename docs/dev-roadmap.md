@@ -297,6 +297,36 @@ Phase 1에서 S3에 적재한 이미지 URL을 EC2 batch로 처리. 의료기기
 
 ---
 
+## Phase 1 (M0~3) — V2 완전 서비스 단계 분해
+
+`docs/plans/task-queue.md` 의 Phase A~G 가 V2(본 서비스 9가지 차별점 + 4 외부 소스 + DDB single-table + 임베딩 통합) 까지 가는 단계. 트랙별 작업 매핑:
+
+| Phase | 핵심 | AI | BE | FE |
+|---|---|---|---|---|
+| **A. 기반 재설계** | DDB single-table + shared/models 4 시그널 + 외부 API 키 발급 + 이슈 #23/#24 머지 | shared/models 확장 | 단일 어댑터 재작성 + 이슈 #23/#24 + 키 발급 | OpenAPI TS 타입 재생성 |
+| **B. 외부 시그널 크롤러 4종** | 자체 사이트 정제(#13) + 네이버 플레이스·블로그 + 카카오 확장 + 구글 Places + hash diff | — | 4 크롤러 + DDB entity 적재 | — |
+| **C. AI 본체화 + 4 시그널 통합** | scratch→ai/ + classify·describe 4 시그널 재설계 + Vision 활성화 + extract·related·recompute·aggregate·변경이력 자동 기록 | 전부 | `ingest_hospital` 파이프라인 호출부 | — |
+| **D. BE FastAPI 4개 본체** | /api/search(자연어+지도) + /api/hospitals/{id}(9영역) + /api/hospitals/{id}/history + /api/feedback + CORS | API 함수 시그니처 합의 | 전부 | API 스펙 받아 hook 갱신 |
+| **E. FE 9영역 + 시그널 시각화** | 9개 영역 컴포넌트 + 4 시그널 기여도 차트 + 1-tap 피드백 + 변경 이력 + 차등 렌더링 + 카카오맵 신뢰도 색 마커 | — | — | 전부 |
+| **F. 표본 확장 + 통합 검증** | 88 → 1000 → 1만 풀커버 + 의료법 전수 검수 + 통합 E2E 5건 + 비용 측정 | 분류 일괄 + 의료법 검수 | 풀크롤링 + KB 일괄 ingest | E2E 시나리오 검증 |
+| **G. 인프라·운영 마무리** | systemd 검증 + CloudFront + .env 정렬 + PR 리뷰 | — | systemd · 배포 | S3+CloudFront 정적 배포 |
+
+병렬 진행 가능:
+- Phase A 내부 4 항목 병렬
+- Phase B 의 4 크롤러 병렬 (소스별 독립)
+- Phase C·D 의 인터페이스 합의 후 동시 진행
+- Phase E 는 Phase D `/api/*` skeleton 만 있어도 진입 (Mock 가능)
+
+진척 현황(2026-05-27):
+
+- AI 트랙 ✅ scratch e2e 통과 (PR #25, 자칭만으로 14개). Phase A·C 진입 전
+- BE 트랙 ⏳ 이슈 #23/#24/#13/#18 위임 상태, 외부 3 크롤러 신규 필요
+- FE 트랙 △ 검색·상세·지도 화면 골격 OK (PR #14), 9영역 컴포넌트 분리·실 API 미연결
+
+연관 문서: [`plans/task-queue.md`](plans/task-queue.md) §4 (Phase A~G 상세 체크리스트) + §5 (의존성 그래프).
+
+---
+
 ## 마일스톤
 
 | 시점 | 달성 기준 |

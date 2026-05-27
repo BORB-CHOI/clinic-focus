@@ -71,6 +71,8 @@
 
 > 검색 카드는 `one_line_summary` 한 줄을 노출하고, 상세 페이지에서는 별도의 `ai_description` (다단락 자연어 설명) 필드를 사용한다 (아래 상세 API 참조).
 
+> ⚠️ 현 구현 상태 (2026-05-26): `shared/models.py`의 `HospitalMeta`·`Classification`·`HospitalDescription` 어느 곳에도 `thumbnail_url` 필드가 정의돼 있지 않다. `be/api/search.py`/`be/api/hospital.py` 응답에도 `thumbnail_url` 키 자체가 누락. `one_line_summary`는 `HospitalDescription`에만 있어 description 미생성 9990개에서는 `""` 빈 문자열로 떨어진다 (명세는 `string` non-null 가정). 상세 페이지 `RelatedHospital`의 `thumbnail_url`도 마찬가지로 모델에 없음. V2 sprint **Phase A/D** 에서 모델·어댑터·응답 동시 정렬 예정.
+
 ### `Confidence`
 ```typescript
 {
@@ -103,7 +105,7 @@
   changed_at: string;             // ISO 8601
   from_focus: string[];
   to_focus: string[];
-  reason: "feedback_accumulated" | "human_review" | "vision_reanalysis" | "scheduled_recrawl";
+  reason: "feedback_accumulated" | "human_review" | "vision_reanalysis" | "scheduled_recrawl" | "hash_diff_recrawl";
   notes: string | null;
 }
 ```
@@ -127,6 +129,17 @@
   alternative_hospital_ids: string[];  // 동네 대안 병원 (⑧ 영역과 연결)
 }
 ```
+
+##### `alternative_hospital_ids` 연결 동작 (V2)
+
+영역 ② 의 `excluded_services` 와 영역 ⑧ 의 `related_hospitals[recommendation_type="fills_gap"]` 는 **같은 데이터의 두 표현**이다. AI 측 생성 흐름:
+
+1. AI `extract_services_and_doctors(crawl_data, classification, vision_results)` 가 자체 사이트·외부 시그널·Vision 결과를 종합해 `excluded_services` 후보를 만든다 (예: "M자 탈모 처방", "사마귀 냉동치료" — 사이트 미언급 + 기기 미보유)
+2. 각 항목에 대해 AI 가 `find_related_hospitals(excluded_services=...)` 를 호출 — 같은 시군구에서 그 분야를 *실제로 다루는* 병원을 KB Retrieve + 메타필터로 추출
+3. 반환된 `hospital_id` 들을 해당 `ExcludedService.alternative_hospital_ids` 에 박고, 동일 후보를 `related_hospitals` 에 `recommendation_type="fills_gap"` 로도 박는다
+4. `excluded_services` 항목 중 대안이 못 찾아진 경우 `alternative_hospital_ids: []` (빈 배열, `null` 아님)
+
+FE 렌더링: 영역 ② "다루지 않는 분야" 카드에서 `alternative_hospital_ids` 가 비어있지 않으면 "M자 탈모 처방 ✗ — 동네 대안: △△의원" 식으로 hospital_id 별 링크를 노출. 클릭 시 해당 병원 상세 페이지로 이동.
 
 #### `Equipment` — 보유 의료기기
 ```typescript
@@ -160,6 +173,18 @@
   source_url: string | null;
 }
 ```
+
+> ⚠️ 현 구현 상태 (2026-05-26): 상세 영역 타입 다수가 `shared/models.py`와 크게 어긋난다.
+> - `Service`: 명세 `source_signals: string[]` ↔ 모델 `source: Literal[...]` (단일값).
+> - `ExcludedService`: 명세 `{name, reason, alternative_hospital_ids[]}` ↔ 모델은 `{name, reason}`만. `alternative_hospital_ids` 없어서 ⑧ 영역 링크 연결 불가.
+> - `Equipment`: 명세 `{name, available, source, source_url}` ↔ 모델 `{name, source, confidence}`. `available`/`source_url`이 `confidence`로 치환됨.
+> - `PriceItem`: 명세 `{service_name, price_range, source_url, last_seen}` ↔ 모델 `{service_name, price_text}`만.
+> - `Doctor`: 명세 `{name, position, specialty_certifications, sub_specialty, career, primary_focus, source_url}` ↔ 모델 `{name, specialty, qualifications, sub_specialty}`. `position`/`career`/`primary_focus`/`source_url` 누락, `specialty_certifications`가 `qualifications`로 이름 다름.
+> - `Location`: 명세 `dong` 필드 ↔ 모델에 없음.
+> - `OperatingHours`: 명세는 구조화 객체(`weekday: {open,close,lunch_start,lunch_end}` + `night_clinic`/`holiday_clinic`) ↔ 모델은 `weekday: str` 단순 텍스트, `night/holiday_clinic` 없음.
+> - `Contact`: 명세 `{phone, homepage_url, parking_available, appointment_methods}` ↔ 모델 `{phone, website_url, reservation_url}`. `parking`은 별도로 `HospitalMeta.parking: bool | None`에 분리.
+>
+> V2 sprint **Phase A → Phase D → Phase E** 순서로 `shared/models.py` 갱신 → BE 응답 매핑 갱신 → FE OpenAPI 타입 재생성으로 정렬 예정.
 
 #### `OperatingHours` — 운영시간
 ```typescript
@@ -211,6 +236,19 @@
 }
 ```
 
+##### `recommendation_type` 두 케이스 V2 동작 명세
+
+| 값 | 의미 | 산출 경로 |
+|---|---|---|
+| `same_focus` | 같은 시군구 + 같은 주력 분야의 유사 병원 | AI `find_related_hospitals` 가 KB Retrieve 로 같은 `primary_focus` 매칭 + 같은 `sigungu` 메타필터 → 유사도 상위 N |
+| `fills_gap` | 이 병원이 **안 다루는 분야의 대안 병원** | AI `extract_services_and_doctors` 가 `excluded_services` 를 만들 때 각 항목별로 `find_related_hospitals(excluded_services=...)` 를 호출해서 받아낸 후보. 그 `hospital_id` 들이 `excluded_services[].alternative_hospital_ids` 에 동시 박힘 (영역 ②) |
+
+FE 렌더링 가이드: 두 타입을 **시각적으로 분리해서 표시**한다.
+
+- `same_focus` 카드 섹션 — "같은 주력 동네 병원" 헤더 + 유사도 막대
+- `fills_gap` 카드 섹션 — "이 병원이 안 다루는 분야의 대안" 헤더 + 어떤 `excluded_services.name` 의 대안인지 라벨 박음
+- 두 섹션 사이에 명확한 구분선·헤더 — 사용자가 "동일 대안" 과 "보완 대안" 을 혼동하지 않게
+
 #### `DataMetadata` — 메타 정보
 ```typescript
 {
@@ -249,7 +287,7 @@ GET /api/search
 | `limit` | number | × | 결과 개수 (기본 20, 최대 50) |
 | `offset` | number | × | 페이지네이션 (기본 0) |
 
-> `q`와 `lat`/`lng` 중 **최소 하나는 필수**. 둘 다 있으면 의미 검색 결과를 반경 내로 필터링한다.
+> `q`·`lat`/`lng`·(`sigungu`+`specialty`) 세 조합 중 **최소 하나는 필수**. 처리 경로는 아래 "`meta.search_mode` 4 모드 분기" 표 참조. `q` + `lat`/`lng` 동시 사용 시 의미 검색 결과를 반경 내로 필터링한다.
 
 #### 응답 (200)
 ```json
@@ -283,7 +321,7 @@ GET /api/search
     "total": 47,
     "limit": 20,
     "offset": 0,
-    "search_mode": "natural+nearby",   // "natural" / "nearby" / "natural+nearby"
+    "search_mode": "natural+nearby",   // "natural" / "nearby" / "natural+nearby" / "category"
     "query_interpretation": "탈모 진료 / 의원급",
     "center": { "lat": 37.5443, "lng": 126.9510 },
     "radius_km": 3,
@@ -301,6 +339,23 @@ GET /api/search
   }
 }
 ```
+
+#### `meta.search_mode` 4 모드 분기 (V2)
+
+요청 파라미터 조합에 따라 BE 가 분기. `search_mode` 는 응답 `meta` 에 정확히 어느 경로로 처리됐는지 박는다.
+
+| 모드 | 트리거 조건 | 처리 경로 | AI 경유 | 정렬 기본 |
+|---|---|---|---|---|
+| `natural` | `q` O / `lat,lng` X | AI `retrieve_hospital(SearchQuery)` → KB Retrieve | O | `relevance` |
+| `nearby` | `q` X / `lat,lng` O | DDB `geo-index` bounding box + haversine 재계산 | X | `distance` |
+| `natural+nearby` | `q` O / `lat,lng` O | KB Retrieve 결과를 반경 내로 필터링 (KB filter 에 lat/lng bounding) | O | `distance` |
+| `category` | `q` X / `lat,lng` X / `sigungu`+`specialty` 만 O | DDB `sigungu-specialty-index` GSI 직접 조회, AI 미경유 | X | `confidence` |
+
+`category` 모드는 V2 신규 — `q` 없이 사용자가 시군구·진료과목만 골라 카테고리 목록을 훑는 경우. 자연어 검색 비용·지연을 피하려고 DDB GSI 로 직접 처리한다 (`docs/plans/task-queue.md` §3-3 `sigungu-specialty-index`, `CLAUDE.md` "검색 경로 이원화").
+
+위 4 조건에 다 부합 안 하면 (예: `q` X, `lat/lng` X, `sigungu`/`specialty` 도 X) 400 `INVALID_PARAMETER`.
+
+> ⚠️ 현 구현 상태 (2026-05-26): `be/api/search.py`는 자연어 검색이 아직 AI 모듈에 연결되지 않았다. `q`만 있고 `sigungu`가 없으면 200으로 빈 배열 + `meta.note: "자연어 검색은 AI 모듈 연동 후 지원됩니다..."` 반환. 실 검색 경로는 `sigungu` 기반 DDB GSI 조회뿐이고, 그 응답도 `standard_specialty: ""`, `primary_focus: []`, `confidence: null`, `one_line_summary: ""` 같은 분류 전 placeholder로 채워진다 (`thumbnail_url`은 키 자체 누락). 또한 파라미터 검증 실패는 명세상 400이지만 코드는 422로 응답한다. V2 sprint **Phase D** 에서 `retrieve_hospital` 연동 + 분류·설명 join + 에러 status 정렬 예정.
 
 ---
 
@@ -402,7 +457,7 @@ GET /api/hospitals/{hospital_id}
       },
       "vision": {
         "detected_devices": ["더모스코프"],
-        "image_distribution": { "일반 진료": 0.78, "미용 시술": 0.18, "기타": 0.04 },
+        "image_distribution": { "일반_진료": 0.78, "미용_시술": 0.18, "기타": 0.04 },
         "sample_image_urls": ["https://.../img1.jpg", "https://.../img2.jpg"]
       },
       "blog": {
@@ -410,11 +465,18 @@ GET /api/hospitals/{hospital_id}
           { "topic": "아토피", "frequency": 0.34 },
           { "topic": "여드름", "frequency": 0.21 }
         ],
-        "total_posts": 50
+        "total_posts": 50,
+        "sample_post_urls": ["https://blog.naver.com/...1", "https://blog.naver.com/...2"]
       },
       "reviews": {
-        "review_count": 142,
-        "top_keywords": ["친절", "아토피", "여드름", "꼼꼼"]
+        "sources": ["naver_place", "kakao_map", "google_places"],
+        "total_count": 142,
+        "top_keywords": [
+          { "keyword": "친절", "frequency": 38 },
+          { "keyword": "아토피", "frequency": 22 },
+          { "keyword": "여드름", "frequency": 17 },
+          { "keyword": "꼼꼼", "frequency": 14 }
+        ]
       }
     },
 
@@ -496,6 +558,52 @@ GET /api/hospitals/{hospital_id}
 | ⑧ 관련 병원 추천 | `related_hospitals` |
 | ⑨ 메타 정보 | `metadata` |
 
+#### `detailed_signals` sub-block 명세 (영역 ④ 신뢰도·근거)
+
+4 시그널 각각의 raw 데이터를 사용자에게 직접 노출 가능한 형태로 묶은 블록. 각 sub-block 은 해당 시그널이 비활성(데이터 없음)이면 `null`.
+
+```typescript
+detailed_signals: {
+  self_claim: {
+    extracted_keywords: string[];      // 자체 사이트에서 룰 기반 추출한 자칭 키워드
+    source_text: string;               // 자칭 근거 원문 (사이트 메인·소개 단락)
+    source_url: string;                // 원문 URL (사용자 검증용)
+  } | null;
+  vision: {
+    detected_devices: string[];        // Vision 이 식별한 의료기기 (예: "더모스코프")
+    image_distribution: {              // 시술 사진 분포 비율 (합=1.0)
+      "일반_진료": number;
+      "미용_시술": number;
+      "기타": number;
+    };
+    sample_image_urls: string[];       // 사용자에게 보여줄 샘플 이미지 (3~5장)
+  } | null;
+  blog: {
+    top_topics: { topic: string; frequency: number }[];  // frequency 는 0~1 상대 빈도
+    total_posts: number;               // 수집된 네이버 블로그 포스트 총수
+    sample_post_urls: string[];        // 신규 — 사용자 검증용 (상위 포스트 URL 3~5건)
+  } | null;
+  reviews: {
+    sources: ("naver_place" | "kakao_map" | "google_places")[];  // 어느 출처에서 수집됐는지
+    total_count: number;               // 3개 소스 합산 리뷰 총수
+    top_keywords: { keyword: string; frequency: number }[];      // 키워드 + 절대 빈도
+  } | null;
+}
+```
+
+##### 의료법 §56③ — 후기 데이터 처리 (절대 어기지 말 것)
+
+> **§56③ 환자 치료 경험담 광고 금지.** 후기 본문을 그대로 노출하면 의료법 위반 소지. 본 서비스는 키워드 빈도 통계만 사용자에게 노출한다.
+
+| 항목 | 허용 | 금지 |
+|---|---|---|
+| 응답 필드 | `top_keywords` (키워드 + 빈도) · `total_count` · `sources` | 개별 리뷰 본문 (`review_text`·`review_body` 같은 필드) ❌ |
+| FE 렌더링 | "친절·아토피 키워드 N건" 같은 통계 카드 / 키워드 클라우드 / 빈도 막대 차트 | 후기 본문 그대로 카드 표시 ❌ "○○님이 친절하다고 평가" 같은 인용 ❌ |
+| 내부 저장 | DDB 에 raw 본문 보관 가능 (분석용) | API 응답에 raw 본문 통과 금지 |
+| AI 설명 인용 | "후기 키워드 빈도 ~%" + 출처 배지 `[후기]` | "후기에서 호평" 같은 평가형 어조 ❌ |
+
+블로그 sub-block 의 `sample_post_urls` 는 외부 블로그 사이트 URL 만 노출 — 본문을 우리 화면에 옮겨오면 안 됨. 사용자가 클릭해서 외부에서 직접 읽도록 유도.
+
 #### `ai_description` 필드 설명
 
 | 필드 | 설명 |
@@ -538,6 +646,15 @@ GET /api/hospitals/{hospital_id}
 }
 ```
 
+> ⚠️ 현 구현 상태 (2026-05-26): `be/api/hospital.py`의 응답은 명세 구조를 따르지만 다음이 어긋난다.
+> - `detailed_signals` 4 sub-block 필드명이 모델과 명세 사이에서 전부 다름. `shared/models.py`의 `SelfClaimSignal` = `{keywords, primary_focus, spam_score}` ↔ 명세 = `{extracted_keywords, source_text, source_url}`. `VisionSignal` = `{detected_devices, image_categories, total_images_analyzed}` ↔ 명세 = `{detected_devices, image_distribution, sample_image_urls}`. `BlogSignal`/`ReviewSignal`도 `keyword_frequency`/`primary_topics` ↔ `top_topics`/`top_keywords`로 키가 어긋남. FE가 OpenAPI 타입을 새로 뽑으면 위 4 sub-block은 모델 쪽 키로 떨어진다.
+> - `vision`은 `VisionSignal | None`이라 9990개 경우 None 가능 (명세 예시는 항상 객체 가정).
+> - `ai_description == null` 분기 자체는 코드(`description.model_dump() if description else None`)와 정합.
+> - `recent_changes` 항목은 모델 `ClassificationChange`에 `classifier_version`(필수) + `hospital_id`가 포함돼 응답에 같이 떨어지는데 명세 예시·타입에는 없음.
+> - `metadata.last_updated_at`은 `classification.classified_at`을 그대로 쓰며, classification 없으면 `null`. `data_sources`는 현재 `["public_registry"]` 하드코딩. `data_completeness`는 9개 영역 채움 비율을 단순 가중치로 계산 (`be/api/hospital.py:_calc_completeness`).
+>
+> V2 sprint **Phase A/D** 에서 4 시그널 모델 필드명 정렬 + `ClassificationChange` 응답 trim + `metadata.data_sources` 동적 산출 예정.
+
 ---
 
 ### 3. 분류 변경 이력
@@ -547,6 +664,24 @@ GET /api/hospitals/{hospital_id}/history
 ```
 
 해당 병원의 분류가 시간에 따라 어떻게 바뀌었는지 반환. **평가요소 "투명성" 시연 핵심 endpoint.**
+
+#### V2 자동 기록 동작
+
+`classify_hospital` 결과가 이전 `CLASSIFICATION` entity 와 달라지면 AI 모듈이 `HISTORY#{changed_at}` entity 를 자동 INSERT 한다 (`docs/plans/task-queue.md` §3-2, §4 Phase C "분류 변경 자동 기록"). 트리거:
+
+- `feedback_accumulated` — `aggregate_feedback_stats` 가 임계 도달 + `recompute_confidence` 가 분류 변경
+- `vision_reanalysis` — Vision 결과 갱신으로 분류 변경
+- `scheduled_recrawl` — 정기 재크롤링으로 분류 변경 (초기 분류 포함)
+- `hash_diff_recrawl` — hash diff 기반 재크롤링 (자체 사이트·외부 소스 본문 hash 가 달라져 재처리됐고, 그 결과 분류가 변경된 경우)
+- `human_review` — 수동 재분류
+
+`recent_changes` (영역 ⑦) 는 본 엔드포인트와 동일 데이터의 최근 N건(기본 2) 으로 잘라낸 뷰. 전체 이력은 본 엔드포인트로만 조회.
+
+#### 쿼리 파라미터
+
+| 이름 | 타입 | 필수 | 설명 |
+|---|---|:---:|---|
+| `limit` | number | × | 반환할 이력 개수. 기본 10, 최대 50. 시간 역순(최신부터) |
 
 #### 응답 (200)
 ```json
@@ -570,6 +705,8 @@ GET /api/hospitals/{hospital_id}/history
 }
 ```
 
+> ⚠️ 현 구현 상태 (2026-05-26): `be/api/history.py`는 `load_recent_changes` 결과를 `model_dump()` 그대로 반환하므로 응답 항목에 모델 필수 필드 `classifier_version`과 `hospital_id`가 같이 포함된다 (명세 예시엔 없음). DDB SK는 `HISTORY#{changed_at}` 포맷이라 ISO 8601 정렬은 정합. 본 문서 갱신으로 `limit` 쿼리 파라미터(기본 10, 최대 50)는 정식 스펙에 포함. V2 sprint **Phase D** 에서 응답 항목 내부 필드 trim 정렬 예정.
+
 ---
 
 ### 4. 피드백 제출
@@ -586,10 +723,12 @@ POST /api/feedback
   "hospital_id": "h_abc123",
   "device_id": "d_550e8400-e29b-41d4-a716-446655440000",
   "primary_focus": "일반 진료 (아토피·여드름)",
-  "verdict": "agree" | "disagree",
-  "comment": null   // 선택. 평가용에서는 사용 안 함
+  "verdict": "agree",
+  "comment": null
 }
 ```
+
+`verdict` 타입은 `Literal["agree", "disagree"]` — 그 외 값은 400 (`INVALID_PARAMETER`). `comment` 는 선택, 평가 PoC 에서는 미수집.
 
 #### 필드 설명
 
@@ -620,6 +759,19 @@ POST /api/feedback
   }
 }
 ```
+
+#### V2 동작 — 중복 방지 + 신뢰도 재계산 inline 호출
+
+- **중복 체크 키**: `device_id + hospital_id` 조합. DDB single-table 에서 `PK=hospital_id, SK begins_with FEEDBACK#{device_id}` 쿼리로 동일 디바이스의 기존 피드백 1건이라도 발견되면 409. 같은 디바이스가 같은 병원에 두 번 평가하지 못한다 (다른 병원에는 각각 1회 가능).
+- **저장 entity**: `FEEDBACK#{device_id}#{timestamp}` (`docs/plans/task-queue.md` §3-2). `verdict`·`primary_focus` 평가 대상·`received_at` 박힘.
+- **임계 도달 시 재계산 inline 호출**:
+  - 트리거 조건 예: 해당 병원의 누적 피드백 ≥ 20건 **그리고** disagree 비율 ≥ 20%
+  - BE 가 같은 요청 컨텍스트에서 `ai.recompute_confidence(hospital_id, recent_feedback)` 를 동기 호출
+  - 결과 분류가 변경되면 AI 가 `HISTORY#{changed_at}` (reason=`feedback_accumulated`) 자동 INSERT (영역 ⑦)
+  - **응답 지연**: 재계산이 트리거된 요청은 일반 ~50ms 대신 ~1s 추가될 수 있음. FE 는 1.5s 타임아웃·로딩 인디케이터로 대응
+- 임계 미달 시는 `FEEDBACK#STATS` entity 만 증분 갱신, `recompute_confidence` 미호출 → 응답 빠름
+
+> ⚠️ 현 구현 상태 (2026-05-26): `be/api/feedback.py`는 명세와 가장 정합한 엔드포인트. `db.check_duplicate_feedback(hospital_id, device_id)` (`be/adapters/dynamo_adapter.py:197`)로 중복 방지 동작하고 409 응답도 명세 그대로. 단 `verdict`가 Pydantic 요청 모델에서 `Literal["agree","disagree"]`가 아닌 `str`로 받고 있어 (`FeedbackRequest`) 잘못된 값이 들어와도 422가 아닌 500에 가까운 경로로 빠질 수 있음. 또한 임계치 초과 시 `recompute_confidence` 호출은 코드 주석 처리(AI 모듈 연동 대기). V2 sprint **Phase C/D** 에서 요청 모델에 Literal 타입 + AI `recompute_confidence` 연결 예정.
 
 ---
 
@@ -684,6 +836,8 @@ app.add_middleware(
     allow_headers=["Content-Type"],
 )
 ```
+
+> ⚠️ 현 구현 상태 (2026-05-26): `be/handlers/api.py`는 `allow_origins=["*"]`, `allow_methods=["*"]`, `allow_headers=["*"]`로 와일드카드 전개라 평가 PoC엔 OK지만 명세와는 어긋난다. V2 sprint **Phase D 마지막 작업** — CloudFront 도메인 확정 후 origin/method allowlist 를 `https://{cloudfront-domain}` + `http://localhost:5173` 화이트리스트로 좁히는 단계로 정렬 예정.
 
 ---
 

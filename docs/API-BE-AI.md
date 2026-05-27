@@ -52,6 +52,63 @@ class PublicData(BaseModel):
     registered_devices: list[str]  # 신고된 의료기기
 ```
 
+### `NaverPlace` — 네이버 플레이스 장소 정보
+```python
+class NaverPlace(BaseModel):
+    place_id: str                        # 네이버 플레이스 고유 ID
+    name: str
+    operating_hours: str | None          # "월~금 09:00~18:00" 형태 자유 문자열
+    phone: str | None
+    visitor_count: int | None            # 누적 방문자 수 (비공개 시 None)
+    keyword_stats: dict[str, int]        # {키워드: 언급 횟수}, 예: {"친절": 42, "청결": 31}
+    photo_urls: list[str]                # 대표 사진 URL 목록 (최대 10개)
+```
+
+### `NaverBlogPost` — 네이버 블로그 포스트 1건
+```python
+class NaverBlogPost(BaseModel):
+    url: str
+    title: str
+    text_excerpt: str                    # 본문 앞 500자 (전문 저장은 DDB raw, 임베딩은 키워드만)
+    published_at: datetime
+    topic: str | None                    # LLM 또는 TF-IDF 분류 주제 (예: "아토피", "여드름")
+```
+
+### `KakaoPlace` — 카카오 로컬 API 장소 정보
+```python
+class KakaoPlace(BaseModel):
+    place_id: str                        # 카카오 place_id
+    name: str
+    category_group_code: str             # 병원은 "HP8" 고정
+    review_count: int | None             # 카카오맵 리뷰 수 (공개된 경우)
+    review_keywords: dict[str, int]      # {키워드: 언급 횟수} — 개별 후기 본문 미저장 (§56③)
+```
+
+### `GoogleReviews` — Google Places 리뷰 집계
+```python
+class GoogleReviews(BaseModel):
+    place_id: str                        # Google place_id
+    rating: float | None                 # 평균 별점 (1~5)
+    user_ratings_total: int | None       # 총 리뷰 수
+    reviews_keywords: dict[str, int]     # {키워드: 언급 횟수}
+    # 개별 리뷰 본문은 저장하지 않는다 — 의료법 §56③ 광고성 후기 금지
+    # Google Places API 무료 tier 는 reviews 필드를 최대 5건만 반환하므로
+    # 키워드 추출 후 즉시 폐기
+```
+
+### `ExternalSignalBundle` — 외부 3개 소스 컨테이너
+```python
+class ExternalSignalBundle(BaseModel):
+    """4 시그널 중 외부 3개 소스를 하나로 묶은 컨테이너.
+    각 필드가 None 이면 해당 소스의 크롤링이 아직 미완료됨을 의미.
+    naver_blog 는 포스트 수가 0일 수 있으나 필드 자체는 항상 list.
+    """
+    naver_place: NaverPlace | None = None
+    naver_blog: list[NaverBlogPost] = []
+    kakao_place: KakaoPlace | None = None
+    google_reviews: GoogleReviews | None = None
+```
+
 ### `Classification`
 ```python
 class Classification(BaseModel):
@@ -69,16 +126,29 @@ class Confidence(BaseModel):
     signals: SignalContributions
 
 class SignalContributions(BaseModel):
-    self_claim: int   # 0~100, 각 시그널의 신뢰도 기여도
-    vision: int
-    blog: int
-    reviews: int
+    """4 시그널 각각의 신뢰도 기여 점수 (0~100).
+
+    - 해당 시그널 데이터가 없으면 None (가중치 재정규화 대상).
+    - 자칭 도배 페널티: self_claim 이 높고 vision·blog·reviews 가 모두 낮거나 None 이면
+      confidence.score 에 강제 감점 (-10 ~ -30 포인트). 자칭 내용이 타 시그널로
+      검증되지 않은 케이스를 과신하는 것을 방지.
+    """
+    self_claim: float          # 자칭 점수 0~100 (항상 존재)
+    vision: float | None       # Vision 시그널 없으면 None (use_vision=False 또는 이미지 없음)
+    blog: float | None         # 네이버 블로그 시그널 없으면 None
+    reviews: float | None      # 네이버+카카오+구글 후기 합산 점수. 3개 소스 중 1개 이상 있으면 산출
 
 class DetailedSignals(BaseModel):
-    self_claim: SelfClaimSignal
-    vision: VisionSignal
-    blog: BlogSignal
-    reviews: ReviewSignal
+    """4 시그널 원본 데이터.
+
+    각 sub-block 이 None 이면 해당 시그널은 채워지지 않은 것.
+    None 인 시그널은 SignalContributions 에서도 None 으로 처리되며
+    confidence 산출 시 해당 가중치를 나머지 시그널에 재분배.
+    """
+    self_claim: SelfClaimSignal          # 항상 존재 (자체 사이트 크롤링 결과)
+    vision: VisionSignal | None          # use_vision=False 또는 이미지 0개 시 None
+    blog: BlogSignal | None              # 네이버 블로그 크롤링 미완료 시 None
+    reviews: ReviewSignal | None         # 외부 후기 소스 크롤링 미완료 시 None
 ```
 
 ### `HospitalDescription` — AI 통합 상세 설명 ⭐
@@ -149,15 +219,24 @@ class FeedbackEntry(BaseModel):
 
 ### 1. `classify_hospital`
 
-크롤링된 사이트 데이터를 받아 분류 결과 + 신뢰도 + 시그널 기여도를 반환. **PoC의 핵심 함수.**
+크롤링된 사이트 데이터와 외부 3개 소스 시그널을 받아 분류 결과 + 신뢰도 + 시그널 기여도를 반환. **PoC의 핵심 함수.**
+
+> **BE 호출부 (`be/handlers/ingest_hospital.py`) 동시 갱신 필요** — V2 시그니처 변경으로 `external_signals`·`vision_results` 파라미터가 추가됨. BE 측에서 크롤링 결과를 `ExternalSignalBundle` 로 조립하여 전달해야 함.
 
 ```python
 def classify_hospital(
     crawl_data: CrawlData,
+    external_signals: ExternalSignalBundle | None = None,
+    vision_results: list[ImageAnalysisResult] | None = None,
     use_vision: bool = True,
 ) -> Classification:
     ...
 ```
+
+**파라미터 의미**:
+- `external_signals=None` — 외부 크롤링이 아직 미완료인 경우. self_claim 시그널만으로 분류하며 confidence 에 페널티 부여.
+- `vision_results=None` — `analyze_images` 를 별도 호출해서 전달하거나, `use_vision=True` 일 때 내부에서 자동 호출. `use_vision=False` 면 Vision 시그널 생략.
+- `use_vision=False` — 자칭 명확한 케이스(비용 절감), 트랙 A 룰 기반 분류 경로에서 사용.
 
 #### 동작 흐름
 
@@ -189,18 +268,45 @@ PoC에서는 **3트랙으로 분기**한다 (자세한 건 `../ai/CLAUDE.md` "AI
 - `BedrockInvocationError` — Bedrock 호출 실패
 - `InsufficientDataError` — 크롤링 데이터가 너무 빈약 (페이지 0개, 또는 전부 빈 텍스트)
 
+#### 현 구현 약점 (V2에서 수정 예정)
+
+2026-05-26 강남구 14개 병원 e2e 검증(`ai/scratch/run-log-2026-05-26.md`)에서 확인된 신뢰도 계산 버그.
+
+- **`5. 강남우태하피부과의원`** — `primary_focus=[]`(빈 리스트)임에도 `confidence.score=100` 출력. 자칭 컨셉을 추출하지 못한 데이터 부족 상황인데 신뢰도가 최고값으로 잡힘.
+- **`12. 개포센트럴이비인후과의원`** — 병원 이름에 "이비인후과"가 명시돼 있음에도 피부과로 오분류, `primary_focus=[]`, `confidence.score=100`. 크롤 성공 1페이지·이미지 0개인 데이터 부족 케이스임에도 confidence가 낮아지지 않음.
+
+두 케이스 모두 `classify_hospital`의 `compute_confidence` 로직이 **빈 크롤 데이터·`primary_focus=[]` 조건을 감지하지 못함**에서 발생. 현 로직은 4 시그널 점수가 모두 0이어도 confidence 산식에서 높은 값이 나오는 경로가 존재. V2 AI 트랙 B sprint에서 다음을 수정 예정:
+- `primary_focus`가 비어있으면 `confidence.score`를 `CONFIDENCE_THRESHOLD_LOW`(기본 70) 미만으로 강제하고 `level="정보 부족"` 처리
+- 크롤 성공 페이지 수·이미지 수가 임계치 미만이면 `InsufficientDataError`를 던지거나 confidence에 페널티 부여
+- `external_signals` 가 None(외부 크롤링 미완료)이면 confidence 에 추가 패널티 부여 (단일 소스 과신 방지)
+
 #### 사용 예시
 ```python
 from ai import classify_hospital
-from shared.models import CrawlData
+from shared.models import CrawlData, ExternalSignalBundle
 
-crawl_data = CrawlData(...)  # 김경재가 크롤링 후 채워서 전달
-result = classify_hospital(crawl_data)
+crawl_data = CrawlData(...)           # 김경재가 자체 사이트 크롤링 후 채워서 전달
+external_signals = ExternalSignalBundle(
+    naver_place=...,                  # 네이버 플레이스 크롤링 결과
+    naver_blog=[...],                 # 네이버 블로그 포스트 목록
+    kakao_place=...,                  # 카카오 로컬 API 결과
+    google_reviews=...,               # 구글 Places 리뷰 집계
+)
 
-# DynamoDB에 저장
+# 4 시그널 전부 활성화 (V2 기본)
+result = classify_hospital(
+    crawl_data=crawl_data,
+    external_signals=external_signals,
+    use_vision=True,
+)
+
+# 외부 크롤링 미완료 시 graceful 처리 (external_signals=None → self_claim만 사용)
+result = classify_hospital(crawl_data, use_vision=False)
+
+# DynamoDB single-table 에 저장 (entity SK="CLASSIFICATION")
 db.put_item(
-    TableName="Classifications",
-    Item=result.model_dump(),
+    TableName="kmuproj-XX-clinic-Hospitals",
+    Item={"hospital_id": crawl_data.hospital_id, "entity": "CLASSIFICATION", **result.model_dump()},
 )
 ```
 
@@ -208,18 +314,31 @@ db.put_item(
 
 ### 2. `generate_description` ⭐ **본 서비스의 핵심 함수** (시연 10개 한정)
 
-분류 결과 + 4 시그널 원본 데이터를 받아 자연어 통합 상세 설명을 생성. **FE-BE `GET /api/hospitals/{id}` 응답의 `ai_description` 필드가 이 함수의 결과.**
+분류 결과 + 4 시그널 원본 데이터 전체를 받아 자연어 통합 상세 설명을 생성. **FE-BE `GET /api/hospitals/{id}` 응답의 `ai_description` 필드가 이 함수의 결과.**
 
-> **PoC 한도**: 지원 계정 Bedrock 자원이 10개 병원 한도이므로 시연 10개 병원에만 호출. 나머지 9990개 병원은 `ai_description = null` 로 반환되고 FE가 자연어 단락 대신 룰 기반 태그 카드를 렌더링한다. 어느 병원이 시연 대상인지는 DynamoDB `HospitalDescriptions` 테이블에 레코드 존재 여부로 판별.
+> **PoC 한도**: 지원 계정 Bedrock 자원이 10개 병원 한도이므로 시연 10개 병원에만 호출. 나머지 9990개 병원은 `ai_description = null` 로 반환되고 FE가 자연어 단락 대신 룰 기반 태그 카드를 렌더링한다. 어느 병원이 시연 대상인지는 DynamoDB single-table `DESCRIPTION` entity 존재 여부로 판별.
+
+> **BE 호출부 (`be/handlers/ingest_hospital.py`) 동시 갱신 필요** — V2 시그니처에서 `external_signals` 파라미터가 추가되어 4 시그널 전체가 입력으로 들어가야 함.
 
 ```python
 def generate_description(
     classification: Classification,
     detailed_signals: DetailedSignals,
-    hospital_meta: HospitalMeta,  # 이름·주소 등 기본 정보
+    external_signals: ExternalSignalBundle | None,  # V2 추가 — 외부 3개 소스 원본
+    hospital_meta: HospitalMeta,                     # 이름·주소 등 기본 정보
 ) -> HospitalDescription:
     ...
 ```
+
+**`DetailedSignals` 입력 구조 (V2)**:
+
+프롬프트 컨텍스트 구성 시 아래 sub-block 을 각각 섹션으로 분리하여 LLM 에 전달:
+- `self_claim` — 자체 사이트 키워드 빈도·page_type 강조도
+- `vision` — 시술 사진 분포(일반/미용/기타 비율) + 식별된 의료기기 목록
+- `blog` — 네이버 블로그 주제 분포 + 상위 키워드 빈도
+- `reviews` — 네이버 플레이스·카카오·구글 후기 키워드 빈도 합산 (개별 후기 본문 ❌)
+
+각 sub-block 이 None 이면 해당 섹션을 컨텍스트에서 제외하고, LLM 에 "해당 시그널 정보 없음"을 명시적으로 전달하여 없는 데이터를 지어내지 않도록 강제.
 
 #### 동작 흐름
 
@@ -227,11 +346,12 @@ def generate_description(
 
 1. 분류 결과·신뢰도·4 시그널 원본 데이터를 구조화된 컨텍스트로 정리
 2. 지원 계정 Bedrock Haiku/Nova에 전용 프롬프트 + 컨텍스트 입력
-3. 프롬프트는 다음을 강제:
+3. 프롬프트는 다음을 강제 (의료법 5규칙):
    - **주체 명시 표현 의무** — "이 병원이 자기 사이트에서 ~를 메인으로 표시함" 형태만 허용
-   - **출처 시그널 태그 의무** — 각 단락의 주장이 어떤 시그널에서 나왔는지 `citations` 목록 자동 첨부
+   - **출처 시그널 태그 의무** — 각 단락의 `citations` 는 그 단락이 실제로 인용한 시그널만 박혀야 함. 자칭 단락에 reviews citation 붙이거나, 모든 단락에 self_claim 만 붙이는 것 금지
    - **평가·추천 표현 금지** — "잘 본다" "추천한다" 같은 의료광고 회색지대 표현 사용 금지
-   - **약점·주의사항도 포함** — 보유하지 않은 장비, 다루지 않는 분야도 명시
+   - **약점 단락 의무화** — 보유하지 않은 장비·다루지 않는 분야를 반드시 1개 이상 단락으로 명시 (헛걸음 방지 핵심)
+   - **JSON 검증** — 출력이 `HospitalDescription` 스키마를 만족하지 않으면 재시도 또는 `DescriptionValidationError`
 4. 출력은 구조화된 JSON으로 받아 `HospitalDescription`으로 파싱
 5. 1문장 `one_line_summary`도 별도로 생성 (검색 카드용)
 
@@ -310,16 +430,21 @@ def embed_text(text: str) -> list[float]:
 
 ### 4. `ingest_hospital`
 
-병원 데이터를 Bedrock Knowledge Base에 적재. 새 병원 분류 후 또는 분류 변경 후 호출.
+병원 4 시그널 데이터를 받아 KB ingest 본문을 내부에서 조립하고 Bedrock Knowledge Base 에 적재. 새 병원 분류 후 또는 분류 변경 후 호출.
 
 > **이전 `index_hospital` 함수 폐기**. KB 경유로 변경되면서 직접 PutVectors가 아니라 DataSource S3에 파일을 업로드하고 ingestion job을 트리거하는 방식으로 바뀜.
+
+> **V2 시그니처 변경** — 호출자가 `content_text` 를 직접 만들어 넘기던 방식에서, 4 시그널 번들을 넘기면 함수 내부에서 본문을 조립하는 방식으로 재설계. BE 호출부 (`be/handlers/ingest_hospital.py`) 동시 갱신 필요.
 
 ```python
 def ingest_hospital(
     hospital_id: str,
-    content_text: str,                      # KB가 임베딩할 본문 (AI 설명 본문 또는 정제된 원문)
+    crawl_data: CrawlData,                           # 자체 사이트 크롤링 결과 (자칭 시그널)
+    external_signals: ExternalSignalBundle,           # 외부 3개 소스 시그널
+    classification: Classification,                   # 분류 결과 (signal scores + primary_focus)
+    description: HospitalDescription | None,          # AI 통합 설명 (없으면 생략)
     metadata: HospitalIngestMetadata,
-    trigger_ingestion: bool = False,        # False면 파일만 업로드, True면 ingestion job 즉시 트리거
+    trigger_ingestion: bool = False,                  # False면 파일만 업로드, True면 ingestion job 즉시 트리거
 ) -> None:
     ...
 
@@ -331,14 +456,49 @@ class HospitalIngestMetadata(BaseModel):
     confidence_score: int
     lat: float | None = None
     lng: float | None = None
-    last_updated: str                       # ISO8601
+    last_updated: str                                 # ISO8601
+    signals_included: list[str]                      # V2 추가 — 어떤 시그널이 본문에 포함됐는지 추적
+    # 예: ["self_claim", "blog", "reviews_naver", "reviews_kakao", "vision"]
+    # 빈 시그널은 이 목록에서 제외, metadata 키도 KB에서 누락 처리
 ```
 
+#### 본문 조립 규칙
+
+함수 내부에서 다음 순서로 본문(`content_text`)을 자동 조립하여 S3 에 업로드:
+
+```
+[자체 사이트 — page_type 우선순위 정렬: service → about → main → doctors → blog]
+[네이버 블로그 상위 N개 본문 excerpt]
+[네이버 플레이스 키워드 빈도 — "친절: 42건, 청결: 31건, ..." 형태]
+[카카오 리뷰 키워드 빈도]
+[구글 리뷰 키워드 빈도]
+[AI 분류 결과 — primary_focus·confidence·시그널 기여도]
+[AI 통합 설명 — description.paragraphs 본문 (있는 경우만)]
+```
+
+**빈 시그널 처리 규칙**:
+- 해당 소스가 None(크롤링 미완료)이면 해당 섹션은 본문에서 제외
+- `HospitalIngestMetadata.signals_included` 에서도 해당 키 제외
+- KB metadata 의 해당 키도 누락 (KB 가 빈 list/None 거절하는 실측 함정 그대로 적용)
+
+> **후기 처리 — 의료법 §56③ 준수** (아래 별도 박스 참조)
+
 #### 동작
-1. `content_text`를 DataSource S3 버킷에 `{hospital_id}.txt`로 업로드
-2. 같은 prefix에 `{hospital_id}.txt.metadata.json` 동봉 (포맷은 아래 "메타데이터 파일 포맷" 참조)
-3. `trigger_ingestion=True`면 `bedrock-agent:StartIngestionJob` 호출. 배치 적재 시 False로 두고 마지막에 한 번만 트리거
-4. KB가 자동으로: 청크 분할(KB 설정대로) → Titan v2 임베딩 → S3 Vectors 인덱스 적재
+1. 위 본문 조립 규칙대로 `content_text` 내부 생성
+2. `content_text`를 DataSource S3 버킷에 `{hospital_id}.txt`로 업로드
+3. 같은 prefix에 `{hospital_id}.txt.metadata.json` 동봉 (포맷은 아래 "메타데이터 파일 포맷" 참조)
+4. `trigger_ingestion=True`면 `bedrock-agent:StartIngestionJob` 호출. 배치 적재 시 False로 두고 마지막에 한 번만 트리거
+5. KB가 자동으로: 청크 분할(KB 설정대로) → Titan v2 임베딩 → S3 Vectors 인덱스 적재
+
+#### 의료법 §56③ 준수 — 후기 데이터 처리 규칙
+
+| 항목 | 허용 | 금지 |
+|---|---|---|
+| 후기 raw 본문 DDB 저장 | 내부 분석용 OK | — |
+| KB ingest 본문에 후기 포함 | **키워드 빈도만** ("친절: 42건" 형태) | 개별 후기 본문 그대로 박는 것 ❌ |
+| AI 통합 설명에서 인용 | "후기 키워드 빈도 N%" + `[후기]` 배지 | "후기에서 호평" 같은 평가형 어조 ❌ |
+
+의료광고법 §56③ — 환자의 치료 경험담(후기)이 의료광고로 간주될 수 있으므로, 개별 후기 본문을 사용자에게 직접 노출하거나 AI 설명 본문에 그대로 삽입하는 것을 금지. 키워드 빈도 통계 형태로만 가공하여 사용.
 
 #### 의존성
 - `KB_ID`: 환경 변수 (강사 제공 `GTBJ6HLFDK`)
@@ -390,6 +550,19 @@ class HospitalIngestMetadata(BaseModel):
 | `lat` | number | 필터 가능 (bounding box용). null이면 키 제외 |
 | `lng` | number | 필터 가능 (bounding box용). null이면 키 제외 |
 | `last_updated` | string | 비필터 |
+
+#### 실측 함정 (2026-05-26 검증)
+
+`ai/scratch/kb_ingest.py` 14개 병원 ingest + `numberOfDocumentsFailed: 0` 통과로 확인된 사항.
+
+1. **`metadataAttributes` 는 단순 dict, list-form 거절** — AWS 문서에 list-form 예시(`[{"key":..., "value":{"type":"STRING","stringValue":...}}]`)가 일부 있지만, DataSource 메타 파일에 그 형식을 쓰면 `"metadata file is not in valid JSON format"`으로 거절됨. 메타 파일은 반드시 `{"metadataAttributes": {"key": "value", ...}}` 단순 dict. list-form은 KB Retrieve filter expression 전용 문법임.
+2. **빈 list·None 값 거절** — `"primary_focus": []`, `"lat": null` 같이 빈 리스트나 null 값이 들어가면 `"invalid metadata attributes"`로 거절됨. 해당 키는 **dict에서 아예 제외**해야 함. `primary_focus`가 비어있으면 키 생략, `lat`/`lng`가 None이면 키 생략.
+3. **`team_id="clinic-focus"` 필수** — KB DataSource(`kmuproj-02-vector`)를 02팀과 공유하므로, `team_id` 없이 ingest하면 retrieve 시 02팀 데이터가 섞여 나옴. 모든 메타에 `"team_id": "clinic-focus"` 고정 필수.
+4. **본문 자르지 말 것** — `vectorIngestionConfiguration: {}` (기본값) 셋팅이라 KB가 기본 청크 분할(약 300토큰)을 자동 수행. 우리가 임의로 1KB·8KB 한도를 걸면 사이트 공통 네비/메뉴 텍스트만 들어가는 사고가 발생함(실제 발생). 통째 박고 KB에 청크 분할을 맡길 것.
+5. **자체 사이트 텍스트 필수** — DDB의 분류 결과·설명 텍스트만 본문에 넣으면 구체 시술명(사마귀·냉동치료기 등) 쿼리와 매칭이 안 됨. `crawl_data.pages[*].html_text`가 본문에 포함돼야 함. **page_type 우선순위**: `service` → `about` → `main` → `doctors` → `blog` 순 정렬 후 앞 페이지부터 본문 상단에 배치 (정보 밀도가 높은 페이지가 청크 상위에 위치해야 임베딩 품질 향상).
+6. **부정 문장 매칭 함정** — `generate_description`이 "X 정보 없음" 또는 "X는 다루지 않음"이라고 적은 부정 문장도 임베딩 공간에서 X 쿼리와 유사도가 높게 잡힘. 약점 단락이 검색 결과 1위로 반환돼 사용자 혼동 가능. 현재는 무시하고 진행하되, V2에서 부정 단락을 별도 필드/메타로 분리하여 임베딩 본문에서 제거하는 방안 검토 예정.
+7. **Delete 운영 코드 호출 금지** — 강사 정책: `bedrock-agent:DeleteDocument`·`s3:DeleteObject` 권한은 있으나 의도치 않게 02팀 데이터를 삭제할 위험. 본문 갱신은 S3 `PutObject` 덮어쓰기, 폐업 처리는 `metadata.status="closed"` soft-delete로 우회.
+8. **prefix 분리 운영 규약** — 운영 데이터는 `clinic-focus/prod/{hospital_id}.txt`, 실험·테스트용은 `clinic-focus/probe/...` 로 prefix 구분. 운영 prefix에 테스트 데이터가 섞이면 검색 품질에 직접 영향.
 
 ---
 
@@ -454,6 +627,54 @@ def retrieve_hospital(
     ...
 ]
 ```
+
+#### 실측 함정 (2026-05-26 검증)
+
+`ai/scratch/retrieve_test.py` 하드코딩 4쿼리 + `search.sh` 자연어 검색으로 확인된 사항.
+
+1. **`team_id` 필터 필수** — KB DataSource를 02팀과 공유하므로, 필터 없이 Retrieve하면 02팀이 ingest한 문서도 결과에 섞임. 모든 Retrieve 호출에 아래 필터를 기본 적용할 것:
+
+   ```python
+   filter = {
+       "equals": {
+           "key": "team_id",
+           "value": "clinic-focus"
+       }
+   }
+   ```
+
+   `sido`·`sigungu`·`specialty`·`min_confidence` 추가 필터가 있을 때는 `andAll` 조합:
+
+   ```python
+   filter = {
+       "andAll": [
+           {"equals": {"key": "team_id", "value": "clinic-focus"}},
+           {"equals": {"key": "sigungu", "value": query.sigungu}},
+           # ... 추가 조건
+       ]
+   }
+   ```
+
+2. **single-table 환경에서 `entity="META"` 필터 자동 포함** — DDB single-table 재설계 후 KB ingest 본문은 `META` entity 데이터를 기준으로 검색해야 함. `hospital_id` 역추적 후 DDB 에서 entity 별 조회가 가능하므로 KB 필터 자체에 entity 를 박을 필요는 없지만, ingest 시 metadata 에 `entity="META"` 를 포함시켜 필터로 활용할 수 있음. 구현 시 확인 필요.
+
+   ```python
+   # ingest_hospital 에서 metadata 에 entity 포함한 경우의 필터 예시
+   filter = {
+       "andAll": [
+           {"equals": {"key": "team_id", "value": "clinic-focus"}},
+           {"equals": {"key": "entity", "value": "META"}},
+           # ... 추가 조건
+       ]
+   }
+   ```
+
+3. **`lat`/`lng` bounding box 필터는 KB metadata 의 number 필터로 처리** — `ingest_hospital` 에서 metadata 에 `lat`/`lng` 를 number 타입으로 박고, Retrieve 시 `greaterThan`/`lessThan` 조합으로 bounding box 필터 적용. null 이면 metadata 키 자체 누락(빈 리스트/None 거절 실측 함정 동일).
+
+4. **`numberOfResults` 최대 100 제한** — KB Retrieve API는 한 번 호출에 최대 100개 청크 반환. 한 병원에서 여러 청크가 나올 수 있으므로 `hospital_id` 기준 dedup 후 실제 병원 수는 더 적어질 수 있음. 카테고리 전체 탐색(`sigungu=강남구 & specialty=피부과` 전체 목록)이 이 경로에 적합하지 않은 이유.
+
+5. **부정 문장 매칭 함정** — `generate_description`이 "X 정보 없음", "X는 다루지 않음" 형태로 쓴 부정 단락도 임베딩 공간에서 X 쿼리와 유사도가 높게 잡힘(`ingest_hospital` 실측 함정 6번 동일 현상). 현재는 무시하고 진행하되, V2에서 부정 단락을 임베딩 본문에서 분리하는 방안 검토 예정. Retrieve 결과에서 해당 청크를 점수 가중치 하향 처리하는 방어 로직도 고려.
+
+6. **빈 쿼리 텍스트 불가** — KB Retrieve API는 `query_text`가 빈 문자열이면 오류 반환. `query.query_text`가 None이거나 빈 문자열이면 이 함수에 도달하기 전에 BE 측에서 DynamoDB GSI 경로로 분기시켜야 함. 이 함수 진입 전 validation 필수.
 
 ---
 
@@ -653,23 +874,36 @@ class FeedbackStats(BaseModel):
 ## 분류 알고리즘 의사 코드 (참고)
 
 ```python
-def classify_hospital(crawl_data: CrawlData, use_vision: bool = True) -> Classification:
-    # 1. 자칭 컨셉 추출
+def classify_hospital(
+    crawl_data: CrawlData,
+    external_signals: ExternalSignalBundle | None = None,
+    vision_results: list[ImageAnalysisResult] | None = None,
+    use_vision: bool = True,
+) -> Classification:
+    # 1. 자칭 컨셉 추출 (트랙 A: 룰 기반 / 트랙 B: LLM)
     self_claim_result = extract_self_claim_with_llm(crawl_data.pages)
 
-    # 2. Vision 분석
-    vision_result = (
-        analyze_images([img.url for img in crawl_data.images])
-        if use_vision else None
+    # 2. Vision 분석 (vision_results 가 미리 전달됐으면 재사용, 없으면 내부 호출)
+    if vision_results is not None:
+        vision_result = build_vision_signal(vision_results)
+    elif use_vision and crawl_data.images:
+        raw = analyze_images([img.url for img in crawl_data.images])
+        vision_result = build_vision_signal(raw)
+    else:
+        vision_result = None
+
+    # 3. 블로그 키워드 빈도 (external_signals 에서 추출)
+    blog_result = (
+        analyze_blog_topics(external_signals.naver_blog)
+        if external_signals and external_signals.naver_blog
+        else None
     )
 
-    # 3. 블로그 키워드 빈도
-    blog_result = analyze_blog_topics(
-        [p for p in crawl_data.pages if p.page_type == "blog"]
+    # 4. 후기 키워드 분석 (네이버+카카오+구글 합산)
+    review_result = (
+        aggregate_review_keywords(external_signals)
+        if external_signals else None
     )
-
-    # 4. 후기 키워드 분석 (수집된 후기가 있을 때만)
-    review_result = analyze_review_keywords(crawl_data.hospital_id)
 
     # 5. 4 시그널 교차 검증
     primary_focus, signal_scores = cross_validate_signals(
@@ -677,11 +911,12 @@ def classify_hospital(crawl_data: CrawlData, use_vision: bool = True) -> Classif
     )
 
     # 6. 자칭 도배 페널티
+    #    자칭 ↑ + 나머지 시그널 ↓ 시 confidence 강제 감점
     if is_keyword_spamming(self_claim_result, vision_result, blog_result):
         signal_scores = apply_spamming_penalty(signal_scores)
 
-    # 7. 신뢰도 점수
-    confidence = compute_confidence(signal_scores)
+    # 7. 신뢰도 점수 (primary_focus=[] 또는 외부 시그널 전부 None 시 ≤50 강제)
+    confidence = compute_confidence(signal_scores, primary_focus, external_signals)
 
     return Classification(
         hospital_id=crawl_data.hospital_id,
@@ -692,7 +927,7 @@ def classify_hospital(crawl_data: CrawlData, use_vision: bool = True) -> Classif
             self_claim_result, vision_result, blog_result, review_result
         ),
         classified_at=datetime.utcnow(),
-        classifier_version="v1.0",
+        classifier_version="v2.0",
     )
 ```
 
@@ -711,15 +946,21 @@ from ai import (
     find_related_hospitals,
     ingest_hospital,
 )
-from shared.models import CrawlData, HospitalIngestMetadata
+from shared.models import CrawlData, ExternalSignalBundle, HospitalIngestMetadata
 
 def ingest_hospital_pipeline(hospital_id: str):
     # 1. 크롤링 데이터 로드 (김경재 모듈)
-    crawl_data: CrawlData = load_crawl_data(hospital_id)
+    crawl_data: CrawlData = load_crawl_data(hospital_id)       # 자체 사이트
+    external_signals: ExternalSignalBundle = load_external_signals(hospital_id)
+    #   external_signals 에 naver_place / naver_blog / kakao_place / google_reviews 포함
     hospital_meta = load_hospital_meta(hospital_id)
 
-    # 2. AI 분류 (영역 ② 일부, ④)
-    classification = classify_hospital(crawl_data)
+    # 2. AI 분류 (V2 — 4 시그널 전부 전달, 영역 ② 일부, ④)
+    classification = classify_hospital(
+        crawl_data=crawl_data,
+        external_signals=external_signals,
+        use_vision=True,
+    )
 
     # 3. 진료 항목·의료기기·의료진 추출 (영역 ②③)
     services_and_doctors = extract_services_and_doctors(
@@ -729,9 +970,11 @@ def ingest_hospital_pipeline(hospital_id: str):
     )
 
     # 4. AI 통합 상세 설명 생성 ⭐ 본 서비스의 핵심 결과물 (영역 ①)
+    #    V2 — external_signals 추가 전달 (4 시그널 종합 + citations 실채움)
     description = generate_description(
         classification=classification,
         detailed_signals=classification.detailed_signals,
+        external_signals=external_signals,
         hospital_meta=hospital_meta,
     )
 
@@ -744,18 +987,30 @@ def ingest_hospital_pipeline(hospital_id: str):
         excluded_services=services_and_doctors.excluded_services,
     )
 
-    # 6. DynamoDB 적재
-    save_classification(classification)
-    save_description(description)
-    save_services_and_doctors(services_and_doctors)
-    save_related_hospitals(hospital_id, related)
+    # 6. DynamoDB single-table 적재 (entity SK 별 분리)
+    save_entity(hospital_id, "CLASSIFICATION", classification)
+    save_entity(hospital_id, "DESCRIPTION", description)
+    save_entity(hospital_id, "SERVICES", services_and_doctors)
+    save_entity(hospital_id, "RELATED", related)
 
-    # 7. KB ingestion (DataSource S3 업로드 — 배치 적재 시 trigger_ingestion=False, 마지막에 한 번만 True)
-    #    임베딩 대상 본문은 AI 상세 설명 (검색 정확도가 가장 높음)
-    embedding_text = "\n".join(p.text for p in description.paragraphs)
+    # 7. KB ingestion (V2 — 4 시그널 번들째 전달, 함수 내부에서 본문 조립)
+    #    배치 적재 시 trigger_ingestion=False, 마지막에 한 번만 True
+    signals_available = [
+        s for s, v in [
+            ("self_claim", True),
+            ("blog", bool(external_signals.naver_blog)),
+            ("reviews_naver", external_signals.naver_place is not None),
+            ("reviews_kakao", external_signals.kakao_place is not None),
+            ("reviews_google", external_signals.google_reviews is not None),
+            ("vision", classification.detailed_signals.vision is not None),
+        ] if v
+    ]
     ingest_hospital(
         hospital_id=hospital_id,
-        content_text=embedding_text,
+        crawl_data=crawl_data,
+        external_signals=external_signals,
+        classification=classification,
+        description=description,
         metadata=HospitalIngestMetadata(
             standard_specialty=classification.standard_specialty,
             primary_focus=classification.primary_focus,
@@ -765,6 +1020,7 @@ def ingest_hospital_pipeline(hospital_id: str):
             lat=hospital_meta.location.lat,
             lng=hospital_meta.location.lng,
             last_updated=classification.classified_at.isoformat(),
+            signals_included=signals_available,
         ),
         trigger_ingestion=False,  # 배치 후 별도로 start_ingestion_job 한 번 호출
     )
@@ -861,15 +1117,34 @@ def handle_feedback(feedback: FeedbackEntry):
 ```python
 # tests/test_classify.py
 from ai import classify_hospital
-from shared.models import CrawlData
+from shared.models import CrawlData, ExternalSignalBundle, NaverBlogPost, KakaoPlace
 
 def test_classify_with_sample_data():
     crawl_data = CrawlData.model_validate_json(
         open("tests/fixtures/sample_hospital.json").read()
     )
+    # external_signals 없이 호출 — self_claim 만 사용, confidence 패널티 적용
     result = classify_hospital(crawl_data, use_vision=False)
     assert result.confidence.level in ["확실", "추정", "정보 부족"]
-    assert len(result.primary_focus) > 0
+
+def test_classify_with_external_signals():
+    crawl_data = CrawlData.model_validate_json(
+        open("tests/fixtures/sample_hospital.json").read()
+    )
+    external = ExternalSignalBundle(
+        naver_blog=[
+            NaverBlogPost(url="https://...", title="아토피 치료", text_excerpt="...",
+                          published_at=datetime.utcnow(), topic="아토피"),
+        ],
+        kakao_place=KakaoPlace(place_id="12345", name="○○의원",
+                               category_group_code="HP8",
+                               review_count=30,
+                               review_keywords={"친절": 15, "청결": 8}),
+    )
+    result = classify_hospital(crawl_data, external_signals=external, use_vision=False)
+    # 4 시그널 중 blog·reviews 가 채워졌으므로 signals.blog·reviews 가 None 이 아니어야
+    assert result.confidence.signals.blog is not None
+    assert result.confidence.signals.reviews is not None
 ```
 
 ### Bedrock 호출 모킹

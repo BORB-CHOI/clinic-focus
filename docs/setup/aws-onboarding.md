@@ -1,16 +1,18 @@
 # AWS 환경 세팅 — 팀 온보딩 가이드
 
-> clinic-focus 프로젝트의 AI 트랙 작업 환경을 처음부터 따라잡기 위한 단계별 가이드.
-> 2026-05-24 최비성이 실제 진행한 과정을 기준으로 작성.
-> Step 0~2, 5 검증 완료. Step 3·4(KB Retrieve·DataSource 적재)는 강사 권한 수령 후 추가.
+> clinic-focus 의 EC2·Bedrock·KB·DDB·S3 환경을 처음부터 따라잡기 위한 단계별 가이드.
+> 2026-05-24 최비성이 실제 진행한 과정을 기준으로 작성, 2026-05-26 KB ingest·DDB·S3 통과 반영.
+> EC2 가동 후의 서비스 띄우기·systemd·SSH는 [`../../deploy/README.md`](../../deploy/README.md) 참조.
 
 ---
 
 ## 이 문서가 다루는 범위
 
-✅ **다룸**: 로컬 VSCode → EC2 SSH 접속 / 자격증명 확인 / Bedrock 모델 가용성 확인 / boto3 설치 / 강사 제공 KB 발견 / Titan v2 임베딩 실제 호출(hello-world) / 개인 계정 Sonnet 4.6 Vision 연결 + 실측 응답 카탈로그
+✅ **다룸**: 로컬 VSCode → EC2 SSH 접속 / 자격증명 확인 / Bedrock 모델 가용성 확인 / boto3 설치 / 강사 제공 KB 확인 / Titan v2 임베딩 hello-world / 개인 계정 Sonnet 4.6 Vision 연결 + 실측 응답 카탈로그 / DDB 7테이블 수동 생성 / S3 자체 버킷
 
-❌ **안 다룸**: KB Retrieve 왕복(Step 3) / DataSource 적재(Step 4) — 강사 권한 요청 대기 중. 권한 수령 후 별도 가이드 추가 예정.
+✅ **2026-05-25~26 추가 통과**: KB DataSource S3 권한 부여 후 더미·실데이터 ingest 성공 / 자연어 검색 e2e 4쿼리 통과 / Bedrock Haiku 4.5 도 개인 계정 ap-northeast-2로 라우팅 변경
+
+❌ **안 다룸**: 서비스 띄우기·systemd 등록은 [`../../deploy/README.md`](../../deploy/README.md). V2 sprint 큐는 [`../plans/task-queue.md`](../plans/task-queue.md).
 
 ---
 
@@ -403,11 +405,28 @@ PY
 
 ---
 
-## Step 3·4 — 강사 권한 요청 대기 중 🚧
+## Step 3·4 — KB Retrieve 왕복 + DataSource 적재 ✅ 통과 (2026-05-25~26)
 
-**2026-05-24 블로커**: KB DataSource S3 버킷(`kmuproj-02-vector`)에 우리 Role(`SafeRole-kmuproj-10`)이 `s3:PutObject` / `s3:GetObject` / `s3:ListBucket` 모두 AccessDenied. 강사에게 prefix 한정(`clinic-focus/*`) PutObject/GetObject/ListBucket 권한 요청 중.
+**2026-05-25 강사 권한 부여**: `kmuproj-02-vector` 버킷에 `kmuproj-02`·`kmuproj-10`·`kmuproj-11` Role 권한 부여 (Put/Get/List/Delete). 단 *"누가 올렸는지 추적 불가"* + *"Delete 권한 사고 주의"*. → prefix 분리(`clinic-focus/prod/`, `clinic-focus/probe/`) + 운영 코드 Delete 호출 금지 + metadata `team_id` 필수 규약 박음.
 
-상세 메모·운영 대응(Delete 권한 없는 경우 soft-delete 등)은 [`docs/plans/task-queue.md` Step 3](../plans/task-queue.md) 참조. 권한 수령 후 본 문서에 Step 3·4 재현 가이드 추가 예정.
+**2026-05-26 통과 사실**: 14개 병원 본문 + metadata.json 14쌍 업로드 → `StartIngestionJob` `numberOfDocumentsFailed: 0` → 자연어 검색 4쿼리 통과. 재현 코드는 [`ai/scratch/kb_ingest.py`](../../ai/scratch/kb_ingest.py) · [`ai/scratch/retrieve_test.py`](../../ai/scratch/retrieve_test.py) — 본체 마이그레이션은 [V2 sprint](../plans/task-queue.md#2-v2-sprint--트랙별-잔여-작업) AI 트랙 항목 A.
+
+### 핵심 함정 (실측으로 확인됨, 본체 구현 시 반영 필수)
+
+자세한 건 [`../API-BE-AI.md` `ingest_hospital` 섹션](../API-BE-AI.md). 요약:
+
+1. **`metadataAttributes`는 단순 dict, list-form 거절** — `[{"key": "...", "value": {"type": "STRING", "value": "..."}}]` 같은 list 포맷 거절. `{"hospital_id": "...", "team_id": "clinic-focus", ...}` 단순 dict만.
+2. **빈 list·None 값 거절** — `primary_focus: []`, `lat: None` 같은 빈 값은 KB가 invalid metadata로 거절. dict에서 키 자체 제외.
+3. **`team_id="clinic-focus"` 필수** — KB·DataSource를 02팀과 공유하므로 Retrieve 시 `filter = {equals: {key: "team_id", value: "clinic-focus"}}`로 격리.
+4. **본문 자르지 말 것** — `vectorIngestionConfiguration: {}` 셋팅이라 KB가 기본 청크(300토큰) 자동 처리. 우리가 1KB·8KB로 자르면 메뉴·푸터만 들어가는 사고.
+5. **자체 사이트 텍스트 필수** — DDB 분류·설명만으론 구체 시술명(사마귀·냉동치료기) 매칭 불가. `crawl_data.pages[*].html_text`가 본문에 들어가야 함. page_type 우선순위(service·about · main · doctors · blog).
+6. **부정 문장 매칭** — `generate_description`이 "X 정보 없음"이라 적어도 임베딩 공간에서 X 쿼리와 매칭. 약점 단락이 점수 1위로 잡혀 사용자 혼동 가능 — 부정 단락 분리 검토(현재는 무시).
+
+### Delete 권한 운영 대응
+
+- 본문 갱신·hash diff → PutObject 덮어쓰기로 해결 (Delete 불필요, KB가 변경된 파일 청크 자동 재생성)
+- 폐업 병원 → soft-delete: 본문을 폐업 안내로 덮어쓰고 `metadata.status="closed"`로 retrieve 필터 제외
+- 잘못 올린 테스트 파일 → 강사에게 청소 부탁. `clinic-focus/probe/` vs `clinic-focus/prod/` prefix로 영역 분리
 
 ---
 
@@ -800,12 +819,19 @@ put·get·delete 셋 다 성공해야 `S3Adapter` boto3 전환 가능.
 
 ## 다음 단계
 
-이후 Step·재현 가이드는 `docs/plans/task-queue.md` "AI 트랙 AWS 세팅 todo" 섹션 참조 (Step 6은 task-queue Step 6-1·6-2 작업의 콘솔 절차 가이드).
-KB Retrieve·DataSource 적재(원래 task-queue Step 3·4)는 강사 권한 수령 후 본 문서에 별도 Step으로 추가 예정.
+여기까지 끝나면 AWS 자원 셋업·dev e2e 검증은 완료. 이후 작업은 **본체 코드 구현**으로 넘어간다:
+
+- AI 트랙 — `ai/scratch/` 7파일을 `ai/` 본체(`ingest_hospital`·`retrieve_hospital`)로 마이그레이션. 가이드는 [`../plans/task-queue.md` §2 AI 트랙 A](../plans/task-queue.md#ai-트랙-최비성)
+- BE 트랙 — `s3_adapter` boto3 전환, `crawl_all.py` `TABLE_PREFIX` 적용, FastAPI 4개 엔드포인트 본체. 위임된 이슈는 [#23](https://github.com/BORB-CHOI/clinic-focus/issues/23) · [#24](https://github.com/BORB-CHOI/clinic-focus/issues/24) · [#13](https://github.com/BORB-CHOI/clinic-focus/issues/13) · [#18](https://github.com/BORB-CHOI/clinic-focus/issues/18)
+- FE 트랙 — 9개 영역 컴포넌트, 1-tap 피드백, 분류 변경 이력 UI
+
+서버 띄우기·systemd·SSH는 [`../../deploy/README.md`](../../deploy/README.md).
 
 ## 관련 문서
 
-- [`docs/plans/task-queue.md`](../plans/task-queue.md) — 전체 작업 큐 (이 문서는 Step 0~1의 재현 가이드)
-- [`docs/API-BE-AI.md`](../API-BE-AI.md) — BE↔AI 함수 명세 (KB Retrieve/ingest 구조)
-- [`ai/CLAUDE.md`](../../ai/CLAUDE.md) — AI 트랙 운영 규칙
-- [`CLAUDE.md`](../../CLAUDE.md) — 프로젝트 전체 컨텍스트 (AWS 계정·인프라 구조)
+- [`../plans/task-queue.md`](../plans/task-queue.md) — V2 sprint 큐 (이 문서가 다루는 자원 셋업 이후의 본체 구현 작업)
+- [`../../deploy/README.md`](../../deploy/README.md) — systemd · uvicorn · SSH · 데이터 적재 명령
+- [`../API-BE-AI.md`](../API-BE-AI.md) — BE↔AI 함수 명세 (KB Retrieve/ingest 구조 + 실측 함정)
+- [`../API-FE-BE.md`](../API-FE-BE.md) — FE↔BE 인터페이스
+- [`../../ai/CLAUDE.md`](../../ai/CLAUDE.md) — AI 트랙 운영 규칙
+- [`../../CLAUDE.md`](../../CLAUDE.md) — 프로젝트 전체 컨텍스트 (AWS 계정·인프라 구조)

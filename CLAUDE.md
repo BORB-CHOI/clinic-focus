@@ -173,6 +173,6 @@ ai-engineer 통합 보고
 
 ## 외부 자산
 
-- `.claude/skills/gstack/` (git submodule) — Garry Tan의 Claude Code Skills 모음. `/plan-eng-review`, `/plan-design-review`, `/review`, `/qa`, `/retro`, `/office-hours` 등. 발표 전 데모 검증·트랙간 동기화에 활용
+- `.claude/skills/gstack/` (git submodule) — Garry Tan의 Claude Code Skills 모음. `/code-review`, `/simplify`, `/review`, `/security-review`, `/run`, `/init` 등 + 내부 스킬 다수(plan-eng-review·design-review·qa·retro·office-hours 등). 발표 전 데모 검증·트랙간 동기화에 활용. **EC2/팀원 신규 환경에서 한 번**: `git submodule update --init --recursive` (clone 후 .gitmodules에 등록만 돼 있고 로컬 워킹 트리는 비어있음)
 - `.claude/agents/{python,typescript,security}-reviewer.md`, `tdd-guide.md` — ECC(everything-claude-code)에서 가져옴
 - `.mcp.json`의 `context7` — 라이브러리·프레임워크 최신 문서를 컨텍스트로 주입하는 MCP. 라이브러리 이름이 나오는 코드 작성 중 자동 활용 (npx로 실행, 초기 1회 설치 메시지 정상)
