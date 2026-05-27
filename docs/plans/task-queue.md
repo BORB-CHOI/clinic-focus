@@ -130,12 +130,21 @@ SK = `entity` (S)
   - 신규 모델: `NaverPlace` · `NaverBlogPost` · `KakaoPlace` · `GoogleReviews` · `ExternalSignalBundle`
   - `CrawlData` 외에 `ExternalCrawlData` 모델 (네이버/카카오/구글 합쳐)
   - `HospitalIngestMetadata` 에 `aliases`·`status`·`last_external_crawl_at` 추가
-- [x] **DDB 단일 테이블 마이그레이션** (Phase A 1차, 2026-05-27)
+- [x] **DDB 단일 테이블 마이그레이션** (Phase A 1차, 2026-05-27, PR [#28](https://github.com/BORB-CHOI/clinic-focus/pull/28))
   - [x] `be/adapters/dynamo_adapter.py` 전면 재작성 — 7개 테이블 메서드를 entity SK 기반 단일 어댑터로 (`get_entity`/`put_entity`/`query_hospital_entities`/`iter_all_hospital_ids` 등 generic primitives + typed helper 유지)
   - [x] AI/BE 양쪽 `dynamodb.Table("Hospitals")` 류 호출을 새 어댑터 메서드로 교체 (`ai/scratch/kb_ingest.py` 한 곳)
   - [x] 옛 7-table 폐기 (콘솔 수동 삭제, AI 트랙 14개 데이터 폐기 — 이관 안 함)
   - [ ] **신규 V2 단일 테이블 콘솔 수동 생성** — `kmuproj-10-clinic-Main`, 절차는 [`../setup/aws-onboarding.md`](../setup/aws-onboarding.md) Step 6 (SafeRole 에 CreateTable 권한 없음 → 자동화 스크립트 불가)
   - [ ] 검증: BE 크롤링 1만 데이터 받은 후 자연어 검색 4쿼리 회귀
+- [x] **BE → AI S3 크롤링 데이터 1차 mirror** (2026-05-27)
+  - [x] BE 가 강남 502개 (`crawl/{hospital_id}/crawl_data.json` 평탄 구조, ~21MB) 를 사용자에게 tarball 전달
+  - [x] AI 버킷 `kmuproj-10-clinic-focus-crawl/crawl/` 에 sync 완료
+  - [x] Pydantic `CrawlData` 검증 통과 (샘플 1건, pages=10/images=30)
+  - [ ] **장기 — BE 가 PutObject 시점에 양쪽 버킷에 mirror 자동화 (옵션 A)** — BE 협조 필요. 풀커버(1만) 진입 전 합의
+- [ ] **분류 스키마 확장 — V2 풀커버 진입 시 차단 요인**
+  - 현재 4과목 (피부과·정형외과·이비인후과·안과) PoC 스키마. 강남 502개 (BE mirror) 에는 내과·소아과·산부인과·가정의학과·비뇨의학과·정신건강의학과·치과 등 미커버 과목 다수
+  - 실 데이터에서 진료과목 분포 측정 → 상위 N과목 추가 + 각 과목별 세부 분류(4~6) 정의
+  - Phase C 룰 기반 분류기 구현 전 의사결정 — `ai/CLAUDE.md` "분류 스키마" 섹션 갱신, BE DDB GSI 키·FE 컴포넌트 props 동시 영향
 - [ ] 외부 API 키 발급
   - [ ] 네이버 개발자센터 — 검색 API (블로그·플레이스)
   - [ ] 카카오 — 로컬 API (`kakao_adapter.py` 이미 사용 중) + 추가 리뷰 접근 검토
