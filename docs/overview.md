@@ -435,6 +435,12 @@ V2 = 기획안의 9가지 차별점이 **외부 데이터 4 소스(자체 사이
 - DDB single-table 통일 — BE 실 운영(`PK=hospital_id`+`SK=entity`) 형태로 AI 트랙도 이관. 4 시그널 켜면 entity 종류 폭증해서 7-table 관리 불가
 - 외부 API 키 발급 — 네이버 검색/플레이스, 카카오 로컬, 구글 Places, 개인 AWS Sonnet 4.6 Marketplace
 
+**표본 분할 (비용 통제)**:
+- 룰·외부 API 시그널(자칭·블로그·후기·심평원) = **1만 풀커버**. HTTP/공공 API 무료 + 구글 Places ~$170 + 임베딩 ~$0.30
+- LLM·Vision 시그널(트랙 B 텍스트 분류·`generate_description`·트랙 C Vision) = **시연 10개 한정**. `MAX_LLM_DEMO_HOSPITALS=10`·`MAX_VISION_IMAGES=10` 환경변수 강제
+- 9990개는 `ai_description=null` 응답 → FE 차등 렌더링(룰 기반 태그 카드 + 4 시그널 통계)
+- 자연어 검색은 임베딩 표본이 1만이라 모든 병원 매칭 가능 (LLM 호출 0건이라 검색 시점 비용도 0에 가까움)
+
 V2 sprint 큐(Phase A~G)는 [`docs/plans/task-queue.md`](plans/task-queue.md). 트랙별 작업 분담·의존성은 [`docs/dev-roadmap.md`](dev-roadmap.md).
 
 ---
