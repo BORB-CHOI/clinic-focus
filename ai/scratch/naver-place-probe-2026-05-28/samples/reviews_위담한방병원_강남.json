@@ -1,0 +1,258 @@
+[
+  {
+    "data": {
+      "visitorReviews": {
+        "items": [
+          {
+            "id": "69a9081e30116aa4498aac0d",
+            "reviewId": "69a9081e30116aa4498aac1b",
+            "rating": null,
+            "author": {
+              "id": "1945m",
+              "nickname": "bcu200162",
+              "from": "NAVER",
+              "imageUrl": null,
+              "objectId": "5e9430d88f87a842bc0e41fe",
+              "url": "https://m.place.naver.com/my/5e9430d88f87a842bc0e41fe/review?v=2",
+              "borderImageUrl": null
+            },
+            "body": "배에서 가스 차는게 점점 좋아지고 있습니다.",
+            "visitCount": 2,
+            "viewCount": 2872,
+            "visited": "2.14.토",
+            "visitedDate": "2026.02.14.",
+            "created": "3.5.목",
+            "themes": null,
+            "votedKeywords": [],
+            "userIdno": "1945m",
+            "loginIdno": "",
+            "nickname": null,
+            "reactionStat": {
+              "totalCount": 0,
+              "typeCount": [
+                {
+                  "name": "fun",
+                  "count": 0
+                },
+                {
+                  "name": "helpful",
+                  "count": 0
+                },
+                {
+                  "name": "wannago",
+                  "count": 0
+                },
+                {
+                  "name": "cool",
+                  "count": 0
+                }
+              ]
+            }
+          },
+          {
+            "id": "6971c484a226f13bd1164ca2",
+            "reviewId": "6971c484a226f13bd1164cee",
+            "rating": null,
+            "author": {
+              "id": "2c3Mfg",
+              "nickname": "chi****",
+              "from": "NAVER",
+              "imageUrl": null,
+              "objectId": "64ef21257af016000673ab03",
+              "url": "https://m.place.naver.com/my/64ef21257af016000673ab03/review?v=2",
+              "borderImageUrl": null
+            },
+            "body": "위장 때문에 몇 년을 고생했는데 요즘은 밥 먹고 나서도 훨씬 편해요.\n특히 역류 올라오는 느낌이 많이 줄어서 신기했어요.\n사람 많은 곳이라 대기는 조금 있으니 참고 하세요",
+            "visitCount": 1,
+            "viewCount": 4004,
+            "visited": "1.22.목",
+            "visitedDate": "2026.01.22.",
+            "created": "1.22.목",
+            "themes": null,
+            "votedKeywords": [],
+            "userIdno": "2c3Mfg",
+            "loginIdno": "",
+            "nickname": null,
+            "reactionStat": {
+              "totalCount": 0,
+              "typeCount": [
+                {
+                  "name": "fun",
+                  "count": 0
+                },
+                {
+                  "name": "helpful",
+                  "count": 0
+                },
+                {
+                  "name": "wannago",
+                  "count": 0
+                },
+                {
+                  "name": "cool",
+                  "count": 0
+                }
+              ]
+            }
+          },
+          {
+            "id": "6971af4d89c8b70b89190a41",
+            "reviewId": "6971af4e89c8b70b89190a53",
+            "rating": null,
+            "author": {
+              "id": "2bQJpU",
+              "nickname": "you****",
+              "from": "NAVER",
+              "imageUrl": null,
+              "objectId": "6789937373736e3dcfed7b20",
+              "url": "https://m.place.naver.com/my/6789937373736e3dcfed7b20/review?v=2",
+              "borderImageUrl": null
+            },
+            "body": "목에 뭐 걸린 느낌이 계속 있었는데 치료받고 나서 거의 안 느껴져요",
+            "visitCount": 1,
+            "viewCount": 4008,
+            "visited": "1.22.목",
+            "visitedDate": "2026.01.22.",
+            "created": "1.22.목",
+            "themes": null,
+            "votedKeywords": [],
+            "userIdno": "2bQJpU",
+            "loginIdno": "",
+            "nickname": null,
+            "reactionStat": {
+              "totalCount": 0,
+              "typeCount": [
+                {
+                  "name": "fun",
+                  "count": 0
+                },
+                {
+                  "name": "helpful",
+                  "count": 0
+                },
+                {
+                  "name": "wannago",
+                  "count": 0
+                },
+                {
+                  "name": "cool",
+                  "count": 0
+                }
+              ]
+            }
+          }
+        ],
+        "starDistribution": null,
+        "total": 690,
+        "score": null
+      }
+    }
+  },
+  {
+    "data": {
+      "visitorReviewStats": {
+        "id": "1520927430",
+        "name": null,
+        "review": {
+          "avgRating": 4.24,
+          "totalCount": 1001,
+          "scores": [
+            {
+              "count": 6,
+              "score": null
+            },
+            {
+              "count": 1,
+              "score": null
+            },
+            {
+              "count": 1,
+              "score": null
+            },
+            {
+              "count": 4,
+              "score": null
+            },
+            {
+              "count": 10,
+              "score": null
+            },
+            {
+              "count": 29,
+              "score": null
+            },
+            {
+              "count": 28,
+              "score": null
+            },
+            {
+              "count": 154,
+              "score": null
+            },
+            {
+              "count": 27,
+              "score": null
+            },
+            {
+              "count": 189,
+              "score": null
+            }
+          ],
+          "starDistribution": [
+            {
+              "count": 6,
+              "score": "0.5"
+            },
+            {
+              "count": 1,
+              "score": "1.0"
+            },
+            {
+              "count": 1,
+              "score": "1.5"
+            },
+            {
+              "count": 4,
+              "score": "2.0"
+            },
+            {
+              "count": 10,
+              "score": "2.5"
+            },
+            {
+              "count": 29,
+              "score": "3.0"
+            },
+            {
+              "count": 28,
+              "score": "3.5"
+            },
+            {
+              "count": 154,
+              "score": "4.0"
+            },
+            {
+              "count": 27,
+              "score": "4.5"
+            },
+            {
+              "count": 189,
+              "score": "5.0"
+            }
+          ],
+          "imageReviewCount": 71,
+          "authorCount": 228,
+          "maxSingleReviewScoreCount": 189,
+          "maxScoreWithMaxCount": "5.0"
+        },
+        "analysis": {
+          "themes": [],
+          "menus": [],
+          "votedKeyword": null
+        },
+        "visitorReviewsTotal": 1002,
+        "ratingReviewsTotal": 312
+      }
+    }
+  }
+]

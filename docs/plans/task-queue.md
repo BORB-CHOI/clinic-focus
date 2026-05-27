@@ -186,6 +186,74 @@ SK = `entity` (S)
 > 6. 표본 범위 — 1만 풀스케일 vs 시연 10개 한정 (운영 안정성·토큰 깨짐 위험 가늠)
 >
 > 다음 세션 1순위 의제: 위 5개 실측·결정 → 본 박스 권고안으로 갱신 → `naver_place_crawler`·`kakao_crawler` 항목 구현 방향 확정. 본 박스가 풀릴 때까지 두 항목은 보류.
+>
+> ---
+>
+> **2026-05-28 실측 raw 노트** (결정은 미확정 — raw 사실만 박음)
+>
+> 환경: EC2 IP `13.223.112.152`. 1차로 httpx 단독으로 7회 호출 시도(차단), 2차로 Playwright Chromium headless 로 실제 브라우저 흐름 재현(성공). 사용자 브라우저 캡처 1건 보조 자료(질의 `"병원"` → place_id `37564839` 더서울치과 → `getVisitorReviews` 본문 정상 반환).
+>
+> **사실 1 — robots.txt**: `map.naver.com` · `m.map.naver.com` · `m.place.naver.com` · `map.kakao.com` · `place.map.kakao.com` 모두 `User-agent: * Disallow: /` (단 `map.naver.com` 만 `Allow: /$` `Allow: /p/$` 두 경로). 사용자 제안 모바일 진입점 `m.map.naver.com/search/interest-spot?type=HOSPITAL` 도 동일 robots Disallow.
+>
+> **사실 2 — 약관**: 네이버 이용약관 "**자동화된 수단(매크로·로봇·스파이더·스크래퍼) 을 이용하여 ... 네이버 검색 서비스에서 특정 질의어로 검색하거나 ... 일체의 행위를 시도해서는 안 됩니다.**" 카카오 약관 "회사가 정하지 않은 비정상적인 방법으로 시스템에 접근하는 행위" 금지.
+>
+> **사실 3 — ncpt 토큰 발급 흐름 (Playwright 가 자동 실행)**: 검색 페이지 진입 시 SDK 가 `GET ncpt.naver.com/static/ncaptcha-api.js?ncaptcha-sitekey={140자}` 로딩 → `POST ncpt.naver.com/v2/tokens?q={ts}&tid={11자}` body=`{"cipherText":"<클라이언트 환경 시그너처 암호화 blob, 600+ 자>"}` → 응답 `{"tokenId":"<base64 hash 76자>"}`. SDK 가 이걸 추가 가공해 검색 URL 의 `token=` 파라미터에 44자 짧은 토큰을 박음(예: `3QqL8xOOMxlWs08QlEUOozA8E5OwxlfLGOLvtskiT60=`). **httpx 단독으로 cipherText 만들 수 없어서 long token(629자, 패딩 없음) 만 받고 `CE_BAD_REQUEST` 차단됨** — 1차 실패의 원인.
+>
+> **사실 4 — search-history delta warmup**: `GET map.naver.com/p/api/kvfarm/search-history/delta` 는 로그인 필수 API (`XE401`). 비로그인 도 검색 정상 동작하므로 warmup 은 필수 아님. 사용자 캡처에 보였던 건 본인 로그인 상태였기 때문.
+>
+> **사실 5 — 검색 (Playwright)**: `GET map.naver.com/p/api/search/allSearch?query=...&token={44자}&sscode=svc.mapv5.search` HTTP 200 + `pageId=<UUID>`, `rcode=09140103` (서울 강남구 region code), `result.place.list[0].id` 에 place_id 박혀있음. 응답에 `ip: 13.223.112.152` (EC2 IP 그대로) — **EC2 IP 자체가 차단 리스트에 박혀있지 않음**.
+>
+> **사실 6 — GraphQL 실측 (`POST pcmap-api.place.naver.com/graphql`)**: Playwright context (쿠키·토큰 자동 박힘 상태) 안에서 `page.evaluate fetch credentials:include` 로 호출 → 정상 응답. `getVisitorReviews` query (size=3, businessType="hospital") 응답 본문에 후기 본문 raw + 평점 + 작성자 익명 ID 다 박혀 옴.
+>
+> **사실 7 — 5건 표본 안정성 (Playwright)**: 성공 3건, 실패 2건 (실패 둘 다 검색 결과에 place 없음 — 차단 아니라 매칭 실패). 1건당 약 18~25초 소요 (headless Chromium 부팅·SDK 토큰 발급·검색·상세 진입·GraphQL fetch 누적):
+>
+> | 쿼리 | place_id | 검색결과 reviewCount | graphql total_reviews | avgRating | authorCount |
+> |---|---|---|---|---|---|
+> | 자생한방병원 강남 | `19516906` | 1886 | 526 | 4.05 | 113 |
+> | 더서울병원 성북 | `778531046` | 3416 | 356 | 4.02 | 64 |
+> | 위담한방병원 강남 | `1520927430` | 2506 | 1002 | 4.24 | 228 |
+> | 에이솝병원 강남 | place 없음(검색 매칭 실패) | — | — | — | — |
+> | 예이진한의원 강남 | place 없음(검색 매칭 실패) | — | — | — | — |
+>
+> 검색결과 `reviewCount` vs graphql `total_reviews` 가 다른 이유는 검색결과는 "전체 리뷰(블로그·플레이스 합산)" 이고 graphql 은 "방문자 리뷰만" 카운트.
+>
+> **사실 8 — GraphQL 응답 스키마 (실측)**: `visitorReviews.items[]` 에 `body`(후기 본문 raw, 최대 수백 자), `rating`(병원 카테고리는 전부 null — 별점 미수집 카테고리), `visitedDate`, `visitCount`, `userIdno`(작성자 익명 5자 ID 예: `1f5LD`·`25hpK`·`2WoTG`), `loginIdno=""` (비로그인 호출이라 빈 값), `author.nickname`(서버 측 마스킹 — `su****` · `까뀽2` · `ymn****` 형태로 일부만 노출), `votedKeywords[].name`. `visitorReviewStats` 에 `review.avgRating`·`totalCount`·`authorCount`·`imageReviewCount`·`visitorReviewsTotal`·`ratingReviewsTotal`, `analysis.themes`·`menus`·`votedKeyword.details`. **단 실측 4건(자생한방·더서울·위담·사용자 캡처 619469917) 모두 `items[].themes=[]`·`items[].votedKeywords=[]`·`stats.analysis.themes=[]`·`stats.analysis.menus=[]`·`stats.analysis.votedKeyword.details` 빈 배열·`stats.analysis.votedKeyword.totalCount=null`**. 사용자 캡처 query 형식 그대로(`cidList:["223175","223176","223192","228995"]` + `includeContent:true`) 박아 봐도 동일. 즉 **네이버가 병원 카테고리에는 키워드 빈도·테마 통계를 노출하지 않음** (음식점·미용 등 다른 카테고리만 채워주는 듯). 사용자 캡처의 schema 정의에 votedKeyword 가 있는 건 query 가 범용이라 그렇고, 실 데이터는 빈 값. 후기 본문 raw 만 활용 가능, 집계 키워드는 우리 측에서 자체 추출(LLM·임베딩) 필요.
+>
+> **사실 9 — 개인정보 raw 노출**: 비로그인 호출 시 `loginIdno` 비어있음. `userIdno` 는 작성자 익명 5자 base32-ish ID (네이버 내부 식별자). `author.nickname` 은 서버 측에서 일부 마스킹 — 한글 닉네임은 그대로(`까뀽2`·`금본위`), 영문/숫자 닉네임은 처음 2~3자 + `****` (`su****`·`ymn****`). 즉 우리가 마스킹 추가 처리 안 해도 raw 응답이 이미 일부 마스킹 상태.
+>
+> **사실 10 — 카카오**: 공식 `dapi.kakao.com/v2/local/search/keyword.json` 키 없이 401 (`AccessDeniedError`, "Authorization : KakaoAK header" 필요) — 정상. 비공식 `place.map.kakao.com/main/v/{id}` 는 임의 ID(`8136181`·`17822251`) 시도 시 404. 카카오 실 place_id 형식·동일 ncpt-style 차단 구조 여부는 미실측.
+>
+> **사실 11 — Vision 입력 (박스 2 raw)**: `s3://kmuproj-10-clinic-focus-crawl/crawl/` 의 강남 502개 중 10개 무작위 표집 분석. 이미지 총 **300장(모든 사이트가 정확히 30장 cap)**, URL 패턴 잡음 의심 **78장(26%)**, 시술 힌트 URL/alt 매칭 **35장(11%)**, alt 보유 **164장(54%)**. 사이트별 잡음률 0~100% 편차 — `gn.chihyu.co.kr` 0%, `aesophospital.com` 3%, `re-bom.com` 100%. `re-bom.com` 의 `menu_2_1_2_manualTherapy.png` (alt="도수치료") 는 URL `menu_` 패턴 때문에 잡음 분류됐으나 실제 시술 카테고리 그리드 — **URL 패턴 단독 잡음 룰은 거짓 양성 다발**, alt 텍스트가 결정적 시그널.
+>
+> **사실 12 — `getPhotoViewerItems` + `getPhotoTabFilters` (사용자 후속 캡처 기반 4건 실측)**: 네이버 사진 탭이 노출하는 photos[] 가 박스 1·2 양쪽에 시그널 추가. 표본:
+>
+> | 병원 | photos 총 | ibu(공식) | visitor(후기) | ugc(블로그) | unique blog 시드 |
+> |---|---|---|---|---|---|
+> | 자생한방 강남 | 46 | 3 | 4 | 39 | (미집계, 다음 세션) |
+> | 더서울 성북 | 61 | 20 | 1 | 40 | 9 |
+> | 위담 강남 | 60 | 20 | 0 | 40 | 7 |
+> | 정릉아동보건지소(619469917) | 20 | 1 | 0 | 19 | 4 |
+>
+> 각 사진의 `photoType`:
+> - `ibu` = 병원이 네이버 플레이스에 직접 올린 공식 사진 (= 자칭 시그널 raw, `businessName` 박힘)
+> - `visitor` = 방문자 후기 사진 (`text` 에 후기 본문 일부)
+> - `ugc` = 외부 블로그 사진. `externalLink.url` 에 `blog.naver.com/.../{postId}` 박혀 있음 (= **블로그 시그널 시드 URL 을 네이버가 큐레이션해서 줌** — `v1/search/blog` 검색보다 정확한 매칭)
+>
+> `getPhotoTabFilters` 의 `AI View.subTabFilters`: 자생한방 강남만 `(내부, INTERIOR)`·`(외부, EXTERIOR)` 두 카테고리 노출(나머지 3건은 AI View 탭 자체 없음). 사진 양·카테고리에 따라 노출. **네이버가 이미 사진을 자동 분류했음 = 박스 2 Vision 트랙에 직접 시그널 추가** (외부 시설/내부 시설/시술 결과 등).
+>
+> **실측 코드·query·응답 raw 저장**: [`ai/scratch/naver-place-probe-2026-05-28/`](../../ai/scratch/naver-place-probe-2026-05-28/) (README + probe_search·probe_reviews·probe_photos 실행 스크립트 + queries/*.graphql 4개 + samples/*.json 9개). 다음 세션이 코드 디테일 재현 시 이 폴더만 보면 됨.
+>
+> **운영 비용·제약 추가 메모 (수치 raw)**:
+> - **EC2 부담**: 1건당 headless Chromium 18~25초. 1만 풀커버 시 단일 EC2 직렬 처리 = ~50~70시간. 병렬화·헤드리스 풀 운영 필요
+> - **Playwright Chromium 시스템 의존성** (현 EC2 에 설치 완료): `atk at-spi2-atk nss cups-libs libdrm libXcomposite libXdamage libXrandr libXfixes libXScrnSaver libxkbcommon mesa-libgbm pango cairo alsa-lib`
+> - **검색 매칭 실패율** = 표본 2/5 (40%) — 정확한 병원명 + 지역 조합으로 검색해야 후보 1번이 정확. HIRA `yadmNm` 그대로 박았을 때의 매칭률은 별도 실측 필요
+> - **EC2 IP 차단 위험**: 1차 7회 호출에서도 차단 표시 없음(응답에 우리 IP 노출), 5건 패키지도 안정. 단 1만 풀커버 시 IP rate-limit 발생 가능성은 미실측
+>
+> **미해명 항목** (다음 세션):
+> - ~~GraphQL `votedKeyword.details` · `themes` 비어있는 이유~~ → 사실 8 갱신: 병원 카테고리는 노출 안 함이 확정. 우리 측에서 후기 본문 raw 로 직접 키워드 추출해야 함
+> - 정보 탭 (`진료영역` · `대표 키워드` · `원장 이력` · `편의시설`) query 명 — visitor 탭 외 다른 탭(`/home`·`/information`) 진입 시 호출되는 GraphQL 캡처 필요
+> - 카카오 비공식 엔드포인트의 실제 구조 (place_id 형식·ncpt-style 차단 여부)
+> - 1만 풀커버 시 EC2 IP rate-limit (직렬 50~70시간 부담 + 병렬화 시 IP 차단 임계 미실측)
 
 > ⚠️ **Phase B 진입 전 결정 — Vision 입력 전략** (2026-05-27 추가, 다음 세션 2순위 의제)
 >
@@ -212,6 +280,10 @@ SK = `entity` (S)
 > 4. BE 가 입력 형식을 바꾸면 `crawl_data.json` `images[]` 스키마 변경 — shared/models.py `CrawledImage` 영향
 >
 > 다음 세션 2순위 의제: 표본 실측 → 옵션 선택 → BE 이미지 수집 방식 갱신 + AI `analyze_images` 입력 시그니처 확정. 이 박스도 풀릴 때까지 Phase C Vision 본체(`ai/pipeline/vision.py`) 진입 보류.
+>
+> ---
+>
+> **2026-05-28 실측 raw 노트** (위 후기 시그널 전략 박스의 "사실 9" 참조). 10개 표본 분석으로 잡음·시술 사진 hit률·alt 보유율 raw 수치는 박음. 결정 1~4 의 옵션 채택 여부(A vs D vs B/C) 는 미확정.
 
 - [ ] `be/core/crawlers/site_crawler.py` (현 `crawler.py`) — 자체 사이트, **HTML 잡음 정제 추가** (이슈 [#13](https://github.com/BORB-CHOI/clinic-focus/issues/13))
   - 페이지 간 중복 단락 자동 검출 (한 사이트에서 N회 이상 반복 = 푸터/메뉴 판정)

@@ -1,0 +1,62 @@
+# 사용자 브라우저 캡처(2026-05-28) 의 query 본문 그대로.
+# fragment 다 풀어쓰면 너무 길어서 핵심만. 필요한 필드 다 들어있음.
+#
+# variables:
+#   input.businessId: place_id (검색 응답의 result.place.list[0].id)
+#   input.businessType: "hospital"
+#   input.cidList: ["223175","223176","223192","228995"] 같은 카테고리 ID 배열 (병원 = 223175 "병원,의원")
+#   input.includeContent: true   # 본문 포함
+#   input.size: 3                # 한 페이지 크기
+#   input.page: 1                # 페이지 (선택)
+#
+# 실측 (자생한방 강남, 더서울 성북, 위담 강남, 619469917 4건):
+#   - body·rating(null, 병원은 별점 미수집)·visitedDate·visitCount·userIdno·loginIdno("" 비로그인)·author.nickname(서버측 일부 마스킹) 안정 수집
+#   - themes=[]·votedKeywords=[] 모두 빈 배열 (병원 카테고리는 통계 미제공)
+#   - starDistribution=null·score=null
+
+query getVisitorReviews($input: VisitorReviewsInput) {
+  visitorReviews(input: $input) {
+    items {
+      id
+      reviewId
+      rating
+      author {
+        id
+        nickname
+        from
+        imageUrl
+        objectId
+        url
+        borderImageUrl
+      }
+      body
+      visitCount
+      viewCount
+      visited
+      visitedDate
+      created
+      themes {
+        theme
+        pattern
+        category
+        miningValue
+      }
+      votedKeywords {
+        code
+        iconUrl
+        iconCode
+        name
+      }
+      userIdno
+      loginIdno
+      nickname
+      reactionStat {
+        totalCount
+        typeCount { name count }
+      }
+    }
+    starDistribution { score count }
+    total
+    score
+  }
+}
