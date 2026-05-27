@@ -122,16 +122,14 @@ def main() -> None:
     s3 = boto3.client("s3", region_name=os.environ.get("AWS_REGION", "us-east-1"))
     crawl_store = S3Adapter()  # 현재 로컬 FS 구현. 이슈 #23 머지 후 boto3 로 자동 전환.
 
-    # 모든 Hospitals 스캔 후 Classifications + HospitalDescriptions 있는 것만 ingest
-    scan_resp = db._table("Hospitals").scan()
-    items = scan_resp.get("Items", [])
-    print(f"\n전체 Hospitals: {len(items)}개")
+    # 모든 META 항목 순회 후 Classifications + HospitalDescriptions 있는 것만 ingest
+    hospital_ids = list(db.iter_all_hospital_ids())
+    print(f"\n전체 Hospitals: {len(hospital_ids)}개")
 
     uploaded = 0
     skipped = 0
 
-    for item in items:
-        hospital_id = item["hospital_id"]
+    for hospital_id in hospital_ids:
         meta = db.load_hospital_meta(hospital_id)
         classification = db.load_classification(hospital_id)
         description = db.load_description(hospital_id)

@@ -70,56 +70,36 @@ RDS도 가용했지만 우리 access pattern과 워크로드가 DDB에 맞음:
 
 자세한 비교·솔직한 한계는 `../docs/dev-roadmap.md` "왜 DynamoDB인가 (RDS 대신)" 섹션 참조.
 
-### ERD — 7-table 가정 (AI 트랙 사용 형태)
+### 스키마 — V2 single-table
 
-코드(`be/scripts/setup_dynamodb.py`, `be/adapters/dynamo_adapter.py`)와 AI 트랙 자기 계정(`kmuproj-10-clinic-*`)이 따르는 구조. PK/SK 전부 String.
+[`be/adapters/dynamo_adapter.py`](adapters/dynamo_adapter.py) 가 가정하는 구조. **테이블은 콘솔에서 수동 생성** (SafeRole 에 `dynamodb:CreateTable` 권한 없음 — 절차는 [`../docs/setup/aws-onboarding.md`](../docs/setup/aws-onboarding.md) Step 6).
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│ Hospitals                                               │
-│   PK: hospital_id                                       │
-│   attrs: name, location{sido,sigungu,address,lat,lng},  │
-│          phone, website_url, standard_specialty, ...    │
-│                                                         │
-│   GSI: sigungu-index                                    │
-│     PK: sigungu  → Projection: ALL                      │
-│     용도: list_hospitals_by_sigungu (카테고리 탐색)     │
-└─────────────────────────────────────────────────────────┘
-        │ hospital_id (논리적 FK, 명시 관계 없음)
-        ├─────────────────┬─────────────────┬──────────┐
-        ▼                 ▼                 ▼          ▼
-┌──────────────────┐ ┌──────────────────┐ ┌─────────┐ ┌──────────────────┐
-│ Classifications  │ │HospitalDescript- │ │Services │ │ RelatedHospitals │
-│ PK: hospital_id  │ │ions              │ │AndDoctors│ │ PK: hospital_id │
-│ attrs: standard_ │ │ PK: hospital_id  │ │PK: hosp.│ │ attrs: same_focus│
-│   specialty,     │ │ attrs: ai_desc,  │ │_id      │ │   [], gap_fill[] │
-│   primary_focus, │ │   generated_at,  │ │attrs:   │ │                  │
-│   confidence,    │ │   source_tags    │ │ services│ │                  │
-│   signals{...}   │ │                  │ │ [], doc-│ │                  │
-└──────────────────┘ └──────────────────┘ │ tors[], │ └──────────────────┘
-                                          │ devices │
-                                          └─────────┘
-        │
-        ├─────────────────┐
-        ▼                 ▼
-┌──────────────────┐ ┌──────────────────────────┐
-│ Feedback         │ │ ChangeHistory            │
-│ PK: hospital_id  │ │ PK: hospital_id          │
-│ SK: feedback_id  │ │ SK: changed_at (ISO8601) │
-│ attrs: device_id,│ │ attrs: field, old, new,  │
-│   thumb (👍/👎), │ │   reason, signal_source  │
-│   timestamp      │ │                          │
-└──────────────────┘ └──────────────────────────┘
+PK = hospital_id (S)
+SK = entity      (S)
+
+entity 종류 (한 병원 = 여러 row):
+  META · CLASSIFICATION · DESCRIPTION · SERVICES · RELATED
+  FEEDBACK#{device_id}#{ts} · HISTORY#{iso}
+  SITE#PAGES · SITE#IMAGES
+  NAVER#PLACE · NAVER#PLACE#REVIEWS · NAVER#BLOG
+  KAKAO#PLACE · KAKAO#REVIEWS
+  GOOGLE#PLACE · GOOGLE#REVIEWS
+  PUBLIC#DEVICES · PUBLIC#DOCTORS
+  VISION#RESULTS · INGEST#STATE
 ```
 
-- **관계는 DDB에 명시 안 됨** — `hospital_id` 동일성으로만 연결. JOIN은 코드에서 (`Hospitals.get` + `Classifications.get` 등 병렬 호출)
-- **GSI는 `Hospitals.sigungu-index` 1개** — `list_hospitals_by_sigungu`([be/adapters/dynamo_adapter.py:71](../be/adapters/dynamo_adapter.py#L71))가 유일한 비-PK 쿼리
-- **SK가 있는 테이블 2개** — `Feedback` (한 병원 여러 피드백), `ChangeHistory` (시간순 이력)
-- **테이블 prefix**: BE=`kmuproj-02-clinic-`, AI=`kmuproj-10-clinic-` (계정 분리, 2026-05-25)
+GSI 2개 (모두 sparse — META 항목만 인덱싱 키 채움):
 
-### BE 실 운영 분기 — Single-table
+| GSI | PK | SK | 용도 |
+|---|---|---|---|
+| `sigungu-specialty-index` | `sigungu_specialty` (S `"강남구#피부과"`) | `confidence_score` (N desc) | 카테고리 탐색 (BE 직접) |
+| `geo-index` | `geohash_prefix` (S) | `lat_lng` (S `"{lat}#{lng}"`) | 지도 근처 검색 (Phase D 진입 후) |
 
-위 7-table은 **코드 가정**이고, BE 담당자(김경재)는 실제 `kmuproj-02-team3-backend` **단일 테이블**로 운영 중 (확인: 3,124 items, PK=`hospital_id`+SK=`entity`). entity 값으로 `META`/`CRAWL`/`CLASSIFICATION`/... 를 구분해서 한 테이블에 통합. AI 트랙은 7-table 가정 유지 (PoC 범위 + 분담), single-table 전환 동기화는 BE가 판단.
+- **한 병원의 모든 entity 1회 Query** — `query_hospital_entities(hospital_id)` 가 PK eq 로 다 모음
+- **분류 완료 시 META 의 GSI 키 patch** — `save_classification` 이 `sigungu_specialty`·`confidence_score` 를 META 에 denormalize → sigungu-specialty-index 등장 시작
+- **테이블 이름**: BE=`kmuproj-02-team3-backend`, AI=`kmuproj-10-clinic-Main` (계정 분리, 2026-05-25)
+- **상세 entity 표·BE 운영본 호환**: [`../docs/plans/task-queue.md`](../docs/plans/task-queue.md) §3
 
 ### 검색 경로 이원화
 

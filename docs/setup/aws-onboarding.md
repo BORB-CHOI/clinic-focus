@@ -712,72 +712,90 @@ PY
 
 ---
 
-## Step 6 — DynamoDB 7테이블 수동 생성 (AWS 콘솔)
+## Step 6 — DynamoDB 단일 테이블 수동 생성 (AWS 콘솔)
 
-> 2026-05-25 재현 가이드. `SafeRole-kmuproj-10` (지원 계정 AI 트랙)은 `dynamodb:CreateTable` 권한이 **없음** — `be/scripts/setup_dynamodb.py` 같은 자동화 스크립트는 AccessDeniedException. **AWS 콘솔에서 직접 7개 생성**한다. 다른 트랙(`kmuproj-XX`)도 자기 계정 권한 정책에 CreateTable이 없으면 같은 우회 필요.
+> 2026-05-27 V2 single-table 갱신. `SafeRole-{username}` (지원 계정)은 `dynamodb:CreateTable` 권한이 **없음** — 자동화 스크립트는 무조건 `AccessDeniedException`. **AWS 콘솔에서 직접 생성**한다. 추가 IAM 발급 없음.
 
 ### 6-1. 작명 규칙 (확정)
 
-강사 정책상 자원 이름은 **본인 username prefix**(`kmuproj-XX-*`)로 시작해야 한다. `list-tables` 결과에서 다른 팀이 `kmucloud-10-Orders`, `kmuproj-02-team3-backend`, `kmuai-03-platform-status-cache` 같은 명명 규칙 사용 중 — 동일 규칙. DynamoDB·S3·EC2 인스턴스 이름 전부 적용.
+강사 정책상 자원 이름은 **본인 username prefix**(`kmuproj-XX-*`)로 시작. DynamoDB·S3·EC2 인스턴스 이름 전부 적용.
 
-본 프로젝트 AI 트랙 prefix: **`kmuproj-10-clinic-`** (`TABLE_PREFIX` 환경변수에 그대로 박힘).
+본 프로젝트 AI 트랙: **`kmuproj-10-clinic-Main`** 한 개. (옛 V1 7-table `kmuproj-10-clinic-Hospitals/...` 은 2026-05-27 삭제)
 
-### 6-2. 콘솔에서 생성할 7테이블 스펙
+### 6-2. 콘솔에서 생성할 테이블 스펙
 
-코드 가정(`be/scripts/setup_dynamodb.py` + `be/adapters/dynamo_adapter.py`)과 **정확히 일치**해야 e2e 가능.
+[`be/adapters/dynamo_adapter.py`](../../be/adapters/dynamo_adapter.py) 와 **정확히 일치**해야 e2e 가능. entity 종류 전체 표는 [`../plans/task-queue.md`](../plans/task-queue.md) §3-2.
 
-| 테이블 이름 | PK | SK | GSI | Billing |
-|---|---|---|---|---|
-| `kmuproj-10-clinic-Hospitals` | `hospital_id` (S) | — | **`sigungu-index`**: PK=`sigungu` (S), Projection=ALL | PAY_PER_REQUEST |
-| `kmuproj-10-clinic-Classifications` | `hospital_id` (S) | — | — | PAY_PER_REQUEST |
-| `kmuproj-10-clinic-HospitalDescriptions` | `hospital_id` (S) | — | — | PAY_PER_REQUEST |
-| `kmuproj-10-clinic-ServicesAndDoctors` | `hospital_id` (S) | — | — | PAY_PER_REQUEST |
-| `kmuproj-10-clinic-RelatedHospitals` | `hospital_id` (S) | — | — | PAY_PER_REQUEST |
-| `kmuproj-10-clinic-Feedback` | `hospital_id` (S) | `feedback_id` (S) | — | PAY_PER_REQUEST |
-| `kmuproj-10-clinic-ChangeHistory` | `hospital_id` (S) | `changed_at` (S) | — | PAY_PER_REQUEST |
+| 항목 | 값 |
+|---|---|
+| **Table name** | `kmuproj-10-clinic-Main` |
+| **Partition key** | `hospital_id` (String) |
+| **Sort key** | `entity` (String) |
+| **Capacity mode** | On-demand (PAY_PER_REQUEST) |
+| **GSI #1** | `sigungu-specialty-index` — PK=`sigungu_specialty` (String), SK=`confidence_score` (Number), Projection=ALL |
+| **GSI #2** | `geo-index` — PK=`geohash_prefix` (String), SK=`lat_lng` (String), Projection=ALL |
 
-> **GSI `sigungu-index` 필수** — `be/adapters/dynamo_adapter.py:71`의 `list_hospitals_by_sigungu`가 이 GSI로 query. 만들지 않으면 `ValidationException: The table does not have the specified index`.
+> GSI 키는 **모두 META 항목만 sparse 인덱싱**. 분류 완료 시 `save_classification` 이 META 에 `sigungu_specialty` (`"{sigungu}#{standard_specialty}"`)·`confidence_score` 를 patch → sigungu-specialty-index 에 등장 시작. `geohash_prefix`·`lat_lng` 는 지도 검색 진입(Phase D) 시 채움.
 
-### 6-3. 콘솔 절차 (`Hospitals` 기준 한 번만 예시)
+### 6-3. 콘솔 절차
 
-1. AWS 콘솔 → DynamoDB → 리전 `us-east-1` 확인
+1. AWS 콘솔 → DynamoDB → 리전 **`us-east-1`** 확인
 2. **Create table**
-3. Table name: `kmuproj-10-clinic-Hospitals`
-4. Partition key: `hospital_id`, type **String**
-5. Sort key: 비움
-6. **Customize settings**:
-   - Read/write capacity settings → **On-demand** (PAY_PER_REQUEST와 동일)
-7. **Indexes** → Create index:
-   - Partition key: `sigungu`, type **String**
-   - Sort key: 비움
-   - Index name: `sigungu-index`
-   - Projected attributes: **All**
-8. Create table → 상태 `Active` 대기 (보통 30초)
-9. 나머지 6개도 동일 방식. GSI 없는 5개는 Step 7 스킵. Feedback·ChangeHistory는 SK 추가.
+3. **Table name**: `kmuproj-10-clinic-Main`
+4. **Partition key**: `hospital_id` / **String**
+5. **Sort key**: `entity` / **String**
+6. **Table settings** → Customize settings:
+   - **Table class**: Standard
+   - **Read/write capacity settings**: **On-demand**
+7. **Secondary indexes** → **Create global index** (2 회):
+
+   **GSI #1**
+   - Partition key: `sigungu_specialty` / **String**
+   - Sort key: `confidence_score` / **Number**
+   - Index name: `sigungu-specialty-index`
+   - Attribute projections: **All**
+
+   **GSI #2**
+   - Partition key: `geohash_prefix` / **String**
+   - Sort key: `lat_lng` / **String**
+   - Index name: `geo-index`
+   - Attribute projections: **All**
+
+8. **Create table** → 상태 `Active` 대기 (보통 30초)
 
 ### 6-4. 검증
 
 ```bash
-aws dynamodb list-tables --region us-east-1 | grep kmuproj-10-clinic-
+aws dynamodb describe-table --table-name kmuproj-10-clinic-Main --region us-east-1 \
+  | python3 -c "import sys,json; t=json.load(sys.stdin)['Table']; print('Keys:', t['KeySchema']); print('GSIs:', [(g['IndexName'], g['KeySchema']) for g in t.get('GlobalSecondaryIndexes',[])])"
 ```
 
-7개가 다 나와야 OK. 권한이 약해서 `ListTables`가 다른 팀 테이블도 같이 보이는데 `grep`으로 우리 prefix만 거름.
+기대 출력:
+```
+Keys: [{'AttributeName': 'hospital_id', 'KeyType': 'HASH'}, {'AttributeName': 'entity', 'KeyType': 'RANGE'}]
+GSIs: [('sigungu-specialty-index', [...sigungu_specialty:HASH..., confidence_score:RANGE]),
+       ('geo-index',               [...geohash_prefix:HASH..., lat_lng:RANGE])]
+```
 
 ### 6-5. 환경변수 확정
 
-`.env` 의 `TABLE_PREFIX=kmuproj-10-clinic-` (끝에 하이픈 포함) 확인. `be/adapters/dynamo_adapter.py`가 `f"{TABLE_PREFIX}{name}"` 으로 조합하므로 prefix 뒤에 테이블 이름이 바로 붙는다.
+`.env` 에:
+```
+DYNAMO_TABLE=kmuproj-10-clinic-Main
+```
+
+(옛 `TABLE_PREFIX` 는 `ai/scratch/` 우회로에서만 잔존. Phase C 본체 마이그레이션과 함께 제거 예정.)
 
 ### 6-6. 트러블슈팅
 
-**Q. `setup_dynamodb.py` 가 AccessDeniedException으로 멈춤**
+**Q. 자동화 스크립트로 만들고 싶다**
 
-- 원인: `SafeRole-kmuproj-10` 정책에 `dynamodb:CreateTable` action 자체가 없음. prefix 문제 아님 — 어떤 이름으로 시도해도 동일 에러
-- 해결: 본 Step 6의 콘솔 수동 생성 절차로 우회. 자동화 스크립트는 BE 트랙(`kmuproj-02`) 같이 권한 있는 계정에서만 사용
+- 안 됨. SafeRole 에 `dynamodb:CreateTable` 자체가 없고 추가 IAM 발급도 없다. 콘솔이 유일한 길.
 
-**Q. 다른 계정(BE 담당자 등)이 만든 비슷한 이름 테이블이 보임 (`kmuproj-02-team3-backend` 등)**
+**Q. 다른 계정(BE 등)이 만든 비슷한 이름 테이블이 보임 (`kmuproj-02-team3-backend` 등)**
 
-- 강사 정책상 같은 계정 내 모든 테이블이 `ListTables`에는 보임. 권한은 prefix·account별로 분리되어 있으니 무시. 본인이 만든 것만 read/write 가능
-- BE 풀커버 데이터는 BE 계정에 있고, AI 미니 표본은 AI 계정에 있다. 데이터 공유 없음 (계정 분리 결정)
+- 강사 정책상 같은 계정 내 모든 테이블이 `ListTables`에는 보임. 권한은 prefix·account별로 분리. 본인이 만든 것만 read/write 가능
+- BE 풀커버 데이터는 BE 계정에 있고, AI 미니 표본은 AI 계정. 데이터 공유 없음 (계정 분리 결정, 2026-05-25)
 
 **Q. 콘솔에서 `Region not supported` 에러**
 
