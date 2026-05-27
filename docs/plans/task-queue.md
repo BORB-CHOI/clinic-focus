@@ -217,7 +217,7 @@ SK = `entity` (S)
 >
 > 검색결과 `reviewCount` vs graphql `total_reviews` 가 다른 이유는 검색결과는 "전체 리뷰(블로그·플레이스 합산)" 이고 graphql 은 "방문자 리뷰만" 카운트.
 >
-> **사실 8 — GraphQL 응답 스키마 (실측)**: `visitorReviews.items[]` 에 `body`(후기 본문 raw, 최대 수백 자), `rating`(현재 null 들어옴 — 평점은 query 변수에 따라 별도 query 필요), `visitedDate`, `visitCount`, `userIdno`(작성자 익명 5자 ID 예: `1f5LD`·`25hpK`·`2WoTG`), `loginIdno=""` (비로그인 호출이라 빈 값), `author.nickname`(서버 측 마스킹 — `su****` · `까뀽2` · `ymn****` 형태로 일부만 노출), `votedKeywords[].name`. `visitorReviewStats` 에 `review.avgRating`·`totalCount`·`authorCount`·`imageReviewCount`, `analysis.themes`·`votedKeyword.details`. 단 실측 3건에서는 `themes=[]`·`votedKeyword.details=[]` 로 빈 배열 — query 변수에 `itemId` 박지 않아서일 가능성(추가 튜닝 필요).
+> **사실 8 — GraphQL 응답 스키마 (실측)**: `visitorReviews.items[]` 에 `body`(후기 본문 raw, 최대 수백 자), `rating`(병원 카테고리는 전부 null — 별점 미수집 카테고리), `visitedDate`, `visitCount`, `userIdno`(작성자 익명 5자 ID 예: `1f5LD`·`25hpK`·`2WoTG`), `loginIdno=""` (비로그인 호출이라 빈 값), `author.nickname`(서버 측 마스킹 — `su****` · `까뀽2` · `ymn****` 형태로 일부만 노출), `votedKeywords[].name`. `visitorReviewStats` 에 `review.avgRating`·`totalCount`·`authorCount`·`imageReviewCount`·`visitorReviewsTotal`·`ratingReviewsTotal`, `analysis.themes`·`menus`·`votedKeyword.details`. **단 실측 4건(자생한방·더서울·위담·사용자 캡처 619469917) 모두 `items[].themes=[]`·`items[].votedKeywords=[]`·`stats.analysis.themes=[]`·`stats.analysis.menus=[]`·`stats.analysis.votedKeyword.details` 빈 배열·`stats.analysis.votedKeyword.totalCount=null`**. 사용자 캡처 query 형식 그대로(`cidList:["223175","223176","223192","228995"]` + `includeContent:true`) 박아 봐도 동일. 즉 **네이버가 병원 카테고리에는 키워드 빈도·테마 통계를 노출하지 않음** (음식점·미용 등 다른 카테고리만 채워주는 듯). 사용자 캡처의 schema 정의에 votedKeyword 가 있는 건 query 가 범용이라 그렇고, 실 데이터는 빈 값. 후기 본문 raw 만 활용 가능, 집계 키워드는 우리 측에서 자체 추출(LLM·임베딩) 필요.
 >
 > **사실 9 — 개인정보 raw 노출**: 비로그인 호출 시 `loginIdno` 비어있음. `userIdno` 는 작성자 익명 5자 base32-ish ID (네이버 내부 식별자). `author.nickname` 은 서버 측에서 일부 마스킹 — 한글 닉네임은 그대로(`까뀽2`·`금본위`), 영문/숫자 닉네임은 처음 2~3자 + `****` (`su****`·`ymn****`). 즉 우리가 마스킹 추가 처리 안 해도 raw 응답이 이미 일부 마스킹 상태.
 >
@@ -232,9 +232,10 @@ SK = `entity` (S)
 > - **EC2 IP 차단 위험**: 1차 7회 호출에서도 차단 표시 없음(응답에 우리 IP 노출), 5건 패키지도 안정. 단 1만 풀커버 시 IP rate-limit 발생 가능성은 미실측
 >
 > **미해명 항목** (다음 세션):
-> - GraphQL `votedKeyword.details` · `themes` 비어있는 이유 (query 변수 `itemId` 튜닝)
-> - 정보 탭 (`진료영역` · `대표 키워드` · `원장 이력` · `편의시설`) query 명 — visitor 탭 외 다른 탭 진입 시 호출되는 GraphQL 캡처 필요
+> - ~~GraphQL `votedKeyword.details` · `themes` 비어있는 이유~~ → 사실 8 갱신: 병원 카테고리는 노출 안 함이 확정. 우리 측에서 후기 본문 raw 로 직접 키워드 추출해야 함
+> - 정보 탭 (`진료영역` · `대표 키워드` · `원장 이력` · `편의시설`) query 명 — visitor 탭 외 다른 탭(`/home`·`/information`) 진입 시 호출되는 GraphQL 캡처 필요
 > - 카카오 비공식 엔드포인트의 실제 구조 (place_id 형식·ncpt-style 차단 여부)
+> - 1만 풀커버 시 EC2 IP rate-limit (직렬 50~70시간 부담 + 병렬화 시 IP 차단 임계 미실측)
 
 > ⚠️ **Phase B 진입 전 결정 — Vision 입력 전략** (2026-05-27 추가, 다음 세션 2순위 의제)
 >
