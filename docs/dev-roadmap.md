@@ -297,6 +297,26 @@ Phase 1에서 S3에 적재한 이미지 URL을 EC2 batch로 처리. 의료기기
 
 ---
 
+## Phase 1 (M0~3) — 주 단위 sprint 분해
+
+`docs/plans/task-queue.md` V2 sprint 큐의 트랙별 잔여 작업을 3주 단위로 분해. 협업 의존성(아래)을 따라 평행 진행.
+
+| 주 | AI | BE | FE |
+|---|---|---|---|
+| 1 | scratch → 본체 (`ingest_hospital`/`retrieve_hospital`) | 이슈 #23/#24 머지 + API 4개 skeleton | 검색 결과 페이지 API 연결 |
+| 2 | `extract_services_and_doctors`·`find_related_hospitals` 실측 + 신뢰도 약점 수정 | API 4개 본체 + DDB 적재 + ChangeHistory INSERT | 상세 페이지 9영역 |
+| 3 | 시그널 보강 (Vision Marketplace + 이슈 #18 머지 후 블로그/후기) + `recompute_confidence` | 이슈 #13 정제·hash diff | 피드백 UI + 변경 이력 + 의료법 검수 |
+
+진척 현황(2026-05-26):
+
+- AI 트랙 ✅ scratch e2e 통과 (PR #25). 본체 마이그레이션 진입 전
+- BE 트랙 ⏳ 이슈 #23/#24/#13/#18 위임 상태
+- FE 트랙 △ 검색·상세·지도 화면 골격 OK (PR #14), 실 API 미연결
+
+연관 문서: [`plans/task-queue.md`](plans/task-queue.md) §2·§3 (트랙별 잔여 작업 + 마일스톤).
+
+---
+
 ## 마일스톤
 
 | 시점 | 달성 기준 |

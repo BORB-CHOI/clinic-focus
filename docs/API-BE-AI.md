@@ -189,6 +189,17 @@ PoC에서는 **3트랙으로 분기**한다 (자세한 건 `../ai/CLAUDE.md` "AI
 - `BedrockInvocationError` — Bedrock 호출 실패
 - `InsufficientDataError` — 크롤링 데이터가 너무 빈약 (페이지 0개, 또는 전부 빈 텍스트)
 
+#### 현 구현 약점 (V2에서 수정 예정)
+
+2026-05-26 강남구 14개 병원 e2e 검증(`ai/scratch/run-log-2026-05-26.md`)에서 확인된 신뢰도 계산 버그.
+
+- **`5. 강남우태하피부과의원`** — `primary_focus=[]`(빈 리스트)임에도 `confidence.score=100` 출력. 자칭 컨셉을 추출하지 못한 데이터 부족 상황인데 신뢰도가 최고값으로 잡힘.
+- **`12. 개포센트럴이비인후과의원`** — 병원 이름에 "이비인후과"가 명시돼 있음에도 피부과로 오분류, `primary_focus=[]`, `confidence.score=100`. 크롤 성공 1페이지·이미지 0개인 데이터 부족 케이스임에도 confidence가 낮아지지 않음.
+
+두 케이스 모두 `classify_hospital`의 `compute_confidence` 로직이 **빈 크롤 데이터·`primary_focus=[]` 조건을 감지하지 못함**에서 발생. 현 로직은 4 시그널 점수가 모두 0이어도 confidence 산식에서 높은 값이 나오는 경로가 존재. V2 AI 트랙 B sprint에서 다음을 수정 예정:
+- `primary_focus`가 비어있으면 `confidence.score`를 `CONFIDENCE_THRESHOLD_LOW`(기본 70) 미만으로 강제하고 `level="정보 부족"` 처리
+- 크롤 성공 페이지 수·이미지 수가 임계치 미만이면 `InsufficientDataError`를 던지거나 confidence에 페널티 부여
+
 #### 사용 예시
 ```python
 from ai import classify_hospital
@@ -391,6 +402,19 @@ class HospitalIngestMetadata(BaseModel):
 | `lng` | number | 필터 가능 (bounding box용). null이면 키 제외 |
 | `last_updated` | string | 비필터 |
 
+#### 실측 함정 (2026-05-26 검증)
+
+`ai/scratch/kb_ingest.py` 14개 병원 ingest + `numberOfDocumentsFailed: 0` 통과로 확인된 사항.
+
+1. **`metadataAttributes` 는 단순 dict, list-form 거절** — AWS 문서에 list-form 예시(`[{"key":..., "value":{"type":"STRING","stringValue":...}}]`)가 일부 있지만, DataSource 메타 파일에 그 형식을 쓰면 `"metadata file is not in valid JSON format"`으로 거절됨. 메타 파일은 반드시 `{"metadataAttributes": {"key": "value", ...}}` 단순 dict. list-form은 KB Retrieve filter expression 전용 문법임.
+2. **빈 list·None 값 거절** — `"primary_focus": []`, `"lat": null` 같이 빈 리스트나 null 값이 들어가면 `"invalid metadata attributes"`로 거절됨. 해당 키는 **dict에서 아예 제외**해야 함. `primary_focus`가 비어있으면 키 생략, `lat`/`lng`가 None이면 키 생략.
+3. **`team_id="clinic-focus"` 필수** — KB DataSource(`kmuproj-02-vector`)를 02팀과 공유하므로, `team_id` 없이 ingest하면 retrieve 시 02팀 데이터가 섞여 나옴. 모든 메타에 `"team_id": "clinic-focus"` 고정 필수.
+4. **본문 자르지 말 것** — `vectorIngestionConfiguration: {}` (기본값) 셋팅이라 KB가 기본 청크 분할(약 300토큰)을 자동 수행. 우리가 임의로 1KB·8KB 한도를 걸면 사이트 공통 네비/메뉴 텍스트만 들어가는 사고가 발생함(실제 발생). 통째 박고 KB에 청크 분할을 맡길 것.
+5. **자체 사이트 텍스트 필수** — DDB의 분류 결과·설명 텍스트만 본문에 넣으면 구체 시술명(사마귀·냉동치료기 등) 쿼리와 매칭이 안 됨. `crawl_data.pages[*].html_text`가 본문에 포함돼야 함. **page_type 우선순위**: `service` → `about` → `main` → `doctors` → `blog` 순 정렬 후 앞 페이지부터 본문 상단에 배치 (정보 밀도가 높은 페이지가 청크 상위에 위치해야 임베딩 품질 향상).
+6. **부정 문장 매칭 함정** — `generate_description`이 "X 정보 없음" 또는 "X는 다루지 않음"이라고 적은 부정 문장도 임베딩 공간에서 X 쿼리와 유사도가 높게 잡힘. 약점 단락이 검색 결과 1위로 반환돼 사용자 혼동 가능. 현재는 무시하고 진행하되, V2에서 부정 단락을 별도 필드/메타로 분리하여 임베딩 본문에서 제거하는 방안 검토 예정.
+7. **Delete 운영 코드 호출 금지** — 강사 정책: `bedrock-agent:DeleteDocument`·`s3:DeleteObject` 권한은 있으나 의도치 않게 02팀 데이터를 삭제할 위험. 본문 갱신은 S3 `PutObject` 덮어쓰기, 폐업 처리는 `metadata.status="closed"` soft-delete로 우회.
+8. **prefix 분리 운영 규약** — 운영 데이터는 `clinic-focus/prod/{hospital_id}.txt`, 실험·테스트용은 `clinic-focus/probe/...` 로 prefix 구분. 운영 prefix에 테스트 데이터가 섞이면 검색 품질에 직접 영향.
+
 ---
 
 ### 5. `retrieve_hospital`
@@ -454,6 +478,39 @@ def retrieve_hospital(
     ...
 ]
 ```
+
+#### 실측 함정 (2026-05-26 검증)
+
+`ai/scratch/retrieve_test.py` 하드코딩 4쿼리 + `search.sh` 자연어 검색으로 확인된 사항.
+
+1. **`team_id` 필터 필수** — KB DataSource를 02팀과 공유하므로, 필터 없이 Retrieve하면 02팀이 ingest한 문서도 결과에 섞임. 모든 Retrieve 호출에 아래 필터를 기본 적용할 것:
+
+   ```python
+   filter = {
+       "equals": {
+           "key": "team_id",
+           "value": "clinic-focus"
+       }
+   }
+   ```
+
+   `sido`·`sigungu`·`specialty`·`min_confidence` 추가 필터가 있을 때는 `andAll` 조합:
+
+   ```python
+   filter = {
+       "andAll": [
+           {"equals": {"key": "team_id", "value": "clinic-focus"}},
+           {"equals": {"key": "sigungu", "value": query.sigungu}},
+           # ... 추가 조건
+       ]
+   }
+   ```
+
+2. **`numberOfResults` 최대 100 제한** — KB Retrieve API는 한 번 호출에 최대 100개 청크 반환. 한 병원에서 여러 청크가 나올 수 있으므로 `hospital_id` 기준 dedup 후 실제 병원 수는 더 적어질 수 있음. 카테고리 전체 탐색(`sigungu=강남구 & specialty=피부과` 전체 목록)이 이 경로에 적합하지 않은 이유.
+
+3. **부정 문장 매칭 함정** — `generate_description`이 "X 정보 없음", "X는 다루지 않음" 형태로 쓴 부정 단락도 임베딩 공간에서 X 쿼리와 유사도가 높게 잡힘(`ingest_hospital` 실측 함정 6번 동일 현상). 현재는 무시하고 진행하되, V2에서 부정 단락을 임베딩 본문에서 분리하는 방안 검토 예정. Retrieve 결과에서 해당 청크를 점수 가중치 하향 처리하는 방어 로직도 고려.
+
+4. **빈 쿼리 텍스트 불가** — KB Retrieve API는 `query_text`가 빈 문자열이면 오류 반환. `query.query_text`가 None이거나 빈 문자열이면 이 함수에 도달하기 전에 BE 측에서 DynamoDB GSI 경로로 분기시켜야 함. 이 함수 진입 전 validation 필수.
 
 ---
 

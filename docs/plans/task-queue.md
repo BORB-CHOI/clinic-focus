@@ -1,445 +1,193 @@
-# clinic-focus 작업 큐
+# clinic-focus 작업 큐 — V2 sprint
 
-> 최종 업데이트: 2026-05-24
+> 최종 업데이트: 2026-05-26 · 상위 컨텍스트: [`../overview.md`](../overview.md), [`../dev-roadmap.md`](../dev-roadmap.md)
+
+이 문서는 **V2(본 서비스 9가지 차별점 모두 동작)까지 남은 작업**을 한 곳에 모은 단일 큐다. 트랙 분담·완료 히스토리·운영 메모도 같이 포함. 별도 `be-aws-wiring.md`·`task-queue-cleanup-handoff.md`는 본 문서로 흡수 후 삭제(2026-05-26).
 
 ---
 
-## 진행 중인 결정사항 (2026-05-24 갱신)
+## 0. 지금 사실 (Snapshot, 2026-05-26)
 
-**AI 트랙 전략 재편** — 지원 계정 Bedrock 제약(Haiku/Nova + 10개 한도) 확인에 따라 3트랙으로 분리.
+| 영역 | 상태 |
+|---|---|
+| AI dev e2e (강남구 4과목 88개 → 분류 14개 → KB ingest → 자연어 검색) | ✅ scratch 우회로 통과 (PR [#25](https://github.com/BORB-CHOI/clinic-focus/pull/25)) |
+| AI 트랙 자기 계정 DDB·S3·KB ingest 권한 | ✅ 전부 통과 |
+| AI 트랙 본체 함수 (`ingest_hospital` / `retrieve_hospital`) | ❌ scratch만 있고 본체 미구현 |
+| BE 본체 코드 (s3_adapter boto3 / crawl_all TABLE_PREFIX) | ⏳ 이슈 [#23](https://github.com/BORB-CHOI/clinic-focus/issues/23) 위임 |
+| BE FastAPI 4개 엔드포인트 실데이터 동작 | ❌ skeleton 수준, AI 호출·DDB 적재 미연결 |
+| FE 검색·상세·지도 화면 | △ 화면 골격 OK (PR [#14](https://github.com/BORB-CHOI/clinic-focus/pull/14)), 실 API 미연결 |
+| Vision 시그널 (트랙 C) | ❌ 개인 계정 Marketplace 구독 미완료로 fallback |
+| 블로그·후기 시그널 | ❌ 크롤러 자체 부재 (이슈 [#18](https://github.com/BORB-CHOI/clinic-focus/issues/18)) |
+| 분류 변경 자동 기록·피드백 자기교정 | ❌ 미구현 |
+| HTML 잡음 정제·hash diff | ❌ 이슈 [#13](https://github.com/BORB-CHOI/clinic-focus/issues/13) 위임 |
 
-| 트랙 | 대상 | 모델 | 계정 | 범위 |
+---
+
+## 1. V2 매트릭스 — 9가지 차별점 vs 현 상태
+
+`overview.md` 4·5절과 `dev-roadmap.md` Phase 1·2의 핵심 기능. **이 표가 V2의 정의**.
+
+| # | 기능 | 출처 | 현 상태 | 남은 일 |
 |---|---|---|---|---|
-| A. 룰 기반 분류 | 자칭 컨셉 추출 | 키워드/빈도 룰 (LLM 미사용) | — | 서울 5개구 1만 |
-| B. LLM 텍스트 시연 | 자칭 추출 + `generate_description` | Haiku 4.5 / Nova | 지원 | 10개 |
-| C. Vision 시연 | 이미지 분석 (OCR + 시각) | Sonnet 4.6 | 개인 | 10개 |
-
-확정 사항:
-
-- **벡터 도구: Bedrock Knowledge Base 경유** (강사 제공 KB `kmuproj-team-03`, ID `GTBJ6HLFDK`). S3 Vectors 직접 호출 ❌ — `SafeRole-kmuproj-10`에 `s3vectors:*` 권한 없음이 확인됐고, 강사가 Titan v2로 셋팅한 KB를 쓰라는 가이드라 그대로 따름. KB가 내부적으로 storage로 쓰는 게 `bedrock-knowledge-base-1tvot3` S3 Vectors 버킷
-- **검색 경로 이원화** (필수):
-  - **자연어 검색**(예: "강남 사마귀 잘 보는 곳") → AI 모듈 → KB `Retrieve` API
-  - **수동 탐색**(`sigungu=강남구 & specialty=피부과` 전체 목록) → BE 모듈 → **DynamoDB GSI 직접 조회**, AI 미경유. KB Retrieve는 빈 쿼리 텍스트로는 못 돌아서 카테고리 탐색에 부적합 (`numberOfResults` 최대 100 제한도 있음)
-- **함수명·시그니처 재설계** (PR #1에서 처리):
-  - `search_similar(SearchQuery)` → `retrieve_hospital(query_text, filter)` (KB 용어로)
-  - `index_hospital(...)` → `ingest_hospital(...)` (KB DataSource S3 업로드 + `start-ingestion-job` 래핑)
-  - `embed_text(text)` → 유지 (쿼리 단독 임베딩 디버깅·실험용)
-- 임베딩: Titan v2 (KB가 자동 호출, 1024 dim, 지원 계정)
-- **벡터 구성 비교 전략**: KB 1개 안에서 셋이 **순차로** 청킹 설정 바꿔가며 비교 (강사가 KB 1개만 줘서). 비교 시점은 BE 풀크롤링 + 정제 완료 후. 비교 축: `FIXED_SIZE` / `HIERARCHICAL` / `SEMANTIC` 청킹 모드, 임베딩 입력 텍스트(본문 raw vs 자칭 키워드 추출 vs 진료과목+자칭 결합)
-- OCR: Bedrock Vision으로 흡수 (Textract 한국어 미지원으로 제거)
-- 정제·크롤링: 전부 BE 책임 (잡음 제거 + 서울 1만 풀크롤링)
-- 검색 시점 LLM 호출 0건 (KB Retrieve가 내부에서 Titan 임베딩 1회만 호출, Sonnet/Haiku 안 거침)
-- 시연 10개 외 9990개는 `ai_description = null` (FE 차등 렌더링)
-- 사업화 시 갱신: **병원 파일 단위 hash diff** (KB ingestion이 파일 단위라 페이지별 hash는 의미 낮아짐 — 변경된 병원만 DataSource S3에 덮어쓰고 ingestion job 트리거)
-- AI 트랙 개발 환경: EC2 + VSCode Remote-SSH (로컬 VSCode가 EC2에 SSH 접속, 편집·터미널·Claude Code 전부 EC2에서 실행 — 인스턴스 프로파일 자동 인증). Cloud9 권한 미발급으로 EC2 임시 대체
+| 1 | 자연어 검색 (KB Retrieve) | [overview 4-5](../overview.md#4-5-검색-동작-원리--semantic-search--사전-증거-평가) | ✅ scratch 4쿼리 통과 | `ai/scratch/retrieve_test.py` → `ai.retrieve_hospital` 본체로 |
+| 2 | 상세 페이지 9개 영역 | [overview 4-4](../overview.md#4-4-ai-통합-상세-설명--본-서비스의-진짜-차별점), [API-FE-BE §2](../API-FE-BE.md#2-병원-상세) | ❌ FE/BE 골격만 | FE 9영역 컴포넌트 + BE 통합 응답 + AI `extract_services_and_doctors` 실측 |
+| 3 | AI 통합 설명 (`generate_description`) | [overview 4-4](../overview.md#4-4-ai-통합-상세-설명--본-서비스의-진짜-차별점) | △ 14개 동작, 신뢰도 약점 2건 | `primary_focus=[]` + `confidence=100` 케이스 수정 (`ai/scratch/run-log-2026-05-26.md` 참조) |
+| 4 | 4 시그널 교차 검증 | [overview 5-1](../overview.md#5-1-자기-파괴-방지--4-시그널-교차-검증) | △ 자칭만, Vision/블로그/후기 0% | 개인 계정 Sonnet Marketplace 구독 + 이슈 [#18](https://github.com/BORB-CHOI/clinic-focus/issues/18) 외부 시그널 크롤러 |
+| 5 | 신뢰도 + 피드백 자기교정 | [overview 5-2](../overview.md#5-2-ai-분류-신뢰도-시스템) | ❌ | `recompute_confidence`·`aggregate_feedback_stats` 본체 |
+| 6 | 분류 변경 이력 자동 기록 | [overview 10-3](../overview.md#10-3-변경-이력--사용자-가치-전환), [API-FE-BE §3](../API-FE-BE.md#3-분류-변경-이력) | ❌ 테이블만 | hash diff → `ChangeHistory` INSERT 로직 |
+| 7 | 피드백 (디바이스ID 중복방지) | [API-FE-BE §4](../API-FE-BE.md#4-피드백-제출) | ❌ | `POST /api/feedback` 본체 + FE 1-tap UI |
+| 8 | 관련 병원 추천 | [API-FE-BE §2](../API-FE-BE.md#2-병원-상세) (영역 ⑧) | △ 코드, 실측 X | `find_related_hospitals` 실측 |
+| 9 | 카테고리 이중 색인 (다루지 않는 분야) | [overview 4-2](../overview.md#4-2-분류-체계--카테고리-이중-색인) | △ 코드, 실측 X | `extract_services_and_doctors` 실측 |
 
 ---
 
-## BE 트랙 AWS 연결 진행 가능 매트릭스
+## 2. V2 sprint — 트랙별 잔여 작업
 
-> 2026-05-24 추가, 2026-05-25 갱신 (계정 분리 결정·SQS 제거·B12 unblock 반영).
->
-> → **[`docs/plans/be-aws-wiring.md`](be-aws-wiring.md)**
->
-> **계정 분리**: BE(`kmuproj-02`)와 AI(`kmuproj-10`)가 각자 DynamoDB·S3 따로 운영. 데이터 공유 없음. 발표 시 데이터는 BE 계정 풀커버가 정본.
->
-> **SQS 미사용 확정**: 모놀리식 직렬 처리. 기존 `crawl_trigger.py`·`crawl_hospital.py`·`sqs_adapter.py`의 SQS 가정 코드는 별도 정리 (B10).
->
-> **2026-05-25 KB S3 권한 unblock**: 강사가 `kmuproj-02-vector`에 `kmuproj-02`·`kmuproj-10`·`kmuproj-11` Role 권한 부여 (Put/Get/List/Delete). 단 *"누가 올렸는지 추적 불가"* 한계와 *"Delete 권한 사고 주의"* 안내 받음. → prefix 분리(`clinic-focus/prod/`, `clinic-focus/probe/`) + 운영 코드 Delete 호출 금지 + metadata `team_id` 필수 규약 박음.
->
-> 13개 작업(B1~B13)을 권한 상태·의존성·추정 시간으로 정리. 핵심 가능 항목: DynamoDB 7테이블 생성(B1), 자체 S3 버킷 생성·`S3Adapter` boto3 전환(B4·B5), 서울 5개구 메타 적재(B3, HIRA Key 받은 후), 풀크롤링(B7), 잡음 정제(B8), hash 컬럼(B9), SQS 코드 제거(B10), KB ingest 파이프라인(B12). 아래 PR 큐 #3·#6·#7과 매핑됨.
+### AI 트랙 (최비성)
 
----
+**A. 본체 마이그레이션 (이슈 #23 머지 후 진입)**
 
-## 다음 PR 순서
+- [ ] `ai/search/kb_store.py` 신규 — `ingest_hospital(hospital_id, content_text, metadata, trigger_ingestion=False)` 본체. scratch `kb_ingest.py` 로직 흡수 + 실측 함정(metadata dict 형식 / 빈 list 거절 / `team_id` 필수) 반영
+- [ ] `ai/search/kb_store.py` — `retrieve_hospital(query: SearchQuery) -> list[SearchResult]` 본체. scratch `retrieve_test.py` 로직 흡수
+- [ ] `ai/__init__.py` export: `ingest_hospital`, `retrieve_hospital` 추가 / `index_hospital`, `search_similar` 제거
+- [ ] `ai/scratch/` 통째 삭제 (PR 분리 권장 — 본체 마이그레이션 PR 검증 후)
 
-### 1. `feat/ai/aws-clients` (기존 항목 — 재재설계 필요)
+**B. 시그널 보강·신뢰도**
 
-담당: 최비성
+- [ ] 신뢰도 약점 수정 — `primary_focus=[]` + `confidence=100` 케이스 (`ai/scratch/run-log-2026-05-26.md` 참조)
+- [ ] 개인 계정 Bedrock Sonnet 4.6 AWS Marketplace 구독 완료 → Vision 시그널 활성화
+- [ ] `extract_services_and_doctors` 실측 — "다루지 않는 분야" 정확도
+- [ ] `find_related_hospitals` 실측
 
-> 2026-05-24 1차 재설계: "Bedrock·S3 Vectors·Textract 모두 개인 계정" → "S3 Vectors·Titan·Haiku/Nova는 지원 계정, Sonnet만 개인". **같은 날 2차 재설계 (이번 갱신)**: S3 Vectors 직접 호출 ❌ → **Bedrock KB (`bedrock-agent-runtime` / `bedrock-agent`) 경유**. 강사가 KB `kmuproj-team-03`(ID `GTBJ6HLFDK`, Titan v2 셋팅)을 만들어줬고, `SafeRole-kmuproj-10`에 `s3vectors:*` 권한이 없음이 확인됨. `ai/core/aws_clients.py`는 만들어졌으나 다시 재설계 필요.
+**C. 자기교정 루프**
 
-- [ ] `ai/core/aws_clients.py` 재재설계
-  - 지원 계정 클라이언트 팩토리:
-    - `get_bedrock_runtime_support()` — Haiku/Nova/Titan invoke 용 (`bedrock-runtime`)
-    - `get_bedrock_agent_runtime()` — KB Retrieve API 용 (`bedrock-agent-runtime`) ⭐ 신규
-    - `get_bedrock_agent()` — KB DataSource 관리·Ingestion Job 트리거 용 (`bedrock-agent`) ⭐ 신규
-    - `get_s3_client_support()` — KB DataSource S3 버킷 업로드 용
-  - 개인 계정 클라이언트 팩토리: `get_bedrock_runtime_personal()` (Sonnet Vision 시연용, `AI_AWS_*` 환경변수)
-  - 기존 `get_s3vectors_client()` 제거 (직접 호출 안 함)
-  - 기존 Textract 클라이언트 함수 제거
+- [ ] `recompute_confidence(hospital_id, recent_feedback) -> Confidence` 본체
+- [ ] `aggregate_feedback_stats(hospital_id) -> FeedbackStats` 본체
 
-- [ ] AI 모듈 함수 시그니처·구현 재설계
-  - `ai/search/embed.py` — `embed_text()` 유지 (디버깅·실험용, 지원 계정 Titan 직접 호출)
-  - `ai/search/vector_store.py` 폐기 → **`ai/search/kb_store.py` 신규**
-    - `ingest_hospital(hospital_id, description_text, metadata)` — DataSource S3 객체 업로드 + `start_ingestion_job` 호출
-    - `retrieve_hospital(query_text, filter, limit)` — KB Retrieve API 호출
-    - 기존 `index_hospital` / `index_hospital_with_meta` / `search_similar` 제거
-  - `ai/core/bedrock_client.py` — 트랙 B는 지원 / 트랙 C는 개인
-  - `ai/pipeline/vision.py` — 개인 계정 Sonnet (Textract 호출 제거)
+**D. 표본 확장 (선택)**
 
-- [ ] `ai/search/feedback.py` — DynamoDB 지원 계정 팩토리로 교체
+- [ ] 강남구 4과목 88개 → 서울 5개구 4과목 ~1000개 (BE 풀크롤링 완료 후)
 
-- [ ] `ai/__init__.py` — 변경된 export
-  - 제거: `search_similar`, `index_hospital`
-  - 추가: `retrieve_hospital`, `ingest_hospital`
+### BE 트랙 (김경재)
 
-- [ ] BE 호출부도 교체 필요 — `be/handlers/*` 에서 `index_hospital` / `search_similar` 호출 부분 새 함수로 갱신 (별도 PR `refactor/be/ai-kb-rename` 권장)
+**E. AWS 본체 연동 (이슈로 위임됨)**
 
-### 2. `feat/be/test-fix` (기존 항목, 변동 없음)
+- [ ] [이슈 #23](https://github.com/BORB-CHOI/clinic-focus/issues/23) `be/adapters/s3_adapter.py` 로컬 FS → boto3 + `be/scripts/crawl_all.py:35` `TABLE_PREFIX` 적용
+- [ ] [이슈 #24](https://github.com/BORB-CHOI/clinic-focus/issues/24) `be/scripts/_utils.load_env` 인라인 주석 버그
+- [ ] [이슈 #13](https://github.com/BORB-CHOI/clinic-focus/issues/13) HTML 잡음 정제 + hash diff (`content_hash` 컬럼)
+- [ ] [이슈 #18](https://github.com/BORB-CHOI/clinic-focus/issues/18) 병원 목록 소스 전략 + 블로그·후기 외부 시그널 크롤러
 
-담당: 김경재
+**F. FastAPI 4개 엔드포인트 본체 구현**
 
-- [ ] `be/tests/harness/mock_adapters.py`
-  - `h.sigungu` → `h.location.sigungu` 버그 수정
-  - `ChangeRecord` → `ClassificationChange` import 명시화
+- [ ] `GET /api/search` — KB Retrieve 호출 + DynamoDB 신뢰도 조회 + 정렬 ([API-FE-BE §1](../API-FE-BE.md#1-검색))
+- [ ] `GET /api/hospitals/{id}` — 9개 영역 통합 응답 ([API-FE-BE §2](../API-FE-BE.md#2-병원-상세))
+- [ ] `GET /api/hospitals/{id}/history` — `ChangeHistory` 조회 ([API-FE-BE §3](../API-FE-BE.md#3-분류-변경-이력))
+- [ ] `POST /api/feedback` — 디바이스ID 중복 방지 + 201/409 응답 ([API-FE-BE §4](../API-FE-BE.md#4-피드백-제출))
 
-- [ ] 미사용 import 정리
-  - `be/api/search.py` — `SearchQuery` 제거
-  - `be/adapters/dynamo_adapter.py` — `import json` 제거
+**G. DDB 인프라**
 
-- [ ] smoke_test — `import` 검증 추가
+- [ ] BE 자기 계정(`kmuproj-02`)에 7테이블 수동 생성 (콘솔 절차는 [`../setup/aws-onboarding.md` Step 6](../setup/aws-onboarding.md#step-6--dynamodb-7테이블-수동-생성-aws-콘솔))
+- [ ] BE 자기 계정 S3 버킷 `kmuproj-02-clinic-focus-crawl` 생성
+- [ ] `ChangeHistory` 자동 INSERT 로직 (`classify_hospital` 결과 변경 시)
 
-### 3. `feat/be/clean-noise` (신규 — BE에 정제 추가 요청)
+**H. CORS·환경변수 마무리**
 
-담당: 김경재
+- [ ] `be/handlers/api.py` CORS `allow_origins=["*"]` → CloudFront 도메인 + `localhost:5173` 한정
+- [ ] `.env.example` BE 자기 계정 변수 (`TABLE_PREFIX=kmuproj-02-clinic-`, `S3_CRAWL_BUCKET=kmuproj-02-clinic-focus-crawl`) 주석 갱신
 
-> 근거: AI 트랙이 28개 샘플(`be/data/crawl_results/*.json`) 분석한 결과 잡음 60~70%. 룰 기반 분류 트랙 A의 정확도와 LLM 호출 비용 양쪽에 직접 영향.
+### FE 트랙 (하재원)
 
-핵심 발견:
+**I. 화면·API 통합**
 
-- modoo 서비스 종료 안내 18회 반복 (네이버 modoo 사이트들)
-- 같은 사이트 안에서 푸터/메뉴 9회 반복 (`<footer>` 태그 안 쓰는 사이트들)
-- 404 페이지 6회 반복
-- "개인정보취급방침", "환자권리장전" 등 의료 사이트 공통 법정 고지문
+- [ ] OpenAPI → TS 타입 자동 생성 동기화 (`openapi-typescript`)
+- [ ] `SearchPage.tsx` 실 API 연결 (TanStack Query). Mock 제거
+- [ ] `HospitalDetailPage.tsx` 9개 영역 컴포넌트 완성 (헤드라이너/핵심진료/의료진/신뢰도/운영/피드백/이력/관련/메타)
+- [ ] `MapPage.tsx` 카카오맵 + 신뢰도 색 마커 — `lat`/`lng` 메타필터 검색과 결합
+- [ ] 1-tap 피드백 UI (👍/👎) + localStorage 디바이스ID + 중복 방지 처리
+- [ ] 분류 변경 이력 표시 컴포넌트
 
-작업:
+**J. 차등 렌더링**
 
-- [ ] `be/core/crawler.py` — 페이지 간 중복 단락 자동 검출·제거 로직 (한 사이트의 여러 페이지에서 N회 이상 반복되는 단락을 푸터/메뉴로 판정)
-- [ ] 잡음 키워드 블랙리스트 단락 제거 (modoo 안내, 개인정보취급방침, 환자권리장전, 이용약관, 비급여 진료비용 고지문, 404, Copyright 등)
-- [ ] 정제 후 텍스트 100자 미만 → "정보 부족"으로 분류 대상에서 제외
-- [ ] `be/data/crawl_results` 28개로 정제 효과 비교 테스트 (정제 전/후 토큰 수)
+- [ ] `ai_description == null` 케이스 태그 카드 fallback ([API-FE-BE §2](../API-FE-BE.md#2-병원-상세) 프론트 렌더링 가이드)
 
-### 4. `feat/ai/track-a-rule-classifier` (신규 — 트랙 A)
+### 공통
 
-담당: 최비성
-
-> 의존성: BE의 서울 5개구 1만 풀크롤링(아래 #7) + 정제(#3) 가 끝나야 입력 데이터가 채워진다.
-
-- [ ] `ai/pipeline/classify_rule.py` 신규 — 룰 기반 자칭 컨셉 추출
-  - 진료과목별 키워드 사전 (피부과: "여드름", "아토피", "보톡스" 등)
-  - 키워드 빈도 + 페이지 타입별 강조도 계산
-  - 4시그널 중 자칭 + 블로그 + 공공데이터 룰 기반 처리
-- [ ] 룰 기반 신뢰도 점수 산출 (LLM 결과보다 보수적)
-- [ ] `classify_hospital(crawl_data, use_llm=False)` 분기 추가
-- [ ] `ai/scripts/classify_all_rules.py` — BE가 적재한 1만 병원 크롤링 데이터 읽어서 AI 룰 분류 일괄 호출 (크롤링은 BE 책임 — #7 참조)
-
-### 5. `feat/ai/track-bc-llm-vision-demo` (신규 — 트랙 B·C)
-
-담당: 최비성
-
-- [ ] 시연 대상 10개 병원 선정 (강남구, 진료과목 다양, 사이트 풍부)
-- [ ] 트랙 B: 지원 계정 Haiku/Nova로 자칭 추출 + `generate_description`
-- [ ] 트랙 C: 개인 계정 Sonnet 4.6 Vision으로 이미지 분석 (Global inference profile, 서울 리전)
-- [ ] 룰 기반 결과 vs LLM 결과 비교 출력 (발표 자료용)
-- [ ] `MAX_LLM_DEMO_HOSPITALS` 환경변수로 한도 강제
-
-### 6. `feat/be/hash-diff-foundation` (신규 — 사업화 갱신 전략 기반)
-
-담당: 김경재
-
-> 사업화 시 운영 비용 통제. PoC 단계에서 구조만 잡아두고 운영은 수동 트리거로 충분. **KB 경유 결정 이후 단위 변경**: 페이지별 hash → **병원 파일 단위 hash** (KB ingestion이 파일 단위라 페이지별로 잘게 비교해도 결국 파일 다시 업로드해야 함).
-
-- [ ] `Hospitals` 테이블에 `content_hash` (병원 통합 본문 SHA-256), `crawled_at` 컬럼 추가
-- [ ] 재크롤링 시 `content_hash` 비교 → 변경된 병원만 KB DataSource S3에 덮어쓰고 `start_ingestion_job` 트리거
-- [ ] 변경 이력 자동 기록 (`ChangeHistory` 테이블 — 이미 스키마 있음)
-
-### 7. `feat/be/crawl-seoul-5gu-full` (신규 — 트랙 A 의존성)
-
-담당: 김경재
-
-> 트랙 A (AI 룰 분류 1만)의 입력 데이터를 채우는 BE 풀크롤링 작업. AI는 BE가 적재한 데이터를 읽어서 분류만 한다 — 크롤링 자체는 BE 영역.
-
-선행 조건:
-
-- #3 `feat/be/clean-noise` 정제 로직 완료 (안 그러면 크롤링 데이터에 잡음 60% 섞임)
-- #6 `feat/be/hash-diff-foundation` 의 `body_hash` 컬럼 (있으면 재실행 시 변경분만 처리, 없어도 1회 풀크롤링은 가능)
-
-작업:
-
-- [ ] `be/scripts/crawl_all.py` 또는 `load_seoul_5gu.py` 로 서울 5개구(강남·서초·송파·성동·중구 등 협의) 1만 병원 풀크롤링
-- [ ] 크롤링 결과를 S3에 적재 (각 병원당 `CrawlData` JSON)
-- [ ] 실패 통계 리포트 (JS 렌더링 필요·URL 없음·timeout 등 사유별 카운트)
-- [ ] 성공률 80% 이상 목표
+- [ ] 의료법 회색지대 표현 전수 검수 (`medical-language-reviewer` 서브에이전트)
+- [ ] `shared/models.py` 모델 변경 시 BE·AI 동시 갱신 확인
+- [ ] 통합 e2e — FE 검색창 → BE → AI → KB → 응답 → 상세 페이지 9영역 렌더 (M3 데모)
 
 ---
 
-## AI 트랙 AWS 세팅 todo (개인 워크북)
-
-> 최비성 개인용 진행 큐. EC2 + VSCode Remote-SSH 환경에서 진행.
-> 팀원이 따라할 수 있는 **재현 가이드**는 별도로 [`docs/setup/aws-onboarding.md`](../setup/aws-onboarding.md) 참조 (Step 0~1 검증된 부분만 정리).
-
-워크플로 (확정): **로컬 VSCode → Remote-SSH 확장으로 EC2 접속 → EC2 위에서 직접 편집·터미널·git·Claude Code 실행**. UI만 로컬, 실행 컨텍스트는 전부 EC2 (인스턴스 프로파일 자동 인증). git push/pull 왕복 없이 EC2에서 commit·push까지 한 번에. 로컬에선 지원 계정 자원 직접 호출 불가 (Role 한정, Access Key 발급 불가) — 그래서 코드 실행은 무조건 EC2에서.
-
-> Cloud9 권한이 강사 계정에서 발급 안 됨. 추후 권한 받으면 동일 워크플로(브라우저 IDE + 인스턴스 프로파일)를 Cloud9로 이전 가능. 강사 요청 시 근거: (1) 로컬에서 지원 계정 자원 호출 불가 — Access Key 미발급, (2) EC2 SSH는 IDE 편의성 부족 — AI 트랙은 Bedrock 호출 반복 실험이 핵심, (3) Cloud9 인스턴스 프로파일은 EC2와 동일 권한 — 추가 권한 없음, (4) `t3.small` + 30분 idle timeout으로 비용 통제.
-
-### Step 0 — VSCode Remote-SSH로 EC2 접속
-
-- [x] BE 트랙이 띄운 EC2 인스턴스 정보 확보 (퍼블릭 IP, SSH 키, 사용자명 — Amazon Linux는 `ec2-user`, Ubuntu는 `ubuntu`)
-- [x] 로컬 VSCode에 `Remote - SSH` 확장 설치 (Microsoft 공식)
-- [x] `~/.ssh/config`에 호스트 등록:
-
-  ```ssh-config
-  Host clinic-focus-ec2
-      HostName <ec2-public-ip>
-      User ec2-user
-      IdentityFile ~/.ssh/<key>.pem
-  ```
-
-- [x] VSCode `F1` → `Remote-SSH: Connect to Host` → `clinic-focus-ec2` → 새 창에서 좌하단 `SSH: clinic-focus-ec2` 확인
-- [x] EC2 위에 레포 클론: `cd ~ && git clone https://github.com/BORB-CHOI/clinic-focus.git && cd clinic-focus`
-- [x] 로컬에서 쓰던 Claude Code 확장을 원격에 설치 (확장 패널에서 "Install on SSH: clinic-focus-ec2" 버튼). CLI(`npm i -g @anthropic-ai/claude-code`)는 VSCode 확장만 쓸 거면 불필요
-
-### Step 1 — 지원 계정 자원 가용성 확인
-
-- [x] EC2 터미널에서 가용성 확인: (2026-05-24 완료)
-  - [x] `aws sts get-caller-identity` → `Account=730335373015`, `SafeRole-kmuproj-10/i-0b6142523ec5b5383` 확인
-  - [x] `aws s3vectors list-vector-buckets --region us-east-1` → **AccessDenied 확인**. S3V 직접 호출은 안 쓰기로 결정(KB 경유)했으므로 권한 요청 불필요
-  - [x] `aws bedrock list-foundation-models ...` → Titan v2 (`amazon.titan-embed-text-v2:0`) · Haiku 4.5 · Nova 라인업 전부 가용
-  - [x] `pip3 install --user boto3 --upgrade` → 1.43.14 설치 완료
-- [x] Claude 4.x 가용성 확인 → Sonnet 4.5/4.6, Haiku 4.5, Opus 4.1/4.5/4.6/4.7 전부 ACTIVE. **Sonnet 4.6은 지원 계정에서도 보이지만 model access 활성화 여부는 별도 invoke 테스트 필요. task-queue 원안대로 Sonnet=개인 계정 유지** (Step 5에서 개인 계정 호출 검증 완료)
-- [x] 강사 제공 KB 발견 (`aws bedrock-agent list-knowledge-bases`) — `kmuproj-team-03` (ID `GTBJ6HLFDK`), Titan v2 + S3 Vectors storage. KB Retrieve API 권한 OK (`bedrock-agent-runtime:retrieve` 호출 성공)
-
-### Step 2 — Titan v2 임베딩 hello-world
-
-> 2026-05-24 완료. 재현 스크립트·실제 출력·해석 메모는 [`docs/setup/aws-onboarding.md` Step 2](../setup/aws-onboarding.md#step-2--titan-v2-임베딩-hello-world)에 정리.
-
-- [x] 짧은 한국어·영어 문장 임베딩 호출. 1024 dim 출력 확인 → KO=1024, EN=1024 ✅
-- [x] 동일 문장 두 번 호출 시 같은 벡터 나오는지 (재현성) → `normalize=True`로 비트 단위 동일 (`max|Δ|=0`) ✅. **hash diff 전략 전제 확보** (#6 PR 근거 보강)
-- [x] 의미 유사 문장 ("사마귀 치료" vs "심상성 우췌 냉동요법") 코사인 유사도 측정 → 0.2507 vs 대조군 0.1937. 의도대로 더 가까움이 나오긴 하지만 **마진 0.06으로 좁음** — Titan v2가 한국어 의학 학명에 약함. **Step 4 metadata 스키마에 `aliases` 동의어 키 또는 트랙 A 룰 단계에서 동의어 본문 주입 검토** (대응책은 aws-onboarding 2-4 참고)
-
-### Step 3 — Bedrock KB Retrieve 왕복 (S3 Vectors 직접 호출 대체) 🚧 강사 권한 요청 대기
-
-> 강사 제공 KB `kmuproj-team-03` (ID `GTBJ6HLFDK`). 내부 storage가 `bedrock-knowledge-base-1tvot3` S3 Vectors 버킷이지만 우리는 KB API만 호출.
-
-**2026-05-24 블로커**: DataSource S3 버킷 `kmuproj-02-vector`에 `SafeRole-kmuproj-10`이 `s3:PutObject` / `s3:ListBucket` / `s3:GetObject` 전부 AccessDenied. 더미 적재 불가 → 권한 받기 전까지 Step 3·4 대기, **Step 5 (개인 계정 Sonnet Vision) 먼저 진행**.
-
-**강사 권한 요청** (Slack 보낸 표현):
-
-> @NxtCloud_김유림 강사님 혹시 KB(`kmuproj-team-03`)의 DataSource S3 버킷(`kmuproj-02-vector`)에 ingest용 업로드 권한(PutObject/GetObject/ListBucket)을 경재님(02) 외에 저(10)와 재원님 Role에도 부여 가능할까요? 아니면 한 계정에만 가능할까요?
-
-상세 (강사가 되물을 시 대응용):
-
-- 대상 Role: `SafeRole-kmuproj-10` (지원 계정 `730335373015`, EC2 인스턴스 프로파일) + 재원님 Role
-- 필요 액션: `s3:PutObject`, `s3:GetObject`, `s3:ListBucket` (Delete는 강사 정책상 불가 → 운영 흐름은 덮어쓰기·soft-delete로 우회)
-- 대상 리소스:
-  - `arn:aws:s3:::kmuproj-02-vector` (ListBucket용, `s3:prefix=clinic-focus/*` 조건 가능)
-  - `arn:aws:s3:::kmuproj-02-vector/clinic-focus/*` (오브젝트 단위 — 우리 prefix 한정)
-- 근거: 강사가 만든 KB `kmuproj-team-03`(ID `GTBJ6HLFDK`)의 DataSource(`main-datasource`, ID `PLC6QYALDU`)가 이 버킷을 가리킴. KB ingest를 하려면 DataSource 버킷에 파일을 직접 올려야 함. 현재 `bedrock-agent:StartIngestionJob` 권한은 있으나 적재할 객체를 못 올림
-- 검증 방법: 권한 부여 후 `aws s3 cp test.txt s3://kmuproj-02-vector/clinic-focus/probe.txt` 성공 → `aws bedrock-agent start-ingestion-job --knowledge-base-id GTBJ6HLFDK --data-source-id PLC6QYALDU` 호출
-- 정리: 권한 받은 후 EC2에서 만든 probe 버킷 `kmuproj-10-clinic-focus-kb-probe`도 삭제 부탁 (DeleteBucket 권한 없음)
-
-**공유 KB 리스크 — Step 4 metadata 스키마에 `team_id` 필수**: KB·DataSource를 02팀과 공유하므로 retrieve 결과에 02팀 데이터가 섞일 수 있음. 모든 ingest 파일의 `metadata.json`에 `team_id: "clinic-focus"` 박고, retrieve 시 `filter = {equals: {key: "team_id", value: "clinic-focus"}}`로 거름. Step 4 스키마 항목에 추가.
-
-**Delete 권한 없는 운영 대응**:
-- 본문 갱신·hash diff → PutObject 덮어쓰기로 해결 (Delete 불필요, KB가 변경된 파일 청크 자동 재생성)
-- 폐업 병원 → soft-delete: 본문을 폐업 안내로 덮어쓰고 `metadata.status="closed"`로 retrieve 필터 제외
-- 잘못 올린 테스트 파일 → 강사에게 청소 부탁. `clinic-focus/probe/` vs `clinic-focus/prod/` prefix로 영역 분리 권장
-
-체크리스트:
-
-- [x] KB 존재 확인: `aws bedrock-agent get-knowledge-base --knowledge-base-id GTBJ6HLFDK --region us-east-1` → status ACTIVE
-- [x] DataSource 확인: `aws bedrock-agent list-data-sources --knowledge-base-id GTBJ6HLFDK --region us-east-1` → `main-datasource` (`PLC6QYALDU`)
-- [x] DataSource S3 버킷 이름·prefix 확인 → `s3://kmuproj-02-vector/` (prefix 없이 버킷 루트, 청크 설정은 KB 기본값)
-- [ ] 🚧 더미 텍스트 파일 1~3개를 DataSource S3에 업로드 + `metadata.json` 동봉 (메타필터 테스트용) — **S3 권한 대기**
-- [ ] 🚧 `aws bedrock-agent start-ingestion-job --knowledge-base-id GTBJ6HLFDK --data-source-id PLC6QYALDU` → 상태 COMPLETE 확인
-- [ ] 🚧 `aws bedrock-agent-runtime retrieve --knowledge-base-id GTBJ6HLFDK --retrieval-query '{"text":"테스트"}'` → 결과 받기
-- [ ] 🚧 메타필터 동작 확인 — `retrievalConfiguration.vectorSearchConfiguration.filter` 로 `sigungu`/`standard_specialty` 등 필터링
-
-### Step 4 — DataSource S3 파일 포맷 + 메타데이터 스키마 설계
-
-> 청크 전략·청크 ID는 KB가 관리. 우리가 설계할 것은 **DataSource에 올릴 파일 포맷과 metadata.json 스키마**.
-
-- [ ] 병원 단위 파일 포맷 결정 — `{hospital_id}.txt` (또는 `.md`)
-  - 내용 후보: AI 통합 설명 본문 / 룰 추출 자칭 키워드 / 원문 정제 텍스트 (셋 비교는 벡터 구성 비교 실험 시점에)
-- [ ] metadata.json 스키마 — Bedrock KB metadata 사양 따름 (각 파일별로 `{hospital_id}.txt.metadata.json` 동봉)
-  - 키: `team_id` (필수, "clinic-focus" — 02팀과 KB 공유 시 retrieve 필터로 분리) / `hospital_id` / `standard_specialty` / `primary_focus` (list) / `sido` / `sigungu` / `confidence_score` (number, `>=` 필터용) / `lat` (number) / `lng` (number) / `last_updated` / `status` ("active" | "closed" — Delete 권한 없어 soft-delete 용) / `aliases` (list[string], 의학 학명·동의어 — Titan v2가 한국어 학명 약함 보강용, Step 2 결과 근거)
-  - 필터 가능 타입은 string / number / boolean / list[string]만 (KB 사양)
-- [ ] DataSource S3 디렉토리 구조 결정 — prefix 분리 권장: `clinic-focus/probe/{...}` (실험·테스트) vs `clinic-focus/prod/{hospital_id}.txt` (운영). Delete 권한 없어 영역 분리 + 강사 청소 요청 시점 명확화
-- [ ] 청크 전략 결정·비교는 **데이터 적재 후**로 보류 (BE 풀크롤링 완료 후)
-
-### Step 5 — 개인 계정 Sonnet 4.6 Vision 연결 ✅ 완료 (2026-05-24)
-
-> 재현 가이드·실측 응답 카탈로그·트러블슈팅은 [`docs/setup/aws-onboarding.md` Step 5](../setup/aws-onboarding.md#step-5--개인-계정-sonnet-46-vision-연결-서울-리전-global-cross-region-inference).
-
-- [x] 개인 계정 콘솔에서 Bedrock model access 활성화 (Claude Sonnet 4.6, 서울 리전)
-- [x] IAM User 생성 + **인라인 정책으로 Sonnet 4.6 한정 InvokeModel** (`BedrockSonnet46InvokeOnly`, 3-ARN: inference-profile + regional FM + global FM)
-- [x] Access Key 발급 + 키 노출 위험 분석 메모
-- [x] EC2 `~/.aws/credentials`에 named profile `personal`로 저장 (region `ap-northeast-2`)
-- [x] boto3 `Session(profile_name="personal")`로 `global.anthropic.claude-sonnet-4-6` 호출 → 글로웰의원 메인 페이지 캡처(512KB PNG)로 한국어 OCR + 시각 요약 성공 (input=1648 / output=752 tok)
-- [x] 재현 가이드 → `docs/setup/aws-onboarding.md`에 Step 5 5-1~5-9로 추가
-
-**핵심 결정사항 (코드·문서 일괄 갱신 필요)**:
-- 모델: `anthropic.claude-sonnet-4-5-20250929-v1:0` → **`global.anthropic.claude-sonnet-4-6`** (Global cross-region inference profile, foundation model 직접 호출 불가)
-- 개인 계정 리전: `us-east-1` → **`ap-northeast-2`** (서울 — 사용자 기존 자원 위치 일관성)
-- IAM 정책: 단일 ARN → **3-ARN 필수** (Global inference profile은 권한 평가 시 inference-profile + regional FM + global FM 3개 모두 검사. 빈 region/account의 `arn:aws:bedrock:::foundation-model/...` 누락이 가장 흔한 실수)
-
-### Step 6 — AI 개인 dev 계정 e2e: DDB + S3 + 14개 분류·설명·KB ingest·자연어 검색 ✅ 1차 완료 (2026-05-26)
-
-> 목적: AI 트랙이 **AWS 위에서 자기 데이터로 분류·임베딩·KB ingest 실험을 돌릴 수 있는 최소 환경** 구성. 발표 정본 데이터는 BE 트랙(`kmuproj-02`) 풀커버를 따르고, AI는 강남구 4과목 ~85개 미니 표본으로 알고리즘 튜닝·검증.
-> 계정 분리(2026-05-25) 이후 AI는 `kmuproj-10` 자기 DDB·S3에서 작업. BE 자원 의존 없음.
-
-**2026-05-25 발견 (블로커·결정)**:
-
-- `SafeRole-kmuproj-10` 정책에 `dynamodb:CreateTable` 액션 **자체가 없음**. prefix 문제 아님. 어떤 이름으로 시도해도 `no identity-based policy allows the dynamodb:CreateTable action`. → 사용자가 **AWS 콘솔(GUI)로 직접 7테이블 수동 생성** (Step 6-1)
-- 자원 작명 규칙은 username prefix(`kmuproj-10-*`). DDB·S3·EC2 모두 동일. 강사 정책 일관성 확인됨 (예: `kmucloud-10-Orders`, `kmuproj-02-team3-backend` 등). `TABLE_PREFIX=kmuproj-10-clinic-` / S3 `kmuproj-10-clinic-focus-crawl`로 통일
-- BE 코드의 `be/scripts/crawl_all.py:35`가 `dynamodb.Table("Hospitals")` 로 **`TABLE_PREFIX` 미적용 하드코딩** — Step 6-7 진행 시 함께 패치 필요
-- BE 담당자 운영 테이블로 보이는 `kmuproj-02-team3-backend`(single-table-design, PK=`hospital_id`+SK=`entity`, 3124 items) 존재 확인. **현 코드는 7-table 가정 유지** — 우리(AI)는 그 가정을 따른다. BE 담당자가 single-table 전환했는지는 BE 담당자가 판단·코드 동기화할 일이며, AI 트랙이 단독으로 따라가지 않음 (PoC 범위 초과)
-
-**Step 6-1. DDB 7테이블 수동 생성 (AWS 콘솔)** 🚧
-
-코드 가정(`be/scripts/setup_dynamodb.py`·`be/adapters/dynamo_adapter.py`)과 정확히 일치해야 함. 콘솔에서 만들 때 아래 스펙대로:
-
-| 테이블 이름 | PK | SK | GSI | Billing |
-|---|---|---|---|---|
-| `kmuproj-10-clinic-Hospitals` | `hospital_id` (S) | — | **`sigungu-index`**: PK=`sigungu` (S), Projection=ALL | PAY_PER_REQUEST |
-| `kmuproj-10-clinic-Classifications` | `hospital_id` (S) | — | — | PAY_PER_REQUEST |
-| `kmuproj-10-clinic-HospitalDescriptions` | `hospital_id` (S) | — | — | PAY_PER_REQUEST |
-| `kmuproj-10-clinic-ServicesAndDoctors` | `hospital_id` (S) | — | — | PAY_PER_REQUEST |
-| `kmuproj-10-clinic-RelatedHospitals` | `hospital_id` (S) | — | — | PAY_PER_REQUEST |
-| `kmuproj-10-clinic-Feedback` | `hospital_id` (S) | `feedback_id` (S) | — | PAY_PER_REQUEST |
-| `kmuproj-10-clinic-ChangeHistory` | `hospital_id` (S) | `changed_at` (S) | — | PAY_PER_REQUEST |
-
-GSI `sigungu-index`는 `list_hospitals_by_sigungu`(`be/adapters/dynamo_adapter.py:71`)가 필수로 사용. 콘솔 "Indexes" 탭에서 추가 — Partition key `sigungu` (String), Projection type **All attributes**.
-
-체크리스트:
-
-- [ ] AWS 콘솔(`us-east-1`) DynamoDB → 위 표대로 7테이블 + 1 GSI 수동 생성
-- [ ] `.env`의 `TABLE_PREFIX=kmuproj-10-clinic-` 확정 (이미 적용된 상태에서 검증)
-- [ ] `aws dynamodb list-tables --region us-east-1 | grep kmuproj-10-clinic-` 로 7개 확인
-- [ ] `.env.example` 의 `TABLE_PREFIX=` 빈값 + 코멘트(BE=`kmuproj-02-clinic-` / AI=`kmuproj-10-clinic-`) 반영 (2026-05-25 갱신 완료)
-- [ ] BE 담당자에게 동일 수동 생성 안내 (BE는 자기 계정에서 `kmuproj-02-clinic-*`)
-
-**Step 6-2. S3 버킷 생성** ⏳
-
-- [ ] `aws s3 mb s3://kmuproj-10-clinic-focus-crawl --region us-east-1` (자기 username prefix라 권한 OK 예상). 실패 시 콘솔 수동
-- [ ] `.env`의 `S3_CRAWL_BUCKET=kmuproj-10-clinic-focus-crawl` 확인
-- [ ] 이미지 별도 버킷 안 만들고 같은 버킷 `images/` prefix로 둠 (PoC 단순화). 풀크롤링 1만 × 30 이미지 부담은 AI 트랙엔 무관 — 85개 × 30 = 2550장 수준이라 무시
-
-**Step 6-3. S3Adapter boto3 전환 + crawl_all prefix 패치 → BE 위임** ⏭️ ([#23](https://github.com/BORB-CHOI/clinic-focus/issues/23) 발행, AI 트랙 비차단)
-
-> 변경 (2026-05-26, 사용자): 이 두 패치는 **BE 공용 코드 영역**이라 AI 트랙이 단독 수정하면 BE 운영(single-table) 흐름과 어긋남. **GitHub 이슈로 BE 담당자에게 위임**하고, AI는 `ai/scratch/`에서 로컬 사본으로 우회해 e2e 진행.
-
-- 작업 대상: `be/adapters/s3_adapter.py` boto3 전환 + `be/scripts/crawl_all.py:35` `TABLE_PREFIX` 적용
-- 처리: 단일 GitHub 이슈 [#23](https://github.com/BORB-CHOI/clinic-focus/issues/23) 발행 완료 (#13·#18과 직교 명시)
-- AI 트랙은 Step 6-3a로 우회 (아래)
-
-**Step 6-3a. AI 트랙 e2e 우회 — `ai/scratch/`** 🚧
-
-> `ai/scratch/`는 e2e 검증 끝나면 삭제할 임시 작업 폴더. `.gitignore` 대신 임시 README로 의도 명시(BE PR 머지되면 삭제).
-
-- [ ] `ai/scratch/` 폴더 생성 + `README.md` (목적·삭제 시점·BE 이슈 링크)
-- [ ] `ai/scratch/load_dev_subset.py` — HIRA 강남구 4과목 ~85개 → `HospitalMeta` 변환 → DDB 적재 (Step 6-5 본체를 이 폴더로)
-- [ ] `ai/scratch/crawl_all_ai.py` — `be/scripts/crawl_all.py` 로컬 사본, `dynamodb.Table(f"{TABLE_PREFIX}Hospitals")` 로 prefix 적용. BE 본체는 안 건드림
-- [ ] `S3Adapter`는 현 로컬 FS 버전 그대로 사용 (`CRAWL_DATA_DIR=/home/ec2-user/clinic-focus/data/crawl`). 같은 EC2 프로세스라 e2e 검증엔 충분 — S3 boto3 전환은 BE 이슈 머지 후 폴드인
-
-**Step 6-4. `be/data/crawl_results/` 28개 → S3 마이그레이션** ❌ 폐기 (2026-05-26)
-
-> 결정 (2026-05-26, 사용자): 28개는 BE 계정 ykiho 기반이라 AI 계정 데이터와 어차피 매핑 안 됨. **버리고 85개로 처음부터 시작**.
-
-- 28개 파일은 정제 검증 끝나면 `.gitignore` + 삭제 (issue #13 본문의 부수 요청 그대로)
-- 마이그레이션 스크립트 불필요
-
-**Step 6-5. HIRA 강남구 4과목 ~85개 적재** ⏳ → Step 6-3a로 통합
-
-> Step 6-3a `load_dev_subset.py` 작업 항목 참조. (별도 Step 유지 안 함 — 동일 작업)
-
-- 진료과목 코드 (HIRA dgsbjtCd): 피부과 / 정형외과 / 이비인후과 / 안과 4종 + 강남구 시군구 코드(`110001`)
-- HIRA `getHospBasisList` → 강남구 전체 조회 → 자체 필터: 진료과목별 ~22개씩 = 88개 (dedupe 후 결과 ~85±5, `ykiho` 기준)
-- 통계 출력: 과목별 카운트 / URL 보유율 / 좌표 누락률 → P0.5 검증 기준선
-
-**Step 6-6. 강남구 미니 크롤링** ✅ 완료 (2026-05-26)
-
-- [x] `ai/scratch/crawl_all_ai.py` 실행 (Step 6-3a 사본). DDB scan → URL 있는 병원만 → 자체 사이트 크롤링 → 로컬 FS(`CRAWL_DATA_DIR`) 적재
-- [x] 실제 소요: ~5분 (URL 보유 25개, 평균 12초/병원)
-- [x] **결과 (2026-05-26 17:35 KST)**:
-  - 전체 88개 / URL 보유 25개 / 크롤링 대상 25개
-  - ✅ 성공: 14개 (56.0%) — 600KB JSON
-  - ⚠️ JS 렌더링 필요: 11개 (SPA·동적 사이트)
-  - ❌ 실패: 0개
-  - 기준선(60%) 살짝 미달이나 후속 알고리즘 진입엔 충분 (14개로 분류·설명 생성·KB ingest 검증 가능)
-- [x] **P0.5 검증** — URL 없는 63개는 자동 스킵, 자체 사이트 크롤링 실패한 병원은 `_empty_crawl_data` 로 빈 CrawlData 적재 (현 `crawler.py:60` 이미 처리)
-
-**Step 6-7. AI 분류·설명 14개 일괄 (`ai/scratch/classify_all.py`)** ✅ 완료 (2026-05-26)
-
-> 발견 — 강사 계정 Bedrock 정책 한계: Claude 4 패밀리는 inference profile 필수인데 us-east-2/us-west-2 라우팅이 explicit deny 됨. **텍스트 LLM 도 개인 계정 ap-northeast-2 으로 통합** (Haiku 4.5 Global profile 동작 확인, `ai/core/aws_clients.py` 수정). 시각 모델(Sonnet 4.6)은 개인 계정 콘솔 AWS Marketplace 구독 미완료라 Vision 시그널 자동 fallback.
-
-- [x] `classify_hospital` + `generate_description` 14/14 통과 (591초, 병원당 평균 42초)
-- [x] DDB 적재: Classifications 14 + HospitalDescriptions 14
-- [x] `describe.py` 에 마크다운 코드블록(```json ... ```) 자동 벗기기 추가 (Haiku 4.5 가 종종 감싸서 응답)
-- [x] BE 위임: `be/scripts/_utils.load_env` 인라인 주석 미처리 버그 → 이슈 [#24](https://github.com/BORB-CHOI/clinic-focus/issues/24)
-- [x] 미해결 — 신뢰도 로직 약점 2건 (`ai/scratch/run-log-2026-05-26.md` 참조). `primary_focus=[]` + `confidence=100` 케이스 (강남우태하피부과·개포센트럴이비인후과)
-
-**Step 6-8. KB DataSource S3 ingest 14개 (`ai/scratch/kb_ingest.py`)** ✅ 완료 (2026-05-26)
-
-> 실측으로 KB metadata 파일 포맷 확정 — `metadataAttributes` 는 **단순 dict** (List 아님). 빈 리스트 거절. 자세한 건 [`docs/API-BE-AI.md` `ingest_hospital` 섹션](../../docs/API-BE-AI.md) 참조.
-
-- [x] `clinic-focus/prod/{hospital_id}.txt` + `{hospital_id}.txt.metadata.json` 14쌍 업로드 (`kmuproj-02-vector` 버킷)
-- [x] `StartIngestionJob` 호출 → 두 차례 시행착오 (List-form 형식 거절 → dict 형식·빈 primary_focus 거절) 후 `numberOfDocumentsFailed: 0` 통과
-- [x] `team_id="clinic-focus"` 메타 필수 (02팀과 KB 공유 — Retrieve 필터로 격리)
-
-**Step 6-9. 자연어 검색 e2e (`ai/scratch/retrieve_test.py`)** ✅ 완료 (2026-05-26)
-
-- [x] `bedrock-agent-runtime:Retrieve` 호출 (LLM 0건 — Titan 임베딩만)
-- [x] `vectorSearchConfiguration.filter` 로 `team_id=clinic-focus` 격리
-- [x] 4개 쿼리 검증:
-  - `"여드름 잘 보는 피부과"` → 눈피부과의원/강남고운세상피부과의원 (피부과 우선)
-  - `"코골이 비염 수술"` → 하나이비인후과병원 (코·수면호흡, 알레르기·비염)
-  - `"백내장 라식 수술"` → 강남아이메디안과의원 (라식·라섹, 백내장)
-  - `"강남 보톡스 필러"` → 강남고운세상피부과의원 (본문에 "보톡스/필러" 명시한 곳을 정확히 잡음)
-- [x] 의미 거리 자연어 매칭 동작 확인 — `"코골이" ≈ "수면호흡"`, `"보톡스" ≈ "미용 시술"`
+## 3. 마일스톤 (~3주)
+
+| 주 | AI | BE | FE |
+|---|---|---|---|
+| 1 | scratch → 본체 (`ingest_hospital`/`retrieve_hospital`) | 이슈 #23/#24 머지 + API 4개 skeleton | 검색 결과 페이지 API 연결 |
+| 2 | `extract_services_and_doctors`·`find_related_hospitals` 실측 + 신뢰도 약점 수정 | API 4개 본체 + DDB 적재 로직 + `ChangeHistory` INSERT | 상세 페이지 9영역 |
+| 3 | 시그널 보강 (Vision Marketplace + 이슈 #18 머지 후 블로그/후기) + `recompute_confidence` | 이슈 #13 정제·hash diff | 피드백 UI + 변경 이력 + 의료법 검수 |
 
 ---
 
-## be/data/crawl_results 처리
+## 4. AI 트랙 AWS 워크북 (개인 진행 기록)
 
-> 28개 크롤링 결과 파일 (성북구 요양/대학병원 위주). AI 트랙이 정제 효과 검증용으로 사용 중.
+> 재현 가이드는 [`../setup/aws-onboarding.md`](../setup/aws-onboarding.md). 이 섹션은 최비성 개인 진행 체크리스트.
 
-- [ ] 김경재 양해 후 `feat/be/clean-noise` 완료 시점에 정제 효과 검증 끝나면 `.gitignore`에 `be/data/crawl_results/` 추가하고 삭제
+| Step | 내용 | 상태 |
+|---|---|---|
+| 0 | VSCode Remote-SSH → EC2 접속 | ✅ |
+| 1 | 지원 계정 자격증명·Bedrock 모델 가용성 (Titan v2 / Haiku / Nova / KB `GTBJ6HLFDK`) | ✅ |
+| 2 | Titan v2 임베딩 hello-world (1024 dim, 비트 단위 재현성) | ✅ |
+| 3 | KB Retrieve 왕복 — DataSource S3 ingest 권한 | ✅ 2026-05-25 강사 권한 부여 후 통과 |
+| 4 | DataSource S3 파일 포맷 + metadata 스키마 (`team_id` 필수, dict 형식, 빈 list 거절) | ✅ |
+| 5 | 개인 계정 Sonnet 4.6 Vision (서울, Global cross-region, 3-ARN IAM) | ✅ Marketplace 구독은 미완료로 fallback |
+| 6 | DDB 7테이블 수동 생성 + S3 버킷 생성 + 88개 HIRA 적재 + 14개 크롤 + 14개 분류·설명 + KB ingest + 자연어 검색 4쿼리 | ✅ PR [#25](https://github.com/BORB-CHOI/clinic-focus/pull/25) |
+
+상세 진행 기록·실측 응답은 [`../setup/aws-onboarding.md`](../setup/aws-onboarding.md) Step 1~6, [`ai/scratch/run-log-2026-05-26.md`](../../ai/scratch/run-log-2026-05-26.md) 참조.
 
 ---
 
-## 완료된 작업
+## 5. 완료된 PR (최근순)
 
-### PR #9 — `feat/kiro-compat` (머지 완료)
+| PR | 제목 |
+|---|---|
+| [#25](https://github.com/BORB-CHOI/clinic-focus/pull/25) | feat(ai): scratch/ 우회로 dev e2e 검증 — HIRA → 분류 → KB → 자연어 검색 |
+| [#22](https://github.com/BORB-CHOI/clinic-focus/pull/22) | docs: DDB 선택 근거 + 7-table ERD 박기 |
+| [#21](https://github.com/BORB-CHOI/clinic-focus/pull/21) | feat: URL 보강 크롤링 파이프라인 (Playwright + 쿼리 다변화) |
+| [#20](https://github.com/BORB-CHOI/clinic-focus/pull/20) | docs(env): `AI_AWS_SESSION_TOKEN`·`CRAWL_DATA_DIR` 코멘트 명확화 |
+| [#19](https://github.com/BORB-CHOI/clinic-focus/pull/19) | docs(ai): dev 계정 e2e Step 6 추가 + DDB 콘솔 수동 생성 절차 |
+| [#17](https://github.com/BORB-CHOI/clinic-focus/pull/17) | docs(be): BE AWS 연결 작업 큐 + 의존성 매트릭스 |
+| [#16](https://github.com/BORB-CHOI/clinic-focus/pull/16) | docs(ai): AWS 온보딩 Step 2·5 완료 + Vision Sonnet 4.6 전환 |
+| [#15](https://github.com/BORB-CHOI/clinic-focus/pull/15) | docs(ai): 벡터 검색 KB 경유 전환 + AWS 온보딩 가이드 |
+| [#14](https://github.com/BORB-CHOI/clinic-focus/pull/14) | feat(fe): FE 디자인 — 검색·상세·지도 화면 골격 |
+| [#12](https://github.com/BORB-CHOI/clinic-focus/pull/12) | docs(ai): AI 트랙 전략 재편 + EC2/VSCode Remote-SSH 개발환경 확정 |
+| #11 | feat(fe): 지도 검색 페이지 카카오맵 + 신뢰도 색 마커 |
+| #9 | feat: Kiro 컨텍스트 공유 (`.kiro/steering/`) + docs/ 위치 통일 |
+| #8 | feat(be): uvicorn EC2 진입점 (`be/main.py`) |
+| #6 | feat(be): EC2 셋업 — `S3Adapter` 로컬 FS, `kakao_adapter`, systemd, FastAPI 응답 포맷 |
 
-- [x] `.kiro/steering/` 4개 파일 생성 (`inclusion: always`)
-- [x] `docs/` 중립 위치로 4대 문서 이동 (`overview`, `dev-roadmap`, `API-FE-BE`, `API-BE-AI`)
-- [x] 참조 경로 15개 파일 일괄 업데이트
+---
 
-### PR #8 — `feat/be/mangum-removal` (머지 완료)
+## 6. 운영 메모
 
-- [x] `be/main.py` uvicorn 진입점 생성 (Mangum은 PR #6에서 이미 제거됨)
+### 계정 분리 (2026-05-25 확정)
+BE(`kmuproj-02`)와 AI(`kmuproj-10`)가 각자 DynamoDB·S3 따로 운영. 데이터 공유 없음. 발표 정본은 **BE 계정 풀커버**, AI 계정 미니 표본은 개발·튜닝용.
 
-### PR #7 — `chore/task-docs` (머지 완료)
+### KB 공유 운영 규약 (강사 정책)
+KB `kmuproj-team-03`(ID `GTBJ6HLFDK`) DataSource S3 `kmuproj-02-vector`는 02·10·11팀 공유.
 
-- [x] `docs/plans/task-queue.md` 작업 큐 문서 신규
-- [x] 기존 `docs/superpowers/plans/` 삭제 (통합)
+- **Prefix 분리 필수** — `clinic-focus/prod/`, `clinic-focus/probe/`
+- **Delete 운영 코드에서 호출 금지** — soft-delete(`metadata.status="closed"`)로 우회
+- **`team_id="clinic-focus"` 메타 필수** — Retrieve 필터로 격리
 
-### PR #6 — `feature/be/ec2-setup` (머지 완료)
+### Bedrock 모델 라우팅 (2026-05-26 확정)
+- 텍스트 LLM (Haiku 4.5) → **개인 계정 `ap-northeast-2`** (지원 계정은 us-east-2/us-west-2 inference profile 라우팅이 explicit deny)
+- Vision (Sonnet 4.6) → **개인 계정 `ap-northeast-2`** (Global cross-region inference profile)
+- Titan Embed v2 → **지원 계정 `us-east-1`** (KB가 자동 호출)
 
-- [x] `be/api/search.py` — 파라미터 에러 422, 자연어 검색 note 반환
-- [x] `.env.example` — 전체 버전 복원 + `KAKAO_REST_API_KEY` 추가
-- [x] `be/adapters/dynamo_adapter.py` — float→Decimal, sigungu denormalize, 리전 us-east-1
-- [x] `be/api/feedback.py` — 201/409, 응답 포맷 통일
-- [x] `be/api/hospital.py`, `be/api/search.py` — `{"data": ...}` 포맷 통일
-- [x] `ai/pipeline/classify.py`, `extract.py` — `public_data=None` null 가드
-- [x] `shared/models.py` — `public_data: PublicData | None = None`
-- [x] `be/adapters/kakao_adapter.py`, `naver_map_adapter.py` 신규
-- [x] `deploy/` — systemd 서비스·셋업 스크립트·README
+자세한 건 [`../../CLAUDE.md`](../../CLAUDE.md) "AWS 계정·인프라 구조" 섹션.
 
-### 기타 (main 반영됨)
+### `be/data/crawl_results/` 28개 처리
+BE 계정 ykiho 기반이라 AI 계정 데이터와 매핑 불가. **버리고 새로 시작** — 이슈 #13 정제 검증 끝나면 `.gitignore` + 삭제 (2026-05-26 결정).
 
-- [x] GitHub 이슈 #1·#2·#3 생성
-- [x] `be/scripts/setup_dynamodb.py`, `ai/scripts/setup_vectors.py` 인프라 초기화 스크립트
-- [x] `ai/core/aws_clients.py` 신규 (단, 2026-05-24 결정으로 재설계 필요 — PR #1에서 처리)
+### main 브랜치 직접 수정 금지
+`.claude/settings.json` PreToolUse hook이 main에서 Edit/Write 차단. `.git/hooks/pre-commit`이 main 직접 커밋 차단. 모든 작업은 `feat/` / `fix/` / `refactor/` / `docs/` 접두사 feature 브랜치.

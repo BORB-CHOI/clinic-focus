@@ -71,6 +71,8 @@
 
 > 검색 카드는 `one_line_summary` 한 줄을 노출하고, 상세 페이지에서는 별도의 `ai_description` (다단락 자연어 설명) 필드를 사용한다 (아래 상세 API 참조).
 
+> ⚠️ 현 구현 상태 (2026-05-26): `shared/models.py`의 `HospitalMeta`·`Classification`·`HospitalDescription` 어느 곳에도 `thumbnail_url` 필드가 정의돼 있지 않다. `be/api/search.py`/`be/api/hospital.py` 응답에도 `thumbnail_url` 키 자체가 누락. `one_line_summary`는 `HospitalDescription`에만 있어 description 미생성 9990개에서는 `""` 빈 문자열로 떨어진다 (명세는 `string` non-null 가정). 상세 페이지 `RelatedHospital`의 `thumbnail_url`도 마찬가지로 모델에 없음. V2 sprint에서 모델·어댑터·응답 동시 정렬 예정.
+
 ### `Confidence`
 ```typescript
 {
@@ -160,6 +162,18 @@
   source_url: string | null;
 }
 ```
+
+> ⚠️ 현 구현 상태 (2026-05-26): 상세 영역 타입 다수가 `shared/models.py`와 크게 어긋난다.
+> - `Service`: 명세 `source_signals: string[]` ↔ 모델 `source: Literal[...]` (단일값).
+> - `ExcludedService`: 명세 `{name, reason, alternative_hospital_ids[]}` ↔ 모델은 `{name, reason}`만. `alternative_hospital_ids` 없어서 ⑧ 영역 링크 연결 불가.
+> - `Equipment`: 명세 `{name, available, source, source_url}` ↔ 모델 `{name, source, confidence}`. `available`/`source_url`이 `confidence`로 치환됨.
+> - `PriceItem`: 명세 `{service_name, price_range, source_url, last_seen}` ↔ 모델 `{service_name, price_text}`만.
+> - `Doctor`: 명세 `{name, position, specialty_certifications, sub_specialty, career, primary_focus, source_url}` ↔ 모델 `{name, specialty, qualifications, sub_specialty}`. `position`/`career`/`primary_focus`/`source_url` 누락, `specialty_certifications`가 `qualifications`로 이름 다름.
+> - `Location`: 명세 `dong` 필드 ↔ 모델에 없음.
+> - `OperatingHours`: 명세는 구조화 객체(`weekday: {open,close,lunch_start,lunch_end}` + `night_clinic`/`holiday_clinic`) ↔ 모델은 `weekday: str` 단순 텍스트, `night/holiday_clinic` 없음.
+> - `Contact`: 명세 `{phone, homepage_url, parking_available, appointment_methods}` ↔ 모델 `{phone, website_url, reservation_url}`. `parking`은 별도로 `HospitalMeta.parking: bool | None`에 분리.
+>
+> V2 sprint에서 `shared/models.py` 갱신 → BE 응답 매핑 갱신 → FE OpenAPI 타입 재생성 순으로 정렬 예정.
 
 #### `OperatingHours` — 운영시간
 ```typescript
@@ -301,6 +315,8 @@ GET /api/search
   }
 }
 ```
+
+> ⚠️ 현 구현 상태 (2026-05-26): `be/api/search.py`는 자연어 검색이 아직 AI 모듈에 연결되지 않았다. `q`만 있고 `sigungu`가 없으면 200으로 빈 배열 + `meta.note: "자연어 검색은 AI 모듈 연동 후 지원됩니다..."` 반환. 실 검색 경로는 `sigungu` 기반 DDB GSI 조회뿐이고, 그 응답도 `standard_specialty: ""`, `primary_focus: []`, `confidence: null`, `one_line_summary: ""` 같은 분류 전 placeholder로 채워진다 (`thumbnail_url`은 키 자체 누락). 또한 파라미터 검증 실패는 명세상 400이지만 코드는 422로 응답한다. V2 sprint에서 `retrieve_hospital` 연동 + 분류·설명 join + 에러 status 정렬 예정.
 
 ---
 
@@ -538,6 +554,15 @@ GET /api/hospitals/{hospital_id}
 }
 ```
 
+> ⚠️ 현 구현 상태 (2026-05-26): `be/api/hospital.py`의 응답은 명세 구조를 따르지만 다음이 어긋난다.
+> - `detailed_signals` 4 sub-block 필드명이 모델과 명세 사이에서 전부 다름. `shared/models.py`의 `SelfClaimSignal` = `{keywords, primary_focus, spam_score}` ↔ 명세 = `{extracted_keywords, source_text, source_url}`. `VisionSignal` = `{detected_devices, image_categories, total_images_analyzed}` ↔ 명세 = `{detected_devices, image_distribution, sample_image_urls}`. `BlogSignal`/`ReviewSignal`도 `keyword_frequency`/`primary_topics` ↔ `top_topics`/`top_keywords`로 키가 어긋남. FE가 OpenAPI 타입을 새로 뽑으면 위 4 sub-block은 모델 쪽 키로 떨어진다.
+> - `vision`은 `VisionSignal | None`이라 9990개 경우 None 가능 (명세 예시는 항상 객체 가정).
+> - `ai_description == null` 분기 자체는 코드(`description.model_dump() if description else None`)와 정합.
+> - `recent_changes` 항목은 모델 `ClassificationChange`에 `classifier_version`(필수) + `hospital_id`가 포함돼 응답에 같이 떨어지는데 명세 예시·타입에는 없음.
+> - `metadata.last_updated_at`은 `classification.classified_at`을 그대로 쓰며, classification 없으면 `null`. `data_sources`는 현재 `["public_registry"]` 하드코딩. `data_completeness`는 9개 영역 채움 비율을 단순 가중치로 계산 (`be/api/hospital.py:_calc_completeness`).
+>
+> V2 sprint에서 4 시그널 모델 필드명 정렬 + `ClassificationChange` 응답 trim + `metadata.data_sources` 동적 산출 예정.
+
 ---
 
 ### 3. 분류 변경 이력
@@ -569,6 +594,8 @@ GET /api/hospitals/{hospital_id}/history
   ]
 }
 ```
+
+> ⚠️ 현 구현 상태 (2026-05-26): `be/api/history.py`는 `load_recent_changes` 결과를 `model_dump()` 그대로 반환하므로 응답 항목에 모델 필수 필드 `classifier_version`과 `hospital_id`가 같이 포함된다 (명세 예시엔 없음). DDB SK는 `HISTORY#{changed_at}` 포맷이라 ISO 8601 정렬은 정합. `limit` 쿼리 파라미터(기본 10, 최대 50)는 명세에 명시돼 있지 않음. V2 sprint에서 명세에 `limit` 파라미터 추가 + 응답 항목에서 내부 필드 trim 정렬 예정.
 
 ---
 
@@ -620,6 +647,8 @@ POST /api/feedback
   }
 }
 ```
+
+> ⚠️ 현 구현 상태 (2026-05-26): `be/api/feedback.py`는 명세와 가장 정합한 엔드포인트. `db.check_duplicate_feedback(hospital_id, device_id)` (`be/adapters/dynamo_adapter.py:197`)로 중복 방지 동작하고 409 응답도 명세 그대로. 단 `verdict`가 Pydantic 요청 모델에서 `Literal["agree","disagree"]`가 아닌 `str`로 받고 있어 (`FeedbackRequest`) 잘못된 값이 들어와도 422가 아닌 500에 가까운 경로로 빠질 수 있음. 또한 임계치 초과 시 `recompute_confidence` 호출은 코드 주석 처리(AI 모듈 연동 대기). V2 sprint에서 요청 모델에 Literal 타입 + AI `recompute_confidence` 연결 예정.
 
 ---
 
@@ -684,6 +713,8 @@ app.add_middleware(
     allow_headers=["Content-Type"],
 )
 ```
+
+> ⚠️ 현 구현 상태 (2026-05-26): `be/handlers/api.py`는 `allow_origins=["*"]`, `allow_methods=["*"]`, `allow_headers=["*"]`로 와일드카드 전개라 평가 PoC엔 OK지만 명세와는 어긋난다. V2 sprint에서 CloudFront 도메인 확정 후 origin/method allowlist 좁힐 예정.
 
 ---
 
