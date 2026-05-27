@@ -9,12 +9,13 @@ import os
 import sys
 import time
 
+sys.stdout.reconfigure(line_buffering=True)
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), ".env"))
 
-import boto3
 import httpx
 
 from be.adapters.s3_adapter import S3Adapter
@@ -32,34 +33,29 @@ async def main():
     print("전체 크롤링 — 홈페이지 URL 있는 병원")
     print("=" * 60)
 
-    # DynamoDB에서 URL 있는 병원 조회
-    dynamodb = boto3.resource("dynamodb", region_name=os.environ.get("AWS_REGION", "us-east-1"))
-    table = dynamodb.Table("Hospitals")
-
-    all_items = []
-    resp = table.scan()
-    all_items.extend(resp.get("Items", []))
-    while "LastEvaluatedKey" in resp:
-        resp = table.scan(ExclusiveStartKey=resp["LastEvaluatedKey"])
-        all_items.extend(resp.get("Items", []))
+    # DynamoDB에서 URL 있는 병원 조회 (DynamoAdapter 사용)
+    from be.adapters.dynamo_adapter import DynamoAdapter
+    db = DynamoAdapter()
+    print("\nDynamoDB에서 강남구 병원 조회 중...")
+    hospitals = db.list_hospitals_by_sigungu("강남구")
 
     # URL 있는 병원 필터
     targets = []
-    for item in all_items:
-        contact = item.get("contact", {})
-        url = contact.get("website_url")
-        if url and (url.startswith("http://") or url.startswith("https://")):
+    for h in hospitals:
+        url = h.contact.website_url
+        if url and url.startswith("http"):
             targets.append({
-                "hospital_id": item["hospital_id"],
-                "name": item.get("name", ""),
+                "hospital_id": h.hospital_id,
+                "name": h.name,
                 "url": url,
             })
 
-    print(f"  전체 병원: {len(all_items)}개")
+    print(f"  전체 병원: {len(hospitals)}개")
     print(f"  크롤링 대상 (URL 있음): {len(targets)}개")
     print("-" * 60)
 
     results = {"static_success": 0, "js_render_success": 0, "failed": 0}
+    start_time = time.time()
 
     async with BrowserManager() as bm:
         async with httpx.AsyncClient() as client:
@@ -117,6 +113,21 @@ async def main():
 
                 # 예의상 딜레이
                 await asyncio.sleep(0.5)
+
+                # 50개마다 진행률 + ETA 출력
+                if i % 50 == 0:
+                    elapsed = time.time() - start_time
+                    rate = i / elapsed if elapsed > 0 else 0
+                    remaining = len(targets) - i
+                    eta_sec = remaining / rate if rate > 0 else 0
+                    eta_min = int(eta_sec // 60)
+                    eta_s = int(eta_sec % 60)
+                    success = results["static_success"] + results["js_render_success"]
+                    print(
+                        f"\n  📊 [{i}/{len(targets)}] {i/len(targets)*100:.0f}% | "
+                        f"성공: {success} | 실패: {results['failed']} | "
+                        f"속도: {rate:.2f}건/초 | ETA: {eta_min}분 {eta_s}초\n"
+                    )
 
     # 크롤링 리포트 출력
     total_processed = results["static_success"] + results["js_render_success"] + results["failed"]
