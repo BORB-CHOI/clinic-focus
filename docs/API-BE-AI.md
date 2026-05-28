@@ -278,7 +278,7 @@ PoC에서는 **3트랙으로 분기**한다 (자세한 건 `../ai/CLAUDE.md` "AI
 
 #### 현 구현 약점 (V2에서 수정 예정)
 
-2026-05-26 강남구 14개 병원 e2e 검증(`ai/scratch/run-log-2026-05-26.md`)에서 확인된 신뢰도 계산 버그.
+2026-05-26 강남구 14개 병원 e2e 검증(PR [#25](https://github.com/BORB-CHOI/clinic-focus/pull/25), scratch 우회로 — 제거됨)에서 확인된 신뢰도 계산 버그. 룰 단독 경로는 이후 `_cap_rule_only_confidence`(70 상한) + 빈 페이지 `InsufficientDataError` 로 일부 완화됨 — 아래 항목 전수 적용 여부는 재검증 필요.
 
 - **`5. 강남우태하피부과의원`** — `primary_focus=[]`(빈 리스트)임에도 `confidence.score=100` 출력. 자칭 컨셉을 추출하지 못한 데이터 부족 상황인데 신뢰도가 최고값으로 잡힘.
 - **`12. 개포센트럴이비인후과의원`** — 병원 이름에 "이비인후과"가 명시돼 있음에도 피부과로 오분류, `primary_focus=[]`, `confidence.score=100`. 크롤 성공 1페이지·이미지 0개인 데이터 부족 케이스임에도 confidence가 낮아지지 않음.
@@ -556,7 +556,7 @@ ingest_hospital(hospital_id, signal_chunks, metadata, trigger_ingestion=False)
 
 #### 실측 함정 (2026-05-26 검증)
 
-`ai/scratch/kb_ingest.py` 14개 병원 ingest + `numberOfDocumentsFailed: 0` 통과로 확인된 사항.
+14개 병원 ingest + `numberOfDocumentsFailed: 0` 통과(PR [#25](https://github.com/BORB-CHOI/clinic-focus/pull/25) scratch 우회로 — 제거됨, 본체는 `ai/search/kb_store.py`)로 확인된 사항.
 
 1. **`metadataAttributes` 는 단순 dict, list-form 거절** — AWS 문서에 list-form 예시(`[{"key":..., "value":{"type":"STRING","stringValue":...}}]`)가 일부 있지만, DataSource 메타 파일에 그 형식을 쓰면 `"metadata file is not in valid JSON format"`으로 거절됨. 메타 파일은 반드시 `{"metadataAttributes": {"key": "value", ...}}` 단순 dict. list-form은 KB Retrieve filter expression 전용 문법임.
 2. **빈 list·None 값 거절** — `"primary_focus": []`, `"lat": null` 같이 빈 리스트나 null 값이 들어가면 `"invalid metadata attributes"`로 거절됨. 해당 키는 **dict에서 아예 제외**해야 함. `primary_focus`가 비어있으면 키 생략, `lat`/`lng`가 None이면 키 생략.
@@ -651,7 +651,7 @@ filter = {
 
 #### 실측 함정 (2026-05-26 검증)
 
-`ai/scratch/retrieve_test.py` 하드코딩 4쿼리 + `search.sh` 자연어 검색으로 확인된 사항.
+하드코딩 4쿼리 + 자연어 검색(PR [#25](https://github.com/BORB-CHOI/clinic-focus/pull/25) scratch 우회로 — 제거됨, 본체는 `ai/search/kb_store.py` `retrieve_hospital`)으로 확인된 사항.
 
 1. **`team_id` 필터 필수** — KB DataSource를 02팀과 공유하므로, 필터 없이 Retrieve하면 02팀이 ingest한 문서도 결과에 섞임. 모든 Retrieve 호출에 아래 필터를 기본 적용할 것:
 

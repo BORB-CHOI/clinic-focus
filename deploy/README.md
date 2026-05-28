@@ -71,7 +71,7 @@ ssh -p 443 -i "키파일.pem" -L 8000:localhost:8000 ec2-user@3.95.24.182
 `be/.env` 에 적재. 최소 필수:
 
 - `AWS_REGION=us-east-1` (지원 계정 자원 — DDB·S3·Titan·KB)
-- `TABLE_PREFIX=kmuproj-02-clinic-` (BE 계정) 또는 `kmuproj-10-clinic-` (AI 계정)
+- `DYNAMO_TABLE=kmuproj-02-team3-backend` (BE 계정) 또는 `kmuproj-10-clinic-Main` (AI 계정) — single-table
 - `S3_CRAWL_BUCKET=kmuproj-02-clinic-focus-crawl` (BE) 또는 `kmuproj-10-clinic-focus-crawl` (AI)
 - `KB_ID=GTBJ6HLFDK` · `KB_DATA_SOURCE_ID=PLC6QYALDU`
 - `HIRA_API_KEY=...` (공공데이터포털 발급)

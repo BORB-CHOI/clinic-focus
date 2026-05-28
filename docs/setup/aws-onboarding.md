@@ -409,7 +409,7 @@ PY
 
 **2026-05-25 강사 권한 부여**: `kmuproj-02-vector` 버킷에 `kmuproj-02`·`kmuproj-10`·`kmuproj-11` Role 권한 부여 (Put/Get/List/Delete). 단 *"누가 올렸는지 추적 불가"* + *"Delete 권한 사고 주의"*. → prefix 분리(`clinic-focus/prod/`, `clinic-focus/probe/`) + 운영 코드 Delete 호출 금지 + metadata `team_id` 필수 규약 박음.
 
-**2026-05-26 통과 사실**: 14개 병원 본문 + metadata.json 14쌍 업로드 → `StartIngestionJob` `numberOfDocumentsFailed: 0` → 자연어 검색 4쿼리 통과. 재현 코드는 [`ai/scratch/kb_ingest.py`](../../ai/scratch/kb_ingest.py) · [`ai/scratch/retrieve_test.py`](../../ai/scratch/retrieve_test.py) — 본체 마이그레이션은 [V2 sprint](../plans/task-queue.md#2-v2-sprint--트랙별-잔여-작업) AI 트랙 항목 A.
+**2026-05-26 통과 사실**: 14개 병원 본문 + metadata.json 14쌍 업로드 → `StartIngestionJob` `numberOfDocumentsFailed: 0` → 자연어 검색 4쿼리 통과 (PR [#25](https://github.com/BORB-CHOI/clinic-focus/pull/25) scratch 우회로 — 제거됨). 본체는 [`ai/search/kb_store.py`](../../ai/search/kb_store.py) `ingest_hospital`·`retrieve_hospital` 로 마이그레이션 완료.
 
 ### 핵심 함정 (실측으로 확인됨, 본체 구현 시 반영 필수)
 
@@ -784,7 +784,7 @@ GSIs: [('sigungu-specialty-index', [...sigungu_specialty:HASH..., confidence_sco
 DYNAMO_TABLE=kmuproj-10-clinic-Main
 ```
 
-(옛 `TABLE_PREFIX` 는 `ai/scratch/` 우회로에서만 잔존. Phase C 본체 마이그레이션과 함께 제거 예정.)
+(옛 `TABLE_PREFIX` 는 `ai/scratch/` 우회로 전용이었고, scratch 제거와 함께 `.env.example` 에서도 삭제됨.)
 
 ### 6-6. 트러블슈팅
 
@@ -839,7 +839,7 @@ put·get·delete 셋 다 성공해야 `S3Adapter` boto3 전환 가능.
 
 여기까지 끝나면 AWS 자원 셋업·dev e2e 검증은 완료. 이후 작업은 **본체 코드 구현**으로 넘어간다:
 
-- AI 트랙 — `ai/scratch/` 7파일을 `ai/` 본체(`ingest_hospital`·`retrieve_hospital`)로 마이그레이션. 가이드는 [`../plans/task-queue.md` §2 AI 트랙 A](../plans/task-queue.md#ai-트랙-최비성)
+- AI 트랙 — ✅ `ai/scratch/` 우회로를 `ai/` 본체(`ingest_hospital`·`retrieve_hospital`·`classify_hospital`)로 마이그레이션 완료. scratch 폴더 제거됨. 상세 잔여 작업은 [`../plans/task-queue.md` §4 Phase A~G](../plans/task-queue.md)
 - BE 트랙 — `s3_adapter` boto3 전환, `crawl_all.py` `TABLE_PREFIX` 적용, FastAPI 4개 엔드포인트 본체. 위임된 이슈는 [#23](https://github.com/BORB-CHOI/clinic-focus/issues/23) · [#24](https://github.com/BORB-CHOI/clinic-focus/issues/24) · [#13](https://github.com/BORB-CHOI/clinic-focus/issues/13) · [#18](https://github.com/BORB-CHOI/clinic-focus/issues/18)
 - FE 트랙 — 9개 영역 컴포넌트, 1-tap 피드백, 분류 변경 이력 UI
 
