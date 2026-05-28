@@ -232,6 +232,27 @@ class DynamoAdapter:
             ExpressionAttributeValues={":url": url},
         )
 
+    def iter_hospitals_with_url(self) -> Iterator[dict]:
+        """website_url(http/https)이 있는 META 병원을 {hospital_id, name, url} 로 yield.
+
+        크롤 대상 선별용. META 만 scan (V2 single-table — 옛 `Table("Hospitals")` 직접
+        scan 대체). 본문은 가져오지 않으므로 RU/s 가볍다.
+        """
+        kwargs: dict[str, Any] = {"FilterExpression": Attr("entity").eq(E_META)}
+        while True:
+            resp = self._table.scan(**kwargs)
+            for item in resp.get("Items", []):
+                url = (item.get("contact") or {}).get("website_url")
+                if isinstance(url, str) and url.startswith(("http://", "https://")):
+                    yield {
+                        "hospital_id": item["hospital_id"],
+                        "name": item.get("name", ""),
+                        "url": url,
+                    }
+            if "LastEvaluatedKey" not in resp:
+                break
+            kwargs["ExclusiveStartKey"] = resp["LastEvaluatedKey"]
+
     # ── Classifications ─────────────────────────────────────────────────────
 
     def save_classification(self, data: Classification) -> None:

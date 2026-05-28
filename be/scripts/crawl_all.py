@@ -14,9 +14,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), ".env"))
 
-import boto3
 import httpx
 
+from be.adapters.dynamo_adapter import DynamoAdapter
 from be.adapters.s3_adapter import S3Adapter
 from be.core.browser_manager import BrowserManager
 from be.core.crawler import crawl_one_hospital
@@ -32,30 +32,10 @@ async def main():
     print("전체 크롤링 — 홈페이지 URL 있는 병원")
     print("=" * 60)
 
-    # DynamoDB에서 URL 있는 병원 조회
-    dynamodb = boto3.resource("dynamodb", region_name=os.environ.get("AWS_REGION", "us-east-1"))
-    table = dynamodb.Table("Hospitals")
+    # DynamoDB(V2 single-table)에서 URL 있는 병원 조회 — DynamoAdapter 경유
+    db = DynamoAdapter()
+    targets = list(db.iter_hospitals_with_url())
 
-    all_items = []
-    resp = table.scan()
-    all_items.extend(resp.get("Items", []))
-    while "LastEvaluatedKey" in resp:
-        resp = table.scan(ExclusiveStartKey=resp["LastEvaluatedKey"])
-        all_items.extend(resp.get("Items", []))
-
-    # URL 있는 병원 필터
-    targets = []
-    for item in all_items:
-        contact = item.get("contact", {})
-        url = contact.get("website_url")
-        if url and (url.startswith("http://") or url.startswith("https://")):
-            targets.append({
-                "hospital_id": item["hospital_id"],
-                "name": item.get("name", ""),
-                "url": url,
-            })
-
-    print(f"  전체 병원: {len(all_items)}개")
     print(f"  크롤링 대상 (URL 있음): {len(targets)}개")
     print("-" * 60)
 
