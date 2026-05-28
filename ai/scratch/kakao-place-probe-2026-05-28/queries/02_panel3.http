@@ -1,0 +1,37 @@
+# 카카오 상세 — `place-api.map.kakao.com/places/panel3/{id}`
+# 단발 GET. 1회 호출에 정보·후기 1페이지·블로그 1페이지·사진 메타·visitor UV 분포 다 회수.
+#
+# 필수: Referer=place.map.kakao.com/{id} + pf=web + Origin=place.map.kakao.com.
+# 헤더 누락 시 406 Not Acceptable.
+
+GET https://place-api.map.kakao.com/places/panel3/{place_id}
+User-Agent: Mozilla/5.0 ...
+Referer: https://place.map.kakao.com/{place_id}
+Origin: https://place.map.kakao.com
+Accept: application/json, text/plain, */*
+pf: web
+
+# 응답 최상위 키 (4건 표본 공통):
+# - summary                  name·address·phone_numbers·homepages·payments·display_info·meta
+# - panel_card_tags          UI 표시 카드 키 (예: TITLE/PHOTO/BIZ/NEWS/AI_MATE/SUMMARY/INFO/EVENT_KEYWORD/PRODUCT/AI_QUESTION/BOOKING/SPECIAL/VISITOR/REVIEW/RANKING/BLOG)
+# - panel_tab_tags           탭 키 (예: PRODUCT/PHOTO/REVIEW/BOOKING/SPECIAL/NEWS/BLOG/RANKING)
+# - photos                   { counts: {total, mystore, vendor, vod, kakaomap_review, food, indoor, outdoor, menu}, photos: [{url, type, photo_id, registered_at, ...}] }
+# - open_hours               { all, headline, week_from_today }
+# - medical                  { emergency_center, fiy_guide_link, hira: { source_url, medical_center_type, doctor_count{total,general,intern,resident,specialist}, subjects[], specialized_field, established_at, open_infos[] } }
+# - visitor                  { day_of_week, max_uv, monday_uv[24], ..., sunday_uv[24], labels[0..23] }  # 시간대별 방문자 UV
+# - place_add_info           { tags[], facilities{is_parking,is_pet,is_fordisabled}, add_info_summaries[], simple_detail_infos[], simple_parking_infos[], full_detail_infos[] }
+# - blog_review              { review_count, current_review_count, last_registered_at, last_review_id, requested_page, requested_page_size, reviews[] }  # 첫 페이지 내장
+# - kakaomap_review          { score_set, strength_description, reviews[], has_next, has_my_review, timeline_score_table, photos? }  # 첫 페이지 내장. 일부 병원은 null
+# - my_store_notice          { is_available_booking, notice_count, status, mystore_intro?, notices?, main_photo_url? }
+# - trend_rank               { show_ranking_card }
+# - ai_content_warning       { is_home_tab_display_enabled, is_info_tab_display_enabled }
+# - find_way                 길찾기 메타
+# - reward                   적립 메타
+# - restrict                 노출 제한 플래그
+#
+# 발견:
+#   1) 정보·후기 1페이지·블로그 1페이지 동시 회수 — 1만 풀커버 시 호출 횟수 1/3 절약
+#   2) place_add_info.tags = **자칭 키워드 raw**. 예: 자생한방 "도수치료/추나요법/근육통/회전근개손상..." 18개. primary_focus 입력 직접 시드
+#   3) medical.hira = HIRA 공공 데이터 정제본 (의사 수·진료과목·전문분야). 우리가 HIRA 직접 호출하던 흐름 대체 가능
+#   4) photos.counts = 카카오 자체 사진 분류 (indoor/outdoor/menu/vod/kakaomap_review). 박스 2 Vision 시그널
+#   5) visitor.{day_of_week, max_uv, monday_uv...} = 시간대별 방문자 UV (UX 정보)

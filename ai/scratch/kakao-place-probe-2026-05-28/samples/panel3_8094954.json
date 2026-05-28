@@ -1,0 +1,1417 @@
+{
+  "medical": {
+    "emergency_center": {
+      "source_url": "http://m.e-gen.or.kr",
+      "medical_center_type": "한의원",
+      "open_infos": [
+        {
+          "title": "월~금",
+          "value": "08:30~18:00"
+        },
+        {
+          "title": "토",
+          "value": "08:30~13:00"
+        }
+      ],
+      "emergency_type": "응급의료기관 이외",
+      "emergency_available_yn": "N",
+      "subject_names": "사상체질과/침구과/한방내과/한방부인과/한방소아과/한방신경정신과/한방안이비인후피부과/한방재활의학과"
+    },
+    "hira": {
+      "source_url": "https://www.hira.or.kr/main.do",
+      "medical_center_type": "한의원",
+      "established_at": "2018-10-01",
+      "doctor_count": {
+        "total": 7,
+        "general": 2,
+        "intern": 0,
+        "resident": 0,
+        "specialist": 5
+      },
+      "subjects": [
+        {
+          "subject_name": "한방내과",
+          "doctor_count": 2,
+          "selected_doctor_count": 0
+        },
+        {
+          "subject_name": "한방부인과",
+          "doctor_count": 2,
+          "selected_doctor_count": 0
+        },
+        {
+          "subject_name": "한방안·이비인후·피부과",
+          "doctor_count": 1,
+          "selected_doctor_count": 0
+        },
+        {
+          "subject_name": "한방소아과",
+          "doctor_count": 0,
+          "selected_doctor_count": 0
+        },
+        {
+          "subject_name": "한방신경정신과",
+          "doctor_count": 0,
+          "selected_doctor_count": 0
+        },
+        {
+          "subject_name": "침구과",
+          "doctor_count": 0,
+          "selected_doctor_count": 0
+        },
+        {
+          "subject_name": "한방재활의학과",
+          "doctor_count": 0,
+          "selected_doctor_count": 0
+        },
+        {
+          "subject_name": "사상체질과",
+          "doctor_count": 0,
+          "selected_doctor_count": 0
+        }
+      ]
+    },
+    "fiy_guide_link": "https://cs.kakao.com/helps?service=101&category=116&locale=ko&device=1222&articleId=1073192973"
+  },
+  "visitor": {
+    "labels": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ],
+    "weekly_uv_average": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      1367,
+      1738,
+      1887,
+      782,
+      -1,
+      865,
+      908,
+      1036,
+      632,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ],
+    "sunday_uv": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ],
+    "monday_uv": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      1338,
+      1976,
+      1910,
+      699,
+      -1,
+      925,
+      952,
+      805,
+      570,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ],
+    "tuesday_uv": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      1046,
+      1491,
+      2002,
+      724,
+      -1,
+      828,
+      840,
+      969,
+      569,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ],
+    "wednesday_uv": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      1485,
+      1487,
+      1858,
+      842,
+      -1,
+      770,
+      963,
+      1305,
+      519,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ],
+    "thursday_uv": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      1198,
+      1643,
+      1930,
+      704,
+      -1,
+      715,
+      766,
+      904,
+      560,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ],
+    "friday_uv": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      1360,
+      1849,
+      2130,
+      924,
+      -1,
+      1089,
+      1023,
+      1197,
+      945,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ],
+    "saturday_uv": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      1780,
+      1985,
+      1492,
+      801,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ],
+    "max_uv": 2130,
+    "updated_at": "2026-05-28 01:27:52",
+    "day_of_week": "THURSDAY"
+  },
+  "panel_card_tags": [
+    "TITLE",
+    "PHOTO",
+    "BIZ",
+    "NEWS",
+    "AI_MATE",
+    "SUMMARY",
+    "INFO",
+    "EVENT_KEYWORD",
+    "PRODUCT",
+    "AI_QUESTION",
+    "BOOKING",
+    "SPECIAL",
+    "VISITOR",
+    "REVIEW",
+    "RANKING",
+    "BLOG"
+  ],
+  "panel_tab_tags": [
+    "PRODUCT",
+    "PHOTO",
+    "REVIEW",
+    "BOOKING",
+    "SPECIAL",
+    "NEWS",
+    "BLOG",
+    "RANKING"
+  ],
+  "restrict": {
+    "fiy": {
+      "is_restrict": false
+    },
+    "blog": {
+      "is_restrict": false
+    },
+    "review_read": {
+      "is_restrict": false
+    },
+    "photo": {
+      "is_restrict": false
+    },
+    "fiy_add_info": {
+      "is_restrict": false
+    },
+    "ranking": {
+      "is_restrict": false
+    }
+  },
+  "summary": {
+    "meta": {
+      "updated_at": "2024-08-21 11:13:20"
+    },
+    "confirm_id": "8094954",
+    "name": "춘원당한의원",
+    "status": "Y",
+    "category": {
+      "name": "한의원",
+      "id1": "13",
+      "id2": "80",
+      "id3": "991",
+      "name1": "의료,건강",
+      "name2": "병원",
+      "name3": "한의원"
+    },
+    "point": {
+      "lon": 126.99033288362078,
+      "lat": 37.57179022227
+    },
+    "address": {
+      "disp": "서울 종로구 돈화문로9길 26 2,3층 (돈의동)",
+      "jibun": "돈의동 78",
+      "road": "서울 종로구 돈화문로9길 26 2,3층",
+      "base_zone_no": "03139",
+      "road_part": "돈화문로9길 26 2,3층",
+      "jibun_part": "돈의동 78",
+      "address_detail_part": "2,3층"
+    },
+    "road_view": {
+      "pano_id": "1208424936",
+      "pan": 330.0,
+      "tilt": 0.0,
+      "point": {
+        "lon": 126.99040081449684,
+        "lat": 37.57169652431761
+      },
+      "level": 1,
+      "url": "https://map.kakaocdn.net/map_roadview/2026/04/9151655/2_100791_9151655_20260408041647_cube/left_800.jpg"
+    },
+    "regions": [
+      {
+        "depth": 1,
+        "id": "I",
+        "name": "서울",
+        "simple_name": "서울"
+      },
+      {
+        "depth": 2,
+        "id": "I1022",
+        "name": "종로구",
+        "simple_name": "종로구"
+      },
+      {
+        "depth": 3,
+        "id": "I10222000",
+        "name": "돈의동",
+        "simple_name": "돈의동"
+      }
+    ],
+    "homepages": [
+      "http://www.cwd8th.com"
+    ],
+    "related_links": {
+      "primary_links": [
+        {
+          "url": "http://www.cwd8th.com",
+          "display_text": "http://www.cwd8th.com"
+        }
+      ]
+    },
+    "phone_numbers": [
+      {
+        "tel": "02-766-0000"
+      },
+      {
+        "tel": "02-766-6163",
+        "type": "FAX"
+      }
+    ],
+    "payments": [
+      {
+        "img_url": "https://t1.kakaocdn.net/kakaomap_mobile/android/ico_zeropay.png",
+        "image_keyword": "제로페이",
+        "landing_url": "https://www.zeropay.or.kr"
+      }
+    ],
+    "display_info": {
+      "display_name1": "춘원당한의원"
+    }
+  },
+  "my_store_notice": {
+    "status": "READY_TO_REGISTER",
+    "notice_count": 0,
+    "is_available_booking": false
+  },
+  "open_hours": {
+    "headline": {
+      "code": "BEFORE_OPEN",
+      "display_text": "진료 전",
+      "display_text_info": "09:00 진료 시작"
+    },
+    "week_from_today": {
+      "week_periods": [
+        {
+          "days": [
+            {
+              "day_of_the_week_desc": "목(5/28)",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 18:00",
+                "break_times_desc": [
+                  "13:00 ~ 14:30 휴게시간"
+                ]
+              },
+              "is_highlight": true
+            },
+            {
+              "day_of_the_week_desc": "금(5/29)",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 18:00",
+                "break_times_desc": [
+                  "13:00 ~ 14:30 휴게시간"
+                ]
+              },
+              "is_highlight": false
+            },
+            {
+              "day_of_the_week_desc": "토(5/30)",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 12:30"
+              },
+              "is_highlight": false
+            }
+          ]
+        },
+        {
+          "days": [
+            {
+              "day_of_the_week_desc": "일(5/31)",
+              "off_days_desc": "휴무일",
+              "is_highlight": false
+            }
+          ]
+        },
+        {
+          "days": [
+            {
+              "day_of_the_week_desc": "월(6/1)",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 18:00",
+                "break_times_desc": [
+                  "13:00 ~ 14:30 휴게시간"
+                ]
+              },
+              "is_highlight": false
+            },
+            {
+              "day_of_the_week_desc": "화(6/2)",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 18:00",
+                "break_times_desc": [
+                  "13:00 ~ 14:30 휴게시간"
+                ]
+              },
+              "is_highlight": false
+            },
+            {
+              "day_of_the_week_desc": "수(6/3)",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 18:00",
+                "break_times_desc": [
+                  "13:00 ~ 14:30 휴게시간"
+                ]
+              },
+              "is_highlight": false
+            }
+          ]
+        }
+      ]
+    },
+    "all": {
+      "periods": [
+        {
+          "period_title": "기본 영업시간",
+          "days": [
+            {
+              "day_of_the_week": "월",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 18:00",
+                "break_times_desc": [
+                  "13:00 ~ 14:30 휴게시간"
+                ]
+              }
+            },
+            {
+              "day_of_the_week": "화",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 18:00",
+                "break_times_desc": [
+                  "13:00 ~ 14:30 휴게시간"
+                ]
+              }
+            },
+            {
+              "day_of_the_week": "수",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 18:00",
+                "break_times_desc": [
+                  "13:00 ~ 14:30 휴게시간"
+                ]
+              }
+            },
+            {
+              "day_of_the_week": "목",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 18:00",
+                "break_times_desc": [
+                  "13:00 ~ 14:30 휴게시간"
+                ]
+              }
+            },
+            {
+              "day_of_the_week": "금",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 18:00",
+                "break_times_desc": [
+                  "13:00 ~ 14:30 휴게시간"
+                ]
+              }
+            },
+            {
+              "day_of_the_week": "토",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 12:30"
+              }
+            }
+          ]
+        }
+      ],
+      "all_days_off_info": "매주 일요일, 공휴일"
+    }
+  },
+  "photos": {
+    "counts": {
+      "total": 433,
+      "mystore": 0,
+      "vendor": 0,
+      "vod": 0,
+      "kakaomap_review": 0,
+      "food": 0,
+      "indoor": 50,
+      "outdoor": 41,
+      "menu": 0
+    },
+    "photos": [
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNjA1MTNfMTg1/MDAxNzc4NjM1ODcwNDI4.tSswtFXsTSv_HZi1Uafkr7mSY9n11HyF75X5nEAvQRkg.einEfpaZmbwwyTwKPXv2WCirzxo49IKc6Ck63CnnUZEg.JPEG/IMG%EF%BC%BF0785.jpg?type=w773",
+        "type": "BLOG",
+        "photo_id": 1631556439,
+        "review_id": 110173752,
+        "registered_at": "2026-05-17 14:47:47",
+        "updated_at": "2026-05-17 15:02:47",
+        "title": "[임신준비] 한의원 방문",
+        "blog_link_url": "http://blog.naver.com/itsmeha0/224283876937",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNjA1MTNfODQg/MDAxNzc4NjM1OTg1MjIz.fvOHdya2bXuJUNXUDj4C5kAEzHBaaGCJS04BL70ViNkg.3sgqnc76xEtC8Hf3cIywtVsMnt3kz5TblFkQL0aUHBUg.JPEG/IMG%EF%BC%BF0784.jpg?type=w773",
+        "type": "BLOG",
+        "photo_id": 1631556646,
+        "review_id": 110173752,
+        "registered_at": "2026-05-17 14:48:13",
+        "updated_at": "2026-05-17 15:02:47",
+        "title": "[임신준비] 한의원 방문",
+        "blog_link_url": "http://blog.naver.com/itsmeha0/224283876937",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNjAzMjVfMjQg/MDAxNzc0NDAzMTI1Nzcy.F9NrrjCxBaVez4NGLntDvFKdOs_rWXt-u0GCBLu1ozsg.4vYFttPTA96E11jUX9SmgrhQlELTADMPXSGYxkJB8t0g.JPEG/output%EF%BC%BF1294741014.jpg?type=w966",
+        "type": "BLOG",
+        "photo_id": 1619239218,
+        "review_id": 109138208,
+        "registered_at": "2026-04-29 04:50:18",
+        "updated_at": "2026-04-29 05:02:23",
+        "title": "30대 후반, Amh 0.85_난소나이 44세, 자연임신 하기까지 내가 한것들 (영양제/운동/한약)",
+        "blog_link_url": "http://blog.naver.com/tacjin0602/224267940758",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNTA5MDdfMTcz/MDAxNzU3MTcxMjA1OTI3.xn_EHyq5Uq0Y-y-CQLTJncetR4n64tqSdyaWntn8Cc4g.AnSv-b8LOVOR-KfG2MpU--ScHdWNClV-1BzSKWHtjdEg.JPEG/IMG%EF%BC%BF5903.jpg?type=w466",
+        "type": "BLOG",
+        "photo_id": 1619239124,
+        "review_id": 109138208,
+        "registered_at": "2026-04-29 04:50:04",
+        "updated_at": "2026-04-29 05:02:23",
+        "title": "30대 후반, Amh 0.85_난소나이 44세, 자연임신 하기까지 내가 한것들 (영양제/운동/한약)",
+        "blog_link_url": "http://blog.naver.com/tacjin0602/224267940758",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNjAzMjVfMTc4/MDAxNzc0NDAzMTg2OTY2.0TNym8xT05zRFSZ4P2i_xWya8dmuiiUfFNbRGtBrjg8g.wNr8yGUkYqslgQa5Si_lCt8XEbbcus8ZaMXrW-EbD6Qg.JPEG/output%EF%BC%BF1004584672.jpg?type=w966",
+        "type": "BLOG",
+        "photo_id": 1619239143,
+        "review_id": 109138208,
+        "registered_at": "2026-04-29 04:50:06",
+        "updated_at": "2026-04-29 05:02:23",
+        "title": "30대 후반, Amh 0.85_난소나이 44세, 자연임신 하기까지 내가 한것들 (영양제/운동/한약)",
+        "blog_link_url": "http://blog.naver.com/tacjin0602/224267940758",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNTA5MDdfOTkg/MDAxNzU3MTcxMjA2MDM0.3HXnntRiGIlVzMuEaBZZ82pewia6S4esGmdqdYt5aSQg.93glxxcpSEm8TxOlj7tRAlgW4SA1YnKDR32ICSMDWoEg.JPEG/output%EF%BC%BF1055164264.jpg?type=w466",
+        "type": "BLOG",
+        "photo_id": 1619239141,
+        "review_id": 109138208,
+        "registered_at": "2026-04-29 04:50:06",
+        "updated_at": "2026-04-29 05:02:23",
+        "title": "30대 후반, Amh 0.85_난소나이 44세, 자연임신 하기까지 내가 한것들 (영양제/운동/한약)",
+        "blog_link_url": "http://blog.naver.com/tacjin0602/224267940758",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNTA5MjNfMjAz/MDAxNzU4NjA5MzQ1MTY1.0TKUJbhs89lpzVbOgmZNltoBbwPgAaHxB9XhTLVXV3Ig.h_vzGTkB1VUQuylXsDjW2o3fZRkr8EcOjNoKFvbURmMg.JPEG/IMG_1497.jpg?type=w386",
+        "type": "BLOG",
+        "photo_id": 1590414652,
+        "review_id": 106702347,
+        "registered_at": "2026-03-22 05:39:30",
+        "updated_at": "2026-03-22 05:54:50",
+        "title": "서울 난임 한의원 후기｜3년 후 끝다시 찾은 춘원당 한의원 방문 후기",
+        "blog_link_url": "http://blog.naver.com/dlscjsdmswl/224224047413",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNjAzMjBfOTEg/MDAxNzczOTg2ODMxNDEx.V2eZy4y9lm8xVfRg7NA8RjU846FksRbKOEXOEgtJhuMg.s-J7tTJK0uSo6zpA0U12QRMmaqm5L7U4sxYiBzq4ifgg.JPEG/IMG%EF%BC%BF0408.jpg?type=w773",
+        "type": "BLOG",
+        "photo_id": 1590414496,
+        "review_id": 106702347,
+        "registered_at": "2026-03-22 05:39:14",
+        "updated_at": "2026-03-22 05:54:50",
+        "title": "서울 난임 한의원 후기｜3년 후 끝다시 찾은 춘원당 한의원 방문 후기",
+        "blog_link_url": "http://blog.naver.com/dlscjsdmswl/224224047413",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNTA5MjNfNDEg/MDAxNzU4NjA5MjA4NjY1.5kFW5_HQLIunAbOsVtnRZtUAieYNGI6eRW8Gm9MpqVMg.Vi_S1v0SaPFMebl7D-KMtiLb5FidCd3DkPrERZOf7J0g.JPEG/IMG_1487.jpg?type=w773",
+        "type": "BLOG",
+        "photo_id": 1590414623,
+        "review_id": 106702347,
+        "registered_at": "2026-03-22 05:39:27",
+        "updated_at": "2026-03-22 05:54:50",
+        "title": "서울 난임 한의원 후기｜3년 후 끝다시 찾은 춘원당 한의원 방문 후기",
+        "blog_link_url": "http://blog.naver.com/dlscjsdmswl/224224047413",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNjAzMjBfMjEy/MDAxNzczOTg2ODMxNTAx.As25ripv9jX9KMb4jqjGDiCh2lCa12uXXOPflejwRnwg.4L2RaAmJMDLJpds_K3VAZ1wsXVDJOR1J1p6Y7vRQeZAg.JPEG/IMG%EF%BC%BF0406.jpg?type=w386",
+        "type": "BLOG",
+        "photo_id": 1590414383,
+        "review_id": 106702347,
+        "registered_at": "2026-03-22 05:38:59",
+        "updated_at": "2026-03-22 05:54:50",
+        "title": "서울 난임 한의원 후기｜3년 후 끝다시 찾은 춘원당 한의원 방문 후기",
+        "blog_link_url": "http://blog.naver.com/dlscjsdmswl/224224047413",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNjAzMjBfMTkz/MDAxNzczOTg2ODMxOTMw.NEwVI0UTCadfirrnGJnKEuiBBUYeJUmOEvSIhiuC0yIg.iAjq1yYuhSv15raBaBEwg8SZcE3awa9Czr6ofmVp7TEg.JPEG/IMG%EF%BC%BF0405.jpg?type=w386",
+        "type": "BLOG",
+        "photo_id": 1590414747,
+        "review_id": 106702347,
+        "registered_at": "2026-03-22 05:39:42",
+        "updated_at": "2026-03-22 05:54:50",
+        "title": "서울 난임 한의원 후기｜3년 후 끝다시 찾은 춘원당 한의원 방문 후기",
+        "blog_link_url": "http://blog.naver.com/dlscjsdmswl/224224047413",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNTA5MjNfMjM3/MDAxNzU4NjA5MzY1NzAz.8ZQNnb3ZTCeIHDpss69V58NzK-XW4kDDMFu5IAudtRwg.CWDj4zM81aZVWe1c3LIDS8aU3a6SL3jMlE0TUiVxxoYg.JPEG/IMG_1500.jpg?type=w386",
+        "type": "BLOG",
+        "photo_id": 1590414585,
+        "review_id": 106702347,
+        "registered_at": "2026-03-22 05:39:23",
+        "updated_at": "2026-03-22 05:54:50",
+        "title": "서울 난임 한의원 후기｜3년 후 끝다시 찾은 춘원당 한의원 방문 후기",
+        "blog_link_url": "http://blog.naver.com/dlscjsdmswl/224224047413",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNTA5MjNfMTU0/MDAxNzU4NjA5MjU2ODc5.9JGca3MYym0YpyhtxovXzJAAQXTdav69BweabqWjbcEg.e3rqHhMpln8_YKUK-da0V1CMhJ1Wdq1PEhBMq_k10nkg.JPEG/IMG_1485.jpg?type=w386",
+        "type": "BLOG",
+        "photo_id": 1590414791,
+        "review_id": 106702347,
+        "registered_at": "2026-03-22 05:39:48",
+        "updated_at": "2026-03-22 05:54:50",
+        "title": "서울 난임 한의원 후기｜3년 후 끝다시 찾은 춘원당 한의원 방문 후기",
+        "blog_link_url": "http://blog.naver.com/dlscjsdmswl/224224047413",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNjAzMjBfODYg/MDAxNzczOTg2ODMxNjcw.V_9koWhZsm4qIBIBg-Chl3_T9PcBucP8yGwLYM574GEg.c3WHXwX31RAg2y4ajcva63RsTQdXN-0494_Sh9AQVegg.JPEG/IMG%EF%BC%BF0404.jpg?type=w386",
+        "type": "BLOG",
+        "photo_id": 1590414662,
+        "review_id": 106702347,
+        "registered_at": "2026-03-22 05:39:31",
+        "updated_at": "2026-03-22 05:54:50",
+        "title": "서울 난임 한의원 후기｜3년 후 끝다시 찾은 춘원당 한의원 방문 후기",
+        "blog_link_url": "http://blog.naver.com/dlscjsdmswl/224224047413",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNjAzMjBfMjkg/MDAxNzczOTg2ODMyMzA2.Yw7ZYdTtt2Gq1OPMDnjeVXhfBO-w1_PR6uaYfgV7riMg.E18mTSuxjJwXmktt9LYVA573DzWQQAIJbM2RAEiWqzYg.JPEG/IMG%EF%BC%BF0410.jpg?type=w773",
+        "type": "BLOG",
+        "photo_id": 1590414472,
+        "review_id": 106702347,
+        "registered_at": "2026-03-22 05:39:10",
+        "updated_at": "2026-03-22 05:54:50",
+        "title": "서울 난임 한의원 후기｜3년 후 끝다시 찾은 춘원당 한의원 방문 후기",
+        "blog_link_url": "http://blog.naver.com/dlscjsdmswl/224224047413",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNTA5MjNfMTQ0/MDAxNzU4NjA5Mjc0ODM4.wgX0vi_mVXJGxni3hyMsR32gxBCzCw_q1cIIdrMcTAYg.fzHAFbLNvnPEKbcDJoIQXxryeoWRxSuWlIOXNku7DW8g.JPEG/IMG_1488.jpg?type=w386",
+        "type": "BLOG",
+        "photo_id": 1590414606,
+        "review_id": 106702347,
+        "registered_at": "2026-03-22 05:39:26",
+        "updated_at": "2026-03-22 05:54:50",
+        "title": "서울 난임 한의원 후기｜3년 후 끝다시 찾은 춘원당 한의원 방문 후기",
+        "blog_link_url": "http://blog.naver.com/dlscjsdmswl/224224047413",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNjAzMjBfMjA3/MDAxNzczOTg2ODMxMzg1.z_bUC7Vt3DG_FKplSgMgqEJRoc5Lq6JwGxMc6v7CLmAg.8NAy2qv0VKNsn5htfbl4AvaA53Xj8T5Ac6N1vhIF2j0g.JPEG/IMG%EF%BC%BF0411.jpg?type=w386",
+        "type": "BLOG",
+        "photo_id": 1590414663,
+        "review_id": 106702347,
+        "registered_at": "2026-03-22 05:39:31",
+        "updated_at": "2026-03-22 05:54:50",
+        "title": "서울 난임 한의원 후기｜3년 후 끝다시 찾은 춘원당 한의원 방문 후기",
+        "blog_link_url": "http://blog.naver.com/dlscjsdmswl/224224047413",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNTA5MjNfNTIg/MDAxNzU4NjA5MjI2MzQz.BcqVNrJ3G_e17gLPrel6-EG1M3a9aesTu8jc8MPU44kg.qpycfkgxLNl5K5JCTtFwaN_qs_NpOtG_pkbJ2jcO1CAg.JPEG/IMG_1483.jpg?type=w386",
+        "type": "BLOG",
+        "photo_id": 1590414893,
+        "review_id": 106702347,
+        "registered_at": "2026-03-22 05:40:00",
+        "updated_at": "2026-03-22 05:54:50",
+        "title": "서울 난임 한의원 후기｜3년 후 끝다시 찾은 춘원당 한의원 방문 후기",
+        "blog_link_url": "http://blog.naver.com/dlscjsdmswl/224224047413",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNjAyMDdfMjQ2/MDAxNzcwMzkwMTA4MDU4.tmulfk5yeG7Q7jVEEO1TAldt_v59E94KuN8Z9_GfgR4g.Yv_8pwY_ennNyzFFT47ADLqYgrxFTcTMQ1k8JF1tXusg.JPEG/KakaoTalk_20260206_103502411_01.jpg?type=w773",
+        "type": "BLOG",
+        "photo_id": 1560723024,
+        "review_id": 104151735,
+        "registered_at": "2026-02-07 22:50:12",
+        "updated_at": "2026-02-07 23:05:22",
+        "title": "난임 한의원 춘원당 두 번째 방문",
+        "blog_link_url": "http://blog.naver.com/yoooo6in/224174616954",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNjAyMDdfMTc2/MDAxNzcwMzkwNjYxMTIz.ckQLLrAKZGHrgdRZfDiSkwCNqyXnp5LttoJzsnXdplAg.VP-QwJfMqFiAsHxJneryFqZZ6RV8Zr4oR5l4hbBWK0cg.JPEG/KakaoTalk_20260206_113318956.jpg?type=w773",
+        "type": "BLOG",
+        "photo_id": 1560723087,
+        "review_id": 104151735,
+        "registered_at": "2026-02-07 22:50:18",
+        "updated_at": "2026-02-07 23:05:22",
+        "title": "난임 한의원 춘원당 두 번째 방문",
+        "blog_link_url": "http://blog.naver.com/yoooo6in/224174616954",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNjAxMjFfMTUx/MDAxNzY4OTYxNDE5NTQ5.T194JkBaRq__ikuv83hjQBUJ1Ad6VU1g8-qm6t7m1Zgg.8gWkVofP6d6trNf0UmpEvGengNQMI1cXnBZrM7Hcwcog.JPEG/IMG%EF%BC%BF3390.jpg?type=w966",
+        "type": "BLOG",
+        "photo_id": 1553632356,
+        "review_id": 103552037,
+        "registered_at": "2026-01-28 20:28:00",
+        "updated_at": "2026-01-28 20:42:42",
+        "title": "서울 종로구 보약지으러 다녀온 한의원 [춘원당] 방문 후기",
+        "blog_link_url": "http://blog.naver.com/w931207/224154542257",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNjAxMjBfMjM5/MDAxNzY4ODg4NTcyNzEw.ajWYLhxDPQPPD6268d_yUPaRvqddxa5kNA18qXAvZuIg.wmmPEjgqH7HgSh8kxMeqpmCg5VjxITWZJJQbfOMohmwg.JPEG/KakaoTalk_20260120_144013412_04.jpg?type=w966",
+        "type": "BLOG",
+        "photo_id": 1547194053,
+        "review_id": 103011510,
+        "registered_at": "2026-01-22 00:23:22",
+        "updated_at": "2026-01-22 00:39:48",
+        "title": "춘원당한의원 가격 - 유산보약 후기 (난임, 산후보약 유명)",
+        "blog_link_url": "http://blog.naver.com/minmelo/224153323718",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNjAxMjBfMjk1/MDAxNzY4ODg4NDcyMjU1.sVVICFiq3zDE80UCB-PZCdEq7GQmde-RLBZ4FXx5N4sg.6Ts3pXhf6Oa9WZ3PJDAl2IXPUa9_Jnb3VWWnUmEzIRUg.JPEG/KakaoTalk_20260120_144013412_02.jpg?type=w966",
+        "type": "BLOG",
+        "photo_id": 1547194072,
+        "review_id": 103011510,
+        "registered_at": "2026-01-22 00:23:24",
+        "updated_at": "2026-01-22 00:39:48",
+        "title": "춘원당한의원 가격 - 유산보약 후기 (난임, 산후보약 유명)",
+        "blog_link_url": "http://blog.naver.com/minmelo/224153323718",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNjAxMjBfODUg/MDAxNzY4ODg4NDE4ODQ1.OW7WUiUjCPaZKZDJhETyhQTeOLjMTwDwx3-e_P6VF68g.LHi1R5_gdFElD5sJX1fHJGxSjtUTviqlyH5ZUI2QZ-wg.JPEG/KakaoTalk_20260120_144013412_01.jpg?type=w466",
+        "type": "BLOG",
+        "photo_id": 1547194080,
+        "review_id": 103011510,
+        "registered_at": "2026-01-22 00:23:25",
+        "updated_at": "2026-01-22 00:39:48",
+        "title": "춘원당한의원 가격 - 유산보약 후기 (난임, 산후보약 유명)",
+        "blog_link_url": "http://blog.naver.com/minmelo/224153323718",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNjAxMjBfMTc1/MDAxNzY4ODg4NDE4ODk0.qWl4QFsKVaNULG-UUgOgJjBSxBZQOBUaXcEzVXFWVbUg.pYtPoIr5_yXv9199C7yfCEDLbDi_COadHcrpv-3JWWog.JPEG/KakaoTalk_20260120_144013412.jpg?type=w466",
+        "type": "BLOG",
+        "photo_id": 1547194146,
+        "review_id": 103011510,
+        "registered_at": "2026-01-22 00:23:32",
+        "updated_at": "2026-01-22 00:39:48",
+        "title": "춘원당한의원 가격 - 유산보약 후기 (난임, 산후보약 유명)",
+        "blog_link_url": "http://blog.naver.com/minmelo/224153323718",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNjAxMjBfMjg5/MDAxNzY4ODg4NTcyNzQ5.NdNh8Gcab_lkbm-lgzEwqJKNHeaTSZvcFN1BGV8Tk9Eg.2QiNz5SUiAFEmcqEWFE1euMD8jEtyLr6Y72yGZY9YYcg.JPEG/KakaoTalk_20260120_144013412_05.jpg?type=w966",
+        "type": "BLOG",
+        "photo_id": 1547194079,
+        "review_id": 103011510,
+        "registered_at": "2026-01-22 00:23:24",
+        "updated_at": "2026-01-22 00:39:48",
+        "title": "춘원당한의원 가격 - 유산보약 후기 (난임, 산후보약 유명)",
+        "blog_link_url": "http://blog.naver.com/minmelo/224153323718",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNjAxMThfMTYg/MDAxNzY4NzA2NDkxOTIw.hTGJwFBNCg5sEo8_qaqgAwd_1A_pBUAPkVFh6686fBgg.sn9KGnMb_c5EPlUW4hb84U6wQQtSZHdnxudoIAvC3N4g.JPEG/%ED%95%9C%EC%9D%98%EC%9B%902.jpg?type=w773",
+        "type": "BLOG",
+        "photo_id": 1546788909,
+        "review_id": 102978951,
+        "registered_at": "2026-01-21 16:03:21",
+        "updated_at": "2026-01-21 16:24:51",
+        "title": "[초등학생 겨울철 건강 챙기기] 서울 종로 춘원당한의원 방문기",
+        "blog_link_url": "http://blog.naver.com/newworlding/224150721443",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNjAxMThfMTY2/MDAxNzY4NzA2MjkxOTU5.JME26WPrqn1nDadPyPLlc5hXdSct405ZT6JuCWx5Q4Mg.-jUXhWA9lWe1FYKaWS5s35h2kDt9GPv5le3_QbI8G9Eg.JPEG/%EB%8B%A4%EC%9A%B4%EB%A1%9C%EB%93%9C.jpeg?type=w773",
+        "type": "BLOG",
+        "photo_id": 1546788998,
+        "review_id": 102978951,
+        "registered_at": "2026-01-21 16:03:28",
+        "updated_at": "2026-01-21 16:24:51",
+        "title": "[초등학생 겨울철 건강 챙기기] 서울 종로 춘원당한의원 방문기",
+        "blog_link_url": "http://blog.naver.com/newworlding/224150721443",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNjAxMThfMjcw/MDAxNzY4NzA2MTkwMTg5.cBc11zHw9ArhhakOD62_21EljVB9sJqAR-CzjvkYNMIg.AKrUv5gMKT-0qyiH_YYDOwiUs5sZ3gsfM5jN-tlxOf0g.JPEG/SE-efc44e59-7d3a-4bcc-86f5-ead718821f15.jpg?type=w773",
+        "type": "BLOG",
+        "photo_id": 1546788926,
+        "review_id": 102978951,
+        "registered_at": "2026-01-21 16:03:22",
+        "updated_at": "2026-01-21 16:24:51",
+        "title": "[초등학생 겨울철 건강 챙기기] 서울 종로 춘원당한의원 방문기",
+        "blog_link_url": "http://blog.naver.com/newworlding/224150721443",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "8094954",
+        "url": "https://postfiles.pstatic.net/MjAyNTEyMDZfMjQ5/MDAxNzY0OTk3MjE2NzY4.x61rCiQF0x0cPWlLEcXAHnCrIxroNmXzfYQCfDy0xPkg.WHIAl4imMb4SoUDpHYaZnq_x4c3gvmfzR4AwmdgrXsEg.JPEG/1764997043596.jpg?type=w966",
+        "type": "BLOG",
+        "photo_id": 1517434606,
+        "review_id": 100529138,
+        "registered_at": "2025-12-17 04:52:47",
+        "updated_at": "2025-12-17 05:07:17",
+        "title": "[종로] 초진 대기만 1년 반 걸리는 180년 된 한의원 '춘원당' / 내돈내산",
+        "blog_link_url": "http://blog.naver.com/minb522/224100586126",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      }
+    ]
+  },
+  "blog_review": {
+    "review_count": 60,
+    "reviews": [
+      {
+        "confirm_id": "8094954",
+        "review_id": "110173752",
+        "title": "[임신준비] 한의원 방문",
+        "contents": "한의원 방문 원래 저번달에 한의원도 방문하려다가 시간도 없어서 미뤘었는데요. 자연임신 4번째 시도때 안되어서 ㅎㅎ 이번달엔 한번 가보자! 해서 다녀왔어요. 춘원당한의원 서울특별시 종로구 돈화문로9길 26 여기 근처가는길부터 한약냄새가 ㅋㅋㅋㅋㅋ 저~~멀리서부터 나더라구요? 해볼 수 있는 노력은 다해보자 싶었어요! 디나미카 검사? 라는 맥으로 체질검사 하는 ",
+        "registered_at": "2026-05-13 10:44:00",
+        "author": "[redacted]",
+        "origin_url": "https://blog.naver.com/itsmeha0/224283876937",
+        "photo_count": 4,
+        "photos": [
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjA1MTNfMjU1/MDAxNzc4NjM2NjczMzYz.00cubfyKuEYKicg8QzZL-IwgJ8IL2rvqLbCNac1LlVsg.CSGVGvAUpVOIGKf08JIK1E-nUEbEwYy8Tz7_POuFsvQg.JPEG/output%EF%BC%BF3919664997.jpg?type=w773",
+            "photo_id": 1631556426
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjA1MTNfMjcg/MDAxNzc4NjM1ODY4Njgw.GG-rmdHwUnzrZlxpxuln6LSIYpcN4scE46d0MbXeby0g.H7UONYZbz-98vOc5Oys6dND0nLDnwMoqPyCWWGhxP9Yg.JPEG/IMG%EF%BC%BF0806.jpg?type=w773",
+            "photo_id": 1631556556
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjA1MTNfODQg/MDAxNzc4NjM1OTg1MjIz.fvOHdya2bXuJUNXUDj4C5kAEzHBaaGCJS04BL70ViNkg.3sgqnc76xEtC8Hf3cIywtVsMnt3kz5TblFkQL0aUHBUg.JPEG/IMG%EF%BC%BF0784.jpg?type=w773",
+            "photo_id": 1631556646
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjA1MTNfMTg1/MDAxNzc4NjM1ODcwNDI4.tSswtFXsTSv_HZi1Uafkr7mSY9n11HyF75X5nEAvQRkg.einEfpaZmbwwyTwKPXv2WCirzxo49IKc6Ck63CnnUZEg.JPEG/IMG%EF%BC%BF0785.jpg?type=w773",
+            "photo_id": 1631556439
+          }
+        ]
+      },
+      {
+        "confirm_id": "8094954",
+        "review_id": "109138208",
+        "title": "30대 후반, Amh 0.85_난소나이 44세, 자연임신 하기까지 내가 한것들 (영양제/운동/한약)",
+        "contents": "조리원 퇴소를 앞두고. 현실 육아의 문앞에서 두려움이 몰려온다. 먼저 퇴소한 조리원 동기가 밤 11시가 되어서야 오늘 처음 휴대폰을 본다고 카톡이 왔는데 😭이것이 내가 마주할 현실인가;; 그치만 내가 그토록 원하던 임신, 그 처음의 마음을 잊지 않으려고, 아가를 낳고 이 감사함을 기억하려 쓰는 글. 신촌 세브란스 출산 임신과 출산, 남자보단 여자에게 더 부",
+        "registered_at": "2026-04-28 15:12:00",
+        "author": "[redacted]",
+        "origin_url": "https://blog.naver.com/tacjin0602/224267940758",
+        "photo_count": 17,
+        "photos": [
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNTA5MDdfMTQ5/MDAxNzU3MTcxMDQ2NTc2._B0D24eDDf8VYXbrg494yeKaePPA80lx8l0NoMsR1_Ag.KOKusq8UQ7JGNiA8M4_PQzqHFGSIriTpVjSJwQdisuAg.JPEG/output%EF%BC%BF1062143229.jpg?type=w466",
+            "photo_id": 1619239113
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNTA5MDdfMTAy/MDAxNzU3MTcxMDA0ODk0.AV3FirUiXVG2CmKZc-FvQMbusM6v2COAcnqWShfcYdEg.uy2R7MyplSWbyzFm145oW2KojVKcZhyizRRlk0A5ROMg.JPEG/IMG%EF%BC%BF9495.jpg?type=w466",
+            "photo_id": 1619239050
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNTA5MDdfNzcg/MDAxNzU3MTcxMTI3MzAy.ssP2l0J7mKdhzfs50qdV_vw6WS50d0Wd1ZpBnQOjCUQg.1TYYSyDMnXBZY_dKTBhjlg3rQcJpWfHHX-Ve7WszovUg.JPEG/IMG%EF%BC%BF8326.jpg?type=w966",
+            "photo_id": 1619239034
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNTA5MDdfOTkg/MDAxNzU3MTcxMjA2MDM0.3HXnntRiGIlVzMuEaBZZ82pewia6S4esGmdqdYt5aSQg.93glxxcpSEm8TxOlj7tRAlgW4SA1YnKDR32ICSMDWoEg.JPEG/output%EF%BC%BF1055164264.jpg?type=w466",
+            "photo_id": 1619239141
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNTA5MDdfMTk3/MDAxNzU3MTcxMDA0OTU4.lja8ZwvL-w4w1PKaC-LNp2JYlkIlOo2cT_aVthPKSpQg.uj3RdPzqDGwwqfxqmLvH2B99jZjgENwj6HLyGE0903cg.JPEG/IMG%EF%BC%BF8295.jpg?type=w466",
+            "photo_id": 1619239106
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNTA5MDdfMjk4/MDAxNzU3MTcxMDQ2NzQ5.a2LaiCBVJ_E4j1H1aeQKYln3IlGzWdWmx3PEbeDtISMg.7iB5EicjvTvH4EcJPAv2s_Iq0KIgvvYckav1rdnN32cg.JPEG/output%EF%BC%BF1201722094.jpg?type=w466",
+            "photo_id": 1619239138
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNTA5MDdfMjc3/MDAxNzU3MTcxMDA0ODIz.avh0b-fFFvIdPLoSB9cdsS5sDHjXLC1naYjV14ijl3wg.ngmuJC752PCP0Za1VXfvXxdsdHw23uNRw5ow4xYFAoAg.JPEG/IMG%EF%BC%BF9353.jpg?type=w466",
+            "photo_id": 1619238993
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMjVfNzMg/MDAxNzc0NDAzMTI1NzY1.0WqMRI87FS7luvPFNUYDnCgnPXxS5kr_qKcPWpWzX38g.P6jnX7TlVsRZgI8wAoPUhprj9nmFCPt4x3mdTveGFg8g.JPEG/IMG%EF%BC%BF2199.jpg?type=w966",
+            "photo_id": 1619239114
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNTA5MDZfOTkg/MDAxNzU3MTcwNTkwOTgx.w9fxganjs47-93MgnCb_F3lIZPHBek9gd4x0k44Y73sg.30seTeReccchk0tvQRWb3Bqc4m-cy1HZVUuGYpvgaugg.JPEG/IMG%EF%BC%BF2959.jpg?type=w966",
+            "photo_id": 1619239199
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAyMTBfMTMw/MDAxNzcwNzMzNDI1NjI5.JLwHLTTjc47FbmwJlgcRyDAFLPamcJV2fJzjqr8vx1og.I_yK354aUhv5KPOe79Rh0NTx5-h7q08v4RVjm8lVvUQg.JPEG/output%EF%BC%BF1843772495.jpg?type=w966",
+            "photo_id": 1619239078
+          }
+        ]
+      },
+      {
+        "confirm_id": "8094954",
+        "review_id": "106702347",
+        "title": "서울 난임 한의원 후기｜3년 후 끝다시 찾은 춘원당 한의원 방문 후기",
+        "contents": "서울 난임 한의원 후기｜3년 후 끝다시 찾은 춘원당 한의원 방문 후기 안녕하세요 세빛나입니다. 가족 추천으로 처음 방문했던 춘원당 한의원에서 두 달간 한약을 복용했던 경험과, 이후 재방문 후기를 솔직하게 공유하려고 합니다. 위치 및 예약 📍 위치 서울특별시 종로구 돈화문로 9길 26 📞 전화번호 02-766-0000 ⏰ 진료시간 평일(월~금) 오전 8:40",
+        "registered_at": "2026-03-20 23:11:00",
+        "author": "[redacted]",
+        "origin_url": "https://blog.naver.com/dlscjsdmswl/224224047413",
+        "photo_count": 21,
+        "photos": [
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNTA5MjNfMTU0/MDAxNzU4NjA5MzM4MzMw.gZ0W-a20LAO1j38F9JsPIh8xgg2UX4qsZNdgE84NO_0g.zFYCNDX5W8NJ98aIqHE7SNFavkZqBtGys-l4RPoa2Eog.JPEG/IMG_1496.jpg?type=w386",
+            "photo_id": 1590414298
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNTA5MjNfNTIg/MDAxNzU4NjA5MjI2MzQz.BcqVNrJ3G_e17gLPrel6-EG1M3a9aesTu8jc8MPU44kg.qpycfkgxLNl5K5JCTtFwaN_qs_NpOtG_pkbJ2jcO1CAg.JPEG/IMG_1483.jpg?type=w386",
+            "photo_id": 1590414893
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMjBfMjA3/MDAxNzczOTg2ODMxMzg1.z_bUC7Vt3DG_FKplSgMgqEJRoc5Lq6JwGxMc6v7CLmAg.8NAy2qv0VKNsn5htfbl4AvaA53Xj8T5Ac6N1vhIF2j0g.JPEG/IMG%EF%BC%BF0411.jpg?type=w386",
+            "photo_id": 1590414663
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNTA5MjNfMTQ0/MDAxNzU4NjA5Mjc0ODM4.wgX0vi_mVXJGxni3hyMsR32gxBCzCw_q1cIIdrMcTAYg.fzHAFbLNvnPEKbcDJoIQXxryeoWRxSuWlIOXNku7DW8g.JPEG/IMG_1488.jpg?type=w386",
+            "photo_id": 1590414606
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNTA5MjNfOTkg/MDAxNzU4NjA5MzU5ODQ4.ZOGx1dV5q9HhmvDPdbEWA5PVkO7iUUHicWA0McIdSgAg.4RZyLq5sNIsr4WKBDmtyjHEZVG-Jhk_3cQuYK1TTYf8g.JPEG/IMG_1499.jpg?type=w386",
+            "photo_id": 1590414551
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMjBfMjkg/MDAxNzczOTg2ODMyMzA2.Yw7ZYdTtt2Gq1OPMDnjeVXhfBO-w1_PR6uaYfgV7riMg.E18mTSuxjJwXmktt9LYVA573DzWQQAIJbM2RAEiWqzYg.JPEG/IMG%EF%BC%BF0410.jpg?type=w773",
+            "photo_id": 1590414472
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMjBfODYg/MDAxNzczOTg2ODMxNjcw.V_9koWhZsm4qIBIBg-Chl3_T9PcBucP8yGwLYM574GEg.c3WHXwX31RAg2y4ajcva63RsTQdXN-0494_Sh9AQVegg.JPEG/IMG%EF%BC%BF0404.jpg?type=w386",
+            "photo_id": 1590414662
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNTA5MjNfMTU0/MDAxNzU4NjA5MjU2ODc5.9JGca3MYym0YpyhtxovXzJAAQXTdav69BweabqWjbcEg.e3rqHhMpln8_YKUK-da0V1CMhJ1Wdq1PEhBMq_k10nkg.JPEG/IMG_1485.jpg?type=w386",
+            "photo_id": 1590414791
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMjBfMTEz/MDAxNzc0MDE1MDU2Njgz.7eiGk7e8Nz6XvuX1Wo75DDZrOU1bA7Vwwl4uHm14mOMg.bMQ9OaTY0dlNxPpfqx8fcu9r7FDcnVgtLGS_64DK624g.JPEG/SE-86A223CC-3B5C-42E7-A058-190676BC66AA.jpg?type=w386",
+            "photo_id": 1590414373
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMjBfMjgg/MDAxNzczOTgzNjY5NzE4.clATGJ5Qc8JBg41zRIxvdSf0u3Vb-5imZhbB9F9uGzMg.eWY62hLli0_miXFjtKpLM-7dZevFvZzGY0IQxDSYCIgg.JPEG/IMG%EF%BC%BF0401.jpg?type=w773",
+            "photo_id": 1590414875
+          }
+        ]
+      },
+      {
+        "confirm_id": "8094954",
+        "review_id": "106579913",
+        "title": "종로 춘원당한의원 한방부인과 침치료 1회, 한약 복용 후기",
+        "contents": "서울 종로구 돈화문로9길 26 🚘한의원 전용 주차장(무료) 종로 3가역 도보 5~10분 📍운영 08:30 - 18:00(토요일 13:00 마감) (매주 일요일 정기휴무) 휴게시간 13:30 - 14:30 춘원당한의원 서울특별시 종로구 돈화문로9길 26 작년초부터 시작한 임신준비 ㅎㅎ 1년이 넘은 현재까지도 진행형이다. 그래서 올해는 좀 더 적극적으로 준비하",
+        "registered_at": "2026-03-18 14:30:00",
+        "author": "[redacted]",
+        "origin_url": "https://blog.naver.com/s_wus/224220928489",
+        "photo_count": 4,
+        "photos": [
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMThfMjUx/MDAxNzczODA3ODI0OTI2.YJh6F6VS0bK1_gvzEiYG-8IfhsKDvj1_E4qc88WlY7Ug.A4B0X5Fmqw0bocep6Oc6tnAxlshi55vk4V--8sfSm7Ug.JPEG/SE-79D9DCCD-4BD5-4A22-AA4C-B319C795CAF5.jpg?type=w580",
+            "photo_id": 1588984433
+          },
+          {
+            "url": "https://dthumb-phinf.pstatic.net/?src=%22https%3A%2F%2Fblogthumb.pstatic.net%2FMjAyNjAzMTRfNCAg%2FMDAxNzczNDc4NDA0NzAw.2LeVVUxvH6_ucIG2LlmT7v8EI_SCKBQD7v5i3xjLpVMg.uprd6MYx6-wqhMwUPmVyVx1roW1-QTxV_Z2M16BsTDsg.JPEG%2FIMG%25A3%25DF3781.JPG%3Ftype%3Dw2%22&type=ff500_300",
+            "photo_id": 1588984387
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMThfOTEg/MDAxNzczODA3ODYwNjcw.j1FCue5is-Z6vVMbukypa3dagDm6QokG2r8Tw_2PeZIg.lJ6fyhmM4oC-6jkdJGHJUbhstJsnDHWdPrToI4zRcYgg.JPEG/SE-7AF261F1-1F41-4022-BE04-B75F33E48CE9.jpg?type=w580",
+            "photo_id": 1588984381
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMThfMTM1/MDAxNzczODExODg2ODYw.5mZuwEfrJqLpSrfMqU7oIacgXW1-0i2-C0P8V4McajAg.nEwl2cEXRWfjaXty4q4rKhRitF2Mmyt66Kj70EVU9rUg.JPEG/output%EF%BC%BF3885451567.jpg?type=w275",
+            "photo_id": 1588984474
+          }
+        ]
+      }
+    ],
+    "current_review_count": 4,
+    "last_review_id": "106579913",
+    "last_registered_at": "2026-03-18 14:30:00",
+    "requested_page_size": 4,
+    "requested_page": 1
+  },
+  "kakaomap_review": {
+    "score_set": {
+      "review_count": 11,
+      "total_score": 47,
+      "average_score": 4.3,
+      "photo_count": 0,
+      "strength_counts": [
+        {
+          "id": 10,
+          "count": 4
+        },
+        {
+          "id": 2,
+          "count": 3
+        },
+        {
+          "id": 4,
+          "count": 2
+        }
+      ],
+      "strength_uv": 4
+    },
+    "strength_description": [
+      {
+        "id": 13,
+        "name": "가격",
+        "icon_url": "https://t1.kakaocdn.net/kakaomap_mobile/android/icon_review_price.png"
+      },
+      {
+        "id": 10,
+        "name": "전문성",
+        "icon_url": "https://t1.kakaocdn.net/kakaomap_mobile/android/icon_review_smart.png"
+      },
+      {
+        "id": 2,
+        "name": "친절",
+        "icon_url": "https://t1.kakaocdn.net/kakaomap_mobile/android/icon_review_kind.png"
+      },
+      {
+        "id": 4,
+        "name": "주차",
+        "icon_url": "https://t1.kakaocdn.net/kakaomap_mobile/android/icon_review_parking.png"
+      }
+    ],
+    "reviews": [
+      {
+        "review_id": 11325919,
+        "star_rating": 4,
+        "contents": "한약비싼값어치는함 ~",
+        "photo_count": 0,
+        "status": "S",
+        "registered_at": "2024-10-30 16:21:52",
+        "updated_at": "2024-10-30 16:21:52",
+        "meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          },
+          "is_liked_by_me": false,
+          "is_owner_me": false,
+          "like_count": 0,
+          "like_user_profile_image_list": [],
+          "is_place_owner_pick": false,
+          "place": {
+            "confirm_id": "8094954",
+            "place_name": "춘원당한의원"
+          }
+        }
+      },
+      {
+        "review_id": 9626601,
+        "star_rating": 1,
+        "contents": "침치료 아무한테나 받으면 큰 일 나겠더군요. 담증상으로 아침 출근길에 큰병원이라 들렀더니 한의사는 아무것도 묻지 않고 물리치료부터 시키고 불편한 부위만 묻더니 바로 시침. 불편한 엎드린 자세로 꼼짝 않고 맞고 병원을 나서는데 숨이 막힐 정도로 아파옴. 숨이 턱막히고 걷기도 힘들 정도로 심해져서 통화후 오후 2시반경 다시 내원. 부작용같다고 항의. 이번에도 아픈 부위 내말만듣고 그냥 놓아준다고 약침 놓았으나 전혀 변화없고 움직일수도 없어 누웠다간다니 제통제만 줌. 경력많은 다른 원장에게 부탁해서 고통 경감해줄 조치를 기대했건만 다음날 다시 침맞으러오라고. 멀어서 올수도 없어 못 오고 그 뒤로 10일간 신경외과 주사치료 5회, mri촬영비제외 90만원 돈을 썼네요. 아무한테나 침치료받다간 장애생기거나 상치르겠네요.\n침치료가 잘못된거같다는 얘긴 절대 안하네요.",
+        "photo_count": 0,
+        "status": "S",
+        "registered_at": "2024-02-28 16:53:03",
+        "updated_at": "2024-02-28 16:53:03",
+        "meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          },
+          "is_liked_by_me": false,
+          "is_owner_me": false,
+          "like_count": 9,
+          "like_user_profile_image_list": [
+            "http://t1.daumcdn.net/local/kakaomapPhoto/profile/06e5e4092182c15b3c8a48c9932ac634fb622947?original",
+            "http://k.kakaocdn.net/dn/rGFXP/btqyF01Ym8f/PeChSEjytC3iHyq5AS4FgK/img_640x640.jpg",
+            "https://chat.kakaocdn.net/profile_resource/e93b8092e41146a7b31f6d8c282448fceca27afe07634820bbd3bf262e18fa43/f.jpg?type=thumb&opt=U640x640"
+          ],
+          "is_place_owner_pick": false,
+          "place": {
+            "confirm_id": "8094954",
+            "place_name": "춘원당한의원"
+          }
+        }
+      },
+      {
+        "review_id": 8306706,
+        "star_rating": 5,
+        "contents": "다음에 방문하고 싶네요",
+        "photo_count": 0,
+        "status": "S",
+        "registered_at": "2023-08-13 09:10:42",
+        "updated_at": "2023-08-13 09:10:54",
+        "meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          },
+          "is_liked_by_me": false,
+          "is_owner_me": false,
+          "like_count": 0,
+          "like_user_profile_image_list": [],
+          "is_place_owner_pick": false,
+          "place": {
+            "confirm_id": "8094954",
+            "place_name": "춘원당한의원"
+          }
+        }
+      }
+    ],
+    "timeline_score_table": {
+      "act_review": {
+        "event": 0,
+        "place_banner": [
+          {
+            "title": "사진/영상 등록",
+            "score": 3
+          },
+          {
+            "title": "글 작성",
+            "score": 2
+          }
+        ]
+      }
+    },
+    "has_next": false,
+    "has_my_review": false
+  },
+  "find_way": {
+    "subway": {
+      "station_simple_name": "종로3가역",
+      "exit_num": "5",
+      "to_exit_distance": 151,
+      "subway_list": [
+        {
+          "subway_line_id": "SES1",
+          "subway_line_icon_name": "1"
+        },
+        {
+          "subway_line_id": "SES3",
+          "subway_line_icon_name": "3"
+        },
+        {
+          "subway_line_id": "SES5",
+          "subway_line_icon_name": "5"
+        }
+      ],
+      "to_exit_minute": 4
+    }
+  },
+  "trend_rank": {
+    "show_ranking_card": true
+  },
+  "place_add_info": {
+    "tags": [
+      "1차병원",
+      "난임",
+      "변비치료",
+      "불임치료",
+      "비염",
+      "산후조리",
+      "재활"
+    ],
+    "full_detail_infos": [
+      {
+        "title": "상세 정보",
+        "items": [
+          {
+            "icon": {
+              "text": "결제 방식",
+              "url": "https://t1.daumcdn.net/localimg/place/2026/infoIcon/icon_wallet_line.svg"
+            },
+            "contents": [
+              {
+                "label": "제로페이",
+                "landing_url": "https://www.zeropay.or.kr"
+              }
+            ]
+          },
+          {
+            "icon": {
+              "text": "장소키워드",
+              "url": "https://t1.daumcdn.net/localimg/place/2026/infoIcon/icon_tag_line.svg"
+            },
+            "contents": [
+              {
+                "label": "1차병원"
+              },
+              {
+                "label": "난임"
+              },
+              {
+                "label": "변비치료"
+              },
+              {
+                "label": "불임치료"
+              },
+              {
+                "label": "비염"
+              },
+              {
+                "label": "산후조리"
+              },
+              {
+                "label": "재활"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "add_info_summaries": []
+  },
+  "reward": {
+    "fiy": {
+      "basic_info": 0,
+      "contact": 200,
+      "menu": 0,
+      "open_hour": 200,
+      "delete_place": 200,
+      "add_info": 0,
+      "max_amount": 400
+    }
+  },
+  "ai_content_warning": {
+    "is_home_tab_display_enabled": false,
+    "is_info_tab_display_enabled": false
+  }
+}

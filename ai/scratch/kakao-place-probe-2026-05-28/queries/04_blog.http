@@ -1,0 +1,37 @@
+# 카카오 블로그 — `place-api.map.kakao.com/places/tab/reviews/blog/{id}`
+# panel3 의 blog_review 가 1페이지 이미 포함. 본 엔드포인트는 후속 페이지용 (page=N 동작 확인됨).
+
+GET https://place-api.map.kakao.com/places/tab/reviews/blog/{place_id}?page={N}
+Referer: https://place.map.kakao.com/{place_id}
+Origin: https://place.map.kakao.com
+pf: web
+Accept: application/json, text/plain, */*
+
+# 응답 골격:
+# {
+#   "review_count": 1096,                       # 총 큐레이션 블로그 수
+#   "reviews": [
+#     {
+#       "review_id": "...",
+#       "confirm_id": "{place_id}",
+#       "title": "어깨오십견증상 갑자기 뻣뻣하게 굳은 이곳이 불편하다면",
+#       "contents": "어깨 통증은 일상에서 흔히 겪을 수 있는 불편함 ...",   # 발췌 본문 raw
+#       "origin_url": "https://blog.naver.com/veca02/224291710753",       # 외부 블로그 원문
+#       "author": "더 가까이 더 건강하게 더 감동으로, 더서울병원",
+#       "photo_count": 0,
+#       "photos": [],
+#       "registered_at": "2026-05-14 ..."
+#     }, ...
+#   ]
+# }
+#
+# 발견:
+#   1) **블로그 호스트 = 100% blog.naver.com** (4건 표본 40개 모두). 카카오가 네이버 블로그 큐레이션
+#   2) 동일 시드 풀이지만 네이버 getPhotoViewerItems 의 ugc externalLink.url 과 다른 큐레이션 시그널
+#      - 카카오 blog tab = 텍스트 본문 위주 큐레이션 (긴 본문)
+#      - 네이버 photo ugc = 사진 첨부 블로그 큐레이션 (시각적 임팩트)
+#      - 두 채널 시드 합집합 = BlogSignal 시드의 가장 풍부한 회수 경로
+#   3) `contents` 발췌 본문이 그대로 박힘 — 블로그 원문 추가 fetch 없이도 키워드 빈도 가능
+#   4) 위담 케이스에서 본문 첫 문장 "본 게시글은 의료법 제 56조 1항을 준수하여 작성되었습니다." 발견
+#      = 광고성 블로그 표시 마커. 시그널 정제 시 의식 필요 (광고/실후기 분리 룰의 토큰 후보)
+#   5) author 필드는 작성자 닉네임 raw — 개인정보 마스킹 검토 필요

@@ -1,0 +1,1994 @@
+{
+  "medical": {
+    "emergency_center": {
+      "source_url": "http://m.e-gen.or.kr",
+      "medical_center_type": "한방병원",
+      "open_infos": [
+        {
+          "title": "월,화,수,목",
+          "value": "09:00~20:00"
+        },
+        {
+          "title": "금,토,일,공휴일",
+          "value": "09:00~18:00"
+        }
+      ],
+      "emergency_type": "응급의료기관 이외",
+      "emergency_available_yn": "N",
+      "subject_names": "가정의학과/영상의학과/재활의학과/침구과/한방내과/한방부인과/한방신경정신과/한방재활의학과"
+    },
+    "hira": {
+      "source_url": "https://www.hira.or.kr/main.do",
+      "medical_center_type": "한방병원",
+      "open_infos": [
+        {
+          "title": "월~금",
+          "value": "09:00~19:00"
+        },
+        {
+          "title": "토,일",
+          "value": "09:00~18:00"
+        },
+        {
+          "title": "일요일 휴진정보 : ",
+          "value": "연중무휴"
+        },
+        {
+          "title": "공휴일 휴진정보 : ",
+          "value": "설날, 추석외 정상진료"
+        }
+      ],
+      "established_at": "1999-06-21",
+      "specialized_field": "한방척추질환",
+      "doctor_count": {
+        "total": 72,
+        "general": 4,
+        "intern": 8,
+        "resident": 31,
+        "specialist": 29
+      },
+      "subjects": [
+        {
+          "subject_name": "한방재활의학과",
+          "doctor_count": 11,
+          "selected_doctor_count": 0
+        },
+        {
+          "subject_name": "침구과",
+          "doctor_count": 6,
+          "selected_doctor_count": 0
+        },
+        {
+          "subject_name": "가정의학과",
+          "doctor_count": 4,
+          "selected_doctor_count": 0
+        },
+        {
+          "subject_name": "영상의학과",
+          "doctor_count": 2,
+          "selected_doctor_count": 0
+        },
+        {
+          "subject_name": "한방내과",
+          "doctor_count": 2,
+          "selected_doctor_count": 0
+        },
+        {
+          "subject_name": "한방신경정신과",
+          "doctor_count": 2,
+          "selected_doctor_count": 0
+        },
+        {
+          "subject_name": "재활의학과",
+          "doctor_count": 1,
+          "selected_doctor_count": 0
+        },
+        {
+          "subject_name": "한방부인과",
+          "doctor_count": 1,
+          "selected_doctor_count": 0
+        }
+      ],
+      "devices": [
+        {
+          "device_name": "일반엑스선촬영장치",
+          "count": 2
+        },
+        {
+          "device_name": "CT",
+          "count": 1
+        },
+        {
+          "device_name": "골밀도검사기",
+          "count": 1
+        },
+        {
+          "device_name": "MRI",
+          "count": 2
+        },
+        {
+          "device_name": "초음파영상진단기",
+          "count": 5
+        }
+      ]
+    },
+    "fiy_guide_link": "https://cs.kakao.com/helps?service=101&category=116&locale=ko&device=1222&articleId=1073192973"
+  },
+  "visitor": {
+    "labels": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ],
+    "weekly_uv_average": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      4733,
+      5549,
+      5217,
+      3384,
+      -1,
+      5321,
+      5081,
+      5337,
+      3974,
+      3750,
+      2594,
+      -1,
+      -1,
+      -1,
+      -1
+    ],
+    "sunday_uv": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      1723,
+      2065,
+      2408,
+      1836,
+      -1,
+      3014,
+      2555,
+      2893,
+      2039,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ],
+    "monday_uv": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      5188,
+      6990,
+      5006,
+      3685,
+      -1,
+      6288,
+      5664,
+      6652,
+      4703,
+      3308,
+      2438,
+      -1,
+      -1,
+      -1,
+      -1
+    ],
+    "tuesday_uv": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      5357,
+      5933,
+      5409,
+      3681,
+      -1,
+      5729,
+      5452,
+      5465,
+      4170,
+      3772,
+      2715,
+      -1,
+      -1,
+      -1,
+      -1
+    ],
+    "wednesday_uv": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      4764,
+      5721,
+      5686,
+      3430,
+      -1,
+      4855,
+      5088,
+      4859,
+      4361,
+      3997,
+      2498,
+      -1,
+      -1,
+      -1,
+      -1
+    ],
+    "thursday_uv": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      5426,
+      6154,
+      6150,
+      3785,
+      -1,
+      6726,
+      5465,
+      5513,
+      4811,
+      3923,
+      2728,
+      -1,
+      -1,
+      -1,
+      -1
+    ],
+    "friday_uv": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      5630,
+      7037,
+      6089,
+      3443,
+      -1,
+      6046,
+      6613,
+      6587,
+      4794,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ],
+    "saturday_uv": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      5049,
+      4946,
+      5777,
+      3828,
+      -1,
+      4590,
+      4733,
+      5392,
+      2940,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ],
+    "max_uv": 7037,
+    "updated_at": "2026-05-28 01:25:40",
+    "day_of_week": "THURSDAY"
+  },
+  "panel_card_tags": [
+    "TITLE",
+    "PHOTO",
+    "BIZ",
+    "NEWS",
+    "AI_MATE",
+    "SUMMARY",
+    "INFO",
+    "EVENT_KEYWORD",
+    "PRODUCT",
+    "AI_QUESTION",
+    "BOOKING",
+    "SPECIAL",
+    "VISITOR",
+    "REVIEW",
+    "RANKING",
+    "BLOG"
+  ],
+  "panel_tab_tags": [
+    "PRODUCT",
+    "PHOTO",
+    "REVIEW",
+    "BOOKING",
+    "SPECIAL",
+    "NEWS",
+    "BLOG",
+    "RANKING"
+  ],
+  "restrict": {
+    "fiy": {
+      "is_restrict": false
+    },
+    "blog": {
+      "is_restrict": false
+    },
+    "review_read": {
+      "is_restrict": false
+    },
+    "photo": {
+      "is_restrict": false
+    },
+    "fiy_add_info": {
+      "is_restrict": false
+    },
+    "ranking": {
+      "is_restrict": false
+    }
+  },
+  "summary": {
+    "meta": {
+      "updated_at": "2025-10-14 15:18:46"
+    },
+    "confirm_id": "27388604",
+    "name": "자생한방병원",
+    "status": "Y",
+    "category": {
+      "name": "한방병원",
+      "id1": "13",
+      "id2": "80",
+      "id3": "777",
+      "name1": "의료,건강",
+      "name2": "병원",
+      "name3": "한방병원"
+    },
+    "point": {
+      "lon": 127.0223042345046,
+      "lat": 37.509954692899676
+    },
+    "address": {
+      "disp": "서울 강남구 강남대로 536 (논현동)",
+      "jibun": "논현동 142-3",
+      "road": "서울 강남구 강남대로 536",
+      "base_zone_no": "06110",
+      "road_part": "강남대로 536",
+      "jibun_part": "논현동 142-3"
+    },
+    "road_view": {
+      "pano_id": "1197800335",
+      "pan": 70.0,
+      "tilt": -1.0,
+      "point": {
+        "lon": 127.02207800613802,
+        "lat": 37.50988986306978
+      },
+      "level": 0,
+      "url": "https://map.kakaocdn.net/map_roadview/2025/06/9147992/2_100157_9147992_20250612035329_cube/left_800.jpg"
+    },
+    "regions": [
+      {
+        "depth": 1,
+        "id": "I",
+        "name": "서울",
+        "simple_name": "서울"
+      },
+      {
+        "depth": 2,
+        "id": "I1000",
+        "name": "강남구",
+        "simple_name": "강남구"
+      },
+      {
+        "depth": 3,
+        "id": "I10000100",
+        "name": "논현동",
+        "simple_name": "논현동"
+      }
+    ],
+    "homepages": [
+      "http://www.jaseng.co.kr",
+      "https://www.facebook.com/jaseng.kr",
+      "http://blog.naver.com/golfpark58",
+      "https://cafe.naver.com/huridisk",
+      "https://www.jaseng.org"
+    ],
+    "related_links": {
+      "primary_links": [
+        {
+          "url": "http://www.jaseng.co.kr",
+          "display_text": "http://www.jaseng.co.kr"
+        }
+      ],
+      "secondary_links": [
+        {
+          "url": "https://www.facebook.com/jaseng.kr",
+          "display_text": "https://www.facebook.com/jaseng.kr"
+        },
+        {
+          "url": "http://blog.naver.com/golfpark58",
+          "display_text": "http://blog.naver.com/golfpark58"
+        },
+        {
+          "url": "https://cafe.naver.com/huridisk",
+          "display_text": "https://cafe.naver.com/huridisk"
+        },
+        {
+          "url": "https://www.jaseng.org",
+          "display_text": "https://www.jaseng.org"
+        }
+      ]
+    },
+    "phone_numbers": [
+      {
+        "tel": "1577-0007"
+      }
+    ],
+    "payments": [
+      {
+        "img_url": "https://t1.kakaocdn.net/kakaomap_mobile/android/ico_zeropay.png",
+        "image_keyword": "제로페이",
+        "landing_url": "https://www.zeropay.or.kr"
+      }
+    ],
+    "display_info": {
+      "display_name1": "자생한방병원"
+    }
+  },
+  "my_store_notice": {
+    "status": "READY_TO_REGISTER",
+    "notice_count": 0,
+    "is_available_booking": false
+  },
+  "open_hours": {
+    "headline": {
+      "code": "BEFORE_OPEN",
+      "display_text": "진료 전",
+      "display_text_info": "09:00 진료 시작"
+    },
+    "headline_addition": {
+      "business_hours_desc": "※ 물리치료·도수치료 일요일 미운영"
+    },
+    "week_from_today": {
+      "business_hours_desc": "※ 물리치료·도수치료 일요일 미운영",
+      "week_periods": [
+        {
+          "days": [
+            {
+              "day_of_the_week_desc": "목(5/28)",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 20:00",
+                "break_times_desc": [
+                  "13:00 ~ 14:00 휴게시간"
+                ]
+              },
+              "is_highlight": true
+            },
+            {
+              "day_of_the_week_desc": "금(5/29)",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 18:00",
+                "break_times_desc": [
+                  "13:00 ~ 14:00 휴게시간"
+                ]
+              },
+              "is_highlight": false
+            },
+            {
+              "day_of_the_week_desc": "토(5/30)",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 18:00",
+                "break_times_desc": [
+                  "13:00 ~ 14:00 휴게시간"
+                ]
+              },
+              "is_highlight": false
+            },
+            {
+              "day_of_the_week_desc": "일(5/31)",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 18:00",
+                "break_times_desc": [
+                  "13:00 ~ 14:00 휴게시간"
+                ]
+              },
+              "is_highlight": false
+            },
+            {
+              "day_of_the_week_desc": "월(6/1)",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 20:00",
+                "break_times_desc": [
+                  "13:00 ~ 14:00 휴게시간"
+                ]
+              },
+              "is_highlight": false
+            },
+            {
+              "day_of_the_week_desc": "화(6/2)",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 20:00",
+                "break_times_desc": [
+                  "13:00 ~ 14:00 휴게시간"
+                ]
+              },
+              "is_highlight": false
+            },
+            {
+              "day_of_the_week_desc": "수(6/3)",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 20:00",
+                "break_times_desc": [
+                  "13:00 ~ 14:00 휴게시간"
+                ]
+              },
+              "is_highlight": false
+            }
+          ]
+        }
+      ]
+    },
+    "all": {
+      "business_hours_desc": "※ 물리치료·도수치료 일요일 미운영",
+      "periods": [
+        {
+          "period_title": "기본 영업시간",
+          "days": [
+            {
+              "day_of_the_week": "월",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 20:00",
+                "break_times_desc": [
+                  "13:00 ~ 14:00 휴게시간"
+                ]
+              }
+            },
+            {
+              "day_of_the_week": "화",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 20:00",
+                "break_times_desc": [
+                  "13:00 ~ 14:00 휴게시간"
+                ]
+              }
+            },
+            {
+              "day_of_the_week": "수",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 20:00",
+                "break_times_desc": [
+                  "13:00 ~ 14:00 휴게시간"
+                ]
+              }
+            },
+            {
+              "day_of_the_week": "목",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 20:00",
+                "break_times_desc": [
+                  "13:00 ~ 14:00 휴게시간"
+                ]
+              }
+            },
+            {
+              "day_of_the_week": "금",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 18:00",
+                "break_times_desc": [
+                  "13:00 ~ 14:00 휴게시간"
+                ]
+              }
+            },
+            {
+              "day_of_the_week": "토",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 18:00",
+                "break_times_desc": [
+                  "13:00 ~ 14:00 휴게시간"
+                ]
+              }
+            },
+            {
+              "day_of_the_week": "일",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 18:00",
+                "break_times_desc": [
+                  "13:00 ~ 14:00 휴게시간"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "all_days_off_info": "설전날, 설당일, 설다음날, 추석전날, 추석당일, 추석다음날"
+    }
+  },
+  "photos": {
+    "counts": {
+      "total": 704,
+      "mystore": 0,
+      "vendor": 0,
+      "vod": 1,
+      "kakaomap_review": 87,
+      "food": 0,
+      "indoor": 206,
+      "outdoor": 32,
+      "menu": 0
+    },
+    "photos": [
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/2c822c84509537d4cd4f9d88bac2f269e608b2d8?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 8700610,
+        "review_id": 15500335,
+        "registered_at": "2026-05-14 12:59:49",
+        "updated_at": "2026-05-14 13:12:33",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/f531e8b2e57c14d6897f5cb964ca4c70d3edd834?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 8700611,
+        "review_id": 15500335,
+        "registered_at": "2026-05-14 12:59:49",
+        "updated_at": "2026-05-14 13:12:33",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/2265796d5caa23bb833c94cbe627880b83213e82?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 8258750,
+        "review_id": 15004257,
+        "registered_at": "2026-03-10 18:06:18",
+        "updated_at": "2026-03-10 18:28:03",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/126e214231149293bb410160229cdfe648670e4e?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 7618684,
+        "review_id": 14265614,
+        "registered_at": "2025-11-28 12:13:58",
+        "updated_at": "2025-11-28 12:28:59",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/6303b5e5694f023eeaae653f97bfb5a4fafe1c4e?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 7618681,
+        "review_id": 14265614,
+        "registered_at": "2025-11-28 12:13:58",
+        "updated_at": "2025-11-28 12:28:59",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/85a8ccbc934901e461c1f25e9adafef7944267a2?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 7618680,
+        "review_id": 14265614,
+        "registered_at": "2025-11-28 12:13:58",
+        "updated_at": "2025-11-28 12:28:59",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/1e8d310bda617b64e18b4e24671348c16561e85d?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 7585528,
+        "review_id": 14226842,
+        "registered_at": "2025-11-22 19:27:21",
+        "updated_at": "2025-11-22 19:43:46",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/2b0da03a87aca71011e899fbf272a7019a33eec7?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 7585527,
+        "review_id": 14226842,
+        "registered_at": "2025-11-22 19:27:21",
+        "updated_at": "2025-11-22 19:43:46",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "https://thumb.kakaocdn.net/dna/kamp/source/rvdhw5zklhd837n9xh1t0jyzj/thumbs/1.jpg?credential=TuMuFGKUIcirOSjFzOpncbomGFEIdZWK&expires=33318562516&kamp_tidx=0&signature=%2BzcZ0r3ZdCmuOQx5a%2BDGgj7iNCk%3D&ts=1761653716",
+        "type": "KMAPREVIEW",
+        "photo_id": 7432354,
+        "review_id": 14045141,
+        "registered_at": "2025-10-28 21:15:17",
+        "updated_at": "2025-10-28 21:40:06",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "VOD",
+        "vid": "rvdhw5zklhd837n9xh1t0jyzj",
+        "ui_type": "PROFILE",
+        "duration": 20,
+        "preview": "https://kdnv-lg-orisa-edge.play.kakao.com/s-kakaomap/vod/rvdhw5zklhd837n9xh1t0jyzj/mp4/mp4/preview.mp4?orisa-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ2aWQiOiJydmRodzV6a2xoZDgzN245eGgxdDBqeXpqIiwidGlkIjoiaWMwa2FzMHVhdWZ4dnN0eTNpenIiLCJzaWQiOiJrYWthb21hcCIsInB4LWJwcyI6NTQzNDcyNCwicHgtYnVmYWhlYWQiOjMzLCJweC1wYXRoIjoiL3Mta2FrYW9tYXAvdm9kL3J2ZGh3NXprbGhkODM3bjl4aDF0MGp5emovbXA0L21wNC9wcmV2aWV3Lm1wNCIsImV4cCI6MTc3OTkyNjY1NywiaWF0IjoxNzc5OTE1ODU3fQ.1cIAh9UyhFXnc9gBAte2Uw8GslrTqJGzUSSN0RNAuWs"
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/d3777daec3b351191b4649556299074864e54f41?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 7398178,
+        "review_id": 14003761,
+        "registered_at": "2025-10-23 12:34:52",
+        "updated_at": "2025-10-23 12:58:23",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/908fcb52741c1ad1a1a9d5bef8b2509d61f35197?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 7398179,
+        "review_id": 14003761,
+        "registered_at": "2025-10-23 12:34:52",
+        "updated_at": "2025-10-23 12:58:23",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/7d420239e87de296f7407311471d71f7effc02c9?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 7251178,
+        "review_id": 13825250,
+        "registered_at": "2025-09-30 15:53:38",
+        "updated_at": "2025-09-30 16:03:54",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/b52cb002ad3e596739f2086e848002e684872212?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 7082570,
+        "review_id": 13613024,
+        "registered_at": "2025-09-01 10:04:34",
+        "updated_at": "2025-09-01 10:25:06",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/ff066be5e2b410ec6fea53fa361a36b740e989f5?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 7082568,
+        "review_id": 13613024,
+        "registered_at": "2025-09-01 10:04:34",
+        "updated_at": "2025-09-01 10:22:12",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/00d9f4f75b80eb5af677b3b6475595ed79934646?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 7082569,
+        "review_id": 13613024,
+        "registered_at": "2025-09-01 10:04:34",
+        "updated_at": "2025-09-01 10:22:12",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/73b35f8411b42b32fc4eaf95afc78bf7425739e5?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 7040478,
+        "review_id": 13559938,
+        "registered_at": "2025-08-25 13:14:19",
+        "updated_at": "2025-08-25 13:31:02",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/12d703de1ab7053385b8f5853be6a58c18d18477?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 6817690,
+        "review_id": 13286419,
+        "registered_at": "2025-07-24 10:17:13",
+        "updated_at": "2025-08-21 14:48:42",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/9e140ba652a61a3fb47962241821f92f1f4d186d?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 6817686,
+        "review_id": 13286419,
+        "registered_at": "2025-07-24 10:17:13",
+        "updated_at": "2025-08-21 14:48:42",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/8c8f73d0b14fe0dba38a0f1219b9db0569c6a628?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 6778081,
+        "review_id": 13237559,
+        "registered_at": "2025-07-17 18:01:47",
+        "updated_at": "2025-08-21 14:48:42",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/994a08772181b929de8c52359a54b0638908bd21?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 6778080,
+        "review_id": 13237559,
+        "registered_at": "2025-07-17 18:01:47",
+        "updated_at": "2025-08-21 14:48:42",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/89bd1d2576fe224472ca7f65ab409440b5fb014f?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 6788459,
+        "review_id": 13251169,
+        "registered_at": "2025-07-19 16:19:45",
+        "updated_at": "2025-08-21 14:48:42",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/bc66b5f04c9851f26660a58a98ad92a0c72814e1?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 6866757,
+        "review_id": 13348015,
+        "registered_at": "2025-07-31 13:59:05",
+        "updated_at": "2025-08-21 14:48:42",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/bec80c6cbf62210e59bae3c496964cd945b46ff9?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 6817688,
+        "review_id": 13286419,
+        "registered_at": "2025-07-24 10:17:13",
+        "updated_at": "2025-08-21 14:48:42",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/d94e0d16e8078e84cfb12f8e3318e1fe88fc6f54?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 6817689,
+        "review_id": 13286419,
+        "registered_at": "2025-07-24 10:17:13",
+        "updated_at": "2025-08-21 14:48:42",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/9e1f0799659a8f1a7ee01a9720dbd2edb6e5504f?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 6778078,
+        "review_id": 13237559,
+        "registered_at": "2025-07-17 18:01:47",
+        "updated_at": "2025-08-21 14:48:42",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/868934957adb090f3ef74eba04a82659b21e00a1?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 6724349,
+        "review_id": 13169756,
+        "registered_at": "2025-07-08 12:44:50",
+        "updated_at": "2025-08-21 14:48:42",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/821e3bef924bde5a88c24d09592d88e822049c13?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 6608313,
+        "review_id": 13023967,
+        "registered_at": "2025-06-18 12:51:21",
+        "updated_at": "2025-08-21 14:48:42",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/67ddb736397f2ddefb3b8744a29020df1a5fa126?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 6608314,
+        "review_id": 13023967,
+        "registered_at": "2025-06-18 12:51:21",
+        "updated_at": "2025-08-21 14:48:42",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/239c4262967c9e6e971e900a6e7a2317bfcaa9af?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 6608316,
+        "review_id": 13023967,
+        "registered_at": "2025-06-18 12:51:21",
+        "updated_at": "2025-08-21 14:48:42",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/05223bb78a46926c60ded2112bac93bb10a4395e?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 6172024,
+        "review_id": 12475208,
+        "registered_at": "2025-04-05 21:21:44",
+        "updated_at": "2025-06-11 11:16:16",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE"
+      }
+    ]
+  },
+  "blog_review": {
+    "review_count": 324,
+    "reviews": [
+      {
+        "confirm_id": "27388604",
+        "review_id": "110225738",
+        "title": "[자생서포터즈] 20대도 방심하기 어려운 어깨 굳음, 오십견 – 자가진단법, 스트레칭법",
+        "contents": "“저는 아직 20대인데, 오십견이 생길 수도 있는건가요?” 팔을 들어 올릴 때 어깨가 뻐근하거나, 옷을 갈아입을 때 팔이 뒤로 잘 돌아가지 않는 느낌. 혹시 한 번쯤 경험해보신 적 있으신가요? ‘오십견’이라는 명칭이 50대 전후에 자주 나타난다고 붙은 이름이었지만, 요즘은 꼭 중장년층만의 문제로 보기는 어렵다고 해요. 스마트폰이나 노트북/컴퓨터를 오래 사용",
+        "registered_at": "2026-05-15 08:59:00",
+        "author": "[redacted]",
+        "origin_url": "https://blog.naver.com/joojoo462/224286082126",
+        "photo_count": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "review_id": "106568440",
+        "title": "운전 오래 하면 허리 아픈 이유? 장거리 운전 허리아픔 - 허리통증 관리법 알려드립니다.",
+        "contents": "안녕하세요! 자생한방병원 블로그기자입니다. 자생한방병원 서울특별시 강남구 강남대로 536 장거리 이동이나 출퇴근 운전을 오래 하다 보면 허리가 뻐근하거나 통증을 느끼는 분들이 많습니다. 특히 몇 시간씩 같은 자세로 운전을 하고 나면 허리가 굳은 느낌이 들거나 일어설 때 통증이 심해지기도 하는데요. 오늘은 강남자생한방병원과 함께 장거리 운전시 허리아픔이 발생",
+        "registered_at": "2026-03-18 11:08:00",
+        "author": "[redacted]",
+        "origin_url": "https://blog.naver.com/jaseng1988/224220676887",
+        "photo_count": 0
+      },
+      {
+        "confirm_id": "27388604",
+        "review_id": "106342997",
+        "title": "160307 강남자생한방병원 기록5",
+        "contents": "자생한방병원 서울특별시 강남구 강남대로 536 어김없이 문진체크 여파로 6시에기상,,,,, 오늘은 꿀잠자다가 깬거라 심기가 불편 눈도 일찍떠진김에 샤워하고도 시간이 남아서 위 하늘공원 산책을... 강남아침뷰 햇살 맞으면서 아침을 밥 샐러드 두부조림 수제비 소세지 뭔지모를 무침 깍뚜기 수제비 빼고 다먹음 일어나서 서치 좀 하고예 별헤는 선생님근무가 평일이라 ",
+        "registered_at": "2026-03-07 20:52:00",
+        "author": "[redacted]",
+        "origin_url": "https://blog.naver.com/dpttpstm90/224208136078",
+        "photo_count": 16,
+        "photos": [
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMDdfMjk2/MDAxNzcyODg0MDMzMzYy.TljwGymsudQ1NEv1cOeOMv7NrGL-K7OgbtklN0tTTYMg.xn-IHdO2M6RrdE8gUi2iz-dvf6zHhtiJwlPYdpBOzsUg.JPEG/output%EF%BC%BF408879973.jpg?type=w386",
+            "photo_id": 1586215845
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMDdfMjAy/MDAxNzcyODgzOTE1ODc5.NUBHJFfmNBuIvzIAxoc70YdozUVgdmlBGPj3zupsEQUg.ksBm9tHmLOeFZObdHdg3tRwrEULSh-V00HZQvW5wBn0g.JPEG/IMG%EF%BC%BF3510.jpg?type=w386",
+            "photo_id": 1586215951
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMDdfMTQ4/MDAxNzcyODgzOTE0OTc5.W_ahQxmj96J_NExqpzZ3rjEdzSL0XQ1SyDK29-swKQwg.rfioen2Oy0WKs0sbtw-HLJ0kNPnyyBJjhvlJNgiKJasg.JPEG/IMG%EF%BC%BF3498.jpg?type=w386",
+            "photo_id": 1586216065
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMDdfMjgz/MDAxNzcyODgzOTE1MDQ5.KMlajIFWy1yyJTVp8gDKBAhvWt_M1uRE-QcnCtmdw8Qg.T1zDzgRf2bS4_0lsIXfye-BKHQ8dt1gN8lQUSGt5XrQg.JPEG/IMG%EF%BC%BF3496.jpg?type=w386",
+            "photo_id": 1586216186
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMDdfMTI4/MDAxNzcyODg0MTU2MDM5.f2-Ee4xfYB-rJTMF6nKjIKcmmjJtVEBSBquNt6-szUUg.b0vLtlNaOWH7J_ZOXoabbCb-rQfX05px0QGFW_PHTDIg.JPEG/output%EF%BC%BF1512795192.jpg?type=w386",
+            "photo_id": 1586215868
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMDdfNzQg/MDAxNzcyODgzOTE1MDAx.PE-9LxSax2cjMfRtMNUlXuJ2BxBDhohHPpj0tfQUn0og.QT38jTp_5NBXPWzB_Zu4kUJWk8Hf9Sk5Tq21_RRsPJsg.JPEG/IMG%EF%BC%BF3505.jpg?type=w773",
+            "photo_id": 1586215935
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMDdfMzYg/MDAxNzcyODgzOTE0OTgx.RIQ7MbY-FauHi-K20pmto1UXn4sWqMMzROikpzSrx0Eg.MWY8INBO-brhaNfcUO6jwGfm12IY1iDdH6AmWUou9cQg.JPEG/IMG%EF%BC%BF3502.jpg?type=w386",
+            "photo_id": 1586215803
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMDdfMTcw/MDAxNzcyODgzOTE2MTEy.uzXRZTMXe6tV83t4ft3avcfCaLotg9XvsSCEJ28f_YYg.WJjFibSeeR-xaO6h3jm8jflmr6VMg-8eyhfZvkXvg4Qg.JPEG/IMG%EF%BC%BF3517.jpg?type=w773",
+            "photo_id": 1586216022
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMDdfMjk2/MDAxNzcyODgzOTE1NzI4.cX3y0zxDN_Vg_kpV3dF09gbXBHl4un4o6uBB1piDNA0g.IVlw5Do6qm1-N8SICI8DRMruqHLZk7GPLUep9ZWAr4gg.JPEG/IMG%EF%BC%BF3508.jpg?type=w773",
+            "photo_id": 1586216009
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMDdfMTcz/MDAxNzcyODgzOTE1NDQ5.FRKuzMlZD6on7ATTJIyD8vKJ6BzwqSLFYWCylHiKDIkg.jXfa4MGZW-3g1nYxUC4nND95eTvPtdJBzmxhMjIkrNog.JPEG/IMG%EF%BC%BF3506.jpg?type=w386",
+            "photo_id": 1586215886
+          }
+        ]
+      },
+      {
+        "confirm_id": "27388604",
+        "review_id": "105921588",
+        "title": "260306 강남자생한방병원 기록4",
+        "contents": "자생한방병원 서울특별시 강남구 강남대로 536 오늘의 아침은 밥 카레맛고등어구이 샐러드 버섯볶음 김치국?? 무생채 열무김치 밥맘냄기고 다묵음 나솔보면서 흡입 산책은 필수라고 하셔서 강제? 로 걸음... 신기한 카페도보고 라떼로만들어먹을 아아 샷만받고 자리로 오니 약이있더라 어지럼증에 좋다는 약... 윤동주원장님 만나서 추나받구... 치료실로 와 침치료+부황",
+        "registered_at": "2026-03-06 20:43:00",
+        "author": "[redacted]",
+        "origin_url": "https://blog.naver.com/dpttpstm90/224207132806",
+        "photo_count": 19,
+        "photos": [
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMDZfMjU4/MDAxNzcyNzk2NDg3MjUx.DCSRmgD8THT-SKXn1yyJUSnvHbJx69mYC56rYpQKXNEg.4AcuDN73KBf2v0WX9ZJukDQs1gXUlVTGtbIFuJHBiakg.JPEG/IMG%EF%BC%BF3473.jpg?type=w773",
+            "photo_id": 1581342836
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMDZfMjI5/MDAxNzcyNzk2NDg5MDY1.NS0Qeih9HNurWAVxmlzYfMo-0oRSks3V0AYFJM7gEewg.x6q0puI0yH3g3P0z9UJH-qALU4Xyg9rBtaYvHqDJVYMg.JPEG/IMG%EF%BC%BF3485.jpg?type=w773",
+            "photo_id": 1581342989
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMDZfMTg4/MDAxNzcyNzk3MzAxNDMx.lDWdlWEY2zIs3IXp_uqV_tPIfTHAup3vZ-Ty0GarhU4g.wyzlezUmsxTmwAT8mV7sRYvur-N-iskJanuib2GCnO0g.JPEG/output%EF%BC%BF4022208344.jpg?type=w773",
+            "photo_id": 1581342738
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMDZfMTYz/MDAxNzcyNzk2NDg3MDUw.nVjHTdSQx3NAdX3LClmiWHiidxcgEVqDuuKbmyiLwaog._nPsuQ-8SttTstOCKDe8VSfgY0UfjGXZ4eIyIRy_EJMg.JPEG/IMG%EF%BC%BF3472.jpg?type=w773",
+            "photo_id": 1581342677
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMDZfMTky/MDAxNzcyNzk2NDg5MDAx.-Q5KFpI1iNUInvA06WbI-PyOScS5mZLgkHPygoweudMg.0n5IZgMpDL4Ueey7btaSt-49suq6s-4Tpj5IDaJ7bpkg.JPEG/IMG%EF%BC%BF3486.jpg?type=w773",
+            "photo_id": 1581342938
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMDZfMTM2/MDAxNzcyNzk2NDg2ODcx.B5TP7qznsaCR7g4GJ5wZGsx8IWSn64_bMfTP_TsVe8og.1YWpBoyBhErDRaDeoKNaG55reV9CIficyJH-heIIJFkg.JPEG/IMG%EF%BC%BF3469.jpg?type=w773",
+            "photo_id": 1581342873
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMDZfMjgy/MDAxNzcyNzk2NDkwNjgx.jgLXKsZkcSzZ8gPImDHeFfhzrbrJ_wXlHz793p70a1Eg.jhOaHocqR2ChpDCXn2SSjbaColQtE5hkNWEKcODoeBsg.JPEG/IMG%EF%BC%BF3457.jpg?type=w773",
+            "photo_id": 1581342936
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMDZfMTA5/MDAxNzcyNzk2NDg2MzAy.1H5jTOFbR-J3gC6R9f39eK2cB23JagW48R5aWbY5Pwkg.5ACgS-tMnaOsmAO6L2OJ8ukH9ECzoV8SlbLOpLbyCYgg.JPEG/IMG%EF%BC%BF3464.jpg?type=w386",
+            "photo_id": 1581342926
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMDZfMjcw/MDAxNzcyNzk2NDg4NTE2.OqFpW_unQl_00NVkFHS8DQGBKN887Ow0u4sRD31SB8Ag.BUn0xj-10Ux7BoUXsxtar3kIDTmsbv0ohiPCrDIcF5kg.JPEG/IMG%EF%BC%BF3484.jpg?type=w773",
+            "photo_id": 1581342914
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjAzMDZfODQg/MDAxNzcyNzk2NDg4MDQ5.kX3mi2arTB53I3UpKLog-IlZilwpvYPsq8wj0yrv4vcg.1zeasf1Wr6OL0yYef2yxkTZ1wYrD1KcT14m5WZjU2rIg.JPEG/IMG%EF%BC%BF3480.jpg?type=w386",
+            "photo_id": 1581343093
+          }
+        ]
+      }
+    ],
+    "current_review_count": 4,
+    "last_review_id": "105921588",
+    "last_registered_at": "2026-03-06 20:43:00",
+    "requested_page_size": 4,
+    "requested_page": 1
+  },
+  "kakaomap_review": {
+    "score_set": {
+      "review_count": 303,
+      "total_score": 1385,
+      "average_score": 4.6,
+      "photo_count": 87,
+      "strength_counts": [
+        {
+          "id": 2,
+          "count": 164
+        },
+        {
+          "id": 10,
+          "count": 145
+        },
+        {
+          "id": 4,
+          "count": 50
+        },
+        {
+          "id": 13,
+          "count": 32
+        }
+      ],
+      "strength_uv": 174
+    },
+    "strength_description": [
+      {
+        "id": 13,
+        "name": "가격",
+        "icon_url": "https://t1.kakaocdn.net/kakaomap_mobile/android/icon_review_price.png"
+      },
+      {
+        "id": 10,
+        "name": "전문성",
+        "icon_url": "https://t1.kakaocdn.net/kakaomap_mobile/android/icon_review_smart.png"
+      },
+      {
+        "id": 2,
+        "name": "친절",
+        "icon_url": "https://t1.kakaocdn.net/kakaomap_mobile/android/icon_review_kind.png"
+      },
+      {
+        "id": 4,
+        "name": "주차",
+        "icon_url": "https://t1.kakaocdn.net/kakaomap_mobile/android/icon_review_parking.png"
+      }
+    ],
+    "reviews": [
+      {
+        "review_id": 15004257,
+        "star_rating": 3,
+        "contents": "점수 높은 이유가 ... ㅋㅋ\n다른 지점은 이거저거 다 챙겨주는데 여긴 챙길게 너무 많음. 슬리퍼 수건부터 해서 웬만한거 다 ㅠㅠ 그리고 새벽에 사람 자꾸 깨우고 식사 시간이 너무 텀이 애매함",
+        "photo_count": 1,
+        "photos": [
+          {
+            "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/2265796d5caa23bb833c94cbe627880b83213e82?original",
+            "photo_id": 8258750,
+            "media_type": "PHOTO",
+            "status": "S",
+            "ui_type": "PROFILE",
+            "duration": 0,
+            "review_id": 15004257,
+            "updated_at": "2026-03-10 18:06:18",
+            "meta": {
+              "owner": {
+                "_redacted": "owner PII removed before repo commit"
+              },
+              "is_liked_by_me": false,
+              "view_count": 98,
+              "like_count": 0,
+              "near": true,
+              "place": {
+                "confirm_id": "27388604",
+                "place_name": "자생한방병원"
+              }
+            }
+          }
+        ],
+        "status": "S",
+        "registered_at": "2026-03-10 18:06:18",
+        "updated_at": "2026-03-10 18:06:18",
+        "meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          },
+          "is_liked_by_me": false,
+          "is_owner_me": false,
+          "like_count": 0,
+          "like_user_profile_image_list": [],
+          "is_place_owner_pick": false,
+          "place": {
+            "confirm_id": "27388604",
+            "place_name": "자생한방병원"
+          }
+        }
+      },
+      {
+        "review_id": 14490065,
+        "star_rating": 5,
+        "contents": "시설이 매우 깨끗하고 원장님, 주치의쌤, 간호사쌤들 다 모두 친절하심. 심지어 청소해주시는 이모님도 엄청 자주 해주시고 친절하심. 체계도 잘 잡혀있고 입원하면 하루에 두 번씩 치료 받을 수 있어 효과도 좋음",
+        "photo_count": 1,
+        "photos": [
+          {
+            "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/841bed7f27da638311c4c519ea5f2c546afbb358?original",
+            "photo_id": 7815174,
+            "media_type": "PHOTO",
+            "status": "S",
+            "ui_type": "PROFILE",
+            "duration": 0,
+            "review_id": 14490065,
+            "updated_at": "2025-12-30 10:16:01",
+            "meta": {
+              "owner": {
+                "_redacted": "owner PII removed before repo commit"
+              },
+              "is_liked_by_me": false,
+              "view_count": 12,
+              "like_count": 0,
+              "near": true,
+              "place": {
+                "confirm_id": "27388604",
+                "place_name": "자생한방병원"
+              }
+            }
+          }
+        ],
+        "status": "S",
+        "registered_at": "2025-12-30 10:16:01",
+        "updated_at": "2025-12-30 10:16:01",
+        "meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          },
+          "is_liked_by_me": false,
+          "is_owner_me": false,
+          "like_count": 0,
+          "like_user_profile_image_list": [],
+          "is_place_owner_pick": false,
+          "place": {
+            "confirm_id": "27388604",
+            "place_name": "자생한방병원"
+          }
+        }
+      },
+      {
+        "review_id": 14358773,
+        "star_rating": 5,
+        "contents": "입원하게 되었는데 음식이 정말 맛있어요~ 병원 음식 맛없다고 하는데 자생은 음식까지 최고네요. 간호사 선생님들 너무 너무 너무 친절하세요. 어쩜 모든 분들이 이렇게 친절하실 수 있을까 싶을 정도로 매번 어떤지 증상 물어 봐 주시고 기록해 두세요.  청소하시는 아주머니도 정말 일을 소명을 갖고 하시는 듯. 마음으로 일하셔서 더 잘 회복 할 수 있었습니다 ",
+        "photo_count": 1,
+        "photos": [
+          {
+            "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/6372e83e95cd964a34e5b87f05af4b3d28c372fe?original",
+            "photo_id": 7699404,
+            "media_type": "PHOTO",
+            "status": "S",
+            "ui_type": "PROFILE",
+            "duration": 0,
+            "review_id": 14358773,
+            "updated_at": "2025-12-12 09:25:13",
+            "meta": {
+              "owner": {
+                "_redacted": "owner PII removed before repo commit"
+              },
+              "is_liked_by_me": false,
+              "view_count": 108,
+              "like_count": 0,
+              "near": true,
+              "place": {
+                "confirm_id": "27388604",
+                "place_name": "자생한방병원"
+              }
+            }
+          }
+        ],
+        "status": "S",
+        "registered_at": "2025-12-12 09:25:13",
+        "updated_at": "2025-12-12 09:25:13",
+        "meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          },
+          "is_liked_by_me": false,
+          "is_owner_me": false,
+          "like_count": 0,
+          "like_user_profile_image_list": [],
+          "is_place_owner_pick": false,
+          "place": {
+            "confirm_id": "27388604",
+            "place_name": "자생한방병원"
+          }
+        }
+      }
+    ],
+    "photos": [
+      {
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/2c822c84509537d4cd4f9d88bac2f269e608b2d8?original",
+        "photo_id": 8700610,
+        "media_type": "PHOTO",
+        "status": "S",
+        "ui_type": "PROFILE",
+        "duration": 0,
+        "review_id": 15500335,
+        "updated_at": "2026-05-14 13:12:33",
+        "meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          },
+          "is_liked_by_me": false,
+          "near": false,
+          "place": {
+            "confirm_id": "27388604",
+            "place_name": "자생한방병원"
+          }
+        }
+      },
+      {
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/f531e8b2e57c14d6897f5cb964ca4c70d3edd834?original",
+        "photo_id": 8700611,
+        "media_type": "PHOTO",
+        "status": "S",
+        "ui_type": "PROFILE",
+        "duration": 0,
+        "review_id": 15500335,
+        "updated_at": "2026-05-14 13:12:33",
+        "meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          },
+          "is_liked_by_me": false,
+          "near": false,
+          "place": {
+            "confirm_id": "27388604",
+            "place_name": "자생한방병원"
+          }
+        }
+      },
+      {
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/2265796d5caa23bb833c94cbe627880b83213e82?original",
+        "photo_id": 8258750,
+        "media_type": "PHOTO",
+        "status": "S",
+        "ui_type": "PROFILE",
+        "duration": 0,
+        "review_id": 15004257,
+        "updated_at": "2026-03-10 18:28:03",
+        "meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          },
+          "is_liked_by_me": false,
+          "near": false,
+          "place": {
+            "confirm_id": "27388604",
+            "place_name": "자생한방병원"
+          }
+        }
+      },
+      {
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/126e214231149293bb410160229cdfe648670e4e?original",
+        "photo_id": 7618684,
+        "media_type": "PHOTO",
+        "status": "S",
+        "ui_type": "PROFILE",
+        "duration": 0,
+        "review_id": 14265614,
+        "updated_at": "2025-11-28 12:28:59",
+        "meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          },
+          "is_liked_by_me": false,
+          "near": false,
+          "place": {
+            "confirm_id": "27388604",
+            "place_name": "자생한방병원"
+          }
+        }
+      },
+      {
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/6303b5e5694f023eeaae653f97bfb5a4fafe1c4e?original",
+        "photo_id": 7618681,
+        "media_type": "PHOTO",
+        "status": "S",
+        "ui_type": "PROFILE",
+        "duration": 0,
+        "review_id": 14265614,
+        "updated_at": "2025-11-28 12:28:59",
+        "meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          },
+          "is_liked_by_me": false,
+          "near": false,
+          "place": {
+            "confirm_id": "27388604",
+            "place_name": "자생한방병원"
+          }
+        }
+      },
+      {
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/85a8ccbc934901e461c1f25e9adafef7944267a2?original",
+        "photo_id": 7618680,
+        "media_type": "PHOTO",
+        "status": "S",
+        "ui_type": "PROFILE",
+        "duration": 0,
+        "review_id": 14265614,
+        "updated_at": "2025-11-28 12:28:59",
+        "meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          },
+          "is_liked_by_me": false,
+          "near": false,
+          "place": {
+            "confirm_id": "27388604",
+            "place_name": "자생한방병원"
+          }
+        }
+      },
+      {
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/1e8d310bda617b64e18b4e24671348c16561e85d?original",
+        "photo_id": 7585528,
+        "media_type": "PHOTO",
+        "status": "S",
+        "ui_type": "PROFILE",
+        "duration": 0,
+        "review_id": 14226842,
+        "updated_at": "2025-11-22 19:43:46",
+        "meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          },
+          "is_liked_by_me": false,
+          "near": false,
+          "place": {
+            "confirm_id": "27388604",
+            "place_name": "자생한방병원"
+          }
+        }
+      },
+      {
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/2b0da03a87aca71011e899fbf272a7019a33eec7?original",
+        "photo_id": 7585527,
+        "media_type": "PHOTO",
+        "status": "S",
+        "ui_type": "PROFILE",
+        "duration": 0,
+        "review_id": 14226842,
+        "updated_at": "2025-11-22 19:43:46",
+        "meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          },
+          "is_liked_by_me": false,
+          "near": false,
+          "place": {
+            "confirm_id": "27388604",
+            "place_name": "자생한방병원"
+          }
+        }
+      },
+      {
+        "url": "https://thumb.kakaocdn.net/dna/kamp/source/rvdhw5zklhd837n9xh1t0jyzj/thumbs/1.jpg?credential=TuMuFGKUIcirOSjFzOpncbomGFEIdZWK&expires=33318562516&kamp_tidx=0&signature=%2BzcZ0r3ZdCmuOQx5a%2BDGgj7iNCk%3D&ts=1761653716",
+        "photo_id": 7432354,
+        "vid": "rvdhw5zklhd837n9xh1t0jyzj",
+        "media_type": "VOD",
+        "status": "S",
+        "ui_type": "PROFILE",
+        "duration": 20,
+        "review_id": 14045141,
+        "updated_at": "2025-10-28 21:40:06",
+        "meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          },
+          "is_liked_by_me": false,
+          "near": false,
+          "place": {
+            "confirm_id": "27388604",
+            "place_name": "자생한방병원"
+          }
+        },
+        "preview": "https://kdnv-kt-orisa-edge.play.kakao.com/s-kakaomap/vod/rvdhw5zklhd837n9xh1t0jyzj/mp4/mp4/preview.mp4?orisa-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ2aWQiOiJydmRodzV6a2xoZDgzN245eGgxdDBqeXpqIiwidGlkIjoiam9nYjE0NXE2ejN6eHgzYmNnOW0iLCJzaWQiOiJrYWthb21hcCIsInB4LWJwcyI6NTQzNDcyNCwicHgtYnVmYWhlYWQiOjMzLCJweC1wYXRoIjoiL3Mta2FrYW9tYXAvdm9kL3J2ZGh3NXprbGhkODM3bjl4aDF0MGp5emovbXA0L21wNC9wcmV2aWV3Lm1wNCIsImV4cCI6MTc3OTkyNjY1NiwiaWF0IjoxNzc5OTE1ODU2fQ.q6Nl5vH6EQrpBLBStGRiZK7_8JlSW4j_Fz11lKdr81M"
+      },
+      {
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/d3777daec3b351191b4649556299074864e54f41?original",
+        "photo_id": 7398178,
+        "media_type": "PHOTO",
+        "status": "S",
+        "ui_type": "PROFILE",
+        "duration": 0,
+        "review_id": 14003761,
+        "updated_at": "2025-10-23 12:58:23",
+        "meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          },
+          "is_liked_by_me": false,
+          "near": false,
+          "place": {
+            "confirm_id": "27388604",
+            "place_name": "자생한방병원"
+          }
+        }
+      }
+    ],
+    "timeline_score_table": {
+      "act_review": {
+        "event": 0,
+        "place_banner": [
+          {
+            "title": "사진/영상 등록",
+            "score": 3
+          },
+          {
+            "title": "글 작성",
+            "score": 2
+          }
+        ]
+      }
+    },
+    "has_next": false,
+    "has_my_review": false
+  },
+  "find_way": {
+    "subway": {
+      "station_simple_name": "논현역",
+      "exit_num": "3",
+      "to_exit_distance": 12,
+      "subway_list": [
+        {
+          "subway_line_id": "SES7",
+          "subway_line_icon_name": "7"
+        },
+        {
+          "subway_line_id": "SES34",
+          "subway_line_icon_name": "신분당"
+        }
+      ],
+      "to_exit_minute": 1
+    }
+  },
+  "navi_guides": [
+    {
+      "guide_id": "884799",
+      "name": "주차장",
+      "flag": "G",
+      "type": "PARKING",
+      "point": {
+        "lon": 127.022550646963,
+        "lat": 37.509813278486
+      }
+    },
+    {
+      "guide_id": "884800",
+      "name": "입구",
+      "flag": "G",
+      "point": {
+        "lon": 127.022192370905,
+        "lat": 37.5099441722086
+      }
+    }
+  ],
+  "trend_rank": {
+    "show_ranking_card": true
+  },
+  "place_add_info": {
+    "facilities": {
+      "is_parking": true,
+      "is_pet": false,
+      "is_fordisabled": false
+    },
+    "tags": [
+      "2차병원",
+      "관절염",
+      "근육통",
+      "도수치료",
+      "무릎관절치료",
+      "물리치료",
+      "비염",
+      "생리통클리닉",
+      "신경클리닉",
+      "실손24",
+      "안면신경마비",
+      "오십견",
+      "자동차보험진료기관",
+      "추나요법",
+      "턱관절질환",
+      "통증치료",
+      "한방클리닉",
+      "회전근개손상"
+    ],
+    "simple_parking_infos": {
+      "texts": [
+        "유료 주차"
+      ],
+      "has_ai_mate_data": false
+    },
+    "full_detail_infos": [
+      {
+        "title": "상세 정보",
+        "items": [
+          {
+            "icon": {
+              "text": "결제 방식",
+              "url": "https://t1.daumcdn.net/localimg/place/2026/infoIcon/icon_wallet_line.svg"
+            },
+            "contents": [
+              {
+                "label": "제로페이",
+                "landing_url": "https://www.zeropay.or.kr"
+              }
+            ]
+          },
+          {
+            "icon": {
+              "text": "장소키워드",
+              "url": "https://t1.daumcdn.net/localimg/place/2026/infoIcon/icon_tag_line.svg"
+            },
+            "contents": [
+              {
+                "label": "2차병원"
+              },
+              {
+                "label": "관절염"
+              },
+              {
+                "label": "근육통"
+              },
+              {
+                "label": "도수치료"
+              },
+              {
+                "label": "무릎관절치료"
+              },
+              {
+                "label": "물리치료"
+              },
+              {
+                "label": "비염"
+              },
+              {
+                "label": "생리통클리닉"
+              },
+              {
+                "label": "신경클리닉"
+              },
+              {
+                "label": "실손24"
+              },
+              {
+                "label": "안면신경마비"
+              },
+              {
+                "label": "오십견"
+              },
+              {
+                "label": "자동차보험진료기관"
+              },
+              {
+                "label": "추나요법"
+              },
+              {
+                "label": "턱관절질환"
+              },
+              {
+                "label": "통증치료"
+              },
+              {
+                "label": "한방클리닉"
+              },
+              {
+                "label": "회전근개손상"
+              }
+            ]
+          },
+          {
+            "icon": {
+              "text": "주차 가능",
+              "url": "https://t1.daumcdn.net/localimg/place/2026/infoIcon/icon_parkingsquare_line.svg"
+            },
+            "tags": {
+              "text": "유료",
+              "color": "Red"
+            },
+            "contents": [
+              {
+                "label": "주차 가능"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "add_info_summaries": [
+      {
+        "texts": [
+          "유료 주차"
+        ],
+        "icon": {
+          "text": "주차정보",
+          "url": "https://t1.daumcdn.net/localimg/place/2026/infoIconMini/parkingicon.svg"
+        },
+        "has_ai_mate_data": false
+      }
+    ]
+  },
+  "reward": {
+    "fiy": {
+      "basic_info": 0,
+      "contact": 200,
+      "menu": 0,
+      "open_hour": 200,
+      "delete_place": 200,
+      "add_info": 0,
+      "max_amount": 400
+    }
+  },
+  "ai_content_warning": {
+    "is_home_tab_display_enabled": false,
+    "is_info_tab_display_enabled": false
+  }
+}
