@@ -42,6 +42,7 @@ if TYPE_CHECKING:
         KakaoBlog,
         KakaoPlace,
         KakaoReviews,
+        NaverBlog,
         NaverPlace,
         SearchQuery,
         SearchResult,
@@ -158,21 +159,24 @@ def build_self_claim_chunk(
 def build_blog_chunk(
     crawl_data: "CrawlData | None" = None,
     kakao_blog: "KakaoBlog | dict | None" = None,
+    naver_blog: "NaverBlog | dict | None" = None,
 ) -> str:
     """블로그 시그널 청크.
 
-    자체 사이트 blog 페이지 텍스트 + 카카오 blog seeds 의 title + contents 합산.
-    개인정보(author)는 parse_blog 에서 이미 제거됨. origin_url 은 본문 생략.
+    자체 사이트 blog 페이지 + 카카오 blog seeds + 네이버 블로그 posts 의
+    title + 본문(contents/description) 합산. 작성자 PII 는 parse 단계에서 이미 제거됨.
 
     Args:
         crawl_data: BE 크롤링 결과. None 이면 사이트 블로그 텍스트 생략.
-        kakao_blog: kakao_place_adapter.parse_blog() 출력. None 이면 카카오 블로그 생략.
+        kakao_blog: parse_blog() 출력(KakaoBlog 또는 dict). None 이면 생략.
+        naver_blog: parse_naver_blog() 출력(NaverBlog 또는 dict). None 이면 생략.
 
     Returns:
         자연어 청크 문자열. 데이터 없으면 "".
     """
     parts: list[str] = []
     kakao_blog = _as_dict(kakao_blog)
+    naver_blog = _as_dict(naver_blog)
 
     # 1. 자체 사이트 blog 페이지
     site_blog_text = _site_pages_text(crawl_data, ("blog",))
@@ -193,10 +197,29 @@ def build_blog_chunk(
                 seed_blocks.append(block)
         if seed_blocks:
             total_posts = kakao_blog.get("total_posts")
-            header = f"카카오 블로그 포스트"
+            header = "카카오 블로그 포스트"
             if total_posts:
                 header += f" (전체 {total_posts}건 중 상위)"
             parts.append(f"[{header}]\n" + "\n---\n".join(seed_blocks))
+
+    # 3. 네이버 블로그 posts (title + description 발췌)
+    if naver_blog:
+        posts: list[dict] = naver_blog.get("posts") or []
+        post_blocks: list[str] = []
+        for post in posts:
+            title = (post.get("title") or "").strip()
+            desc = (post.get("description") or "").strip()
+            if title or desc:
+                block = f"제목: {title}" if title else ""
+                if desc:
+                    block = f"{block}\n내용: {desc}" if block else f"내용: {desc}"
+                post_blocks.append(block)
+        if post_blocks:
+            total = naver_blog.get("total")
+            header = "네이버 블로그 포스트"
+            if total:
+                header += f" (전체 {total}건 중 상위)"
+            parts.append(f"[{header}]\n" + "\n---\n".join(post_blocks))
 
     return "\n\n".join(parts)
 
@@ -274,6 +297,7 @@ def build_signal_chunks(
     kakao_reviews: "KakaoReviews | dict | None" = None,
     kakao_blog: "KakaoBlog | dict | None" = None,
     naver_reviews: "NaverPlace | dict | None" = None,
+    naver_blog: "NaverBlog | dict | None" = None,
     google_reviews: "GoogleReviews | dict | None" = None,
 ) -> dict[str, str]:
     """모든 시그널 청크를 조립하여 비어있지 않은 것만 반환.
@@ -290,7 +314,7 @@ def build_signal_chunks(
     if sc:
         result["self_claim"] = sc
 
-    bc = build_blog_chunk(crawl_data=crawl_data, kakao_blog=kakao_blog)
+    bc = build_blog_chunk(crawl_data=crawl_data, kakao_blog=kakao_blog, naver_blog=naver_blog)
     if bc:
         result["blog"] = bc
 

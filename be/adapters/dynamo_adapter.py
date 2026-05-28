@@ -136,6 +136,7 @@ class DynamoAdapter:
             "kakao_reviews": _strip(self.get_entity(hospital_id, "KAKAO#REVIEWS")),
             "kakao_blog": _strip(self.get_entity(hospital_id, "KAKAO#BLOG")),
             "naver_reviews": _strip(self.get_entity(hospital_id, "NAVER#PLACE#REVIEWS")),
+            "naver_blog": _strip(self.get_entity(hospital_id, "NAVER#BLOG")),
             "google_reviews": _strip(self.get_entity(hospital_id, "GOOGLE#PLACE")),
         }
 

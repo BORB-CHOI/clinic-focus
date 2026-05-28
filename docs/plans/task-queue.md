@@ -52,7 +52,7 @@ PoC 시연(14개) 은 통과한 상태(PR [#25](https://github.com/BORB-CHOI/cli
 | 5 | 신뢰도·피드백 자기교정 | Feedback 누적 + 임계 + 재계산 | ❌ | `recompute_confidence`·`aggregate_feedback_stats` 미구현 |
 | 6 | 분류 변경 이력 자동 기록 | hash diff + ChangeHistory INSERT | ❌ | 테이블만 존재 |
 | 7 | 피드백 (디바이스ID 중복방지) | API + UI + DDB | ❌ | API skeleton 만, FE UI 없음 |
-| 8 | 관련 병원 추천 | 유사도 + 메타필터 + "다루지 않는 분야 대안" | △ 코드만 | 실측 없음, alternative_hospital_ids 미연결 |
+| 8 | 관련 병원 추천 | 유사도 + 메타필터 + "다루지 않는 분야 대안" | ✅ 연결 완료 | `ExcludedService.alternative_hospital_ids` 필드 추가 + `find_related_hospitals` fills_gap 이 in-place 채움 (2026-05-28). 실데이터는 KB ingest 후 |
 | 9 | 카테고리 이중 색인 | extract 실측 + "다루지 않는 분야" 정확도 | △ 코드만 | 실측 없음 |
 
 ---
@@ -377,19 +377,16 @@ SK = `entity` (S)
 >
 > 본체 흐름: 카카오 `parse_place` 가 `representative_image_url` 1개를 뽑아 DDB `KAKAO#PLACE` 에 저장 → BE `/api/hospitals/{id}` 응답·검색 카드에 노출. S3 미러는 핫링크 깨짐 대비 추후 (URL 저장만으로 PoC 충분). **개인정보**: 폴백 사진의 `kakaomap_review_photo_meta.owner` 는 저장 안 함 (URL 만).
 
-- [ ] `be/core/crawlers/site_crawler.py` (현 `crawler.py`) — 자체 사이트, **HTML 잡음 정제 추가** (이슈 [#13](https://github.com/BORB-CHOI/clinic-focus/issues/13))
-  - 페이지 간 중복 단락 자동 검출 (한 사이트에서 N회 이상 반복 = 푸터/메뉴 판정)
-  - 잡음 블랙리스트 (modoo 안내·개인정보취급방침·환자권리장전·이용약관·비급여 고지·404·Copyright)
-  - 정제 후 100자 미만 → "정보 부족" 마크
-- [ ] `be/core/crawlers/naver_place_crawler.py` 신규 — **위 후기 시그널 전략 박스 결정 후 진입**
-  - 검색 → `place_id` 매칭 → 영업시간·전화·사진·총 방문자 수·키워드 통계 추출
-  - 리뷰 본문 수집 (의료법 §56③ 회피 — DDB raw 저장 + 임베딩·AI 설명 입력으로만, 화면 노출은 키워드 빈도만)
-  - `NAVER#PLACE` + `NAVER#PLACE#REVIEWS` entity 적재
-- [ ] `be/core/crawlers/naver_blog_crawler.py` 신규
-  - 네이버 검색 API `v1/search/blog` — 쿼리 `{병원명} {지역명} {진료과목}`
-  - 상위 30~50개 포스트 URL → 본문 추출 (httpx + BS4)
-  - 키워드 빈도 + 주제 분포 (TF-IDF 또는 Bedrock 임베딩 클러스터링)
-  - `NAVER#BLOG` entity 적재
+- [x] `be/core/crawler.py` HTML 잡음 정제 (이슈 [#13](https://github.com/BORB-CHOI/clinic-focus/issues/13), 2026-05-28)
+  - [x] `_denoise_pages` — 페이지 간 반복 단락 검출(전체 70%+ 등장 = 푸터/메뉴, 페이지<3 스킵, 전부 날아가면 블랙리스트만 fallback)
+  - [x] 잡음 블랙리스트(개인정보취급방침·환자권리장전·이용약관·404·Copyright·modoo·사업자등록번호). **비급여는 제외 — 시술명·가격(PriceItem) 원천이라 시그널**
+  - [x] 정제 후 100자 미만 → "[정보 부족]" 마크
+- [~] 네이버 플레이스 — **어댑터 완성, 크롤 실행만 남음** (2026-05-28)
+  - [x] `be/adapters/naver_place_adapter.py` — Playwright headless 로 ncpt 토큰 자동 발급 → `pcmap-api.place.naver.com/graphql`(getVisitorReviews) fetch + 순수 파서 `parse_place`. 후기 본문(body) 보존, 작성자 PII(author·userIdno·nickname) 미보존. GraphQL 쿼리 `be/adapters/naver_queries/`. classify `_analyze_reviews` + primary_topics 에 후기 본문 합류(키워드 빈도는 AI 자체 추출 — 네이버는 병원 카테고리 통계 미제공, 사실 8)
+  - [ ] 실제 크롤 실행 → `NAVER#PLACE#REVIEWS` 적재 (회색지대 — 운영자 결정, Playwright 1건 18~25초)
+- [x] 네이버 블로그 — **어댑터 완성** (2026-05-28)
+  - [x] `be/adapters/naver_blog_adapter.py` — 공식 `v1/search/blog`(NAVER_MAP_* 키 = 검색 API 키) httpx 단발 + `parse_naver_blog`(HTML 태그·엔티티 제거, 작성자 PII 미보존). classify `_analyze_blog(_rule)` + kb_store `build_blog_chunk` 에 posts title+description 합류
+  - [ ] 실제 크롤 실행 → `NAVER#BLOG` 적재 (공식 API, 합법. 외부 크롤 일괄 시점)
 - [~] 카카오 — **어댑터 완성, 크롤 실행만 남음** (2026-05-28, 커밋 `9d0f256`·`7d79ab8`)
   - [x] 비공식 실측 완료 — 공식 `dapi.kakao.com` 으로 place_id 획득 → `place-api.map.kakao.com` panel3/reviews/blog httpx 단발(ncpt·Playwright 불필요). 사실 13~24
   - [x] `be/adapters/kakao_place_adapter.py` — fetch + 순수 파서(parse_place/reviews/blog) + PII 제거 + place_id 검증. AI `build_signal_chunks` 가 소비할 형태(tags·키워드 빈도·블로그 시드)

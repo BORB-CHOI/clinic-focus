@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
+from collections import Counter
 from datetime import datetime
 from typing import TYPE_CHECKING, Literal
 from urllib.parse import urljoin, urlparse
@@ -44,6 +45,90 @@ MAX_PAGES = 10
 MAX_IMAGES = 30
 
 USER_AGENT = "ClinicFocusBot/1.0 (research; contact@clinicfocus.kr)"
+
+# HTML 잡음 블랙리스트 (이슈 #13) — 의료 사이트 공통 비-진료 텍스트.
+# 정제 후 이 문구를 포함한 단락은 자칭/블로그 시그널에서 제외한다.
+# ⚠️ 비급여 진료비·항목은 제외하지 않는다 — 시술명·가격(PriceItem) 의 원천이라 시그널.
+_NOISE_BLACKLIST = (
+    "개인정보취급방침", "개인정보처리방침", "환자권리장전", "이용약관",
+    "Copyright", "COPYRIGHT", "All rights reserved",
+    "modoo.at", "모두의 홈페이지", "페이지를 찾을 수 없", "404 Not Found",
+    "사업자등록번호", "통신판매업신고",
+)
+
+# 페이지 간 반복 판정 임계 — 한 사이트의 이 비율 이상 페이지에서 똑같이 나오면
+# 네비/푸터/공통 배너로 보고 제거. 메뉴/푸터는 보통 전 페이지에 나오므로 보수적으로(0.7)
+# 잡아 고유 진료 단락의 과삭제를 막는다. 페이지가 3개 미만이면 반복 검출 자체를 끈다.
+_REPEAT_RATIO_THRESHOLD = 0.7
+_REPEAT_MIN_PAGES = 3
+
+# 단락 분리 기준 — 문장부호·줄바꿈 외에 메뉴성 짧은 토막은 길이로 거른다.
+_MIN_PARAGRAPH_LEN = 10
+
+
+def _split_paragraphs(text: str) -> list[str]:
+    """텍스트를 단락 후보로 분리한다. 줄바꿈·마침표 기준 + 공백 정규화."""
+    # 줄바꿈/마침표/물음표/느낌표 뒤에서 분리
+    chunks = re.split(r"[\n。.!?]+", text)
+    return [re.sub(r"\s+", " ", c).strip() for c in chunks if c.strip()]
+
+
+def _denoise_pages(pages: list[CrawledPage]) -> list[CrawledPage]:
+    """페이지 간 반복 단락(네비·푸터)·잡음 블랙리스트를 제거한다 (이슈 #13).
+
+    1) 모든 페이지의 단락을 모아, N개 이상 페이지에서 반복되는 단락 = 공통 잡음으로 판정.
+    2) 잡음 블랙리스트 문구를 포함한 단락 제거.
+    3) 정제 후 100자 미만이면 html_text 끝에 "[정보 부족]" 마크.
+
+    원본 page 객체는 건드리지 않고 html_text 만 교체한 새 리스트를 반환.
+    """
+    if not pages:
+        return pages
+
+    # 페이지별 단락 집합
+    page_paragraphs: list[list[str]] = [_split_paragraphs(p.html_text or "") for p in pages]
+
+    # 단락별 등장 페이지 수 카운트
+    para_doc_count: Counter = Counter()
+    for paras in page_paragraphs:
+        for para in set(paras):  # 한 페이지 내 중복은 1회로
+            para_doc_count[para] += 1
+
+    n_pages = len(pages)
+    # 페이지가 적으면(<3) 반복 검출은 우연한 중복을 과삭제하므로 끈다.
+    # 충분하면 "전체의 70% 이상 페이지에 등장"한 단락만 네비/푸터로 본다.
+    repeat_threshold = (
+        max(2, int(round(n_pages * _REPEAT_RATIO_THRESHOLD)))
+        if n_pages >= _REPEAT_MIN_PAGES
+        else n_pages + 1  # 도달 불가 = 반복 검출 비활성
+    )
+
+    def _is_noise(para: str) -> bool:
+        if len(para) < _MIN_PARAGRAPH_LEN:
+            return True
+        if para_doc_count[para] >= repeat_threshold:
+            return True  # 여러 페이지 반복 = 네비/푸터
+        return any(bad in para for bad in _NOISE_BLACKLIST)
+
+    def _blacklist_only(paras: list[str]) -> list[str]:
+        """반복 검출 없이 블랙리스트·길이 필터만 적용 (반복 검출 과삭제 fallback)."""
+        return [
+            p for p in paras
+            if len(p) >= _MIN_PARAGRAPH_LEN and not any(bad in p for bad in _NOISE_BLACKLIST)
+        ]
+
+    cleaned: list[CrawledPage] = []
+    for page, paras in zip(pages, page_paragraphs):
+        kept = [p for p in paras if not _is_noise(p)]
+        # 반복 검출이 단락을 전부 날렸는데 원본엔 내용이 있었다면(사이트가 페이지 간
+        # 거의 동일한 극단 케이스) 반복 검출은 신뢰할 수 없으므로 블랙리스트만 적용.
+        if not kept and paras:
+            kept = _blacklist_only(paras)
+        text = " ".join(kept)
+        if len(text) < 100:
+            text = f"{text} [정보 부족]".strip()
+        cleaned.append(page.model_copy(update={"html_text": text}))
+    return cleaned
 
 
 async def crawl_one_hospital(
@@ -183,7 +268,7 @@ async def crawl_one_hospital(
     return CrawlData(
         hospital_id=hospital_id,
         website_url=website_url,
-        pages=pages,
+        pages=_denoise_pages(pages),  # 이슈 #13 — 페이지 간 반복·잡음 정제
         images=images,
         public_data=PublicData(license_number="", specialists=[], registered_devices=[]),
     )

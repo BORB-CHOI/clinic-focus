@@ -19,7 +19,13 @@ def find_related_hospitals(
     excluded_services: list[ExcludedService],
     limit: int = 5,
 ) -> list[RelatedHospital]:
-    """상세 페이지 영역 ⑧: 같은 주력 + 빈자리 보완 병원 추천."""
+    """상세 페이지 영역 ⑧: 같은 주력 + 빈자리 보완 병원 추천.
+
+    ⚠️ 부작용: fills_gap 매칭 시 입력 ``excluded_services`` 의 각 항목
+    ``alternative_hospital_ids`` 를 **in-place 로 채운다**(영역 ② ↔ ⑧ 연결).
+    중복은 막지만, 같은 ExcludedService 객체를 여러 번 넘기면 누적되므로 호출자는
+    1회 분류 흐름에서 새로 만든 객체를 넘길 것.
+    """
     from ai.search.kb_store import retrieve_hospital
 
     results: list[RelatedHospital] = []
@@ -97,6 +103,10 @@ def find_related_hospitals(
                 recommendation_type="fills_gap",
                 distance_km=r.distance_km,
             ))
+            # 영역 ⑧ 연결 — 이 excluded 분야의 대안 병원 ID 를 역으로 채움 (in-place).
+            # 호출자가 같은 excluded_services 를 SERVICES entity 에 저장하면 alt_ids 가 박힌다.
+            if r.hospital_id not in excluded.alternative_hospital_ids:
+                excluded.alternative_hospital_ids.append(r.hospital_id)
             break
 
     return results[:limit]
