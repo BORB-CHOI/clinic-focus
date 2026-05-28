@@ -633,6 +633,32 @@ def _compute_confidence(
     return Confidence(score=score, level=level, signals=signals)
 
 
+def _cap_rule_only_confidence(confidence: Confidence) -> Confidence:
+    """룰 단독(use_llm=False) 경로 전용 상한 보정.
+
+    LLM·Vision 교차검증이 없으므로 "확실" 판정은 불가능하다.
+    score 를 CONFIDENCE_THRESHOLD_LOW(70) 로 cap 하고 level 을 재산정한다.
+    signals 비율 구성은 그대로 유지한다.
+
+    Args:
+        confidence: _compute_confidence 가 계산한 원본 Confidence.
+
+    Returns:
+        score 가 70 이하로 cap 된 새 Confidence (level 재산정 포함).
+    """
+    capped_score = min(confidence.score, CONFIDENCE_THRESHOLD_LOW)
+
+    if capped_score >= CONFIDENCE_THRESHOLD_HIGH:
+        # CONFIDENCE_THRESHOLD_LOW <= CONFIDENCE_THRESHOLD_HIGH 일 때도 안전하게
+        level = "확실"
+    elif capped_score >= CONFIDENCE_THRESHOLD_LOW:
+        level = "추정"
+    else:
+        level = "정보 부족"
+
+    return Confidence(score=capped_score, level=level, signals=confidence.signals)
+
+
 # ---------------------------------------------------------------------------
 # 내부 헬퍼 — 룰 기반 자칭 컨셉 추출 (LLM 미사용)
 # ---------------------------------------------------------------------------
@@ -849,6 +875,10 @@ def classify_hospital(
 
     # 8. 신뢰도 점수 계산
     confidence = _compute_confidence(raw_contributions, vision_signal)
+    # 룰 단독(use_llm=False) 경로는 LLM·Vision 교차검증이 없으므로
+    # "확실" 판정 불가. CONFIDENCE_THRESHOLD_LOW(70) 로 상한 cap.
+    if not use_llm:
+        confidence = _cap_rule_only_confidence(confidence)
     logger.info(
         "신뢰도 계산 완료 — score=%d level=%s",
         confidence.score,

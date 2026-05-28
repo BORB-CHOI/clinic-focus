@@ -268,6 +268,119 @@ class TestConfidence:
 
 
 # ---------------------------------------------------------------------------
+# 테스트 (d-2) 룰 단독 신뢰도 상한 보정 — 핵심 설계 검증
+# ---------------------------------------------------------------------------
+
+class TestRuleOnlyConfidenceCap:
+    """use_llm=False 룰 단독 경로는 LLM·Vision 교차검증이 없으므로
+    confidence.score <= 70, level != '확실' 이어야 한다."""
+
+    @patch("ai.core.bedrock_client.invoke_model")
+    def test_score_capped_at_70_strong_single_focus(
+        self, _mock: MagicMock, ortho_crawl_data: CrawlData
+    ) -> None:
+        """단일 주력이 강한 정형외과 픽스처 — score 가 70 이하로 cap 돼야 한다."""
+        from ai.pipeline.classify import classify_hospital
+
+        result = classify_hospital(ortho_crawl_data, use_llm=False)
+        assert result.confidence.score <= 70, (
+            f"룰 단독인데 score={result.confidence.score} > 70 — 상한 cap 미적용"
+        )
+
+    @patch("ai.core.bedrock_client.invoke_model")
+    def test_level_not_확실_strong_single_focus(
+        self, _mock: MagicMock, ortho_crawl_data: CrawlData
+    ) -> None:
+        """단일 주력이 강한 픽스처라도 룰 단독에서 '확실' 이 나와선 안 된다."""
+        from ai.pipeline.classify import classify_hospital
+
+        result = classify_hospital(ortho_crawl_data, use_llm=False)
+        assert result.confidence.level != "확실", (
+            f"룰 단독인데 level='{result.confidence.level}' — '확실' 판정 불가"
+        )
+
+    @patch("ai.core.bedrock_client.invoke_model")
+    def test_level_in_추정_or_정보부족(
+        self, _mock: MagicMock, ortho_crawl_data: CrawlData
+    ) -> None:
+        """룰 단독 level 은 '추정' 또는 '정보 부족' 중 하나여야 한다."""
+        from ai.pipeline.classify import classify_hospital
+
+        result = classify_hospital(ortho_crawl_data, use_llm=False)
+        assert result.confidence.level in {"추정", "정보 부족"}, (
+            f"룰 단독 level='{result.confidence.level}' — 예상 외 값"
+        )
+
+    @patch("ai.core.bedrock_client.invoke_model")
+    def test_cap_helper_directly(self, _mock: MagicMock) -> None:
+        """_cap_rule_only_confidence 헬퍼 직접 단위 테스트.
+
+        score=100/'확실' 입력 → score=70/'추정' 출력이어야 한다.
+        signals 구성은 그대로 유지돼야 한다.
+        """
+        from ai.pipeline.classify import _cap_rule_only_confidence
+        from shared.models import Confidence, SignalContributions
+
+        original = Confidence(
+            score=100,
+            level="확실",
+            signals=SignalContributions(
+                self_claim=40, vision=0, blog=30, reviews=30
+            ),
+        )
+        capped = _cap_rule_only_confidence(original)
+
+        assert capped.score == 70, f"score={capped.score} (expected 70)"
+        assert capped.level == "추정", f"level='{capped.level}' (expected '추정')"
+        # signals 비율 구성은 변경 없음
+        assert capped.signals.self_claim == original.signals.self_claim
+        assert capped.signals.blog == original.signals.blog
+        assert capped.signals.reviews == original.signals.reviews
+
+    @patch("ai.core.bedrock_client.invoke_model")
+    def test_cap_helper_정보부족_preserved(self, _mock: MagicMock) -> None:
+        """score 가 이미 70 미만이면 cap 후에도 '정보 부족' 유지."""
+        from ai.pipeline.classify import _cap_rule_only_confidence
+        from shared.models import Confidence, SignalContributions
+
+        original = Confidence(
+            score=50,
+            level="정보 부족",
+            signals=SignalContributions(
+                self_claim=50, vision=0, blog=30, reviews=20
+            ),
+        )
+        capped = _cap_rule_only_confidence(original)
+
+        assert capped.score == 50
+        assert capped.level == "정보 부족"
+
+    @patch("ai.core.bedrock_client.invoke_model")
+    def test_llm_path_not_capped(self, mock_invoke: MagicMock) -> None:
+        """use_llm=True 경로는 cap 적용 안 됨 — 100 반환 가능."""
+        from ai.pipeline.classify import _compute_confidence
+        from shared.models import SignalContributions
+
+        # _compute_confidence 에 완전 정렬 기여도를 넣어 score=100 을 만든다
+        # (raw_contributions 합계를 1.0 으로 맞춤)
+        raw = {"self_claim": 0.25, "vision": 0.30, "blog": 0.20, "reviews": 0.25}
+        # vision 시그널 있는 것처럼 더미 VisionSignal 전달
+        from shared.models import VisionSignal
+
+        vision_dummy = VisionSignal(
+            detected_devices=[],
+            image_categories={},
+            total_images_analyzed=0,
+        )
+        conf = _compute_confidence(raw, vision_dummy)
+        # LLM 경로(cap 미적용)에서는 score > 70 이 가능해야 함
+        # (이 테스트는 classify_hospital 을 거치지 않으므로 cap 미적용)
+        assert conf.score > 70, (
+            f"_compute_confidence 자체는 100 스케일 전체를 사용해야 함, score={conf.score}"
+        )
+
+
+# ---------------------------------------------------------------------------
 # 테스트 (e) Vision 미호출 (vision_signal=None)
 # ---------------------------------------------------------------------------
 
