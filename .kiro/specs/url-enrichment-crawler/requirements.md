@@ -22,6 +22,8 @@
 
 ### Requirement 1: Playwright 기반 카카오 장소 페이지 홈페이지 URL 추출
 
+> ⚠️ **대체됨 (2026-05-28)**: 구현 방식이 Playwright DOM 렌더링 → **httpx `panel3` API** 로 바뀜. 카카오 비공식 `place-api.map.kakao.com/places/panel3/{id}` 의 `summary.homepages` 가 홈페이지/SNS URL 을 단발 httpx 로 직접 반환하므로 브라우저 렌더링이 불필요. 아래 AC 의 "Kakao_Place_Renderer / Playwright" 는 `KakaoPlaceAdapter.fetch_panel3` + `extract_homepage`(`be/adapters/kakao_place_adapter.py`)로 읽는다. User Story·의도(카카오 등록 병원 홈페이지 보강)는 그대로 유효.
+
 **User Story:** As a 데이터 엔지니어, I want 카카오 장소 페이지에서 홈페이지 URL을 자동 추출하고 싶다, so that 카카오에만 등록된 병원의 홈페이지도 보강할 수 있다.
 
 #### Acceptance Criteria
