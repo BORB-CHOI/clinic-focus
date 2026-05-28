@@ -125,17 +125,16 @@ SK = `entity` (S)
 
 ### Phase A — 기반 재설계 (다른 모든 단계의 차단 요인)
 
-- [ ] `shared/models.py` 4 시그널 다 받도록 확장
-  - `Classification.signals` 에 `vision`·`blog`·`reviews` sub-block (현재는 self_claim 만 의미 있음)
-  - 신규 모델: `NaverPlace` · `NaverBlogPost` · `KakaoPlace` · `GoogleReviews` · `ExternalSignalBundle`
-  - `CrawlData` 외에 `ExternalCrawlData` 모델 (네이버/카카오/구글 합쳐)
-  - `HospitalIngestMetadata` 에 `aliases`·`status`·`last_external_crawl_at` 추가
+- [x] `shared/models.py` 4 시그널 다 받도록 확장 (외부 시그널 소스 모델 완료, 2026-05-28)
+  - [x] 신규 모델: `KakaoPlace`·`KakaoReviews`·`KakaoBlog`·`KakaoReviewItem`·`KakaoBlogSeed`·`KakaoHira`·`KakaoCategory`·`NaverPlace`·`GoogleReviews`·`GoogleReviewItem`·`ExternalSignalBundle` (모두 `extra="ignore"` — parse_* 향후 필드 방어, PII 필드 없음)
+  - [x] `Classification.signals`(=`DetailedSignals`) 는 이미 `self_claim`·`vision`·`blog`·`reviews` 보유 — 추가 작업 불필요(확인 완료, 옛 설명 정리)
+  - [x] `NaverBlogPost`·`ExternalCrawlData`·`HospitalIngestMetadata` 는 **만들지 않기로 확정** (2026-05-28) — 외부 합본은 `ExternalSignalBundle` 로 충분(단 classify/build_signal_chunks 는 개별 인자로 받음). ingest 메타는 모델 없이 `build_ingest_metadata` 가 평탄 dict 반환(KB 가 평탄 dict + 빈리스트/None 거절을 요구 — 모델 끼우면 변환 레이어 중복). `signals_included`·`last_updated` 같은 표시용 값은 KB metadata 가 아니라 DDB `CLASSIFICATION`/`INGEST#STATE` 에서 9영역이 직접 읽음
 - [x] **DDB 단일 테이블 마이그레이션** (Phase A 1차, 2026-05-27, PR [#28](https://github.com/BORB-CHOI/clinic-focus/pull/28))
   - [x] `be/adapters/dynamo_adapter.py` 전면 재작성 — 7개 테이블 메서드를 entity SK 기반 단일 어댑터로 (`get_entity`/`put_entity`/`query_hospital_entities`/`iter_all_hospital_ids` 등 generic primitives + typed helper 유지)
   - [x] AI/BE 양쪽 `dynamodb.Table("Hospitals")` 류 호출을 새 어댑터 메서드로 교체 (`ai/scratch/kb_ingest.py` 한 곳)
   - [x] 옛 7-table 폐기 (콘솔 수동 삭제, AI 트랙 14개 데이터 폐기 — 이관 안 함)
-  - [ ] **신규 V2 단일 테이블 콘솔 수동 생성** — `kmuproj-10-clinic-Main`, 절차는 [`../setup/aws-onboarding.md`](../setup/aws-onboarding.md) Step 6 (SafeRole 에 CreateTable 권한 없음 → 자동화 스크립트 불가)
-  - [ ] 검증: BE 크롤링 1만 데이터 받은 후 자연어 검색 4쿼리 회귀
+  - [x] **신규 V2 단일 테이블 콘솔 수동 생성 완료** — `kmuproj-10-clinic-Main` ACTIVE 확인(2026-05-28), GSI 2개(`sigungu-specialty-index`·`geo-index`) 생성됨. DynamoAdapter read/write 연결 동작 확인(현재 item 0 = 데이터 적재 전)
+  - [ ] 검증: BE 크롤링 1만 데이터 받은 후 자연어 검색 4쿼리 회귀 (데이터 적재 후)
 - [x] **BE → AI S3 크롤링 데이터 1차 mirror** (2026-05-27)
   - [x] BE 가 강남 502개 (`crawl/{hospital_id}/crawl_data.json` 평탄 구조, ~21MB) 를 사용자에게 tarball 전달
   - [x] AI 버킷 `kmuproj-10-clinic-focus-crawl/crawl/` 에 sync 완료
@@ -147,15 +146,14 @@ SK = `entity` (S)
   - `primary_focus` 는 자율(`list[str]` 자유 문자열) 유지 — 룰 기반 분류기가 본문에서 자유 추출
   - `ai/CLAUDE.md` "분류 스키마" 박스 갱신 + 분석 노트 [`ai/scratch/specialty-schema-analysis-2026-05-27.md`](../../ai/scratch/specialty-schema-analysis-2026-05-27.md) 박음
   - **후속**: BE 담당자에 22 후보군 공유 + GSI `sigungu_specialty` 검증 추가 요청 / FE 검색 필터 옵션 22개로 갱신 / `be/adapters/hira_adapter.py` `_get_specialists` 정정 (현 `getHospBasisList` 호출은 `dgsbjtCdNm` 필드가 응답에 없어 항상 빈 리스트 반환)
-- [ ] 외부 API 키 발급
-  - [ ] 네이버 개발자센터 — 검색 API (블로그·플레이스)
-  - [ ] 카카오 — 로컬 API (`kakao_adapter.py` 이미 사용 중) + 추가 리뷰 접근 검토
-  - [ ] 구글 Cloud — Places API (Place Details + Reviews 필드)
-  - [ ] 개인 AWS 계정 — Bedrock Sonnet 4.6 Marketplace 구독 (Vision 활성화)
-  - [ ] `.env.example` 에 신규 키 변수 + 코멘트
-- [ ] BE 본체 차단 이슈 머지
-  - [ ] 이슈 [#23](https://github.com/BORB-CHOI/clinic-focus/issues/23) `s3_adapter` boto3 + `crawl_all.py` `TABLE_PREFIX`
-  - [ ] 이슈 [#24](https://github.com/BORB-CHOI/clinic-focus/issues/24) `load_env` 인라인 주석 버그
+- [x] 외부 API 키 발급 — **완료** (2026-05-28 `.env` 실측 확인, 사용자 트랙)
+  - [x] `.env.example` 에 신규 키 변수 + 코멘트 (`KAKAO_REST_API_KEY`·`NAVER_MAP_*`·`GOOGLE_PLACES_API_KEY`·`BEDROCK_VISION_MODEL_ID`)
+  - [x] 카카오 로컬 API 키 / 구글 Places 키 — `.env` 설정됨 (32자 / 39자)
+  - [x] 네이버 검색 API — `NAVER_MAP_CLIENT_ID`·`NAVER_MAP_CLIENT_SECRET` `.env` 설정됨. **변수명만 `_MAP` 이고 실제로는 `openapi.naver.com` 검색 API 키**(NCP Maps 아님, `.env.example` 주석 명시). 하나의 키로 블로그(`v1/search/blog`)·지역 검색 다 호출 — 추가 키 불필요
+  - [x] 개인 AWS 계정 Bedrock Sonnet 4.6 (Vision) — `global.anthropic.claude-sonnet-4-6` 실호출 성공 확인(2026-05-28, ap-northeast-2). 구독·자격증명 정상
+- [x] BE 본체 차단 이슈 머지 (2026-05-28)
+  - [x] 이슈 [#23](https://github.com/BORB-CHOI/clinic-focus/issues/23) `s3_adapter` boto3 (이미 전환됨) + `crawl_all.py` 옛 `Table("Hospitals")` 직접 scan → `DynamoAdapter.iter_hospitals_with_url()` 로 V2 single-table 정합
+  - [x] 이슈 [#24](https://github.com/BORB-CHOI/clinic-focus/issues/24) `load_env` 인라인 주석 버그 — `_strip_inline_comment` 로 ` # comment` 절단(값 안 `#` 보존)
 
 ### Phase B — 외부 시그널 크롤러 4종 (BE)
 
@@ -395,11 +393,13 @@ SK = `entity` (S)
 - [~] 카카오 — **어댑터 완성, 크롤 실행만 남음** (2026-05-28, 커밋 `9d0f256`·`7d79ab8`)
   - [x] 비공식 실측 완료 — 공식 `dapi.kakao.com` 으로 place_id 획득 → `place-api.map.kakao.com` panel3/reviews/blog httpx 단발(ncpt·Playwright 불필요). 사실 13~24
   - [x] `be/adapters/kakao_place_adapter.py` — fetch + 순수 파서(parse_place/reviews/blog) + PII 제거 + place_id 검증. AI `build_signal_chunks` 가 소비할 형태(tags·키워드 빈도·블로그 시드)
-  - [ ] 1,084개에 실제 크롤 실행 → `KAKAO#PLACE`/`KAKAO#REVIEWS` DDB 적재 (외부 크롤 일괄 시점)
-- [ ] `be/core/crawlers/google_places_crawler.py` 신규
-  - Places API: `findPlaceFromText` → `place_id` → `place/details` (`reviews` 필드 5개 한정 — 무료 tier)
-  - `GOOGLE#PLACE` + `GOOGLE#REVIEWS` entity 적재
-- [ ] `be/scripts/crawl_external_all.py` — 위 4종을 한 병원당 순차 호출, 결과 합쳐 DDB 적재
+  - [ ] 실제 크롤 실행 → `KAKAO#PLACE`/`KAKAO#REVIEWS` DDB 적재 (외부 크롤 일괄 시점)
+- [~] 구글 — **어댑터 완성, 크롤 실행만 남음** (2026-05-28)
+  - [x] `be/adapters/google_places_adapter.py` — Places API (New) Text Search → Details(`reviews` 5건 한정, FieldMask) + 순수 파서 `parse_google_reviews` + `to_google_reviews` 모델 승격. 작성자(authorAttribution)·사진·절대시각 PII 미보존. 공식 API 라 합법
+  - [ ] 1만에 실제 크롤 실행 → `GOOGLE#PLACE` entity 적재 (외부 크롤 일괄 시점). 키워드 빈도는 AI 트랙이 후기 본문에서 자체 추출 (구글은 strength 미제공)
+- [~] `be/scripts/crawl_external_all.py` — **골격 완료, 실행 미실행** (2026-05-28)
+  - [x] 병원당 카카오(공식 dapi→place_id→place-api panel3/reviews/blog) + 구글(Text Search→Details) fetch→parse→DDB(`KAKAO#*`/`GOOGLE#PLACE`) 적재 골격. **기본 dry-run** (`--confirm` 없으면 네트워크 0건), `--source google` 로 합법 범위 한정, 카카오 포함 시 회색지대 경고 출력. 주소 누락 병원 스킵
+  - [ ] **실제 1,084 실행은 사용자(운영자) 결정** — 카카오 회색지대(robots/약관) + 1만 rate-limit 미실측. 구글만이면 합법
 - [ ] **hash diff 기반 부분 재처리** (이슈 [#13](https://github.com/BORB-CHOI/clinic-focus/issues/13) 후반부)
   - 각 entity 에 `content_hash` 컬럼 추가
   - 재크롤링 시 hash 동일하면 KB 재 ingest 스킵
@@ -435,69 +435,37 @@ SK = `entity` (S)
   - [x] `ai/__init__.py` export: `ingest_hospital`·`retrieve_hospital` 추가, `index_hospital`·`search_similar` 제거. 옛 `ai/search/vector_store.py`(S3 Vectors 직접) 삭제
   - [x] 시그널별 청크 결정 적용 — CLASSIFICATION 은 metadata 로만, DESCRIPTION 임베딩 미포함, 빈 시그널 제외, 후기 청크는 키워드 빈도만(§56③)
   - [ ] `ai/scratch/` 폴더 삭제 (probe·레퍼런스 보존 중 — 본체 안정화 후)
-  - [ ] 카카오/네이버/구글 시그널을 `build_signal_chunks` 에 연결 (현재 자체 사이트만 — 외부 크롤 DDB 적재 후)
+  - [x] 카카오/네이버/구글 시그널을 `build_signal_chunks` 에 연결 (2026-05-28) — `build_*_chunk` 가 dict·Pydantic 모델 양받(`_as_dict` 정규화), `google_reviews` 인자 추가. 핸들러가 `db.load_external_signals` 로 DDB entity 로드해 `**external` 전개. 실데이터는 외부 크롤 DDB 적재 후 채워짐
 - [~] **`classify_hospital` 룰 경로 추가** (2026-05-28, 커밋 `ad26f37`·`f4804d0`)
   - [x] `use_llm=False` 룰 단독 경로 — 자칭·블로그 키워드 룰 추출, Bedrock/Vision 0회, 전체 1만 적용. 룰 단독 신뢰도 상한 70 cap
   - [x] 자칭 도배 페널티·교차 검증·표준과목 추론은 기존 룰 로직 재사용
-  - [ ] `external_signals`(카카오·네이버·구글)·`vision_results` 입력으로 4 시그널 완전 통합 — 외부 시그널 DDB 적재 후
-- [ ] **`generate_description` 4 시그널 종합**
-  - 프롬프트 입력에 4 시그널 다 들어가도록 `ai/prompts/hospital_description.md` 갱신
-  - 각 단락 `citations` 가 실제 그 단락이 인용한 시그널만 박도록 강제 (현재 자칭만 박힘)
-  - 약점 단락 의무화 — "이 병원이 보유하지 않은 장비·다루지 않는 분야"
-  - 의료법 5규칙 강제 (주체 명시·출처 의무·평가 형용사 금지·약점 포함·JSON 검증)
-- [ ] `ai/pipeline/vision.py` Vision 본체 — Marketplace 구독 완료 후 활성화
-  - `analyze_images(image_urls, extract_text=False) -> list[ImageAnalysisResult]`
-  - 시술 사진 분포 (일반/미용/기타) + 의료기기 식별 + OCR (Vision 흡수)
-  - `MAX_VISION_IMAGES` 환경변수로 비용 제한
-- [ ] `extract_services_and_doctors(crawl_data, classification, vision_results) -> ServicesAndDoctors` 실측
-  - "다루지 않는 분야" 정확도 검증 (없는 시술·기기 추론)
-  - `alternative_hospital_ids` 채우기 (관련 병원 추천과 연결)
-- [ ] `find_related_hospitals(hospital_id, location, primary_focus, excluded_services, limit=5) -> list[RelatedHospital]` 실측
-  - `same_focus`: KB Retrieve 유사도 상위 + 같은 시군구
-  - `fills_gap`: `excluded_services` 각각에 대해 동네 대안 병원 찾기
-- [ ] `recompute_confidence(hospital_id, recent_feedback) -> Confidence` 본체
-  - 피드백 누적 N건 이상 + agree_ratio 임계 → 분류 재계산
-  - 임계 미달 시 `confidence` 만 조정 (분류는 유지)
-- [ ] `aggregate_feedback_stats(hospital_id) -> FeedbackStats` 본체
-  - `FEEDBACK#STATS` entity 갱신
-- [ ] **분류 변경 자동 기록**
-  - `classify_hospital` 결과가 이전 `CLASSIFICATION` entity 와 다르면 `HISTORY#{ts}` 자동 INSERT
-  - 이유: `feedback_accumulated` / `scheduled_recrawl` / `vision_reanalysis` / `human_review`
-- [ ] **Bedrock mock 의무화** — 모든 단위 테스트가 `@patch("ai.core.bedrock_client.invoke_model")` 사용 (실 호출 비용 차단)
+  - [x] 외부 시그널(카카오·네이버·구글) 통합 (2026-05-28) — `classify_hospital(..., kakao_place=, kakao_reviews=, kakao_blog=, naver_reviews=, google_reviews=)` 개별 인자(B안, `build_signal_chunks` 와 시그니처 일치). 카카오 `tags`→자칭 키워드/focus 보강(`_merge_kakao_tags_into_self_claim`, spam_score 는 사이트 기준 유지), 카카오/네이버/구글 후기→`_analyze_reviews` 실구현(키워드 빈도 합산 + 후기 본문에서 의료 키워드 추출해 primary_topics, §56③ 본문 미저장). 후기 채워지면 도배 페널티 `review_mismatch` 작동. dict·모델 양받. 테스트 25개 추가
+  - [ ] `vision_results` 입력 통합 — Vision 본체(Marketplace) 활성화 후
+- [x] **`generate_description` 4 시그널 종합** (본체 완성 — 2026-05-28 조사 확인)
+  - `ai/prompts/hospital_description.md` 존재, 4 시그널(self_claim·vision·blog·reviews) 다 받음. `detailed_signals` 로 전달(외부 시그널은 classify 가 이미 흡수 — `external_signals` 파라미터 불필요, 명세 정합 완료)
+  - citations 강제 검증(규칙 2 위반 시 에러) + 의료법 5규칙 프롬프트 강제 + 재시도(MAX_RETRIES=2)
+- [ ] `ai/pipeline/vision.py` Vision **활성화** — 본체는 완성(analyze_images Bedrock Vision 호출·MAX_VISION_IMAGES 통제). **개인계정 Sonnet Marketplace 구독만 남음(사용자 트랙)**
+- [x] `extract_services_and_doctors(...) -> ServicesAndDoctors` (본체 완성 — 조사 확인). services/excluded_services/equipment 추출, Vision+public_data 기기 중복 제거. `alternative_hospital_ids` 채움은 find_related 연결 시 보강 여지
+- [x] `find_related_hospitals(...) -> list[RelatedHospital]` (본체 완성 — 조사 확인). same_focus(KB Retrieve+시군구)·fills_gap(excluded_services 순회)·haversine
+- [x] `recompute_confidence(hospital_id, recent_feedback) -> Confidence` (2026-05-28 V2 single-table 정합) — 옛 7-table 직접 읽기 → `DYNAMO_TABLE` PK+SK(entity) get_item. 피드백 누적 임계·감점/보너스, confidence 만 조정(분류 유지). BE feedback API 가 inline 호출 연동
+- [x] `aggregate_feedback_stats(hospital_id) -> FeedbackStats` (2026-05-28 V2 정합) — SK begins_with `FEEDBACK#`, `FEEDBACK#STATS` 집계 entity 제외
+- [x] **분류 변경 자동 기록** (2026-05-28) — `index_hospital._record_classification_change`: 이전 `CLASSIFICATION` 과 primary_focus 다르면 `HISTORY#{changed_at}` 자동 INSERT(`save_change_record`). 최초 분류(prev=None)는 스킵. reason 기본 `scheduled_recrawl`
+- [x] **Bedrock mock 의무화** — ai 단위 테스트 전부 `@patch("ai.core.bedrock_client.invoke_model")` 또는 boto3 mock. 실 호출 0
 
 ### Phase D — BE FastAPI 4개 엔드포인트 본체
 
-- [ ] `GET /api/search` ([API-FE-BE §1](../API-FE-BE.md#1-검색))
-  - `q` + `lat`/`lng` + `radius_km` + 필터 + 정렬
-  - 자연어: `ai.retrieve_hospital(SearchQuery)` → KB Retrieve
-  - 위경도: bounding box + haversine 재계산
-  - 자연어 + 위경도 결합: KB filter 에 `lat`/`lng` bounding 박고 retrieve
-  - DDB `CLASSIFICATION` + `META` join → `Hospital` 카드 응답
-  - `meta.total`·`meta.search_mode`·`meta.query_interpretation` 채움
-- [ ] `GET /api/hospitals/{id}` ([API-FE-BE §2](../API-FE-BE.md#2-병원-상세)) ⭐ 핵심
-  - DDB query `PK=hospital_id` 전체 entity → 9영역 응답 조립
-  - 영역 ①: `DESCRIPTION` entity 그대로 (없으면 `ai_description: null`)
-  - 영역 ②: `SERVICES` + `CLASSIFICATION` + `PUBLIC#DEVICES`
-  - 영역 ③: `PUBLIC#DOCTORS` + 자체 사이트 doctor 페이지 추출
-  - 영역 ④: `CLASSIFICATION.signals` + `detailed_signals` (4 시그널 raw)
-  - 영역 ⑤: `META` + `NAVER#PLACE.operating_hours` + `contact`
-  - 영역 ⑥: `FEEDBACK#STATS`
-  - 영역 ⑦: 최근 `HISTORY#*` 1~2건
-  - 영역 ⑧: `RELATED`
-  - 영역 ⑨: `INGEST#STATE.last_ingested_at` + `data_sources` 리스트
-- [ ] `GET /api/hospitals/{id}/history` ([API-FE-BE §3](../API-FE-BE.md#3-분류-변경-이력))
-  - DDB query `PK=hospital_id, SK begins_with HISTORY#` 시간 역순
-  - `limit` 파라미터 (명세 갱신 필요)
-- [ ] `POST /api/feedback` ([API-FE-BE §4](../API-FE-BE.md#4-피드백-제출))
-  - `device_id + hospital_id` 중복 체크 (`SK begins_with FEEDBACK#{device_id}`)
-  - `FEEDBACK#{device_id}#{ts}` entity INSERT
-  - 임계 도달 시 `ai.recompute_confidence` 비동기 호출 (EventBridge 안 쓰니 inline)
-  - 201/409 응답 명세 그대로
-- [~] `be/handlers/index_hospital.py` — `run_index_pipeline(hospital_id, *, demo=False)` 신 패턴 적용 (2026-05-28, 커밋 `4092e12`). demo=False 룰 베이스라인(classify use_llm=False → 분류 저장 → 시그널 청크 ingest), demo=True 만 LLM/Vision(설명·진료항목·관련병원). 파일명 `ingest_hospital.py` 로 rename 은 미적용
-- [ ] `be/handlers/api.py` CORS `allow_origins=["*"]` → CloudFront 도메인 + `localhost:5173`
-- [ ] 응답 포맷 일관성 — `{"data": ..., "meta": ...}` / `{"error": {...}}`
-- [ ] 표준 에러 코드 매핑 (`INVALID_PARAMETER` 422→400, `NOT_FOUND` 404, `DUPLICATE_FEEDBACK` 409, `AI_SERVICE_ERROR` 502)
-- [ ] OpenAPI 자동 생성 검증 — FastAPI `/openapi.json` 가 명세와 정합
+- [x] `GET /api/search` ([API-FE-BE §1](../API-FE-BE.md#1-검색)) (2026-05-28 연동)
+  - 자연어/위치: `ai.retrieve_hospital(SearchQuery)` → KB Retrieve. 시군구 단독: DDB GSI 직접(`category` 모드)
+  - `_hospital_card` 가 META+CLASSIFICATION+DESCRIPTION join → 카드(standard_specialty·primary_focus·confidence·one_line_summary·matched_focus·distance_km)
+  - `meta.total`·`search_mode`(natural/nearby/natural+nearby/category)·`query_interpretation` 채움. 실데이터는 KB ingest 후
+- [x] `GET /api/hospitals/{id}` ([API-FE-BE §2](../API-FE-BE.md#2-병원-상세)) ⭐ (본체 완성 — 조사 확인). 9영역 DDB join + 404 + completeness
+- [x] `GET /api/hospitals/{id}/history` ([API-FE-BE §3](../API-FE-BE.md#3-분류-변경-이력)) (본체 — `load_recent_changes`). 이제 분류 변경 자동 기록 연결돼 실데이터 채워짐
+- [x] `POST /api/feedback` ([API-FE-BE §4](../API-FE-BE.md#4-피드백-제출)) (2026-05-28 연동) — verdict `Literal["agree","disagree"]`(오값 422), device_id+hospital_id 중복 409, 임계 도달 시 `recompute_confidence` inline 호출 → confidence 만 갱신(분류 유지), graceful(재계산 실패가 201 막지 않음)
+- [~] `be/handlers/index_hospital.py` — `run_index_pipeline(hospital_id, *, demo=False)`. demo=False 룰 베이스라인, demo=True LLM/Vision. 외부 시그널 `**external` 전개 + 분류 변경 자동 기록 추가. 파일명 `ingest_hospital.py` rename 은 미적용
+- [x] `be/handlers/api.py` CORS (2026-05-28) — env `CORS_ALLOW_ORIGINS`(쉼표 구분) 우선, 기본 `localhost:5173`. methods `GET,POST`. CloudFront 도메인은 Phase G 배포 시 env 주입
+- [x] 응답 포맷 일관성 — `{"data",.."meta"}` / `{"error":{code,message}}` (4 엔드포인트 준수)
+- [x] 표준 에러 코드 매핑 — `INVALID_PARAMETER` 400(422→400 정렬 완료), `NOT_FOUND` 404, `DUPLICATE_FEEDBACK` 409, `AI_SERVICE_ERROR` 502
+- [ ] OpenAPI 자동 생성 검증 — FastAPI `/openapi.json` ↔ 명세 정합 (FE TS 타입 생성 시점에)
 
 ### Phase E — FE 9영역 + 4 시그널 시각화
 
@@ -530,7 +498,7 @@ SK = `entity` (S)
 - [ ] HIRA → 서울 5개구 풀커버 (이슈 [#18](https://github.com/BORB-CHOI/clinic-focus/issues/18) 의 "병원 목록 소스" 부분)
   - 강남 4과목 88개 → 5개구(강남·서초·송파·성동·중구) 4과목 ~1000개 → 5개구 전체 진료과목 ~1만
 - [ ] **풀크롤링 (1만 전체)** — 자체 사이트 + 외부 4소스(네이버 플레이스·블로그·카카오·구글). LLM·Vision 미사용
-- [~] **룰 기반 분류 일괄 (트랙 A, 1만)** — 배치 스크립트 `be/scripts/run_classification.py` 준비 완료(커밋 `4092e12`): DDB 순회 → `classify_hospital(use_llm=False)` → 분류 저장 + 시그널 청크 ingest, 마지막 1회 trigger. **실제 1만 실행은 외부 크롤 일괄 후**. (현재 외부 시그널 미적재라 자체 사이트 시그널만 채워짐)
+- [~] **룰 기반 분류 일괄 (트랙 A, 1만)** — 배치 스크립트 `be/scripts/run_classification.py` 준비 완료: DDB 순회 → `db.load_external_signals` 로 카카오/네이버/구글 entity 로드 → `classify_hospital(use_llm=False, **external)` → 분류 저장 + `build_signal_chunks(**external)` ingest, 마지막 1회 trigger. **실제 1만 실행은 외부 크롤 일괄 후** (외부 entity 적재돼 있으면 4 시그널 교차검증, 없으면 자체 사이트만 — graceful)
 - [ ] **LLM 시연 분류 (트랙 B, 10개)** — `MAX_LLM_DEMO_HOSPITALS=10` 환경변수 강제. 풀커버 결과 중 발표용 10개 선정 (강남, 진료과목 다양, 사이트 풍부)
 - [ ] **Vision 시연 (트랙 C, 같은 10개)** — `MAX_VISION_IMAGES=10` 환경변수 강제. Marketplace 구독 완료 전제. 같은 10개에 대해 트랙 B 결과와 비교 출력 (발표 자료용)
 - [ ] **`generate_description` 시연 (10개)** — 트랙 B·C 결과 합쳐 자연어 통합 설명 생성. 9990개는 `ai_description=null` 그대로 (FE 차등 렌더링)
