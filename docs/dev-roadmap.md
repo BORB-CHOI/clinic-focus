@@ -242,6 +242,17 @@ PoC 대상 서울 5개 구 약 1만 병원 사이트 자동 수집. `httpx + Bea
 **심평원 공공 API 통합**  
 건강보험심사평가원 공공 데이터 포털에서 의료기관 기본 정보·전문의 자격·신고된 의료기기 목록 수집. 합법·무료. 콜드 스타트(신규·지방 병원 데이터 빈약) 완화 + 크롤링 보조.
 
+**외부 플랫폼 크롤 — 실측 요약 (2026-05-28)**  
+4 시그널 중 블로그·후기는 외부 플랫폼에서 온다. 어댑터 4종 완성(`be/adapters/{kakao_place,naver_place,naver_blog,google_places}_adapter.py`), 실제 크롤 실행은 운영자 결정.
+
+- **합법 경로**: 구글 Places API(Text Search→Details, reviews 5건) · 네이버 검색 API(`v1/search/blog`). 공식 키, robots/약관 무관.
+- **회색지대**: 네이버 플레이스·카카오맵 후기·정보 탭은 비공식 엔드포인트뿐 — robots.txt 전부 `Disallow: /` + 약관 자동화 금지. 실행은 운영자 판단.
+  - 네이버: Playwright headless 로 `ncpt` 토큰 자동 발급 → `pcmap-api.place.naver.com/graphql`(getVisitorReviews). 1건 18~25초. 병원 카테고리는 키워드 통계 미노출이라 후기 본문에서 자체 추출.
+  - 카카오: httpx 단발(토큰 불필요, 1~3초). `place-api.map.kakao.com/panel3` 1회로 자칭 tags·HIRA 정제본·후기·블로그 시드를 묶어 회수(네이버 3호출분).
+- **공통 제약**: 검색 매칭 실패율 ~40%(정확한 병원명+지역 필요), 1만 풀커버 IP rate-limit 미실측.
+- **PII·의료법**: 작성자 owner/nickname 은 parse 단계 마스킹·미저장. §56③ — 후기 본문 raw 는 DDB 저장·임베딩 입력만, 화면 노출은 키워드 빈도만.
+- **Vision 입력 동결**: 자체 사이트 이미지 한정. 외부 플랫폼 사진은 Vision 분석 제외(자칭 오염 방지), FE 대표 이미지 용도로만.
+
 **DynamoDB 스키마 설계**  
 핵심 테이블: Hospitals / Classifications / Signals / Confidence / Feedback / ChangeHistory. 최비성의 분류 스키마 v1을 파티션 키·정렬 키·GSI 구조로 반영. 위치 기반 검색은 KB metadata 필터(`lat`/`lng` bounding box) + EC2 haversine 재계산으로 처리. 단순 카테고리 탐색(`sigungu#specialty` 완전일치)은 DynamoDB GSI로 BE가 직접 조회.
 
