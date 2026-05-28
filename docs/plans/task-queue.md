@@ -392,9 +392,10 @@ SK = `entity` (S)
   - 상위 30~50개 포스트 URL → 본문 추출 (httpx + BS4)
   - 키워드 빈도 + 주제 분포 (TF-IDF 또는 Bedrock 임베딩 클러스터링)
   - `NAVER#BLOG` entity 적재
-- [ ] `be/core/crawlers/kakao_crawler.py` 확장 (현 `kakao_adapter.py`·`kakao_place_renderer.py` 기반) — **위 후기 시그널 전략 박스 결정 후 진입**
-  - 로컬 API 카테고리 HP8 (이미) + 장소 상세 페이지에서 리뷰 추출 (비공식 `place.map.kakao.com/main/v/{id}` · `comment/v/{id}`)
-  - `KAKAO#PLACE` + `KAKAO#REVIEWS` entity 적재
+- [~] 카카오 — **어댑터 완성, 크롤 실행만 남음** (2026-05-28, 커밋 `9d0f256`·`7d79ab8`)
+  - [x] 비공식 실측 완료 — 공식 `dapi.kakao.com` 으로 place_id 획득 → `place-api.map.kakao.com` panel3/reviews/blog httpx 단발(ncpt·Playwright 불필요). 사실 13~24
+  - [x] `be/adapters/kakao_place_adapter.py` — fetch + 순수 파서(parse_place/reviews/blog) + PII 제거 + place_id 검증. AI `build_signal_chunks` 가 소비할 형태(tags·키워드 빈도·블로그 시드)
+  - [ ] 1,084개에 실제 크롤 실행 → `KAKAO#PLACE`/`KAKAO#REVIEWS` DDB 적재 (외부 크롤 일괄 시점)
 - [ ] `be/core/crawlers/google_places_crawler.py` 신규
   - Places API: `findPlaceFromText` → `place_id` → `place/details` (`reviews` 필드 5개 한정 — 무료 tier)
   - `GOOGLE#PLACE` + `GOOGLE#REVIEWS` entity 적재
@@ -428,21 +429,17 @@ SK = `entity` (S)
 >
 > ---
 
-- [ ] `ai/scratch/` → `ai/` 본체 마이그레이션
-  - [ ] `ai/search/kb_store.py` 신규 — `ingest_hospital(hospital_id, signals: SignalBundle, metadata) -> None`
-  - [ ] `ai/search/kb_store.py` — `retrieve_hospital(query: SearchQuery) -> list[SearchResult]`
-  - [ ] `ai/__init__.py` export 갱신: 추가 `ingest_hospital`·`retrieve_hospital`, 제거 `index_hospital`·`search_similar`
-  - [ ] `ai/scratch/` 폴더 삭제
-- [ ] **`ingest_hospital` — 4 시그널 본문 **시그널별 청크**로 KB ingest** (위 2026-05-28 결정 박스 적용)
-  - 청크 분리: `[자체 사이트 본문 page_type 우선순위]` · `[네이버 블로그 상위 N개 본문]` · `[네이버 플레이스 키워드 빈도]` · `[카카오 리뷰/태그 키워드]` · `[구글 리뷰 키워드]` · `[Vision 결과]` — 각각 별도 문서로 올려 signal 경계 유지
-  - **AI 분류 결과·DESCRIPTION 은 본문 미포함**: CLASSIFICATION 은 청크 metadata 로만, DESCRIPTION(10개)은 임베딩과 분리된 상세페이지 표시용
-  - 각 청크 metadata 에 `signal_type` + `standard_specialty`·`primary_focus`·`confidence_score`·`sigungu`·`lat`/`lng`(CLASSIFICATION 공급)
-  - 빈 시그널은 청크 자체 생성 안 함, metadata 키 누락 (KB 가 빈 list/None 거절)
-- [ ] **`classify_hospital(crawl_data, external_signals, vision_results) -> Classification`** 재설계
-  - 입력: `CrawlData` + `ExternalSignalBundle` + `VisionResults`
-  - 4 시그널 각각 점수 계산 → 교차 검증
-  - 자칭 도배 페널티 (자칭 ↑ + 나머지 시그널 ↓ → 신뢰도 강제 감점)
-  - 신뢰도 약점 수정: `primary_focus=[]` 또는 데이터 부족 시 `confidence ≤ 50`·`level="정보 부족"` 강제 (run-log-2026-05-26.md 2건)
+- [x] **`ai/search/kb_store.py` 신규 — KB 경유 ingest/retrieve** (2026-05-28, 커밋 `665c496`·`cb502bb`)
+  - [x] `ingest_hospital(hospital_id, signal_chunks: dict[str,str], metadata, *, trigger_ingestion=False)` — 시그널별 `{id}/{signal_type}.txt` + metadata 사이드카 KB 적재. 청크 빌더(`build_signal_chunks`·`build_ingest_metadata`)는 호출자가 조립
+  - [x] `retrieve_hospital(query) -> list[SearchResult]` — KB Retrieve, team_id 필터 + 메타필터 + hospital_id dedup
+  - [x] `ai/__init__.py` export: `ingest_hospital`·`retrieve_hospital` 추가, `index_hospital`·`search_similar` 제거. 옛 `ai/search/vector_store.py`(S3 Vectors 직접) 삭제
+  - [x] 시그널별 청크 결정 적용 — CLASSIFICATION 은 metadata 로만, DESCRIPTION 임베딩 미포함, 빈 시그널 제외, 후기 청크는 키워드 빈도만(§56③)
+  - [ ] `ai/scratch/` 폴더 삭제 (probe·레퍼런스 보존 중 — 본체 안정화 후)
+  - [ ] 카카오/네이버/구글 시그널을 `build_signal_chunks` 에 연결 (현재 자체 사이트만 — 외부 크롤 DDB 적재 후)
+- [~] **`classify_hospital` 룰 경로 추가** (2026-05-28, 커밋 `ad26f37`·`f4804d0`)
+  - [x] `use_llm=False` 룰 단독 경로 — 자칭·블로그 키워드 룰 추출, Bedrock/Vision 0회, 전체 1만 적용. 룰 단독 신뢰도 상한 70 cap
+  - [x] 자칭 도배 페널티·교차 검증·표준과목 추론은 기존 룰 로직 재사용
+  - [ ] `external_signals`(카카오·네이버·구글)·`vision_results` 입력으로 4 시그널 완전 통합 — 외부 시그널 DDB 적재 후
 - [ ] **`generate_description` 4 시그널 종합**
   - 프롬프트 입력에 4 시그널 다 들어가도록 `ai/prompts/hospital_description.md` 갱신
   - 각 단락 `citations` 가 실제 그 단락이 인용한 시그널만 박도록 강제 (현재 자칭만 박힘)
@@ -496,7 +493,7 @@ SK = `entity` (S)
   - `FEEDBACK#{device_id}#{ts}` entity INSERT
   - 임계 도달 시 `ai.recompute_confidence` 비동기 호출 (EventBridge 안 쓰니 inline)
   - 201/409 응답 명세 그대로
-- [ ] `be/handlers/ingest_hospital.py` (현 `index_hospital.py`) — `run_index_pipeline` 함수에서 위 phase C 의 본체 함수들 순차 호출 (classify → extract → describe → related → ingest)
+- [~] `be/handlers/index_hospital.py` — `run_index_pipeline(hospital_id, *, demo=False)` 신 패턴 적용 (2026-05-28, 커밋 `4092e12`). demo=False 룰 베이스라인(classify use_llm=False → 분류 저장 → 시그널 청크 ingest), demo=True 만 LLM/Vision(설명·진료항목·관련병원). 파일명 `ingest_hospital.py` 로 rename 은 미적용
 - [ ] `be/handlers/api.py` CORS `allow_origins=["*"]` → CloudFront 도메인 + `localhost:5173`
 - [ ] 응답 포맷 일관성 — `{"data": ..., "meta": ...}` / `{"error": {...}}`
 - [ ] 표준 에러 코드 매핑 (`INVALID_PARAMETER` 422→400, `NOT_FOUND` 404, `DUPLICATE_FEEDBACK` 409, `AI_SERVICE_ERROR` 502)
@@ -533,7 +530,7 @@ SK = `entity` (S)
 - [ ] HIRA → 서울 5개구 풀커버 (이슈 [#18](https://github.com/BORB-CHOI/clinic-focus/issues/18) 의 "병원 목록 소스" 부분)
   - 강남 4과목 88개 → 5개구(강남·서초·송파·성동·중구) 4과목 ~1000개 → 5개구 전체 진료과목 ~1만
 - [ ] **풀크롤링 (1만 전체)** — 자체 사이트 + 외부 4소스(네이버 플레이스·블로그·카카오·구글). LLM·Vision 미사용
-- [ ] **룰 기반 분류 일괄 (트랙 A, 1만)** — `classify_hospital(crawl_data, external_signals, vision_results=None, use_vision=False)` 호출. self_claim + blog + reviews 시그널만 채움. Vision sub-block 은 None
+- [~] **룰 기반 분류 일괄 (트랙 A, 1만)** — 배치 스크립트 `be/scripts/run_classification.py` 준비 완료(커밋 `4092e12`): DDB 순회 → `classify_hospital(use_llm=False)` → 분류 저장 + 시그널 청크 ingest, 마지막 1회 trigger. **실제 1만 실행은 외부 크롤 일괄 후**. (현재 외부 시그널 미적재라 자체 사이트 시그널만 채워짐)
 - [ ] **LLM 시연 분류 (트랙 B, 10개)** — `MAX_LLM_DEMO_HOSPITALS=10` 환경변수 강제. 풀커버 결과 중 발표용 10개 선정 (강남, 진료과목 다양, 사이트 풍부)
 - [ ] **Vision 시연 (트랙 C, 같은 10개)** — `MAX_VISION_IMAGES=10` 환경변수 강제. Marketplace 구독 완료 전제. 같은 10개에 대해 트랙 B 결과와 비교 출력 (발표 자료용)
 - [ ] **`generate_description` 시연 (10개)** — 트랙 B·C 결과 합쳐 자연어 통합 설명 생성. 9990개는 `ai_description=null` 그대로 (FE 차등 렌더링)
