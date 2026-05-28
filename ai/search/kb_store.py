@@ -16,8 +16,8 @@ S3 키 규약:
 공개 함수:
 - build_self_claim_chunk(crawl_data, kakao_place) -> str
 - build_blog_chunk(crawl_data, kakao_blog) -> str
-- build_reviews_chunk(kakao_reviews, naver_reviews) -> str
-- build_signal_chunks(crawl_data, kakao_place, kakao_reviews, kakao_blog, naver_reviews) -> dict[str, str]
+- build_reviews_chunk(kakao_reviews, naver_reviews, google_reviews) -> str
+- build_signal_chunks(crawl_data, kakao_place, kakao_reviews, kakao_blog, naver_reviews, google_reviews) -> dict[str, str]
 - build_ingest_metadata(meta, classification) -> dict
 - ingest_hospital(hospital_id, signal_chunks, metadata, *, trigger_ingestion) -> None
 - retrieve_hospital(query: SearchQuery) -> list[SearchResult]
@@ -34,9 +34,39 @@ from typing import TYPE_CHECKING
 import boto3
 
 if TYPE_CHECKING:
-    from shared.models import CrawlData, Classification, HospitalMeta, SearchQuery, SearchResult
+    from shared.models import (
+        Classification,
+        CrawlData,
+        GoogleReviews,
+        HospitalMeta,
+        KakaoBlog,
+        KakaoPlace,
+        KakaoReviews,
+        NaverPlace,
+        SearchQuery,
+        SearchResult,
+    )
 
 logger = logging.getLogger(__name__)
+
+
+def _as_dict(obj) -> dict | None:
+    """시그널 입력을 dict 로 정규화한다.
+
+    build_*_chunk 는 dict 와 Pydantic 모델(KakaoPlace 등) 둘 다 받는다.
+    - dict 면 그대로 반환
+    - Pydantic 모델(model_dump 보유)이면 dict 로 변환
+    - None 이면 None
+    호출자가 DDB 로드 dict 든 parse 직후 모델이든 같은 코드로 흐를 수 있게 한다.
+    """
+    if obj is None:
+        return None
+    if isinstance(obj, dict):
+        return obj
+    model_dump = getattr(obj, "model_dump", None)
+    if callable(model_dump):
+        return model_dump()
+    return None
 
 # page_type 우선순위 — 정보 밀도가 높은 페이지가 청크 상위에 위치.
 _PAGE_PRIORITY: dict[str, int] = {
@@ -79,7 +109,7 @@ def _site_pages_text(
 
 def build_self_claim_chunk(
     crawl_data: "CrawlData | None" = None,
-    kakao_place: dict | None = None,
+    kakao_place: "KakaoPlace | dict | None" = None,
 ) -> str:
     """자칭 시그널 청크.
 
@@ -94,6 +124,7 @@ def build_self_claim_chunk(
         자연어 청크 문자열. 데이터 없으면 "".
     """
     parts: list[str] = []
+    kakao_place = _as_dict(kakao_place)
 
     # 1. 자체 사이트 service/about/main 페이지 (정보 밀도 높은 순)
     site_text = _site_pages_text(crawl_data, ("service", "about", "main"))
@@ -126,7 +157,7 @@ def build_self_claim_chunk(
 
 def build_blog_chunk(
     crawl_data: "CrawlData | None" = None,
-    kakao_blog: dict | None = None,
+    kakao_blog: "KakaoBlog | dict | None" = None,
 ) -> str:
     """블로그 시그널 청크.
 
@@ -141,6 +172,7 @@ def build_blog_chunk(
         자연어 청크 문자열. 데이터 없으면 "".
     """
     parts: list[str] = []
+    kakao_blog = _as_dict(kakao_blog)
 
     # 1. 자체 사이트 blog 페이지
     site_blog_text = _site_pages_text(crawl_data, ("blog",))
@@ -170,8 +202,9 @@ def build_blog_chunk(
 
 
 def build_reviews_chunk(
-    kakao_reviews: dict | None = None,
-    naver_reviews: dict | None = None,
+    kakao_reviews: "KakaoReviews | dict | None" = None,
+    naver_reviews: "NaverPlace | dict | None" = None,
+    google_reviews: "GoogleReviews | dict | None" = None,
 ) -> str:
     """후기 시그널 청크 — 키워드 빈도 요약만.
 
@@ -179,13 +212,17 @@ def build_reviews_chunk(
     "방문자 후기 강점 키워드 — 전문성 145회, 친절 164회, ..." 형태만.
 
     Args:
-        kakao_reviews: kakao_place_adapter.parse_reviews() 출력. None 이면 생략.
-        naver_reviews: NaverPlace 형태 dict (keyword_stats 키 포함). None 이면 생략.
+        kakao_reviews: parse_reviews() 출력 (KakaoReviews 모델 또는 dict). None 이면 생략.
+        naver_reviews: NaverPlace 형태 (keyword_stats 키). 모델 또는 dict. None 이면 생략.
+        google_reviews: parse_google_reviews() 출력 (GoogleReviews 또는 dict). None 이면 생략.
 
     Returns:
         키워드 빈도 요약 문자열. 데이터 없으면 "".
     """
     parts: list[str] = []
+    kakao_reviews = _as_dict(kakao_reviews)
+    naver_reviews = _as_dict(naver_reviews)
+    google_reviews = _as_dict(google_reviews)
 
     # 카카오 후기 키워드 빈도
     if kakao_reviews:
@@ -215,17 +252,33 @@ def build_reviews_chunk(
                 header += f" (누적 방문 {visitor_count}명)"
             parts.append(f"{header} — {ks_text}")
 
+    # 구글 리뷰 키워드 빈도
+    if google_reviews:
+        gf: dict[str, int] = google_reviews.get("keyword_frequency") or {}
+        if gf:
+            gf_text = ", ".join(f"{k} {v}회" for k, v in sorted(gf.items(), key=lambda x: -x[1]))
+            total = google_reviews.get("user_ratings_total")
+            rating = google_reviews.get("rating")
+            header = "구글 리뷰 키워드"
+            if total:
+                header += f" (총 {total}건"
+                header += f" / 평균 {rating}점)" if rating else ")"
+            parts.append(f"{header} — {gf_text}")
+
     return "\n".join(parts)
 
 
 def build_signal_chunks(
     crawl_data: "CrawlData | None" = None,
-    kakao_place: dict | None = None,
-    kakao_reviews: dict | None = None,
-    kakao_blog: dict | None = None,
-    naver_reviews: dict | None = None,
+    kakao_place: "KakaoPlace | dict | None" = None,
+    kakao_reviews: "KakaoReviews | dict | None" = None,
+    kakao_blog: "KakaoBlog | dict | None" = None,
+    naver_reviews: "NaverPlace | dict | None" = None,
+    google_reviews: "GoogleReviews | dict | None" = None,
 ) -> dict[str, str]:
     """모든 시그널 청크를 조립하여 비어있지 않은 것만 반환.
+
+    각 인자는 dict 또는 대응 Pydantic 모델(KakaoPlace 등) 둘 다 받는다.
 
     Returns:
         {signal_type: text} — signal_type ∈ {"self_claim", "blog", "reviews"}.
@@ -241,7 +294,11 @@ def build_signal_chunks(
     if bc:
         result["blog"] = bc
 
-    rc = build_reviews_chunk(kakao_reviews=kakao_reviews, naver_reviews=naver_reviews)
+    rc = build_reviews_chunk(
+        kakao_reviews=kakao_reviews,
+        naver_reviews=naver_reviews,
+        google_reviews=google_reviews,
+    )
     if rc:
         result["reviews"] = rc
 

@@ -39,7 +39,9 @@ from ai import (
     ingest_hospital,             # KB DataSource 적재. 옛 index_hospital 폐기
     recompute_confidence,
 )
-from shared.models import CrawlData, SearchQuery, HospitalIngestMetadata
+from shared.models import CrawlData, SearchQuery, ExternalSignalBundle
+# ingest 메타는 별도 모델 없이 build_ingest_metadata(meta, classification) 가 평탄 dict 반환
+from ai.search.kb_store import build_signal_chunks, build_ingest_metadata
 ```
 
 함수 시그니처·예외·동작 흐름은 `../docs/API-BE-AI.md` 참조. 추후 분리하더라도 시그니처가 그대로 HTTP body 스키마가 되므로 호출 코드만 바꾸면 됨.

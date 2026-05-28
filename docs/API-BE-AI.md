@@ -221,22 +221,30 @@ class FeedbackEntry(BaseModel):
 
 크롤링된 사이트 데이터와 외부 3개 소스 시그널을 받아 분류 결과 + 신뢰도 + 시그널 기여도를 반환. **PoC의 핵심 함수.**
 
-> **BE 호출부 (`be/handlers/ingest_hospital.py`) 동시 갱신 필요** — V2 시그니처 변경으로 `external_signals`·`vision_results` 파라미터가 추가됨. BE 측에서 크롤링 결과를 `ExternalSignalBundle` 로 조립하여 전달해야 함.
+> **실구현 시그니처** — 외부 시그널은 **시그널별 개별 키워드 인자**로 받는다 (번들 1개 아님).
+> `build_signal_chunks(...)` 와 시그니처를 일치시켜, 핸들러가 `db.load_external_signals()` 가
+> 돌려준 dict 를 `**external` 로 두 함수에 그대로 전개한다. 4 시그널 교차검증이 시그널 종류별
+> 독립 출처를 다루는 철학(벡터도 시그널별 청크로 분리)과 일관된다.
 
 ```python
 def classify_hospital(
     crawl_data: CrawlData,
-    external_signals: ExternalSignalBundle | None = None,
-    vision_results: list[ImageAnalysisResult] | None = None,
     use_vision: bool = True,
+    use_llm: bool = True,
+    *,
+    kakao_place: "KakaoPlace | dict | None" = None,
+    kakao_reviews: "KakaoReviews | dict | None" = None,
+    kakao_blog: "KakaoBlog | dict | None" = None,
+    naver_reviews: "NaverPlace | dict | None" = None,
+    google_reviews: "GoogleReviews | dict | None" = None,
 ) -> Classification:
     ...
 ```
 
 **파라미터 의미**:
-- `external_signals=None` — 외부 크롤링이 아직 미완료인 경우. self_claim 시그널만으로 분류하며 confidence 에 페널티 부여.
-- `vision_results=None` — `analyze_images` 를 별도 호출해서 전달하거나, `use_vision=True` 일 때 내부에서 자동 호출. `use_vision=False` 면 Vision 시그널 생략.
-- `use_vision=False` — 자칭 명확한 케이스(비용 절감), 트랙 A 룰 기반 분류 경로에서 사용.
+- 외부 시그널 인자(`kakao_place`·`kakao_reviews`·`kakao_blog`·`naver_reviews`·`google_reviews`) — 각각 dict 또는 대응 Pydantic 모델 둘 다 수용. 미적재면 None → self_claim 등 가용 시그널만으로 분류. `kakao_place.tags` 는 자칭 보강에, 후기 3종은 후기 시그널에 흩어져 들어간다.
+- `use_llm=False` — 트랙 A 룰 기반(Bedrock 0회, 1만 풀커버). True 면 트랙 B/C(LLM/Vision 시연 10개).
+- `use_vision=False` — 자칭 명확한 케이스(비용 절감). `use_llm=False` 면 이 값과 무관하게 Vision 생략.
 
 #### 동작 흐름
 
@@ -318,14 +326,13 @@ db.put_item(
 
 > **PoC 한도**: 지원 계정 Bedrock 자원이 10개 병원 한도이므로 시연 10개 병원에만 호출. 나머지 9990개 병원은 `ai_description = null` 로 반환되고 FE가 자연어 단락 대신 룰 기반 태그 카드를 렌더링한다. 어느 병원이 시연 대상인지는 DynamoDB single-table `DESCRIPTION` entity 존재 여부로 판별.
 
-> **BE 호출부 (`be/handlers/ingest_hospital.py`) 동시 갱신 필요** — V2 시그니처에서 `external_signals` 파라미터가 추가되어 4 시그널 전체가 입력으로 들어가야 함.
+> **4 시그널은 `detailed_signals` 로 전달된다** — `classify_hospital` 이 외부 시그널(카카오/네이버/구글)을 이미 흡수해 `DetailedSignals`(self_claim·vision·blog·reviews)로 정제하므로, generate_description 은 `detailed_signals` 만 받으면 4 시그널 종합이 된다. 별도 `external_signals` 파라미터는 두지 않는다(원본 외부 dict 를 LLM 에 직접 넣지 않음 — 정제된 시그널만).
 
 ```python
 def generate_description(
     classification: Classification,
-    detailed_signals: DetailedSignals,
-    external_signals: ExternalSignalBundle | None,  # V2 추가 — 외부 3개 소스 원본
-    hospital_meta: HospitalMeta,                     # 이름·주소 등 기본 정보
+    detailed_signals: DetailedSignals,   # 4 시그널 정제본 (classify 가 외부 시그널 흡수)
+    hospital_meta: HospitalMeta,         # 이름·주소 등 기본 정보
 ) -> HospitalDescription:
     ...
 ```
@@ -952,7 +959,7 @@ def classify_hospital(
 ### 새 병원 등록 시 (배치)
 
 ```python
-# be/handlers/ingest_hospital.py
+# be/handlers/index_hospital.py — 실구현은 run_index_pipeline(hospital_id, *, demo, trigger_ingestion)
 from ai import (
     classify_hospital,
     generate_description,
@@ -960,86 +967,56 @@ from ai import (
     find_related_hospitals,
     ingest_hospital,
 )
-from shared.models import CrawlData, ExternalSignalBundle, HospitalIngestMetadata
+from ai.search.kb_store import build_ingest_metadata, build_signal_chunks
+from be.adapters.dynamo_adapter import DynamoAdapter
+from be.adapters.s3_adapter import S3Adapter
 
-def ingest_hospital_pipeline(hospital_id: str):
-    # 1. 크롤링 데이터 로드 (김경재 모듈)
-    crawl_data: CrawlData = load_crawl_data(hospital_id)       # 자체 사이트
-    external_signals: ExternalSignalBundle = load_external_signals(hospital_id)
-    #   external_signals 에 naver_place / naver_blog / kakao_place / google_reviews 포함
-    hospital_meta = load_hospital_meta(hospital_id)
+def run_index_pipeline(hospital_id: str, *, demo: bool = False, trigger_ingestion: bool = True):
+    db = DynamoAdapter()
+    s3 = S3Adapter()
 
-    # 2. AI 분류 (V2 — 4 시그널 전부 전달, 영역 ② 일부, ④)
-    classification = classify_hospital(
-        crawl_data=crawl_data,
-        external_signals=external_signals,
-        use_vision=True,
-    )
+    # 1. 크롤링 데이터 + META + 외부 시그널 로드
+    crawl_data = s3.load_crawl_data(hospital_id)              # 자체 사이트 CrawlData
+    hospital_meta = db.load_hospital_meta(hospital_id)
+    # 외부 시그널(카카오/네이버/구글)을 build_signal_chunks·classify 인자 dict 로.
+    # 키는 두 함수의 키워드 인자명과 일치 → **external 로 전개. 적재 안 된 entity 는 None.
+    external = db.load_external_signals(hospital_id)
+    #   external = {kakao_place, kakao_reviews, kakao_blog, naver_reviews, google_reviews}
 
-    # 3. 진료 항목·의료기기·의료진 추출 (영역 ②③)
-    services_and_doctors = extract_services_and_doctors(
-        crawl_data=crawl_data,
-        classification=classification,
-        vision_results=classification.detailed_signals.vision,
-    )
+    # 2. AI 분류 (개별 외부 인자 전개 — 4 시그널 교차검증)
+    #    demo=False → 룰 단독(Bedrock 0회), demo=True → LLM/Vision 시연 10개
+    classification = classify_hospital(crawl_data, use_llm=demo, **external)
+    db.save_classification(classification)
 
-    # 4. AI 통합 상세 설명 생성 ⭐ 본 서비스의 핵심 결과물 (영역 ①)
-    #    V2 — external_signals 추가 전달 (4 시그널 종합 + citations 실채움)
-    description = generate_description(
-        classification=classification,
-        detailed_signals=classification.detailed_signals,
-        external_signals=external_signals,
-        hospital_meta=hospital_meta,
-    )
-
-    # 5. 관련 병원 추천 (영역 ⑧)
-    #    같은 주력 + 빈자리 보완 병원 검색
-    related = find_related_hospitals(
-        hospital_id=hospital_id,
-        location=hospital_meta.location,
-        primary_focus=classification.primary_focus,
-        excluded_services=services_and_doctors.excluded_services,
-    )
-
-    # 6. DynamoDB single-table 적재 (entity SK 별 분리)
-    save_entity(hospital_id, "CLASSIFICATION", classification)
-    save_entity(hospital_id, "DESCRIPTION", description)
-    save_entity(hospital_id, "SERVICES", services_and_doctors)
-    save_entity(hospital_id, "RELATED", related)
-
-    # 7. KB ingestion (V2 — 4 시그널 번들째 전달, 함수 내부에서 본문 조립)
-    #    배치 적재 시 trigger_ingestion=False, 마지막에 한 번만 True
-    signals_available = [
-        s for s, v in [
-            ("self_claim", True),
-            ("blog", bool(external_signals.naver_blog)),
-            ("reviews_naver", external_signals.naver_place is not None),
-            ("reviews_kakao", external_signals.kakao_place is not None),
-            ("reviews_google", external_signals.google_reviews is not None),
-            ("vision", classification.detailed_signals.vision is not None),
-        ] if v
-    ]
-    ingest_hospital(
-        hospital_id=hospital_id,
-        crawl_data=crawl_data,
-        external_signals=external_signals,
-        classification=classification,
-        description=description,
-        metadata=HospitalIngestMetadata(
-            standard_specialty=classification.standard_specialty,
+    # 3~5. 시연 10개만 — 진료항목·설명·관련병원 (LLM/Vision)
+    if demo:
+        services_and_doctors = extract_services_and_doctors(
+            crawl_data=crawl_data, classification=classification, vision_results=[],
+        )
+        description = generate_description(
+            classification=classification,
+            detailed_signals=classification.detailed_signals,
+            hospital_meta=hospital_meta,
+        )
+        related = find_related_hospitals(
+            hospital_id=hospital_id,
+            location=hospital_meta.location,
             primary_focus=classification.primary_focus,
-            sido=hospital_meta.location.sido,
-            sigungu=hospital_meta.location.sigungu,
-            confidence_score=classification.confidence.score,
-            lat=hospital_meta.location.lat,
-            lng=hospital_meta.location.lng,
-            last_updated=classification.classified_at.isoformat(),
-            signals_included=signals_available,
-        ),
-        trigger_ingestion=False,  # 배치 후 별도로 start_ingestion_job 한 번 호출
-    )
+            excluded_services=services_and_doctors.excluded_services,
+        )
+        db.save_description(description)
+        db.save_services_and_doctors(hospital_id, services_and_doctors)
+        db.save_related_hospitals(hospital_id, related)
 
-    return {"status": "ingested", "hospital_id": hospital_id}
+    # 6. KB ingestion — 시그널별 청크(자칭/블로그/후기)로 분리 적재.
+    #    DESCRIPTION 은 임베딩 본문에 미포함(상세페이지 표시용). 임베딩 = 시그널 원본 청크.
+    #    metadata 는 검색 필터 키만(평탄 dict). signals_included·last_updated 같은
+    #    표시용 값은 KB 가 아니라 DDB CLASSIFICATION/INGEST#STATE 에서 9영역이 직접 읽는다.
+    signal_chunks = build_signal_chunks(crawl_data=crawl_data, **external)
+    metadata = build_ingest_metadata(hospital_meta, classification)
+    ingest_hospital(hospital_id, signal_chunks, metadata, trigger_ingestion=trigger_ingestion)
+
+    return {"status": "indexed", "hospital_id": hospital_id, "demo": demo}
 ```
 
 ### 상세 페이지 조회 시

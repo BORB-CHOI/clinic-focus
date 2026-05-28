@@ -92,6 +92,156 @@ class DetailedSignals(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# 외부 플랫폼 시그널 소스 (카카오·네이버·구글 정제본)
+#
+# parse_* 어댑터(be/adapters/kakao_place_adapter.py 등)가 raw JSON 을 정제해
+# 돌려주는 구조를 Pydantic 로 승격한 것. BE 가 크롤·파싱하고 AI 가 소비한다.
+#
+# - extra="ignore": parse_* 가 향후 필드를 더 줘도 모델은 깨지지 않는다
+#   (extra="forbid" 인 내부 결과 모델과 의도적으로 다름).
+# - PII(후기 작성자 owner·블로그 author)는 parse 단계에서 이미 제거되므로
+#   이 모델들에도 필드 자체가 없다 (의료법 §56③ + 개인정보).
+# - 후기 본문(contents) 은 DDB 저장·임베딩 입력용으로만 보존. 화면 노출 금지.
+# ---------------------------------------------------------------------------
+
+class KakaoReviewItem(BaseModel):
+    """카카오 후기 1건 (owner PII 제거됨). 본문은 임베딩 입력용, 화면 노출 금지."""
+    model_config = ConfigDict(extra="ignore")
+
+    review_id: int | str | None = None
+    contents: str = ""
+    star_rating: int | None = None
+    strength_labels: list[str] = []
+    photo_count: int = 0
+    registered_at: str | None = None
+
+
+class KakaoBlogSeed(BaseModel):
+    """카카오 블로그 시드 1건 (author 제거됨). origin_url 은 BlogSignal 시드."""
+    model_config = ConfigDict(extra="ignore")
+
+    review_id: int | str | None = None
+    title: str = ""
+    contents: str = ""
+    origin_url: str | None = None
+    photo_count: int = 0
+    registered_at: str | None = None
+
+
+class KakaoHira(BaseModel):
+    """panel3.medical.hira 정제본 (보조 — HIRA 직접 호출이 우선)."""
+    model_config = ConfigDict(extra="ignore")
+
+    medical_center_type: str | None = None
+    specialized_field: str | None = None
+    doctor_count: dict[str, int] = {}
+    established_at: str | None = None
+
+
+class KakaoCategory(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    full: str | None = None
+    depth1: str | None = None
+    depth2: str | None = None
+    depth3: str | None = None
+
+
+class KakaoPlace(BaseModel):
+    """parse_place() 출력 — DDB KAKAO#PLACE entity. 자칭 키워드(tags)·대표 이미지·HIRA 보조본."""
+    model_config = ConfigDict(extra="ignore")
+
+    place_id: str
+    name: str | None = None
+    address: str | None = None
+    phone_numbers: list[str] = []
+    homepage_url: str | None = None
+    homepages_raw: list[str] = []
+    category: KakaoCategory = KakaoCategory()
+    tags: list[str] = []                     # 자칭 키워드 시드 (primary_focus 입력)
+    facilities: dict = {}
+    mystore_intro: str | None = None
+    hira: KakaoHira = KakaoHira()
+    representative_image_url: str | None = None  # FE 대표 이미지 (Vision 입력 아님)
+    photo_counts: dict = {}
+    review_count: int | None = None
+    average_score: float | None = None
+
+
+class KakaoReviews(BaseModel):
+    """parse_reviews() 출력 — DDB KAKAO#REVIEWS entity. 키워드 빈도는 화면 노출 가능."""
+    model_config = ConfigDict(extra="ignore")
+
+    total_reviews: int | None = None
+    average_score: float | None = None
+    keyword_frequency: dict[str, int] = {}
+    reviews: list[KakaoReviewItem] = []
+    has_next: bool = False
+
+
+class KakaoBlog(BaseModel):
+    """parse_blog() 출력 — DDB KAKAO#BLOG entity. origin_url 100% blog.naver.com 시드."""
+    model_config = ConfigDict(extra="ignore")
+
+    total_posts: int | None = None
+    seeds: list[KakaoBlogSeed] = []
+
+
+class NaverPlace(BaseModel):
+    """네이버 플레이스 정제본 — DDB NAVER#PLACE / NAVER#PLACE#REVIEWS.
+
+    네이버 병원 카테고리는 키워드 통계를 노출하지 않으므로(task-queue 사실 8)
+    keyword_stats 는 우리 측에서 후기 본문으로 직접 추출한 결과를 담는다.
+    """
+    model_config = ConfigDict(extra="ignore")
+
+    place_id: str | None = None
+    name: str | None = None
+    visitor_count: int | None = None      # 누적 방문자 수
+    keyword_stats: dict[str, int] = {}    # 후기 키워드 빈도 (자체 추출)
+    blog_seeds: list[str] = []            # photoViewer ugc externalLink 블로그 시드 URL
+
+
+class GoogleReviewItem(BaseModel):
+    """구글 Places 리뷰 1건. author_name 은 보존하지 않는다 (PII)."""
+    model_config = ConfigDict(extra="ignore")
+
+    rating: int | None = None
+    text: str = ""
+    relative_time: str | None = None      # "2개월 전" 등 상대 시각 (절대 시각·작성자 미보존)
+
+
+class GoogleReviews(BaseModel):
+    """parse_google_reviews() 출력 — DDB GOOGLE#PLACE / GOOGLE#REVIEWS.
+
+    Places Details `reviews` 필드는 무료 tier 에서 최대 5건. rating 평균은 별도.
+    """
+    model_config = ConfigDict(extra="ignore")
+
+    place_id: str | None = None
+    name: str | None = None
+    rating: float | None = None           # 전체 평점 평균 (Places `rating`)
+    user_ratings_total: int | None = None
+    keyword_frequency: dict[str, int] = {}  # 리뷰 본문 키워드 빈도 (자체 추출)
+    reviews: list[GoogleReviewItem] = []
+
+
+class ExternalSignalBundle(BaseModel):
+    """한 병원의 외부 플랫폼 시그널 묶음 — DDB 로드 결과를 한 덩어리로 전달.
+
+    classify_hospital / build_signal_chunks 는 개별 인자로도 받지만,
+    핸들러가 DDB 에서 모아 한 번에 넘길 때 이 번들을 쓸 수 있다. 모두 Optional.
+    """
+    model_config = ConfigDict(extra="ignore")
+
+    kakao_place: KakaoPlace | None = None
+    kakao_reviews: KakaoReviews | None = None
+    kakao_blog: KakaoBlog | None = None
+    naver_place: NaverPlace | None = None
+    google_reviews: GoogleReviews | None = None
+
+
+# ---------------------------------------------------------------------------
 # 분류 결과
 # ---------------------------------------------------------------------------
 

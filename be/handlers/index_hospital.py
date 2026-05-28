@@ -12,8 +12,13 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from be.adapters.dynamo_adapter import DynamoAdapter
 from be.adapters.s3_adapter import S3Adapter
+
+if TYPE_CHECKING:
+    from shared.models import Classification
 
 from ai import (
     classify_hospital,
@@ -23,6 +28,35 @@ from ai import (
     ingest_hospital,
 )
 from ai.search.kb_store import build_ingest_metadata, build_signal_chunks
+
+
+def _record_classification_change(
+    db: DynamoAdapter,
+    prev: "Classification | None",
+    current: "Classification",
+) -> None:
+    """primary_focus 가 이전 분류와 다르면 ClassificationChange(HISTORY#) 를 적재한다.
+
+    이전 분류가 없으면(최초 분류) 기록하지 않는다 — 변경이 아니라 신규이므로.
+    재크롤·재분류 경로(index_pipeline)에서 호출되어 영역 ⑦ 변경 이력을 자동 생성한다.
+    """
+    if prev is None:
+        return
+    if prev.primary_focus == current.primary_focus:
+        return
+
+    from shared.models import ClassificationChange
+
+    db.save_change_record(
+        ClassificationChange(
+            hospital_id=current.hospital_id,
+            changed_at=current.classified_at,
+            from_focus=prev.primary_focus,
+            to_focus=current.primary_focus,
+            reason="scheduled_recrawl",
+            classifier_version=current.classifier_version,
+        )
+    )
 
 
 def run_index_pipeline(
@@ -50,9 +84,18 @@ def run_index_pipeline(
     if not hospital_meta:
         return {"status": "error", "reason": "hospital_meta_not_found", "hospital_id": hospital_id}
 
-    # 분류 — demo 면 LLM, 아니면 룰 단독(Bedrock 0회)
-    classification = classify_hospital(crawl_data, use_llm=demo)
+    # 외부 시그널 로드 (적재된 것만 — 없으면 None, 자체 사이트만 분류)
+    external = db.load_external_signals(hospital_id)
+
+    # 재분류 비교용 — 이전 CLASSIFICATION 을 분류 저장 전에 로드
+    prev_classification = db.load_classification(hospital_id)
+
+    # 분류 — demo 면 LLM, 아니면 룰 단독(Bedrock 0회). 외부 후기·카카오 tags 까지 교차검증.
+    classification = classify_hospital(crawl_data, use_llm=demo, **external)
     db.save_classification(classification)
+
+    # 분류 변경 자동 기록 — primary_focus 가 이전과 다르면 HISTORY# 적재 (영역 ⑦)
+    _record_classification_change(db, prev_classification, classification)
 
     # 시연 10개만 — 진료항목·설명·관련병원 (LLM/Vision)
     if demo:
@@ -77,8 +120,8 @@ def run_index_pipeline(
         db.save_related_hospitals(hospital_id, related)
 
     # KB 시그널 청크 ingest — 검색 임베딩 (DESCRIPTION 미포함)
-    # TODO: 카카오/네이버 시그널 DDB entity 적재되면 build_signal_chunks 에 함께 전달
-    signal_chunks = build_signal_chunks(crawl_data=crawl_data)
+    # 외부 시그널(카카오/네이버/구글)도 적재돼 있으면 함께 청크에 합류
+    signal_chunks = build_signal_chunks(crawl_data=crawl_data, **external)
     metadata = build_ingest_metadata(hospital_meta, classification)
     ingest_hospital(
         hospital_id,

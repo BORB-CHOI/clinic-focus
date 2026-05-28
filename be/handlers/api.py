@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -16,10 +18,19 @@ app = FastAPI(
     version="0.1.0",
 )
 
+# 허용 오리진 — env CORS_ALLOW_ORIGINS(쉼표 구분) 우선, 기본은 FE 로컬 dev 서버.
+# CloudFront 도메인은 Phase G 배포 시 env 로 주입 (예: "https://dxxxx.cloudfront.net").
+_default_origins = "http://localhost:5173"
+_allow_origins = [
+    o.strip()
+    for o in os.environ.get("CORS_ALLOW_ORIGINS", _default_origins).split(",")
+    if o.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
+    allow_origins=_allow_origins,
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 

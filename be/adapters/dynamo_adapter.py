@@ -119,6 +119,26 @@ class DynamoAdapter:
                 break
             kwargs["ExclusiveStartKey"] = resp["LastEvaluatedKey"]
 
+    def load_external_signals(self, hospital_id: str) -> dict:
+        """외부 플랫폼 시그널 entity 들을 build_signal_chunks/classify 인자 dict 로 로드.
+
+        적재된 entity 만 채워지고 없으면 None — 외부 미적재 병원은 자체 사이트만 분류.
+        반환 dict 의 키는 classify_hospital·build_signal_chunks 의 키워드 인자명과 일치하므로
+        호출자가 ``**signals`` 로 그대로 전개할 수 있다. PK/SK 는 제거해 parse_* 출력 형태 복원.
+        """
+        def _strip(item: dict | None) -> dict | None:
+            if not item:
+                return None
+            return {k: v for k, v in item.items() if k not in ("hospital_id", "entity")}
+
+        return {
+            "kakao_place": _strip(self.get_entity(hospital_id, "KAKAO#PLACE")),
+            "kakao_reviews": _strip(self.get_entity(hospital_id, "KAKAO#REVIEWS")),
+            "kakao_blog": _strip(self.get_entity(hospital_id, "KAKAO#BLOG")),
+            "naver_reviews": _strip(self.get_entity(hospital_id, "NAVER#PLACE#REVIEWS")),
+            "google_reviews": _strip(self.get_entity(hospital_id, "GOOGLE#PLACE")),
+        }
+
     def query_hospital_entities(
         self,
         hospital_id: str,
@@ -211,6 +231,27 @@ class DynamoAdapter:
             UpdateExpression="SET contact.website_url = :url",
             ExpressionAttributeValues={":url": url},
         )
+
+    def iter_hospitals_with_url(self) -> Iterator[dict]:
+        """website_url(http/https)이 있는 META 병원을 {hospital_id, name, url} 로 yield.
+
+        크롤 대상 선별용. META 만 scan (V2 single-table — 옛 `Table("Hospitals")` 직접
+        scan 대체). 본문은 가져오지 않으므로 RU/s 가볍다.
+        """
+        kwargs: dict[str, Any] = {"FilterExpression": Attr("entity").eq(E_META)}
+        while True:
+            resp = self._table.scan(**kwargs)
+            for item in resp.get("Items", []):
+                url = (item.get("contact") or {}).get("website_url")
+                if isinstance(url, str) and url.startswith(("http://", "https://")):
+                    yield {
+                        "hospital_id": item["hospital_id"],
+                        "name": item.get("name", ""),
+                        "url": url,
+                    }
+            if "LastEvaluatedKey" not in resp:
+                break
+            kwargs["ExclusiveStartKey"] = resp["LastEvaluatedKey"]
 
     # ── Classifications ─────────────────────────────────────────────────────
 

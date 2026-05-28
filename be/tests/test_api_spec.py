@@ -109,24 +109,42 @@ class TestSearchEndpoint:
     """GET /api/search 스펙 테스트."""
 
     def test_no_params_returns_error(self, client):
-        """q도 lat/lng도 없으면 에러."""
+        """q·lat/lng·sigungu 다 없으면 400 INVALID_PARAMETER (API-FE-BE.md 라인 44·356)."""
         with patch("be.api.search.db"):
             resp = client.get("/api/search")
-            assert resp.status_code == 200  # 에러지만 200으로 반환 (스펙 확인 필요)
+            assert resp.status_code == 400
             body = resp.json()
             assert "error" in body
             assert body["error"]["code"] == "INVALID_PARAMETER"
 
     def test_with_sigungu_returns_data_meta(self, client):
-        """시군구 검색 → {"data": [...], "meta": {...}}."""
+        """시군구 단독(카테고리) 검색 → DDB GSI 직접 조회 → {"data": [...], "meta": {...}}."""
         with patch("be.api.search.db") as mock_db:
             mock_db.list_hospitals_by_sigungu.return_value = []
-            resp = client.get("/api/search?q=피부과&sigungu=성북구")
+            resp = client.get("/api/search?sigungu=성북구")
             assert resp.status_code == 200
             body = resp.json()
             assert "data" in body
             assert "meta" in body
-            assert "search_mode" in body["meta"]
+            assert body["meta"]["search_mode"] == "category"
+
+    def test_natural_query_uses_retrieve_hospital(self, client):
+        """자연어(q) 검색 → AI retrieve_hospital(KB Retrieve) 경유."""
+        from shared.models import SearchResult
+
+        with patch("be.api.search.db") as mock_db, \
+             patch("ai.retrieve_hospital") as mock_retrieve:
+            mock_retrieve.return_value = [
+                SearchResult(hospital_id="h_001", similarity_score=0.9,
+                             matched_focus=["여드름"], query_interpretation=None),
+            ]
+            # 카드 join 용 META/분류 — 간단화 위해 META 만 있고 분류 전인 케이스
+            mock_db.load_hospital_meta.return_value = None  # 카드 None → 결과 0개여도 경로 검증
+            resp = client.get("/api/search?q=여드름 잘 보는 피부과")
+            assert resp.status_code == 200
+            body = resp.json()
+            assert body["meta"]["search_mode"] == "natural"
+            mock_retrieve.assert_called_once()
 
 
 class TestFeedbackEndpoint:
