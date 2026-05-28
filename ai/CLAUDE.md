@@ -65,7 +65,7 @@
 - `ingest_hospital(hospital_id, signal_chunks, metadata, *, trigger_ingestion=False) -> None` — 시그널별 청크(`build_signal_chunks`)·메타(`build_ingest_metadata`)를 호출자가 조립해 넘김. KB DataSource S3 업로드 + ingestion job
 - `recompute_confidence(hospital_id, recent_feedback) -> Confidence`
 - `embed_text(text) -> list[float]` — Titan v2 직접 호출 (디버깅·실험용. 운영 검색은 KB가 내부 수행)
-- `analyze_images(image_urls, extract_text=False) -> list[ImageAnalysisResult]`
+- `analyze_images(image_urls) -> list[ImageAnalysisResult]` — OCR 은 Bedrock Vision 이 흡수(Textract 미사용)
 
 ## `generate_description` 프롬프트 원칙 ⭐ 절대 어기지 말 것
 
