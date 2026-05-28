@@ -31,6 +31,7 @@ import botocore.exceptions
 
 from ai.core.aws_clients import get_s3vectors_client as _create_s3vectors_client
 from ai.search.embed import EMBEDDING_DIM, embed_text
+from ai.search.query_processor import ProcessedQuery, process_query
 from ai.core.exceptions import BedrockInvocationError, InvalidQueryError, S3VectorsError
 from shared.models import Classification, SearchQuery, SearchResult
 
@@ -333,16 +334,27 @@ def search_similar(query: SearchQuery) -> list[SearchResult]:
 def _search_text_only(query: SearchQuery) -> list[SearchResult]:
     """자연어 쿼리만 있는 경우의 검색.
 
-    1. query_text 임베딩
-    2. QueryVectors (sido/sigungu/specialty/min_confidence 메타필터)
-    3. 상위 limit 개 반환
+    1. 쿼리 전처리 (불용어 제거 + 의학 동의어 확장 + specialty 자동 추론)
+    2. 확장 텍스트 임베딩
+    3. QueryVectors (sido/sigungu/specialty/min_confidence 메타필터)
+    4. 상위 limit 개 반환
     """
-    vector = embed_text(query.query_text)  # type: ignore[arg-type]
+    processed = process_query(query.query_text or "")
+    vector = embed_text(processed.embedding_text or query.query_text or "")
+
+    # 사용자가 specialty 를 명시하지 않았고 추론된 specialty 가 있으면 메타필터 보강.
+    # ``query`` 자체는 frozen 이 아니지만 의도를 명확히 하기 위해 로컬 변수 사용.
+    effective_specialty = query.specialty or processed.inferred_specialty
+    if processed.inferred_specialty and not query.specialty:
+        logger.info(
+            "specialty 자동 추론 적용: %s (키워드: %s)",
+            processed.inferred_specialty, processed.medical_terms,
+        )
 
     meta_filter = _build_meta_filter(
         sido=query.sido,
         sigungu=query.sigungu,
-        specialty=query.specialty,
+        specialty=effective_specialty,
         min_confidence=query.min_confidence,
     )
 
@@ -352,8 +364,10 @@ def _search_text_only(query: SearchQuery) -> list[SearchResult]:
         meta_filter=meta_filter,
     )
 
-    # 빈 결과 시 필터 완화 fallback — min_confidence 기준만 제거해서 재시도
-    if not raw_results and (query.sido or query.sigungu or query.specialty):
+    # 빈 결과 시 필터 완화 fallback — 자동 추론된 specialty 와 지역 필터를 모두 제거하고 재시도.
+    # 사용자가 명시적으로 준 필터(sido/sigungu/specialty)는 유지하지 않고 풀어주는 편이
+    # "결과 0건" 보다 사용자 경험이 낫다는 판단.
+    if not raw_results and (query.sido or query.sigungu or effective_specialty):
         logger.info("자연어 검색 결과 0건 → 지역/specialty 필터 완화 fallback")
         fallback_filter = _build_meta_filter(min_confidence=query.min_confidence)
         raw_results = _query_vectors(
@@ -361,6 +375,9 @@ def _search_text_only(query: SearchQuery) -> list[SearchResult]:
             top_k=query.limit,
             meta_filter=fallback_filter,
         )
+
+    # query_interpretation 문자열 — FE 디버그·"이렇게 이해했어요" UI 용.
+    interpretation = _build_interpretation(processed) if processed.medical_terms else None
 
     results: list[SearchResult] = []
     for item in raw_results:
@@ -372,7 +389,7 @@ def _search_text_only(query: SearchQuery) -> list[SearchResult]:
                 item,
                 similarity_score=similarity,
                 distance_km=None,
-                query_interpretation=None,
+                query_interpretation=interpretation,
             )
         )
 
@@ -464,22 +481,30 @@ def _search_location_only(query: SearchQuery) -> list[SearchResult]:
 def _search_hybrid(query: SearchQuery) -> list[SearchResult]:
     """자연어 + 위치 복합 검색.
 
-    1. 자연어 의미 검색으로 limit * 3 개 추출 (지역 필터 포함)
-    2. radius_km 내 haversine 필터링
-    3. sort 기준 정렬 후 limit 개 반환
+    1. 쿼리 전처리 (불용어 제거 + 의학 동의어 확장 + specialty 자동 추론)
+    2. 자연어 의미 검색으로 limit * 3 개 추출 (지역 필터 포함)
+    3. radius_km 내 haversine 필터링
+    4. sort 기준 정렬 후 limit 개 반환
     """
     lat: float = query.lat  # type: ignore[assignment]
     lng: float = query.lng  # type: ignore[assignment]
 
-    # 자연어 임베딩
-    vector = embed_text(query.query_text)  # type: ignore[arg-type]
+    processed = process_query(query.query_text or "")
+    vector = embed_text(processed.embedding_text or query.query_text or "")
+
+    effective_specialty = query.specialty or processed.inferred_specialty
+    if processed.inferred_specialty and not query.specialty:
+        logger.info(
+            "[hybrid] specialty 자동 추론 적용: %s (키워드: %s)",
+            processed.inferred_specialty, processed.medical_terms,
+        )
 
     # 의미 검색 단계 — 지역 필터는 포함하되 위치 bounding box 는 생략
     # (의미 검색 후 haversine 으로 정확히 걸러냄)
     meta_filter = _build_meta_filter(
         sido=query.sido,
         sigungu=query.sigungu,
-        specialty=query.specialty,
+        specialty=effective_specialty,
         min_confidence=query.min_confidence,
     )
 
@@ -492,13 +517,15 @@ def _search_hybrid(query: SearchQuery) -> list[SearchResult]:
 
     # 빈 결과 시 필터 완화 fallback
     if not raw_results:
-        logger.info("복합 검색 결과 0건 → 필터 완화 fallback")
+        logger.info("[hybrid] 검색 결과 0건 → 필터 완화 fallback")
         fallback_filter = _build_meta_filter(min_confidence=query.min_confidence)
         raw_results = _query_vectors(
             vector=vector,
             top_k=expanded_k,
             meta_filter=fallback_filter,
         )
+
+    interpretation = _build_interpretation(processed) if processed.medical_terms else None
 
     # haversine 필터링
     candidates: list[tuple[float, float, dict]] = []
@@ -536,7 +563,30 @@ def _search_hybrid(query: SearchQuery) -> list[SearchResult]:
                 item,
                 similarity_score=round(similarity, 4),
                 distance_km=round(dist_km, 3),
-                query_interpretation=None,
+                query_interpretation=interpretation,
             )
         )
     return results
+
+
+# ---------------------------------------------------------------------------
+# query_interpretation 빌더
+# ---------------------------------------------------------------------------
+
+def _build_interpretation(processed: ProcessedQuery) -> str:
+    """ProcessedQuery 로부터 사용자 표시용 해석 문자열을 만든다.
+
+    예: "사마귀 어디가 좋을까" →
+        "검색어 해석: 사마귀 (피부과 / 일반 진료(아토피·여드름))"
+
+    FE 가 검색 결과 상단에 "이렇게 이해했어요" 박스로 노출하면 사용자가
+    오해석을 즉시 인지하고 재검색할 수 있다.
+    """
+    parts: list[str] = []
+    if processed.medical_terms:
+        parts.append(", ".join(processed.medical_terms))
+    if processed.inferred_specialty:
+        parts.append(f"진료과: {processed.inferred_specialty}")
+    if processed.inferred_focus:
+        parts.append(f"분야: {' / '.join(processed.inferred_focus)}")
+    return " · ".join(parts) if parts else processed.original

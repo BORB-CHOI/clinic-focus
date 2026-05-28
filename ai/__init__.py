@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from ai.pipeline.vision import analyze_images  # noqa: F401
     from ai.search.embed import embed_text  # noqa: F401
     from ai.search.feedback import aggregate_feedback_stats, recompute_confidence  # noqa: F401
+    from ai.search.query_processor import ProcessedQuery, process_query  # noqa: F401
     from ai.search.related import find_related_hospitals  # noqa: F401
     from ai.search.vector_store import index_hospital, search_similar  # noqa: F401
 
@@ -40,6 +41,10 @@ def __getattr__(name: str):  # noqa: ANN001, ANN202
         "find_related_hospitals":       ("ai.search.related",         "find_related_hospitals"),
         "recompute_confidence":         ("ai.search.feedback",        "recompute_confidence"),
         "aggregate_feedback_stats":     ("ai.search.feedback",        "aggregate_feedback_stats"),
+        # query_processor 는 boto3 의존이 없어 즉시 로드해도 문제없지만,
+        # 일관된 export 패턴을 위해 lazy 로 통일.
+        "process_query":                ("ai.search.query_processor", "process_query"),
+        "ProcessedQuery":               ("ai.search.query_processor", "ProcessedQuery"),
     }
     if name in _module_map:
         module_path, attr = _module_map[name]
@@ -59,4 +64,6 @@ __all__ = [
     "find_related_hospitals",
     "recompute_confidence",
     "aggregate_feedback_stats",
+    "process_query",
+    "ProcessedQuery",
 ]
