@@ -1,0 +1,105 @@
+{
+  "summary": {
+    "name": "더서울병원",
+    "address": {
+      "disp": "서울 성북구 아리랑로 16 3~7층 (동선동4가)",
+      "jibun": "동선동4가 53",
+      "road": "서울 성북구 아리랑로 16 3~7층",
+      "base_zone_no": "02829",
+      "road_part": "아리랑로 16 3~7층",
+      "jibun_part": "동선동4가 53",
+      "address_detail_part": "3~7층"
+    },
+    "phone_numbers": [
+      {
+        "tel": "02-929-2114"
+      }
+    ],
+    "homepages": [
+      "http://www.theseoulhospital.com",
+      "https://pf.kakao.com/_HgdxjC/chat"
+    ],
+    "category": {
+      "name": "정형외과",
+      "id1": "13",
+      "id2": "80",
+      "id3": "1139",
+      "name1": "의료,건강",
+      "name2": "병원",
+      "name3": "정형외과"
+    }
+  },
+  "place_add_info": {
+    "tags": [
+      "무지외반증",
+      "성북구병원",
+      "인공관절수술",
+      "정형외과",
+      "응급야간진료",
+      "2차병원",
+      "건강검진",
+      "관절경수술",
+      "관절염",
+      "근육통",
+      "도수치료",
+      "디스크질환",
+      "류마티스질환",
+      "무릎관절치료",
+      "손목터널증후군",
+      "신경클리닉",
+      "아킬레스건염",
+      "오십견",
+      "이동약자접근",
+      "재활",
+      "족저근막염",
+      "체외충격파",
+      "통증치료",
+      "협착증",
+      "회전근개손상"
+    ],
+    "facilities": {
+      "is_parking": true,
+      "is_pet": false,
+      "is_fordisabled": true,
+      "is_smokingroom": false
+    }
+  },
+  "medical": {
+    "hira": {
+      "medical_center_type": "병원",
+      "specialized_field": null,
+      "doctor_count": {
+        "total": 8,
+        "general": 0,
+        "intern": 0,
+        "resident": 0,
+        "specialist": 8
+      },
+      "established_at": "2017-03-31"
+    }
+  },
+  "photos": {
+    "counts": {
+      "total": 1,
+      "mystore": 1,
+      "vendor": 0,
+      "vod": 0,
+      "kakaomap_review": 0,
+      "food": 0,
+      "indoor": 0,
+      "outdoor": 0,
+      "menu": 0
+    },
+    "photos": [
+      {
+        "url": "http://t1.kakaocdn.net/mystore/9ED665E90B3B419A838830E3380C9A89",
+        "type": "MYSTORE"
+      }
+    ]
+  },
+  "my_store_notice": {
+    "main_photo_url": "http://t1.kakaocdn.net/mystore/9ED665E90B3B419A838830E3380C9A89",
+    "mystore_intro": "더서울병원은 성북구 성신여대입구역에 위치한 관절척추병원입니다."
+  },
+  "kakaomap_review": {}
+}

@@ -1,0 +1,129 @@
+{
+  "summary": {
+    "name": "자생한방병원",
+    "address": {
+      "disp": "서울 강남구 강남대로 536 (논현동)",
+      "jibun": "논현동 142-3",
+      "road": "서울 강남구 강남대로 536",
+      "base_zone_no": "06110",
+      "road_part": "강남대로 536",
+      "jibun_part": "논현동 142-3"
+    },
+    "phone_numbers": [
+      {
+        "tel": "1577-0007"
+      }
+    ],
+    "homepages": [
+      "http://www.jaseng.co.kr",
+      "https://www.facebook.com/jaseng.kr",
+      "http://blog.naver.com/golfpark58",
+      "https://cafe.naver.com/huridisk",
+      "https://www.jaseng.org"
+    ],
+    "category": {
+      "name": "한방병원",
+      "id1": "13",
+      "id2": "80",
+      "id3": "777",
+      "name1": "의료,건강",
+      "name2": "병원",
+      "name3": "한방병원"
+    }
+  },
+  "place_add_info": {
+    "tags": [
+      "2차병원",
+      "관절염",
+      "근육통",
+      "도수치료",
+      "무릎관절치료",
+      "물리치료",
+      "비염",
+      "생리통클리닉",
+      "신경클리닉",
+      "실손24",
+      "안면신경마비",
+      "오십견",
+      "자동차보험진료기관",
+      "추나요법",
+      "턱관절질환",
+      "통증치료",
+      "한방클리닉",
+      "회전근개손상"
+    ],
+    "facilities": {
+      "is_parking": true,
+      "is_pet": false,
+      "is_fordisabled": false
+    }
+  },
+  "medical": {
+    "hira": {
+      "medical_center_type": "한방병원",
+      "specialized_field": "한방척추질환",
+      "doctor_count": {
+        "total": 72,
+        "general": 4,
+        "intern": 8,
+        "resident": 31,
+        "specialist": 29
+      },
+      "established_at": "1999-06-21"
+    }
+  },
+  "photos": {
+    "counts": {
+      "total": 704,
+      "mystore": 0,
+      "vendor": 0,
+      "vod": 1,
+      "kakaomap_review": 87,
+      "food": 0,
+      "indoor": 206,
+      "outdoor": 32,
+      "menu": 0
+    },
+    "photos": [
+      {
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/2c822c84509537d4cd4f9d88bac2f269e608b2d8?original",
+        "type": "KMAPREVIEW"
+      },
+      {
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/f531e8b2e57c14d6897f5cb964ca4c70d3edd834?original",
+        "type": "KMAPREVIEW"
+      }
+    ]
+  },
+  "my_store_notice": {
+    "main_photo_url": null,
+    "mystore_intro": null
+  },
+  "kakaomap_review": {
+    "score_set": {
+      "review_count": 303,
+      "total_score": 1385,
+      "average_score": 4.6,
+      "photo_count": 87,
+      "strength_counts": [
+        {
+          "id": 2,
+          "count": 164
+        },
+        {
+          "id": 10,
+          "count": 145
+        },
+        {
+          "id": 4,
+          "count": 50
+        },
+        {
+          "id": 13,
+          "count": 32
+        }
+      ],
+      "strength_uv": 174
+    }
+  }
+}
