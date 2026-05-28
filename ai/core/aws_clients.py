@@ -81,11 +81,6 @@ def get_bedrock_runtime_client(use_vision: bool = False) -> Any:
     return _get_ai_session().client("bedrock-runtime", region_name=_ai_region_name())
 
 
-def get_s3vectors_client() -> Any:
-    """개인 계정 S3 Vectors 클라이언트."""
-    return _get_ai_session().client("s3vectors", region_name=_ai_region_name())
-
-
 def get_textract_client() -> Any:
     """개인 계정 Textract 클라이언트."""
     return _get_ai_session().client("textract", region_name=_ai_region_name())
