@@ -430,65 +430,61 @@ def embed_text(text: str) -> list[float]:
 
 ### 4. `ingest_hospital`
 
-병원 4 시그널 데이터를 받아 KB ingest 본문을 내부에서 조립하고 Bedrock Knowledge Base 에 적재. 새 병원 분류 후 또는 분류 변경 후 호출.
+병원 시그널 데이터를 시그널 단위 .txt 파일로 KB DataSource S3 에 업로드하고 선택적으로 ingestion job 을 트리거. 새 병원 분류 후 또는 분류 변경 후 호출.
 
-> **이전 `index_hospital` 함수 폐기**. KB 경유로 변경되면서 직접 PutVectors가 아니라 DataSource S3에 파일을 업로드하고 ingestion job을 트리거하는 방식으로 바뀜.
+> **이전 `index_hospital` 함수 폐기**. KB 경유로 변경. 직접 PutVectors 가 아니라 DataSource S3 에 파일을 업로드하고 ingestion job 을 트리거하는 방식.
 
-> **V2 시그니처 변경** — 호출자가 `content_text` 를 직접 만들어 넘기던 방식에서, 4 시그널 번들을 넘기면 함수 내부에서 본문을 조립하는 방식으로 재설계. BE 호출부 (`be/handlers/ingest_hospital.py`) 동시 갱신 필요.
+> **현재 실구현 시그니처** — 호출자가 `build_signal_chunks(...)` + `build_ingest_metadata(meta, classification)` 로 청크/메타를 조립해 넘기는 패턴. BE 호출부에서 직접 빌더를 import 하여 사용.
 
 ```python
 def ingest_hospital(
     hospital_id: str,
-    crawl_data: CrawlData,                           # 자체 사이트 크롤링 결과 (자칭 시그널)
-    external_signals: ExternalSignalBundle,           # 외부 3개 소스 시그널
-    classification: Classification,                   # 분류 결과 (signal scores + primary_focus)
-    description: HospitalDescription | None,          # AI 통합 설명 (없으면 생략)
-    metadata: HospitalIngestMetadata,
-    trigger_ingestion: bool = False,                  # False면 파일만 업로드, True면 ingestion job 즉시 트리거
+    signal_chunks: dict[str, str],   # build_signal_chunks() 반환값. signal_type → 텍스트
+    metadata: dict,                   # build_ingest_metadata() 반환값 (metadataAttributes 안쪽 평탄 dict)
+    *,
+    trigger_ingestion: bool = False,  # False면 파일만 업로드, True면 ingestion job 즉시 트리거
 ) -> None:
     ...
-
-class HospitalIngestMetadata(BaseModel):
-    standard_specialty: str
-    primary_focus: list[str]
-    sido: str
-    sigungu: str
-    confidence_score: int
-    lat: float | None = None
-    lng: float | None = None
-    last_updated: str                                 # ISO8601
-    signals_included: list[str]                      # V2 추가 — 어떤 시그널이 본문에 포함됐는지 추적
-    # 예: ["self_claim", "blog", "reviews_naver", "reviews_kakao", "vision"]
-    # 빈 시그널은 이 목록에서 제외, metadata 키도 KB에서 누락 처리
 ```
 
-#### 본문 조립 규칙
+**호출자 조립 패턴**:
 
-함수 내부에서 다음 순서로 본문(`content_text`)을 자동 조립하여 S3 에 업로드:
+```python
+from ai.search.kb_store import build_signal_chunks, build_ingest_metadata, ingest_hospital
 
+signal_chunks = build_signal_chunks(
+    crawl_data=crawl_data,
+    kakao_place=kakao_place,
+    kakao_reviews=kakao_reviews,
+    kakao_blog=kakao_blog,
+    naver_reviews=naver_reviews,
+)
+metadata = build_ingest_metadata(hospital_meta, classification)
+ingest_hospital(hospital_id, signal_chunks, metadata, trigger_ingestion=False)
 ```
-[자체 사이트 — page_type 우선순위 정렬: service → about → main → doctors → blog]
-[네이버 블로그 상위 N개 본문 excerpt]
-[네이버 플레이스 키워드 빈도 — "친절: 42건, 청결: 31건, ..." 형태]
-[카카오 리뷰 키워드 빈도]
-[구글 리뷰 키워드 빈도]
-[AI 분류 결과 — primary_focus·confidence·시그널 기여도]
-[AI 통합 설명 — description.paragraphs 본문 (있는 경우만)]
-```
 
-**빈 시그널 처리 규칙**:
-- 해당 소스가 None(크롤링 미완료)이면 해당 섹션은 본문에서 제외
-- `HospitalIngestMetadata.signals_included` 에서도 해당 키 제외
-- KB metadata 의 해당 키도 누락 (KB 가 빈 list/None 거절하는 실측 함정 그대로 적용)
+#### 청크 전략
+
+병원당 벡터 1개가 아닌 **시그널별 .txt 파일로 분리** (KB 파일 단위 청킹이 signal 경계 보존).
+
+| signal_type | 내용 | S3 키 |
+|---|---|---|
+| `self_claim` | 자체 사이트 service/about/main 텍스트 + 카카오 자칭 키워드 | `{prefix}{hospital_id}/self_claim.txt` |
+| `blog` | 자체 사이트 blog 페이지 + 카카오 블로그 포스트 제목/발췌 | `{prefix}{hospital_id}/blog.txt` |
+| `reviews` | 카카오/네이버 후기 **키워드 빈도 요약만** (§56③) | `{prefix}{hospital_id}/reviews.txt` |
+
+각 .txt 옆에 `.txt.metadata.json` 사이드카 파일 동봉. 사이드카 포맷:
+```json
+{"metadataAttributes": {<build_ingest_metadata 반환값>, "signal_type": "<signal_type>"}}
+```
 
 > **후기 처리 — 의료법 §56③ 준수** (아래 별도 박스 참조)
 
 #### 동작
-1. 위 본문 조립 규칙대로 `content_text` 내부 생성
-2. `content_text`를 DataSource S3 버킷에 `{hospital_id}.txt`로 업로드
-3. 같은 prefix에 `{hospital_id}.txt.metadata.json` 동봉 (포맷은 아래 "메타데이터 파일 포맷" 참조)
-4. `trigger_ingestion=True`면 `bedrock-agent:StartIngestionJob` 호출. 배치 적재 시 False로 두고 마지막에 한 번만 트리거
-5. KB가 자동으로: 청크 분할(KB 설정대로) → Titan v2 임베딩 → S3 Vectors 인덱스 적재
+1. `signal_chunks` 에서 빈 텍스트 시그널은 스킵
+2. 시그널별로 `.txt` + `.txt.metadata.json` 쌍을 DataSource S3 버킷에 업로드
+3. `trigger_ingestion=True`면 `bedrock-agent:StartIngestionJob` 1회 호출. 배치 시 False 로 모두 올린 뒤 마지막에 한 번만 True
+4. KB가 자동으로: 청크 분할(KB 기본 설정) → Titan v2 임베딩 → S3 Vectors 인덱스 적재
 
 #### 의료법 §56③ 준수 — 후기 데이터 처리 규칙
 
@@ -570,49 +566,67 @@ class HospitalIngestMetadata(BaseModel):
 
 자연어 쿼리로 유사 병원을 검색. **FE-BE `GET /api/search`의 자연어 모드가 내부에서 호출.**
 
-> **이전 `search_similar` 함수 폐기**. KB Retrieve API 래퍼로 재설계. 검색 경로 이원화에 따라 **자연어 쿼리만 처리** — 단순 카테고리 탐색(`sigungu=강남구 & specialty=피부과` 전체 목록)은 BE가 DynamoDB GSI로 직접 처리하고 AI 모듈을 거치지 않는다.
+> **이전 `search_similar` 함수 폐기**. KB Retrieve API 래퍼로 재설계 (`ai/search/kb_store.py`). 검색 경로 이원화에 따라 **자연어 쿼리만 처리** — 단순 카테고리 탐색(`sigungu=강남구 & specialty=피부과` 전체 목록)은 BE가 DynamoDB GSI로 직접 처리하고 AI 모듈을 거치지 않는다.
 
 ```python
 def retrieve_hospital(
-    query: SearchQuery,
+    query: SearchQuery,   # query_text 필수. lat/lng 있으면 복합 검색
 ) -> list[SearchResult]:
     ...
 ```
 
-> **호출당 LLM 0건.** KB Retrieve API가 내부에서 Titan v2 임베딩 1회 + 벡터 검색 1회를 수행. BE에서 DynamoDB 신뢰도 조회 1회 추가. Sonnet/Haiku 호출 0건. 응답 ~200~500ms (KB 오버헤드 포함), 검색당 비용 ~$0.00003. 자세한 건 `overview.md` "4-5. 검색 동작 원리" 참조.
+> **호출당 LLM 0건.** KB Retrieve API가 내부에서 Titan v2 임베딩 1회 + 벡터 검색 1회를 수행. Sonnet/Haiku 호출 0건. 응답 ~200~500ms, 검색당 비용 ~$0.00003. 자세한 건 `overview.md` "4-5. 검색 동작 원리" 참조.
 
 #### 동작 흐름
 
-**전제**: `query.query_text`는 필수 (KB Retrieve는 빈 쿼리 불가). 위치만 있는 단독 검색이나 메타 전체 목록 조회는 BE 측 DynamoDB GSI 경로로 처리되어 이 함수에 도달하지 않는다.
+**전제**: `query.query_text` 필수 (KB Retrieve 는 빈 쿼리 불가). 위치만 있는 단독 검색이나 메타 전체 목록 조회는 BE 측 DynamoDB GSI 경로로 처리되어 이 함수에 도달하지 않는다.
 
-**자연어 단독 검색** (`query_text`만 있음):
+**자연어 단독 검색** (`query_text` 만 있음):
 
-1. `bedrock-agent-runtime:Retrieve` 호출 — KB가 내부에서 Titan 임베딩 + 벡터 검색
-2. `retrievalConfiguration.vectorSearchConfiguration.filter`에 `sido`/`sigungu`/`specialty`/`min_confidence` 매핑
-3. KB가 반환한 청크들의 `metadata.hospital_id`로 역추적
-4. 같은 병원에서 여러 청크 매칭 시 최고 점수만 유지 (dedup by `hospital_id`)
-5. DynamoDB에서 신뢰도 점수 조회 → KB score × 신뢰도 종합 정렬
-6. 상위 N개 반환
+1. `bedrock-agent-runtime:Retrieve` 호출 — KB가 내부에서 Titan v2 임베딩 + 벡터 검색
+2. `filter` 에 `team_id="clinic-focus"` + `sido`/`sigungu`/`specialty`/`min_confidence` 조건 추가
+3. KB가 반환한 청크들의 `metadata.hospital_id` 로 역추적
+4. **같은 hospital_id 에서 여러 청크 매칭 시 최고 score 1개만 유지 (dedup)**
+5. score 내림차순 정렬 후 상위 `limit` 개 반환
+6. 빈 결과 시 지역/specialty/min_confidence 완화 fallback (team_id 는 유지)
 
 **자연어 + 위치 복합 검색** (`query_text` + `lat`/`lng`):
 
-1. KB Retrieve 호출 — `filter`에 `lat`/`lng` bounding box 범위 필터 추가 (`greaterThan` / `lessThan`)
-2. KB 결과의 메타데이터 `lat`/`lng`로 EC2에서 haversine 공식으로 정확한 거리 재계산
-3. `sort` 기준(`relevance` / `distance` / `confidence`)으로 정렬
-4. 상위 N개 반환
+1. KB Retrieve 호출 — `filter` 에 lat/lng bounding box 범위 필터 추가 (`greaterThanOrEquals` / `lessThanOrEquals`)
+2. KB 결과의 `metadata.lat`/`lng` 로 EC2 에서 haversine 공식으로 정확한 거리 재계산
+3. `query.radius_km` 내 결과만 필터링
+4. `sort` 기준(`relevance` / `distance` / `confidence`)으로 정렬
+5. 상위 `limit` 개 반환
 
-> **자연어 의도 해석에 LLM을 안 쓰는 이유**: Titan v2가 의미 좌표 공간에서 *"M자 탈모 처방"* 과 *"안드로겐성 탈모 약물치료"* 가 가깝다는 걸 안다. 학습으로 동의어·문맥을 흡수한 상태라 LLM 의도 파싱 단계가 불필요. KB Retrieve가 이 임베딩을 내부에서 처리한다.
+**필터 조립 규칙**:
+
+```python
+# 조건이 team_id 하나뿐이면 단일 조건
+filter = {"equals": {"key": "team_id", "value": "clinic-focus"}}
+
+# 추가 조건이 있으면 andAll 로 묶음
+filter = {
+    "andAll": [
+        {"equals": {"key": "team_id", "value": "clinic-focus"}},
+        {"equals": {"key": "sigungu", "value": query.sigungu}},
+        {"greaterThanOrEquals": {"key": "confidence_score", "value": query.min_confidence}},
+        # lat/lng bounding box (복합 검색 시)
+        {"greaterThanOrEquals": {"key": "lat", "value": lat_min}},
+        {"lessThanOrEquals": {"key": "lat", "value": lat_max}},
+    ]
+}
+```
 
 #### 의존성
 
 - `KB_ID`: 환경 변수
+- `AWS_REGION`: 환경 변수 (기본 `us-east-1`)
 - IAM: `bedrock-agent-runtime:Retrieve` (지원 계정 인스턴스 프로파일)
-- DynamoDB 신뢰도 조회 (지원 계정)
 - **LLM(Sonnet/Haiku) 호출 없음**
 
 #### 예외
 - `KBRetrieveError` — KB Retrieve API 호출 실패
-- `InvalidQueryError` — `query_text`가 비었을 때 (KB 빈 쿼리 불가)
+- `InvalidQueryError` — `query_text` 가 비어있을 때 (KB 빈 쿼리 불가)
 
 #### 반환 예시
 ```python

@@ -41,6 +41,7 @@ from ai.search.kb_store import (
     build_self_claim_chunk,
     build_signal_chunks,
     ingest_hospital,
+    retrieve_hospital,
 )
 
 # ---------------------------------------------------------------------------
@@ -609,3 +610,221 @@ class TestIngestHospital:
                     signal_chunks={"self_claim": "텍스트"},
                     metadata={"team_id": "clinic-focus"},
                 )
+
+
+# ===========================================================================
+# 7. retrieve_hospital 테스트 (bedrock-agent-runtime mock)
+# ===========================================================================
+
+_RETRIEVE_ENV = {
+    "KB_ID": "GTBJ6HLFDK",
+    "AWS_REGION": "us-east-1",
+}
+
+# KB Retrieve API 가 반환하는 raw result 샘플 팩토리
+def _make_kb_result(
+    hospital_id: str,
+    score: float,
+    name: str = "테스트병원",
+    specialty: str = "피부과",
+    primary_focus: list[str] | None = None,
+    lat: float | None = None,
+    lng: float | None = None,
+) -> dict:
+    """KB Retrieve retrievalResults 항목 mock 데이터를 생성한다."""
+    md: dict = {
+        "team_id": "clinic-focus",
+        "hospital_id": hospital_id,
+        "name": name,
+        "standard_specialty": specialty,
+        "sido": "서울",
+        "sigungu": "강남구",
+        "confidence_score": 80,
+    }
+    if primary_focus is not None:
+        md["primary_focus"] = primary_focus
+    if lat is not None:
+        md["lat"] = lat
+    if lng is not None:
+        md["lng"] = lng
+    return {
+        "score": score,
+        "metadata": md,
+        "content": {"text": "샘플 본문 텍스트"},
+    }
+
+
+class TestRetrieveHospital:
+    """retrieve_hospital 단위 테스트. boto3.client 를 mock 해 실 AWS 호출을 차단한다."""
+
+    def _make_query(self, **kwargs) -> "SearchQuery":
+        from shared.models import SearchQuery
+        defaults = {"query_text": "여드름 잘 보는 피부과"}
+        defaults.update(kwargs)
+        return SearchQuery(**defaults)
+
+    # (a) 필터에 team_id="clinic-focus" 가 항상 포함된다
+    @patch("boto3.client")
+    @patch.dict(os.environ, _RETRIEVE_ENV)
+    def test_filter_always_includes_team_id(self, mock_boto3):
+        """KB Retrieve 호출 시 team_id="clinic-focus" 필터가 반드시 포함된다."""
+        mock_runtime = MagicMock()
+        mock_runtime.retrieve.return_value = {
+            "retrievalResults": [_make_kb_result("h_001", 0.9)]
+        }
+        mock_boto3.return_value = mock_runtime
+
+        query = self._make_query()
+        retrieve_hospital(query)
+
+        call_kwargs = mock_runtime.retrieve.call_args[1]
+        kb_filter = (
+            call_kwargs["retrievalConfiguration"]["vectorSearchConfiguration"]["filter"]
+        )
+
+        # 단일 조건 또는 andAll 안에 team_id 조건이 있어야 한다
+        def _has_team_id_filter(f: dict) -> bool:
+            if f.get("equals", {}).get("key") == "team_id":
+                return f["equals"]["value"] == "clinic-focus"
+            for cond in f.get("andAll", []):
+                if _has_team_id_filter(cond):
+                    return True
+            return False
+
+        assert _has_team_id_filter(kb_filter), f"team_id 필터 없음: {kb_filter}"
+
+    # (b) 같은 hospital_id 여러 result → 최고 score 1개로 dedup
+    @patch("boto3.client")
+    @patch.dict(os.environ, _RETRIEVE_ENV)
+    def test_dedup_same_hospital_id_keeps_best_score(self, mock_boto3):
+        """같은 hospital_id 에서 여러 청크 매칭 시 최고 score 1개만 남긴다."""
+        mock_runtime = MagicMock()
+        mock_runtime.retrieve.return_value = {
+            "retrievalResults": [
+                _make_kb_result("h_dupe", 0.75),   # 낮은 score
+                _make_kb_result("h_dupe", 0.92),   # 높은 score — 이것만 살아야 함
+                _make_kb_result("h_dupe", 0.60),   # 더 낮은 score
+                _make_kb_result("h_other", 0.80),
+            ]
+        }
+        mock_boto3.return_value = mock_runtime
+
+        query = self._make_query(limit=10)
+        results = retrieve_hospital(query)
+
+        hospital_ids = [r.hospital_id for r in results]
+        assert hospital_ids.count("h_dupe") == 1, "h_dupe 가 dedup 되지 않아 중복 존재"
+
+        # h_dupe 결과의 similarity_score 가 최고값(0.92)이어야 한다
+        h_dupe_result = next(r for r in results if r.hospital_id == "h_dupe")
+        assert h_dupe_result.similarity_score == pytest.approx(0.92, abs=1e-4)
+
+    # (c) SearchResult 매핑 정확
+    @patch("boto3.client")
+    @patch.dict(os.environ, _RETRIEVE_ENV)
+    def test_search_result_mapping(self, mock_boto3):
+        """KB 결과가 SearchResult 필드에 정확히 매핑된다."""
+        mock_runtime = MagicMock()
+        mock_runtime.retrieve.return_value = {
+            "retrievalResults": [
+                _make_kb_result(
+                    "h_map_test",
+                    0.88,
+                    specialty="피부과",
+                    primary_focus=["여드름", "미용 시술"],
+                )
+            ]
+        }
+        mock_boto3.return_value = mock_runtime
+
+        from shared.models import SearchResult
+        query = self._make_query()
+        results = retrieve_hospital(query)
+
+        assert len(results) == 1
+        r = results[0]
+        assert isinstance(r, SearchResult)
+        assert r.hospital_id == "h_map_test"
+        assert r.similarity_score == pytest.approx(0.88, abs=1e-4)
+        assert r.distance_km is None  # 위치 없으므로 None
+        assert "여드름" in r.matched_focus
+        assert "미용 시술" in r.matched_focus
+
+    # (d) 빈 결과 fallback — 필터 완화 후 재시도
+    @patch("boto3.client")
+    @patch.dict(os.environ, _RETRIEVE_ENV)
+    def test_empty_result_fallback_relaxes_filter(self, mock_boto3):
+        """1차 결과 0건 시 지역/specialty/confidence 필터를 완화해 재시도한다."""
+        mock_runtime = MagicMock()
+        # 1차 호출(엄격한 필터) → 빈 결과
+        # 2차 호출(완화된 필터) → 결과 있음
+        mock_runtime.retrieve.side_effect = [
+            {"retrievalResults": []},
+            {"retrievalResults": [_make_kb_result("h_fallback", 0.70)]},
+        ]
+        mock_boto3.return_value = mock_runtime
+
+        query = self._make_query(sigungu="강남구", specialty="피부과", min_confidence=80)
+        results = retrieve_hospital(query)
+
+        assert mock_runtime.retrieve.call_count == 2, "fallback 재시도가 발생하지 않음"
+        assert len(results) == 1
+        assert results[0].hospital_id == "h_fallback"
+
+    # (d-2) 빈 결과 fallback 없을 때 빈 리스트 반환
+    @patch("boto3.client")
+    @patch.dict(os.environ, _RETRIEVE_ENV)
+    def test_empty_result_no_fallback_when_no_extra_filters(self, mock_boto3):
+        """필터가 team_id 만인 경우 fallback 없이 빈 리스트를 반환한다."""
+        mock_runtime = MagicMock()
+        mock_runtime.retrieve.return_value = {"retrievalResults": []}
+        mock_boto3.return_value = mock_runtime
+
+        # 위치/지역/specialty 없는 순수 자연어 쿼리 → fallback 분기 없이 종료
+        query = self._make_query()
+        results = retrieve_hospital(query)
+
+        # retrieve 는 1회만 호출돼야 한다 (fallback 없음)
+        assert mock_runtime.retrieve.call_count == 1
+        assert results == []
+
+    # (e) query_text 비어있으면 InvalidQueryError
+    def test_empty_query_text_raises_error(self):
+        """query_text 가 비어있으면 InvalidQueryError 를 발생시킨다."""
+        from ai.core.exceptions import InvalidQueryError
+        from shared.models import SearchQuery
+
+        query = SearchQuery(query_text="   ", lat=37.4979, lng=127.0430)
+        with pytest.raises(InvalidQueryError, match="비어있습니다"):
+            retrieve_hospital(query)
+
+    # (f) KB_ID 미설정 시 KBRetrieveError
+    @patch("boto3.client")
+    def test_missing_kb_id_raises_error(self, mock_boto3):
+        """KB_ID 환경변수가 없으면 KBRetrieveError 를 발생시킨다."""
+        from ai.core.exceptions import KBRetrieveError
+
+        env_no_kb = {k: v for k, v in _RETRIEVE_ENV.items() if k != "KB_ID"}
+        with patch.dict(os.environ, env_no_kb, clear=False):
+            os.environ.pop("KB_ID", None)
+            query = self._make_query()
+            with pytest.raises(KBRetrieveError, match="KB_ID"):
+                retrieve_hospital(query)
+
+    # (g) limit 이 결과 수를 제한한다
+    @patch("boto3.client")
+    @patch.dict(os.environ, _RETRIEVE_ENV)
+    def test_limit_caps_results(self, mock_boto3):
+        """query.limit 이 결과 수를 제한한다."""
+        mock_runtime = MagicMock()
+        mock_runtime.retrieve.return_value = {
+            "retrievalResults": [
+                _make_kb_result(f"h_{i}", 1.0 - i * 0.05) for i in range(10)
+            ]
+        }
+        mock_boto3.return_value = mock_runtime
+
+        query = self._make_query(limit=3)
+        results = retrieve_hospital(query)
+
+        assert len(results) <= 3

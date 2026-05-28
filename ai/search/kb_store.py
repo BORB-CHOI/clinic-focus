@@ -1,4 +1,4 @@
-"""kb_store.py — KB DataSource S3 업로드 + ingestion job 트리거.
+"""kb_store.py — KB DataSource S3 업로드 + ingestion job 트리거 + KB Retrieve.
 
 시그널별 청크 전략:
 - 병원당 벡터 1개 ❌ → 시그널별 .txt 파일로 분리 (KB 파일 단위 청킹이 signal 경계 보존).
@@ -20,19 +20,21 @@ S3 키 규약:
 - build_signal_chunks(crawl_data, kakao_place, kakao_reviews, kakao_blog, naver_reviews) -> dict[str, str]
 - build_ingest_metadata(meta, classification) -> dict
 - ingest_hospital(hospital_id, signal_chunks, metadata, *, trigger_ingestion) -> None
+- retrieve_hospital(query: SearchQuery) -> list[SearchResult]
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 from typing import TYPE_CHECKING
 
 import boto3
 
 if TYPE_CHECKING:
-    from shared.models import CrawlData, Classification, HospitalMeta
+    from shared.models import CrawlData, Classification, HospitalMeta, SearchQuery, SearchResult
 
 logger = logging.getLogger(__name__)
 
@@ -390,3 +392,284 @@ def ingest_hospital(
         raise KBIngestError(
             f"StartIngestionJob 실패 (hospital_id={hospital_id}): {exc}"
         ) from exc
+
+
+# ---------------------------------------------------------------------------
+# D. retrieve_hospital — KB Retrieve 래퍼
+# ---------------------------------------------------------------------------
+
+# bounding box 근사: 위도 1° ≈ 111 km → 1 km ≈ 0.009°
+# 경도는 위도에 따라 달라지지만 한국 중위도(37°) 기준 보수적으로 동일 적용.
+_DEG_PER_KM = 0.009
+
+# KB Retrieve API 한 번 호출에 반환되는 최대 청크 수.
+_KB_MAX_RESULTS = 100
+
+
+def _haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
+    """Haversine 공식으로 두 지점 간 거리(km)를 계산한다."""
+    r = 6371.0
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    d_phi = math.radians(lat2 - lat1)
+    d_lambda = math.radians(lng2 - lng1)
+    a = math.sin(d_phi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(d_lambda / 2) ** 2
+    return r * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
+def _build_kb_filter(
+    sido: str | None = None,
+    sigungu: str | None = None,
+    specialty: str | None = None,
+    min_confidence: int | None = None,
+    lat_range: tuple[float, float] | None = None,
+    lng_range: tuple[float, float] | None = None,
+) -> dict:
+    """KB Retrieve vectorSearchConfiguration.filter 를 조립한다.
+
+    team_id="clinic-focus" 는 항상 포함 (KB 공유 격리 필수).
+    나머지 조건이 있으면 andAll 로 묶는다.
+
+    KB 필터 DSL:
+      {"equals": {"key": ..., "value": ...}}
+      {"greaterThanOrEquals": {"key": ..., "value": ...}}
+      {"andAll": [...]}
+    """
+    conditions: list[dict] = [
+        {"equals": {"key": "team_id", "value": "clinic-focus"}}
+    ]
+
+    if sido:
+        conditions.append({"equals": {"key": "sido", "value": sido}})
+    if sigungu:
+        conditions.append({"equals": {"key": "sigungu", "value": sigungu}})
+    if specialty:
+        conditions.append({"equals": {"key": "standard_specialty", "value": specialty}})
+    if min_confidence is not None:
+        conditions.append(
+            {"greaterThanOrEquals": {"key": "confidence_score", "value": min_confidence}}
+        )
+    if lat_range is not None:
+        lat_min, lat_max = lat_range
+        conditions.append({"greaterThanOrEquals": {"key": "lat", "value": lat_min}})
+        conditions.append({"lessThanOrEquals": {"key": "lat", "value": lat_max}})
+    if lng_range is not None:
+        lng_min, lng_max = lng_range
+        conditions.append({"greaterThanOrEquals": {"key": "lng", "value": lng_min}})
+        conditions.append({"lessThanOrEquals": {"key": "lng", "value": lng_max}})
+
+    if len(conditions) == 1:
+        # team_id 하나뿐이면 단일 조건으로 반환
+        return conditions[0]
+    return {"andAll": conditions}
+
+
+def _kb_retrieve(
+    client,
+    kb_id: str,
+    query_text: str,
+    kb_filter: dict,
+    n_results: int,
+) -> list[dict]:
+    """bedrock-agent-runtime:Retrieve 를 호출하고 retrievalResults 리스트를 반환한다.
+
+    Raises:
+        KBRetrieveError: API 호출 실패 시.
+    """
+    from ai.core.exceptions import KBRetrieveError  # 순환 import 방지
+
+    try:
+        resp = client.retrieve(
+            knowledgeBaseId=kb_id,
+            retrievalQuery={"text": query_text},
+            retrievalConfiguration={
+                "vectorSearchConfiguration": {
+                    "numberOfResults": min(n_results, _KB_MAX_RESULTS),
+                    "filter": kb_filter,
+                }
+            },
+        )
+    except Exception as exc:
+        logger.error("KB Retrieve 실패: %s", exc)
+        raise KBRetrieveError(f"KB Retrieve 실패: {exc}") from exc
+
+    return resp.get("retrievalResults", [])
+
+
+def _dedup_by_hospital(raw_results: list[dict]) -> dict[str, dict]:
+    """같은 hospital_id 의 청크 중 최고 score 1개만 남긴다.
+
+    반환값: {hospital_id: raw_result_item}
+    """
+    by_hospital: dict[str, dict] = {}
+    for r in raw_results:
+        md = r.get("metadata") or {}
+        hid = md.get("hospital_id")
+        if not hid:
+            continue
+        score = float(r.get("score") or 0.0)
+        if hid not in by_hospital or score > float(by_hospital[hid].get("score") or 0.0):
+            by_hospital[hid] = r
+    return by_hospital
+
+
+def _raw_to_search_result(
+    item: dict,
+    similarity_score: float | None = None,
+    distance_km: float | None = None,
+) -> "SearchResult":
+    """KB Retrieve raw result 항목을 SearchResult 로 변환한다."""
+    from shared.models import SearchResult  # 순환 import 방지
+
+    md = item.get("metadata") or {}
+    hospital_id: str = md.get("hospital_id") or ""
+
+    # primary_focus — list[str] 또는 문자열(JSON) 방어 처리
+    raw_focus = md.get("primary_focus") or []
+    if isinstance(raw_focus, str):
+        try:
+            raw_focus = json.loads(raw_focus)
+        except (json.JSONDecodeError, TypeError):
+            raw_focus = []
+    matched_focus: list[str] = raw_focus if isinstance(raw_focus, list) else []
+
+    return SearchResult(
+        hospital_id=hospital_id,
+        similarity_score=similarity_score,
+        distance_km=distance_km,
+        matched_focus=matched_focus,
+        query_interpretation=None,
+    )
+
+
+def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
+    """자연어 쿼리로 KB Retrieve 를 호출해 유사 병원 목록을 반환한다.
+
+    동작:
+    - query.query_text 필수 (KB Retrieve 는 빈 쿼리 불가).
+    - query.lat + query.lng 가 있으면 bounding box 필터 추가 + haversine 재필터링.
+    - 결과 청크를 hospital_id 기준으로 dedup(최고 score 1개) 후 SearchResult 변환.
+    - 빈 결과 시 sido/sigungu/specialty/min_confidence 필터를 완화하여 fallback 재시도.
+    - team_id="clinic-focus" 필터는 항상 포함 (KB 공유 격리).
+
+    Args:
+        query: SearchQuery 인스턴스. query_text 필수.
+
+    Returns:
+        SearchResult 리스트 (최대 query.limit 개).
+
+    Raises:
+        InvalidQueryError: query_text 가 비었을 때.
+        KBRetrieveError: KB Retrieve API 호출 실패 시.
+    """
+    from ai.core.exceptions import InvalidQueryError, KBRetrieveError  # 순환 import 방지
+
+    q_text = (query.query_text or "").strip()
+    if not q_text:
+        raise InvalidQueryError("retrieve_hospital: query_text 가 비어있습니다. KB Retrieve 는 빈 쿼리 불가.")
+
+    kb_id = os.environ.get("KB_ID")
+    region = os.environ.get("AWS_REGION", "us-east-1")
+    if not kb_id:
+        raise KBRetrieveError("환경변수 KB_ID 가 설정되지 않았습니다.")
+
+    client = boto3.client("bedrock-agent-runtime", region_name=region)
+
+    has_location = query.lat is not None and query.lng is not None
+
+    # --- bounding box 계산 (위치 있을 때) ---
+    lat_range: tuple[float, float] | None = None
+    lng_range: tuple[float, float] | None = None
+    if has_location:
+        deg_offset = query.radius_km * _DEG_PER_KM
+        lat_range = (query.lat - deg_offset, query.lat + deg_offset)  # type: ignore[operator]
+        lng_range = (query.lng - deg_offset, query.lng + deg_offset)  # type: ignore[operator]
+
+    # --- 1차 호출: 전체 필터 적용 ---
+    kb_filter = _build_kb_filter(
+        sido=query.sido,
+        sigungu=query.sigungu,
+        specialty=query.specialty,
+        min_confidence=query.min_confidence,
+        lat_range=lat_range,
+        lng_range=lng_range,
+    )
+
+    # 같은 병원에서 여러 청크가 나올 수 있으므로 limit * 3 배로 넉넉히 요청
+    n_request = min(query.limit * 3, _KB_MAX_RESULTS)
+    raw = _kb_retrieve(client, kb_id, q_text, kb_filter, n_request)
+
+    # --- fallback: 빈 결과 시 지역/specialty/confidence 완화 (team_id 는 유지) ---
+    if not raw and (query.sido or query.sigungu or query.specialty or has_location):
+        logger.info(
+            "retrieve_hospital: 결과 0건 → 지역/specialty/min_confidence 필터 완화 fallback (query=%r)",
+            q_text,
+        )
+        fallback_filter = _build_kb_filter()  # team_id 만 남김
+        raw = _kb_retrieve(client, kb_id, q_text, fallback_filter, n_request)
+
+    if not raw:
+        return []
+
+    # --- hospital_id 기준 dedup (최고 score 1개) ---
+    by_hospital = _dedup_by_hospital(raw)
+
+    # --- haversine 재필터링 (위치 있을 때) ---
+    if has_location:
+        user_lat: float = query.lat  # type: ignore[assignment]
+        user_lng: float = query.lng  # type: ignore[assignment]
+
+        candidates: list[tuple[float, float, dict]] = []
+        for item in by_hospital.values():
+            md = item.get("metadata") or {}
+            item_lat = md.get("lat")
+            item_lng = md.get("lng")
+            score = float(item.get("score") or 0.0)
+            if item_lat is None or item_lng is None:
+                # 좌표 없는 병원은 위치 검색에서 제외
+                continue
+            dist = _haversine_km(user_lat, user_lng, float(item_lat), float(item_lng))
+            if dist <= query.radius_km:
+                candidates.append((dist, score, item))
+
+        # 정렬
+        if query.sort == "distance":
+            candidates.sort(key=lambda x: x[0])
+        elif query.sort == "confidence":
+            candidates.sort(
+                key=lambda x: float((x[2].get("metadata") or {}).get("confidence_score") or 0),
+                reverse=True,
+            )
+        else:  # relevance (기본)
+            candidates.sort(key=lambda x: x[1], reverse=True)
+
+        results: list["SearchResult"] = []
+        for dist_km, score, item in candidates[: query.limit]:
+            results.append(
+                _raw_to_search_result(
+                    item,
+                    similarity_score=round(score, 4),
+                    distance_km=round(dist_km, 3),
+                )
+            )
+        return results
+
+    # --- 자연어 단독 검색: score 내림차순 정렬 ---
+    sorted_items = sorted(
+        by_hospital.values(),
+        key=lambda x: float(x.get("score") or 0.0),
+        reverse=True,
+    )
+
+    if query.sort == "confidence":
+        sorted_items = sorted(
+            by_hospital.values(),
+            key=lambda x: float((x.get("metadata") or {}).get("confidence_score") or 0),
+            reverse=True,
+        )
+
+    results = []
+    for item in sorted_items[: query.limit]:
+        score = float(item.get("score") or 0.0)
+        results.append(_raw_to_search_result(item, similarity_score=round(score, 4)))
+    return results
