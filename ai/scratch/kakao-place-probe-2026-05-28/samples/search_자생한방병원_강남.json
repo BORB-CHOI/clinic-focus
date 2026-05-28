@@ -1,0 +1,321 @@
+{
+  "placeList": [
+    {
+      "cate_name_depth3": "한방병원",
+      "sourceId": "",
+      "cate_name_depth4": "",
+      "catetype": "C",
+      "cate_name_depth5": "",
+      "display_restrict_type": "NONE",
+      "oil_brand": "",
+      "storeviewYN": "N",
+      "cate_name_depth1": "의료,건강",
+      "tvshowYN": "N",
+      "cate_name_depth2": "병원",
+      "source": "",
+      "tilt": "",
+      "oil4Exp": "",
+      "oil2": "0",
+      "point_extension_yn": "",
+      "event_1_title": "",
+      "oil3": "0",
+      "reviewCount": 324,
+      "oil4": "0",
+      "tel": "1577-0007",
+      "pan": "",
+      "brand": "",
+      "roadview": "1197800335|70|-1|||504880|1114005|0",
+      "publicMaskCategory": false,
+      "full_category_ids": "13|80|777",
+      "brandName": "한방병원",
+      "panoid": "",
+      "last_cate_id": "777",
+      "oil1": "0",
+      "wphotoy": "",
+      "rating_count": 303,
+      "wphotox": "",
+      "address_disp": "서울|강남구|논현동|142-3|",
+      "oil3Exp": "",
+      "geoinfo": "",
+      "grade": 0,
+      "event_1": "",
+      "name": "자생한방병원",
+      "img": "",
+      "rating_average": 4.6,
+      "confirmid": "27388604",
+      "courseinfo": "",
+      "parkhere_yn": "",
+      "centerpoint": "",
+      "tvshow_name": "",
+      "last_cate_depth": "3",
+      "openoff": {
+        "realtime": {
+          "breaktime": "N",
+          "moreOpenOffInfoExists": "Y",
+          "secondsUtilClose": 0,
+          "matchedHoliday": null,
+          "holiday": "N",
+          "datetime": "20260528060345",
+          "onlyDisplay": "",
+          "closedToday": "N",
+          "currentDayOfWeek": "목",
+          "secondsUtilOpen": 10574,
+          "currentPeriod": {
+            "timeList": [
+              {
+                "dayOfWeek": "월~목",
+                "timeName": "영업시간",
+                "timeSE": "09:00 ~ 20:00",
+                "timeEtc": ""
+              },
+              {
+                "dayOfWeek": "매일",
+                "timeName": "휴게시간",
+                "timeSE": "13:00 ~ 14:00",
+                "timeEtc": ""
+              }
+            ],
+            "matchedTime": null,
+            "periodEtc": "",
+            "periodName": "영업기간"
+          },
+          "open": "N"
+        },
+        "openhourDisplayText": "※ 물리치료·도수치료 일요일 미운영",
+        "offdayDisplayText": "",
+        "periodList": [
+          {
+            "timeList": [
+              {
+                "dayOfWeek": "월~목",
+                "timeName": "영업시간",
+                "timeSE": "09:00 ~ 20:00",
+                "timeEtc": ""
+              },
+              {
+                "dayOfWeek": "금~일",
+                "timeName": "영업시간",
+                "timeSE": "09:00 ~ 18:00",
+                "timeEtc": ""
+              },
+              {
+                "dayOfWeek": "매일",
+                "timeName": "휴게시간",
+                "timeSE": "13:00 ~ 14:00",
+                "timeEtc": ""
+              }
+            ],
+            "periodEtc": "",
+            "periodName": "영업기간"
+          }
+        ],
+        "contentsProvider": "",
+        "offdayList": [
+          {
+            "weekAndDay": "",
+            "dateList": [],
+            "holidayName": "설전날",
+            "holidayEtc": "",
+            "temporaryHolidays": "N"
+          },
+          {
+            "weekAndDay": "",
+            "dateList": [],
+            "holidayName": "설당일",
+            "holidayEtc": "",
+            "temporaryHolidays": "N"
+          },
+          {
+            "weekAndDay": "",
+            "dateList": [],
+            "holidayName": "설다음날",
+            "holidayEtc": "",
+            "temporaryHolidays": "N"
+          },
+          {
+            "weekAndDay": "",
+            "dateList": [],
+            "holidayName": "추석전날",
+            "holidayEtc": "",
+            "temporaryHolidays": "N"
+          },
+          {
+            "weekAndDay": "",
+            "dateList": [],
+            "holidayName": "추석당일",
+            "holidayEtc": "",
+            "temporaryHolidays": "N"
+          },
+          {
+            "weekAndDay": "",
+            "dateList": [],
+            "holidayName": "추석다음날",
+            "holidayEtc": "",
+            "temporaryHolidays": "N"
+          }
+        ]
+      },
+      "oil2Exp": "",
+      "last_cate_name": "한방병원",
+      "storeview_id": "0",
+      "new_address": "서울 강남구  강남대로 536 ",
+      "requiringtime": "",
+      "address": "논현동",
+      "listViewCateName": "한방병원",
+      "new_address_disp": "서울|강남구||강남대로|536|",
+      "yellow_uuid": "",
+      "openoff_status": "Y",
+      "zoom": "",
+      "roadviewYN": "Y",
+      "categoryIds": [
+        "13",
+        "80",
+        "777"
+      ],
+      "publicMask": null,
+      "oil1Exp": "",
+      "star5_score": "",
+      "shape_support_types": "",
+      "x": 504930,
+      "martDepartment": false,
+      "y": 1114023
+    },
+    {
+      "cate_name_depth3": "전기차 충전소",
+      "sourceId": "",
+      "cate_name_depth4": "",
+      "catetype": "C",
+      "cate_name_depth5": "",
+      "display_restrict_type": "NONE",
+      "oil_brand": "",
+      "storeviewYN": "N",
+      "cate_name_depth1": "교통,수송",
+      "tvshowYN": "N",
+      "cate_name_depth2": "자동차",
+      "source": "",
+      "tilt": "",
+      "oil4Exp": "",
+      "oil2": "0",
+      "point_extension_yn": "",
+      "event_1_title": "",
+      "oil3": "0",
+      "reviewCount": 0,
+      "oil4": "0",
+      "tel": "1660-0365",
+      "pan": "",
+      "brand": "",
+      "roadview": "1197800335|61|-1|||504880|1114005|0",
+      "publicMaskCategory": false,
+      "full_category_ids": "4|67|18428",
+      "brandName": "전기차 충전소",
+      "panoid": "",
+      "last_cate_id": "18428",
+      "oil1": "0",
+      "wphotoy": "",
+      "rating_count": 0,
+      "wphotox": "",
+      "address_disp": "서울|강남구|논현동|142-3|",
+      "oil3Exp": "",
+      "geoinfo": "",
+      "grade": 0,
+      "event_1": "",
+      "name": "자생한방병원 강남 전기차충전소",
+      "img": "",
+      "rating_average": 0,
+      "confirmid": "1057606687",
+      "courseinfo": "",
+      "parkhere_yn": "",
+      "centerpoint": "",
+      "tvshow_name": "",
+      "last_cate_depth": "3",
+      "openoff": {
+        "realtime": {
+          "breaktime": "N",
+          "moreOpenOffInfoExists": "N",
+          "secondsUtilClose": 0,
+          "matchedHoliday": null,
+          "holiday": "N",
+          "datetime": "20260528060345",
+          "onlyDisplay": "",
+          "closedToday": "N",
+          "currentDayOfWeek": "목",
+          "secondsUtilOpen": 0,
+          "currentPeriod": {
+            "timeList": [
+              {
+                "dayOfWeek": "매일",
+                "timeName": "영업시간",
+                "timeSE": "00:00 ~ 24:00",
+                "timeEtc": ""
+              }
+            ],
+            "matchedTime": {
+              "dayOfWeek": "매일",
+              "timeName": "영업시간",
+              "timeSE": "00:00 ~ 24:00",
+              "timeEtc": ""
+            },
+            "periodEtc": "",
+            "periodName": "영업기간"
+          },
+          "open": "Y"
+        },
+        "openhourDisplayText": "",
+        "offdayDisplayText": "",
+        "periodList": [
+          {
+            "timeList": [
+              {
+                "dayOfWeek": "매일",
+                "timeName": "영업시간",
+                "timeSE": "00:00 ~ 24:00",
+                "timeEtc": ""
+              }
+            ],
+            "periodEtc": "",
+            "periodName": "영업기간"
+          }
+        ],
+        "contentsProvider": "",
+        "offdayList": []
+      },
+      "oil2Exp": "",
+      "last_cate_name": "전기차 충전소",
+      "storeview_id": "0",
+      "new_address": "서울 강남구  강남대로 536 ",
+      "requiringtime": "",
+      "address": "논현동",
+      "listViewCateName": "전기차 충전소",
+      "new_address_disp": "서울|강남구||강남대로|536|",
+      "yellow_uuid": "",
+      "openoff_status": "Y",
+      "zoom": "",
+      "roadviewYN": "Y",
+      "categoryIds": [
+        "4",
+        "67",
+        "18428"
+      ],
+      "publicMask": null,
+      "oil1Exp": "",
+      "star5_score": "",
+      "shape_support_types": "",
+      "x": 504939,
+      "martDepartment": false,
+      "y": 1114038
+    }
+  ],
+  "placeMbr": [
+    504930,
+    1114023,
+    504939,
+    1114038
+  ],
+  "info": {
+    "srcid": "",
+    "pageNo": 1,
+    "query": "자생한방병원 강남",
+    "analysis": "자생한방병원 강남|user_location|||Y|0",
+    "isEnd": true
+  }
+}

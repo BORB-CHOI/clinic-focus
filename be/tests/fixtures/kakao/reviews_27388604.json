@@ -1,0 +1,117 @@
+{
+  "score_set": {
+    "review_count": 303,
+    "average_score": 4.6,
+    "strength_counts": [
+      {
+        "id": 2,
+        "count": 164
+      },
+      {
+        "id": 10,
+        "count": 145
+      },
+      {
+        "id": 4,
+        "count": 50
+      },
+      {
+        "id": 13,
+        "count": 32
+      }
+    ]
+  },
+  "strength_description": [
+    {
+      "id": 13,
+      "name": "가격",
+      "icon_url": "https://t1.kakaocdn.net/kakaomap_mobile/android/icon_review_price.png"
+    },
+    {
+      "id": 10,
+      "name": "전문성",
+      "icon_url": "https://t1.kakaocdn.net/kakaomap_mobile/android/icon_review_smart.png"
+    },
+    {
+      "id": 2,
+      "name": "친절",
+      "icon_url": "https://t1.kakaocdn.net/kakaomap_mobile/android/icon_review_kind.png"
+    },
+    {
+      "id": 4,
+      "name": "주차",
+      "icon_url": "https://t1.kakaocdn.net/kakaomap_mobile/android/icon_review_parking.png"
+    }
+  ],
+  "reviews": [
+    {
+      "review_id": 15004257,
+      "contents": "점수 높은 이유가 ... ㅋㅋ\n다른 지점은 이거저거 다 챙겨주는데 여긴 챙길게 너무 많음. 슬리퍼 수건부터 해서 웬만한거 다 ㅠㅠ 그리고 새벽에 사람 자꾸 깨우고 식사 시간이 너무 텀이 애매함",
+      "star_rating": 3,
+      "strength_ids": null,
+      "photo_count": 1,
+      "registered_at": "2026-03-10 18:06:18",
+      "meta": {
+        "owner": {
+          "_redacted": "owner PII removed before repo commit"
+        },
+        "is_liked_by_me": false,
+        "is_owner_me": false,
+        "like_count": 0,
+        "like_user_profile_image_list": [],
+        "is_place_owner_pick": false,
+        "place": {
+          "confirm_id": "27388604",
+          "place_name": "자생한방병원"
+        }
+      }
+    },
+    {
+      "review_id": 14490065,
+      "contents": "시설이 매우 깨끗하고 원장님, 주치의쌤, 간호사쌤들 다 모두 친절하심. 심지어 청소해주시는 이모님도 엄청 자주 해주시고 친절하심. 체계도 잘 잡혀있고 입원하면 하루에 두 번씩 치료 받을 수 있어 효과도 좋음",
+      "star_rating": 5,
+      "strength_ids": [
+        2
+      ],
+      "photo_count": 1,
+      "registered_at": "2025-12-30 10:16:01",
+      "meta": {
+        "owner": {
+          "_redacted": "owner PII removed before repo commit"
+        },
+        "is_liked_by_me": false,
+        "is_owner_me": false,
+        "like_count": 0,
+        "like_user_profile_image_list": [],
+        "is_place_owner_pick": false,
+        "place": {
+          "confirm_id": "27388604",
+          "place_name": "자생한방병원"
+        }
+      }
+    },
+    {
+      "review_id": 14358773,
+      "contents": "입원하게 되었는데 음식이 정말 맛있어요~ 병원 음식 맛없다고 하는데 자생은 음식까지 최고네요. 간호사 선생님들 너무 너무 너무 친절하세요. 어쩜 모든 분들이 이렇게 친절하실 수 있을까 싶을 정도로 매번 어떤지 증상 물어 봐 주시고 기록해 두세요.  청소하시는 아주머니도 정말 일을 소명을 갖고 하시는 듯. 마음으로 일하셔서 더 잘 회복 할 수 있었습니다 ",
+      "star_rating": 5,
+      "strength_ids": null,
+      "photo_count": 1,
+      "registered_at": "2025-12-12 09:25:13",
+      "meta": {
+        "owner": {
+          "_redacted": "owner PII removed before repo commit"
+        },
+        "is_liked_by_me": false,
+        "is_owner_me": false,
+        "like_count": 0,
+        "like_user_profile_image_list": [],
+        "is_place_owner_pick": false,
+        "place": {
+          "confirm_id": "27388604",
+          "place_name": "자생한방병원"
+        }
+      }
+    }
+  ],
+  "has_next": true
+}

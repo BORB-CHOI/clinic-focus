@@ -20,7 +20,7 @@ def find_related_hospitals(
     limit: int = 5,
 ) -> list[RelatedHospital]:
     """상세 페이지 영역 ⑧: 같은 주력 + 빈자리 보완 병원 추천."""
-    from ai.search.vector_store import search_similar
+    from ai.search.kb_store import retrieve_hospital
 
     results: list[RelatedHospital] = []
 
@@ -45,7 +45,7 @@ def find_related_hospitals(
             limit=limit * 2,
         )
 
-    same_focus_raw: list[SearchResult] = search_similar(query)
+    same_focus_raw: list[SearchResult] = retrieve_hospital(query)
     for r in same_focus_raw:
         if r.hospital_id == hospital_id:
             continue
@@ -85,7 +85,7 @@ def find_related_hospitals(
                 sort="relevance",
                 limit=3,
             )
-        gap_raw = search_similar(gap_query)
+        gap_raw = retrieve_hospital(gap_query)
         for r in gap_raw:
             if r.hospital_id == hospital_id:
                 continue

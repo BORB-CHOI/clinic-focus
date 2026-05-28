@@ -35,7 +35,7 @@ Playwright 기반 브라우저 렌더링을 도입하여 병원 홈페이지 URL
 - [x] 6. 보강 파이프라인 통합 (enrich_urls.py)
   - [x] 6.1 enrich_urls.py를 async로 전환 — asyncio.run(main()) 패턴
   - [x] 6.2 네이버 단계에서 search_hospital_multi_query 사용하도록 변경
-  - [x] 6.3 카카오 단계에 KakaoPlaceRenderer + Playwright 통합
+  - [x] 6.3 카카오 단계에 KakaoPlaceRenderer + Playwright 통합 — ⚠️ **2026-05-28 대체**: httpx `panel3` (`KakaoPlaceAdapter.fetch_panel3` + `extract_homepage`)로 전환, Playwright 렌더링 제거 (design.md 상단 노트)
   - [x] 6.4 URL 발견 후 URLValidator로 검증 단계 추가
   - [x] 6.5 중단 재개 로직 — DynamoDB에서 이미 URL 있는 병원 스킵
   - [x] 6.6 최종 리포트 출력 개선 — 소스별 발견 수, 히트율, 잔여 병원 수

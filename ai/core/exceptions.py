@@ -28,3 +28,11 @@ class InvalidQueryError(Exception):
 
 class InsufficientFeedbackError(Exception):
     """피드백이 통계적으로 유의미하지 않은 수준 (3건 미만)."""
+
+
+class KBIngestError(Exception):
+    """KB DataSource S3 업로드 또는 ingestion job 트리거 실패."""
+
+
+class KBRetrieveError(Exception):
+    """KB Retrieve API 호출 실패."""

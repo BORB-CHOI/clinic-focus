@@ -633,6 +633,132 @@ def _compute_confidence(
     return Confidence(score=score, level=level, signals=signals)
 
 
+def _cap_rule_only_confidence(confidence: Confidence) -> Confidence:
+    """룰 단독(use_llm=False) 경로 전용 상한 보정.
+
+    LLM·Vision 교차검증이 없으므로 "확실" 판정은 불가능하다.
+    score 를 CONFIDENCE_THRESHOLD_LOW(70) 로 cap 하고 level 을 재산정한다.
+    signals 비율 구성은 그대로 유지한다.
+
+    Args:
+        confidence: _compute_confidence 가 계산한 원본 Confidence.
+
+    Returns:
+        score 가 70 이하로 cap 된 새 Confidence (level 재산정 포함).
+    """
+    capped_score = min(confidence.score, CONFIDENCE_THRESHOLD_LOW)
+
+    if capped_score >= CONFIDENCE_THRESHOLD_HIGH:
+        # CONFIDENCE_THRESHOLD_LOW <= CONFIDENCE_THRESHOLD_HIGH 일 때도 안전하게
+        level = "확실"
+    elif capped_score >= CONFIDENCE_THRESHOLD_LOW:
+        level = "추정"
+    else:
+        level = "정보 부족"
+
+    return Confidence(score=capped_score, level=level, signals=confidence.signals)
+
+
+# ---------------------------------------------------------------------------
+# 내부 헬퍼 — 룰 기반 자칭 컨셉 추출 (LLM 미사용)
+# ---------------------------------------------------------------------------
+
+# 홍보성 어휘 목록 — spam_score 계산에 사용
+_PROMO_WORDS: list[str] = [
+    "전문", "특화", "전문클리닉", "최고", "유일", "명의", "1위", "최우수",
+    "No.1", "NO.1", "no.1", "최다", "독보적", "탁월", "압도적",
+]
+
+
+def _extract_self_claim_rule(crawl_data: CrawlData) -> SelfClaimSignal:
+    """자칭 컨셉 추출 — 룰 기반 (Bedrock 미호출).
+
+    main / about / service 페이지의 html_text 합본에서
+    _count_medical_keywords 로 키워드를 카운트하고,
+    _KEYWORD_TO_FOCUS 로 primary_focus 를 매핑한다.
+
+    spam_score 는 홍보성 어휘 밀도와 단일 키워드 과반복 비율로 산출한다.
+    """
+    target_pages = [
+        p for p in crawl_data.pages
+        if p.page_type in _SELF_CLAIM_PAGE_TYPES and p.html_text.strip()
+    ]
+    if not target_pages:
+        logger.info("자칭 컨셉 추출 대상 페이지 없음 — 빈 SelfClaimSignal 반환 (룰)")
+        return SelfClaimSignal(keywords=[], primary_focus=[], spam_score=0.0)
+
+    combined_text = "\n\n".join(p.html_text for p in target_pages)
+    keyword_counter = _count_medical_keywords(combined_text)
+
+    # primary_focus: 빈도 상위 키워드를 _KEYWORD_TO_FOCUS 로 매핑 (중복 제거, 순서 유지)
+    focus_seen: set[str] = set()
+    primary_focus: list[str] = []
+    keywords: list[str] = []
+    for kw, _ in keyword_counter.most_common():
+        keywords.append(kw)
+        for focus in _KEYWORD_TO_FOCUS.get(kw, []):
+            if focus not in focus_seen:
+                focus_seen.add(focus)
+                primary_focus.append(focus)
+
+    # spam_score 계산
+    # (1) 홍보성 어휘 밀도: 전체 글자 수 대비 홍보 어휘 등장 횟수
+    promo_count = sum(combined_text.count(w) for w in _PROMO_WORDS)
+    text_len = max(len(combined_text), 1)
+    # 1000자당 홍보 어휘가 5회 이상이면 포화 상태(score 0.7+)로 간주
+    promo_density = min(promo_count / (text_len / 1000), 5.0) / 5.0
+
+    # (2) 단일 키워드 과반복 비율: 상위 1개 키워드가 전체 키워드 등장 합의 60% 초과
+    total_kw_count = sum(keyword_counter.values())
+    top_kw_count = keyword_counter.most_common(1)[0][1] if keyword_counter else 0
+    dominance_ratio = (top_kw_count / total_kw_count) if total_kw_count > 0 else 0.0
+    # dominance 0.6 이상이면 과반복으로 본다 (0.6→0.0, 1.0→0.4 스케일)
+    dominance_score = max(0.0, (dominance_ratio - 0.6) / 0.4)
+
+    spam_score = round(min(1.0, promo_density * 0.7 + dominance_score * 0.3), 4)
+
+    return SelfClaimSignal(
+        keywords=keywords,
+        primary_focus=primary_focus,
+        spam_score=spam_score,
+    )
+
+
+# ---------------------------------------------------------------------------
+# 내부 헬퍼 — 룰 기반 블로그 분석 (LLM 미사용)
+# ---------------------------------------------------------------------------
+
+
+def _analyze_blog_rule(crawl_data: CrawlData) -> BlogSignal:
+    """블로그 키워드 분석 — 룰 기반 (Bedrock 미호출).
+
+    page_type=="blog" 페이지에서 _count_medical_keywords 로 빈도를 카운트하고
+    _KEYWORD_TO_FOCUS 로 primary_topics 를 매핑한다.
+    """
+    blog_pages = [
+        p for p in crawl_data.pages
+        if p.page_type == "blog" and p.html_text.strip()
+    ]
+    if not blog_pages:
+        return BlogSignal(total_posts=0, keyword_frequency={}, primary_topics=[])
+
+    combined_text = "\n\n".join(p.html_text for p in blog_pages)
+    keyword_counter = _count_medical_keywords(combined_text)
+
+    # primary_topics: 상위 5개 키워드를 focus 로 매핑 (중복 제거, 투표 순)
+    focus_votes: Counter = Counter()
+    for kw in [kw for kw, _ in keyword_counter.most_common(5)]:
+        for focus in _KEYWORD_TO_FOCUS.get(kw, []):
+            focus_votes[focus] += 1
+    primary_topics = [f for f, _ in focus_votes.most_common(3)]
+
+    return BlogSignal(
+        total_posts=len(blog_pages),
+        keyword_frequency=dict(keyword_counter.most_common(20)),
+        primary_topics=primary_topics,
+    )
+
+
 # ---------------------------------------------------------------------------
 # 공개 API
 # ---------------------------------------------------------------------------
@@ -640,19 +766,23 @@ def _compute_confidence(
 def classify_hospital(
     crawl_data: CrawlData,
     use_vision: bool = True,  # noqa: FBT001 — 명세에서 bool 파라미터로 정의됨
+    use_llm: bool = True,     # noqa: FBT001 — False 이면 LLM/Vision 0회 호출 (트랙 A)
 ) -> Classification:
     """크롤링 데이터를 받아 4 시그널 교차 검증으로 병원 주력 분야를 분류한다.
 
     Args:
         crawl_data: BE 크롤러가 채워서 전달하는 크롤링 결과.
         use_vision: True 이면 Vision 시그널 포함. False 이면 비용 절감 모드.
+            use_llm=False 일 때는 이 값과 무관하게 Vision 을 건너뛴다.
+        use_llm: True 이면 자칭·블로그 추출에 Bedrock LLM 사용 (트랙 B/C).
+            False 이면 키워드 룰만 사용하고 Bedrock 미호출 (트랙 A, 1만 풀커버).
 
     Returns:
         Classification: primary_focus, confidence, detailed_signals 포함.
 
     Raises:
         InsufficientDataError: 페이지가 0개이거나 모든 html_text 가 빈 문자열.
-        BedrockInvocationError: Bedrock API 호출 실패.
+        BedrockInvocationError: Bedrock API 호출 실패 (use_llm=True 일 때만).
     """
     # 1. 데이터 유효성 검사
     if not crawl_data.pages:
@@ -664,17 +794,22 @@ def classify_hospital(
             f"병원 {crawl_data.hospital_id}: 모든 페이지의 html_text 가 비어 있습니다."
         )
 
-    # 2. 자칭 컨셉 추출 (Bedrock LLM)
-    self_claim_signal = _extract_self_claim(crawl_data)
+    # 2. 자칭 컨셉 추출
+    if use_llm:
+        self_claim_signal = _extract_self_claim(crawl_data)
+    else:
+        self_claim_signal = _extract_self_claim_rule(crawl_data)
     logger.info(
-        "자칭 추출 완료 — focus=%s spam=%.2f",
+        "자칭 추출 완료 (%s) — focus=%s spam=%.2f",
+        "LLM" if use_llm else "룰",
         self_claim_signal.primary_focus,
         self_claim_signal.spam_score,
     )
 
-    # 3. Vision 분석 — use_vision=False 이거나 이미지 없으면 생략
+    # 3. Vision 분석 — use_llm=False 이면 무조건 건너뜀 (개인계정 Sonnet, 10개 한정)
+    #                   use_vision=False 이거나 이미지 없어도 건너뜀
     vision_signal: VisionSignal | None = None
-    if use_vision and crawl_data.images:
+    if use_llm and use_vision and crawl_data.images:
         try:
             from ai.pipeline.vision import analyze_images  # type: ignore[import]
 
@@ -707,9 +842,13 @@ def classify_hospital(
             logger.warning("Vision 분석 실패, 계속 진행: %s", exc)
 
     # 4. 블로그 키워드 분석
-    blog_signal = _analyze_blog(crawl_data)
+    if use_llm:
+        blog_signal = _analyze_blog(crawl_data)
+    else:
+        blog_signal = _analyze_blog_rule(crawl_data)
     logger.info(
-        "블로그 분석 완료 — posts=%d topics=%s",
+        "블로그 분석 완료 (%s) — posts=%d topics=%s",
+        "LLM" if use_llm else "룰",
         blog_signal.total_posts,
         blog_signal.primary_topics,
     )
@@ -736,6 +875,10 @@ def classify_hospital(
 
     # 8. 신뢰도 점수 계산
     confidence = _compute_confidence(raw_contributions, vision_signal)
+    # 룰 단독(use_llm=False) 경로는 LLM·Vision 교차검증이 없으므로
+    # "확실" 판정 불가. CONFIDENCE_THRESHOLD_LOW(70) 로 상한 cap.
+    if not use_llm:
+        confidence = _cap_rule_only_confidence(confidence)
     logger.info(
         "신뢰도 계산 완료 — score=%d level=%s",
         confidence.score,

@@ -1,0 +1,1730 @@
+{
+  "score_set": {
+    "review_count": 303,
+    "total_score": 1385,
+    "average_score": 4.6,
+    "strength_counts": [
+      {
+        "id": 2,
+        "count": 164
+      },
+      {
+        "id": 10,
+        "count": 145
+      },
+      {
+        "id": 4,
+        "count": 50
+      },
+      {
+        "id": 13,
+        "count": 32
+      }
+    ],
+    "strength_uv": 174
+  },
+  "strength_description": [
+    {
+      "id": 13,
+      "name": "가격",
+      "icon_url": "https://t1.kakaocdn.net/kakaomap_mobile/android/icon_review_price.png"
+    },
+    {
+      "id": 10,
+      "name": "전문성",
+      "icon_url": "https://t1.kakaocdn.net/kakaomap_mobile/android/icon_review_smart.png"
+    },
+    {
+      "id": 2,
+      "name": "친절",
+      "icon_url": "https://t1.kakaocdn.net/kakaomap_mobile/android/icon_review_kind.png"
+    },
+    {
+      "id": 4,
+      "name": "주차",
+      "icon_url": "https://t1.kakaocdn.net/kakaomap_mobile/android/icon_review_parking.png"
+    }
+  ],
+  "reviews": [
+    {
+      "review_id": 15004257,
+      "star_rating": 3,
+      "contents": "점수 높은 이유가 ... ㅋㅋ\n다른 지점은 이거저거 다 챙겨주는데 여긴 챙길게 너무 많음. 슬리퍼 수건부터 해서 웬만한거 다 ㅠㅠ 그리고 새벽에 사람 자꾸 깨우고 식사 시간이 너무 텀이 애매함",
+      "photo_count": 1,
+      "photos": [
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/2265796d5caa23bb833c94cbe627880b83213e82?original",
+          "photo_id": 8258750,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 15004257,
+          "updated_at": "2026-03-10 18:06:18",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 98,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        }
+      ],
+      "status": "S",
+      "registered_at": "2026-03-10 18:06:18",
+      "updated_at": "2026-03-10 18:06:18",
+      "meta": {
+        "owner": {
+          "_redacted": "owner PII removed before repo commit"
+        },
+        "is_liked_by_me": false,
+        "is_owner_me": false,
+        "like_count": 0,
+        "like_user_profile_image_list": [],
+        "is_place_owner_pick": false,
+        "place": {
+          "confirm_id": "27388604",
+          "place_name": "자생한방병원"
+        }
+      }
+    },
+    {
+      "review_id": 14490065,
+      "star_rating": 5,
+      "contents": "시설이 매우 깨끗하고 원장님, 주치의쌤, 간호사쌤들 다 모두 친절하심. 심지어 청소해주시는 이모님도 엄청 자주 해주시고 친절하심. 체계도 잘 잡혀있고 입원하면 하루에 두 번씩 치료 받을 수 있어 효과도 좋음",
+      "photo_count": 1,
+      "photos": [
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/841bed7f27da638311c4c519ea5f2c546afbb358?original",
+          "photo_id": 7815174,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 14490065,
+          "updated_at": "2025-12-30 10:16:01",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 12,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        }
+      ],
+      "status": "S",
+      "strength_ids": [
+        2
+      ],
+      "registered_at": "2025-12-30 10:16:01",
+      "updated_at": "2025-12-30 10:16:01",
+      "meta": {
+        "owner": {
+          "_redacted": "owner PII removed before repo commit"
+        },
+        "is_liked_by_me": false,
+        "is_owner_me": false,
+        "like_count": 0,
+        "like_user_profile_image_list": [],
+        "is_place_owner_pick": false,
+        "place": {
+          "confirm_id": "27388604",
+          "place_name": "자생한방병원"
+        }
+      }
+    },
+    {
+      "review_id": 14358773,
+      "star_rating": 5,
+      "contents": "입원하게 되었는데 음식이 정말 맛있어요~ 병원 음식 맛없다고 하는데 자생은 음식까지 최고네요. 간호사 선생님들 너무 너무 너무 친절하세요. 어쩜 모든 분들이 이렇게 친절하실 수 있을까 싶을 정도로 매번 어떤지 증상 물어 봐 주시고 기록해 두세요.  청소하시는 아주머니도 정말 일을 소명을 갖고 하시는 듯. 마음으로 일하셔서 더 잘 회복 할 수 있었습니다 ",
+      "photo_count": 1,
+      "photos": [
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/6372e83e95cd964a34e5b87f05af4b3d28c372fe?original",
+          "photo_id": 7699404,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 14358773,
+          "updated_at": "2025-12-12 09:25:13",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 108,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        }
+      ],
+      "status": "S",
+      "registered_at": "2025-12-12 09:25:13",
+      "updated_at": "2025-12-12 09:25:13",
+      "meta": {
+        "owner": {
+          "_redacted": "owner PII removed before repo commit"
+        },
+        "is_liked_by_me": false,
+        "is_owner_me": false,
+        "like_count": 0,
+        "like_user_profile_image_list": [],
+        "is_place_owner_pick": false,
+        "place": {
+          "confirm_id": "27388604",
+          "place_name": "자생한방병원"
+        }
+      }
+    },
+    {
+      "review_id": 14226842,
+      "star_rating": 5,
+      "contents": "교통사고 때문에 급한대로 집 근처 병원에 갔다가 시설도 아쉽고 의료진도 너무 불친절했어요.\n지인들 추천으로 자생한방병원으로 옮겼는데 상담부터 처치까지 확실히 전문적이고 친절해서 만족도 높았습니다. 설명도 꼼꼼하고 치료도 세심해서 뒤늦게라도 옮기길 잘했다는 생각이 드네요, 감사합니다.",
+      "photo_count": 3,
+      "photos": [
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/2b0da03a87aca71011e899fbf272a7019a33eec7?original",
+          "photo_id": 7585527,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 14226842,
+          "updated_at": "2025-11-22 19:27:21",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 274,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        },
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/1e8d310bda617b64e18b4e24671348c16561e85d?original",
+          "photo_id": 7585528,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 14226842,
+          "updated_at": "2025-11-22 19:27:21",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 280,
+            "like_count": 0,
+            "near": false,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        },
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/ca758c49bb579b9b03bc629d40b2334aa74b8718?original",
+          "photo_id": 7585529,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 14226842,
+          "updated_at": "2025-11-22 19:27:21",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 43,
+            "like_count": 0,
+            "near": false,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        }
+      ],
+      "status": "S",
+      "strength_ids": [
+        10,
+        2
+      ],
+      "registered_at": "2025-11-22 19:27:21",
+      "updated_at": "2025-11-22 19:27:21",
+      "meta": {
+        "owner": {
+          "_redacted": "owner PII removed before repo commit"
+        },
+        "is_liked_by_me": false,
+        "is_owner_me": false,
+        "like_count": 0,
+        "like_user_profile_image_list": [],
+        "is_place_owner_pick": false,
+        "place": {
+          "confirm_id": "27388604",
+          "place_name": "자생한방병원"
+        }
+      }
+    },
+    {
+      "review_id": 14045141,
+      "star_rating": 5,
+      "contents": "교통사고로 2주 가까이 입원중입니다\n큰 교통사고 처음이고 몸이 아픈것도 처음이였는데 지인소개도 있고 가까워서 한방자생병원으로 처음 내원했습니다 한방병원은 처음인데 기본적으로…\n원장님 주치의 선생님 간호사 생선님 너무 친절하세요\n처음 입원하고 적응이 너무 힘들었는데 ㅠㅠ\n손목 염좌로 물잔도 못들었었는데 3일만에 통증도 줄고 목…도 안돌아 가던게 일주일만에 잘 움직여지고\n허리도 mri찍어보니 딱 아픈부위에 뭐가 문제인지 바로 집중 치료해주시고 한병치료가 얼마나 효과있으려나 했는데 저는 너무 잘 맞아서 지인들 면회오면 소개해주고 있었어요~\n퇴원하고도 통원치료를 잘 받으면서 재활 하려고합니다!!\n\n참고로…시설 너무 깨끗하고 좋아요 \n쓰레기통은 채우지기 무섭게 치워주시고…청결하고\n4인실인데 각각 개인 냉장고랑 티비가 있고 이어폰으로 연결해서 들을수도 있고해서 옆자리 분이 코를 골아도…이어폰있어서 불편하지 않았어요~\n1인실 안써도 될만큼 잘해놨더라구요!!\n\n이사한지 얼마안된건지 검사 기계들이 다 새거같고\n좋은점은 양방 한방 한번에 다 볼수있다는것과~\nMRI, CT등 다른곳 굳이 안가도 되서 너무 좋았습니다\n\n또 입원은 안하겠지만 재활하고 혹시라도 몸이 안좋을때는 자생으로 오려구요!\n박동선 원장님~ 김건희 선생님\n10층 간호사 선생님들 감사합니다 ☺️\n",
+      "photo_count": 3,
+      "photos": [
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/0bfb5363a1bcde9d1588be946c6882e107ef179d?original",
+          "photo_id": 7432353,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 14045141,
+          "updated_at": "2025-10-28 21:15:17",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 45,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        },
+        {
+          "url": "https://thumb.kakaocdn.net/dna/kamp/source/rvdhw5zklhd837n9xh1t0jyzj/thumbs/1.jpg?credential=TuMuFGKUIcirOSjFzOpncbomGFEIdZWK&expires=33318562516&kamp_tidx=0&signature=%2BzcZ0r3ZdCmuOQx5a%2BDGgj7iNCk%3D&ts=1761653716",
+          "photo_id": 7432354,
+          "vid": "rvdhw5zklhd837n9xh1t0jyzj",
+          "media_type": "VOD",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 20,
+          "review_id": 14045141,
+          "updated_at": "2025-10-28 21:15:17",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 206,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          },
+          "preview": "https://kdnv-kt-orisa-edge.play.kakao.com/s-kakaomap/vod/rvdhw5zklhd837n9xh1t0jyzj/mp4/mp4/preview.mp4?orisa-token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ2aWQiOiJydmRodzV6a2xoZDgzN245eGgxdDBqeXpqIiwidGlkIjoiODVsNHJscTY1ZGJ3djh4ZjVtb2ciLCJzaWQiOiJrYWthb21hcCIsInB4LWJwcyI6NTQzNDcyNCwicHgtYnVmYWhlYWQiOjMzLCJweC1wYXRoIjoiL3Mta2FrYW9tYXAvdm9kL3J2ZGh3NXprbGhkODM3bjl4aDF0MGp5emovbXA0L21wNC9wcmV2aWV3Lm1wNCIsImV4cCI6MTc3OTkyNjY2MSwiaWF0IjoxNzc5OTE1ODYxfQ.eyWGonbHZhn_FNeq47VwruvTm_PLCMF8xbOO9doUDYA"
+        },
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/290498b1764be2b1e5da8a30d4d6894683f04da2?original",
+          "photo_id": 7432355,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 14045141,
+          "updated_at": "2025-10-28 21:15:17",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 48,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        }
+      ],
+      "status": "S",
+      "strength_ids": [
+        10,
+        2,
+        4
+      ],
+      "registered_at": "2025-10-28 21:15:17",
+      "updated_at": "2025-10-28 21:15:17",
+      "meta": {
+        "owner": {
+          "_redacted": "owner PII removed before repo commit"
+        },
+        "is_liked_by_me": false,
+        "is_owner_me": false,
+        "like_count": 0,
+        "like_user_profile_image_list": [],
+        "is_place_owner_pick": false,
+        "place": {
+          "confirm_id": "27388604",
+          "place_name": "자생한방병원"
+        }
+      }
+    },
+    {
+      "review_id": 14004333,
+      "star_rating": 5,
+      "contents": "시설이 깨끗하고 쾌적해서 환자로서 생활하기가 편리해요 - 휴게실도 잘 되어있고 인터넷 사용도 편해요- 약침치료 추나치료 하고 나면 몸이 가벼워져요- 원장님 간호사 선생님들이 친절하고 잘 이끌어주세요- 병원생활이 지루하지 않고 정성스럽게 치료해주셔서 감동받았어요 ",
+      "photo_count": 1,
+      "photos": [
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/58d9370d340712b34f8bbec901cb9306344f1e19?original",
+          "photo_id": 7398659,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 14004333,
+          "updated_at": "2025-10-23 13:47:32",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 64,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        }
+      ],
+      "status": "S",
+      "strength_ids": [
+        10,
+        2
+      ],
+      "registered_at": "2025-10-23 13:47:32",
+      "updated_at": "2025-10-23 13:47:32",
+      "meta": {
+        "owner": {
+          "_redacted": "owner PII removed before repo commit"
+        },
+        "is_liked_by_me": false,
+        "is_owner_me": false,
+        "like_count": 0,
+        "like_user_profile_image_list": [],
+        "is_place_owner_pick": false,
+        "place": {
+          "confirm_id": "27388604",
+          "place_name": "자생한방병원"
+        }
+      }
+    },
+    {
+      "review_id": 13869412,
+      "star_rating": 5,
+      "contents": "교통사고나서 입원치료중이예요\n연휴에도 입원치료가 능해서좋네요\n홍순성원장님 자상하고친절하세요\n\n",
+      "photo_count": 1,
+      "photos": [
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/d161d4964358680589b7d6fa1e48c6d7e9e42b34?original",
+          "photo_id": 7286226,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 13869412,
+          "updated_at": "2025-10-06 09:56:28",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 13,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        }
+      ],
+      "status": "S",
+      "strength_ids": [
+        4
+      ],
+      "registered_at": "2025-10-06 09:56:28",
+      "updated_at": "2025-10-06 09:58:45",
+      "meta": {
+        "owner": {
+          "_redacted": "owner PII removed before repo commit"
+        },
+        "is_liked_by_me": false,
+        "is_owner_me": false,
+        "like_count": 0,
+        "like_user_profile_image_list": [],
+        "is_place_owner_pick": false,
+        "place": {
+          "confirm_id": "27388604",
+          "place_name": "자생한방병원"
+        }
+      }
+    },
+    {
+      "review_id": 13631717,
+      "star_rating": 5,
+      "contents": "다음에도 아프면 여기 입원 할 겁니다!\n입원기간 내내 밥이 너무 맛있었어요.\n병원 밥 느낌 아니고, 그냥 맛있는 밥 입니다.\n내일 퇴원인데 점심까지 먹고가요!\n그리고 병원 사장님이 직원교육을 어떻게 하시는지 궁금 할 정도로 모든 의료진,직원분들이 친절했어요.\n친절함이 여기 병원 최고 장점인거 같아요.\n덕분에 환자도 보호자도 다들 밝게 지낼 수 있어서\n병원 자체 분위기가 좋아요.\n의사선생님,간호사분들 예뻐요.",
+      "photo_count": 1,
+      "photos": [
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/e77334a9e618c25fb9ee927e9d28327ae7602b22?original",
+          "photo_id": 7096769,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 13631717,
+          "updated_at": "2025-09-03 19:45:56",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 83,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        }
+      ],
+      "status": "S",
+      "strength_ids": [
+        10,
+        2
+      ],
+      "registered_at": "2025-09-03 19:45:55",
+      "updated_at": "2025-09-03 19:45:55",
+      "meta": {
+        "owner": {
+          "_redacted": "owner PII removed before repo commit"
+        },
+        "is_liked_by_me": false,
+        "is_owner_me": false,
+        "like_count": 0,
+        "like_user_profile_image_list": [],
+        "is_place_owner_pick": false,
+        "place": {
+          "confirm_id": "27388604",
+          "place_name": "자생한방병원"
+        }
+      }
+    },
+    {
+      "review_id": 13613024,
+      "star_rating": 5,
+      "contents": "대중교통을 이용하다가 예기치 못한 교통사고를 당해 자생한방병원에 입원하게 되었습니다. 사고 통증이 심해서 일상생활이 많이 불편했는데, 입원하여 집중적인 치료를 받으면서 많이 완화되었고, 의료진 분들이 세심하게 살펴주신 덕에 몸과 마음이 회복되는 시간이었습니다. ",
+      "photo_count": 3,
+      "photos": [
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/ff066be5e2b410ec6fea53fa361a36b740e989f5?original",
+          "photo_id": 7082568,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 13613024,
+          "updated_at": "2025-09-01 10:04:34",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 203,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        },
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/00d9f4f75b80eb5af677b3b6475595ed79934646?original",
+          "photo_id": 7082569,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 13613024,
+          "updated_at": "2025-09-01 10:04:34",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 193,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        },
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/b52cb002ad3e596739f2086e848002e684872212?original",
+          "photo_id": 7082570,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 13613024,
+          "updated_at": "2025-09-01 10:04:34",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 224,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        }
+      ],
+      "status": "S",
+      "strength_ids": [
+        10,
+        2
+      ],
+      "registered_at": "2025-09-01 10:04:34",
+      "updated_at": "2025-09-01 10:04:34",
+      "meta": {
+        "owner": {
+          "_redacted": "owner PII removed before repo commit"
+        },
+        "is_liked_by_me": false,
+        "is_owner_me": false,
+        "like_count": 0,
+        "like_user_profile_image_list": [],
+        "is_place_owner_pick": false,
+        "place": {
+          "confirm_id": "27388604",
+          "place_name": "자생한방병원"
+        }
+      }
+    },
+    {
+      "review_id": 13559938,
+      "star_rating": 5,
+      "contents": "교통사고 후 디스크 판정까지 받았는데, 의료진 분들 모두 친절하게 치료해주셔서 편하게 치료받고 갑니다! 5인실도 정말 쾌적해요!",
+      "photo_count": 1,
+      "photos": [
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/73b35f8411b42b32fc4eaf95afc78bf7425739e5?original",
+          "photo_id": 7040478,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 13559938,
+          "updated_at": "2025-08-25 13:14:19",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 182,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        }
+      ],
+      "status": "S",
+      "strength_ids": [
+        10,
+        2
+      ],
+      "registered_at": "2025-08-25 13:13:17",
+      "updated_at": "2025-08-25 13:14:19",
+      "meta": {
+        "owner": {
+          "_redacted": "owner PII removed before repo commit"
+        },
+        "is_liked_by_me": false,
+        "is_owner_me": false,
+        "like_count": 0,
+        "like_user_profile_image_list": [],
+        "is_place_owner_pick": false,
+        "place": {
+          "confirm_id": "27388604",
+          "place_name": "자생한방병원"
+        }
+      }
+    },
+    {
+      "review_id": 13286419,
+      "star_rating": 5,
+      "contents": "모든 직원분들이 친절하시고 피곤하실텐데도 진심으로 환자를 케어하려고하는게 느껴져서 편하게 있을 수 있었어요. 밥도 진짜 맛있게 잘나오고 있으면서 아픈곳도 많이 나아져서 좋아요 ",
+      "photo_count": 5,
+      "photos": [
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/9e140ba652a61a3fb47962241821f92f1f4d186d?original",
+          "photo_id": 6817686,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 13286419,
+          "updated_at": "2025-07-24 10:17:13",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 150,
+            "like_count": 0,
+            "near": false,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        },
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/1470607ea37459f4a89a88480c7adf6849cd398f?original",
+          "photo_id": 6817687,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 13286419,
+          "updated_at": "2025-07-24 10:17:13",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 32,
+            "like_count": 0,
+            "near": false,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        },
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/bec80c6cbf62210e59bae3c496964cd945b46ff9?original",
+          "photo_id": 6817688,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 13286419,
+          "updated_at": "2025-07-24 10:17:13",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 127,
+            "like_count": 0,
+            "near": false,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        },
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/d94e0d16e8078e84cfb12f8e3318e1fe88fc6f54?original",
+          "photo_id": 6817689,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 13286419,
+          "updated_at": "2025-07-24 10:17:13",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 117,
+            "like_count": 0,
+            "near": false,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        },
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/12d703de1ab7053385b8f5853be6a58c18d18477?original",
+          "photo_id": 6817690,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 13286419,
+          "updated_at": "2025-07-24 10:17:13",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 160,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        }
+      ],
+      "status": "S",
+      "strength_ids": [
+        2
+      ],
+      "registered_at": "2025-07-24 10:17:13",
+      "updated_at": "2025-07-24 10:17:13",
+      "meta": {
+        "owner": {
+          "_redacted": "owner PII removed before repo commit"
+        },
+        "is_liked_by_me": false,
+        "is_owner_me": false,
+        "like_count": 0,
+        "like_user_profile_image_list": [],
+        "is_place_owner_pick": false,
+        "place": {
+          "confirm_id": "27388604",
+          "place_name": "자생한방병원"
+        }
+      }
+    },
+    {
+      "review_id": 13251169,
+      "star_rating": 5,
+      "contents": "한방병원은 처음이라 긴장되었는데 안내를 친절하게 해주셔서 진료 잘 받을 수 있었어요!자생한방병원은 진료가 체계적이고 꼼꼼해서 좋았어요!간호사분들도 친절하고, 의사 선생님께서도 진료 전 충분히 설명해주셔서 편안하게 치료받을 수 있었습니다! 병원 분위기도 무겁지 않고 깔끔해서 좋았고, 전체적으로 정말 만족스러운 경험이었습니다. 몸과 마음이 치유되는 것을 느낄 수 있었어요!약침 맞고 허리통증이 정말 없어졌어요!한의학치료가 처음이신분들도 적극 추천합니다!",
+      "photo_count": 2,
+      "photos": [
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/938e5e2316ad0688fe14152bd2befca622fa3b6e?original",
+          "photo_id": 6788458,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 13251169,
+          "updated_at": "2025-07-19 16:19:45",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 19,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        },
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/89bd1d2576fe224472ca7f65ab409440b5fb014f?original",
+          "photo_id": 6788459,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 13251169,
+          "updated_at": "2025-07-19 16:19:45",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 124,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        }
+      ],
+      "status": "S",
+      "strength_ids": [
+        10,
+        2
+      ],
+      "registered_at": "2025-07-19 16:19:45",
+      "updated_at": "2025-07-19 16:19:45",
+      "meta": {
+        "owner": {
+          "_redacted": "owner PII removed before repo commit"
+        },
+        "is_liked_by_me": false,
+        "is_owner_me": false,
+        "like_count": 0,
+        "like_user_profile_image_list": [],
+        "is_place_owner_pick": false,
+        "place": {
+          "confirm_id": "27388604",
+          "place_name": "자생한방병원"
+        }
+      }
+    },
+    {
+      "review_id": 13251152,
+      "star_rating": 5,
+      "contents": "먼저, 병원에 들어섰을 때 느껴진 건 깔끔하고 편안한 분위기였고, 무엇보다 간호사 선생님들이 정말 친절하게 응대해주셔서 너무 감사했어요ㅎㅎ\n작은 부분까지 신경 써서 안내해주셔서 긴장도 금방 풀렸고요.\n\n진료실에서는 원장님께서 제 증상과 생활습관 등을 자세히 여쭤보시고, 진료 과정과 치료 방향에 대해 친절하게 설명해주셨어요.\n제 이야기를 충분히 들어주시고, 이해하기 쉬운 말로 설명해주시니‘정말 환자를 중심에 두고 진료하시는구나’ 하는 인상이 깊게 남았어요.\n\n침 치료도 받았는데, 생각보다 통증도 거의 없고 시술도 굉장히 능숙하셨어요.\n치료 직후에는 몸이 한결 편안해지고, 특히 긴장됐던 부위가 가볍게 풀리는 느낌이 들었답니다.\n최종호 원장님의 노련한 손길 덕분에 치료에 대한 신뢰감이 더 생겼던 것 같아요. 감사합니다ㅎㅎ",
+      "photo_count": 1,
+      "photos": [
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/049867353a4dd664b92a5ac30818828e3892bdeb?original",
+          "photo_id": 6788441,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 13251152,
+          "updated_at": "2025-07-19 16:17:27",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 6,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        }
+      ],
+      "status": "S",
+      "strength_ids": [
+        10,
+        2
+      ],
+      "registered_at": "2025-07-19 16:17:27",
+      "updated_at": "2025-07-19 16:17:27",
+      "meta": {
+        "owner": {
+          "_redacted": "owner PII removed before repo commit"
+        },
+        "is_liked_by_me": false,
+        "is_owner_me": false,
+        "like_count": 0,
+        "like_user_profile_image_list": [],
+        "is_place_owner_pick": false,
+        "place": {
+          "confirm_id": "27388604",
+          "place_name": "자생한방병원"
+        }
+      }
+    },
+    {
+      "review_id": 13169756,
+      "star_rating": 5,
+      "contents": "교통사고 후 치료와 회복 목적으로 입원했습니다.\n간호사분들과 원장 선생님 모두가 친절하셨어요.\n불편함 없이 편하게 있다가 퇴원합니다!\n",
+      "photo_count": 1,
+      "photos": [
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/868934957adb090f3ef74eba04a82659b21e00a1?original",
+          "photo_id": 6724349,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 13169756,
+          "updated_at": "2025-07-08 12:44:50",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 122,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        }
+      ],
+      "status": "S",
+      "strength_ids": [
+        10,
+        2
+      ],
+      "registered_at": "2025-07-08 11:33:37",
+      "updated_at": "2025-07-08 12:44:50",
+      "meta": {
+        "owner": {
+          "_redacted": "owner PII removed before repo commit"
+        },
+        "is_liked_by_me": false,
+        "is_owner_me": false,
+        "like_count": 0,
+        "like_user_profile_image_list": [],
+        "is_place_owner_pick": false,
+        "place": {
+          "confirm_id": "27388604",
+          "place_name": "자생한방병원"
+        }
+      }
+    },
+    {
+      "review_id": 13023967,
+      "star_rating": 5,
+      "contents": "치료도 꼼꼼히 해주시고, \n옥상정원이 있어서 힐링 요소도 가득합니다\n병실도 깨끗하고 관리가 잘 되고 있어요!\n저는 자생한방병원 강남 처음이라 걱정됐는데,\n너무 만족하고 있습니다",
+      "photo_count": 5,
+      "photos": [
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/821e3bef924bde5a88c24d09592d88e822049c13?original",
+          "photo_id": 6608313,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 13023967,
+          "updated_at": "2025-06-18 12:51:21",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 111,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        },
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/67ddb736397f2ddefb3b8744a29020df1a5fa126?original",
+          "photo_id": 6608314,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 13023967,
+          "updated_at": "2025-06-18 12:51:21",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 99,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        },
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/eed7a6b4c35f8f0e2d699d22f376126314644845?original",
+          "photo_id": 6608315,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 13023967,
+          "updated_at": "2025-06-18 12:51:21",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 38,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        },
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/239c4262967c9e6e971e900a6e7a2317bfcaa9af?original",
+          "photo_id": 6608316,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 13023967,
+          "updated_at": "2025-06-18 12:51:21",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 104,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        },
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/20f6dab967f09dbbf93c6382d58d60d6ec838865?original",
+          "photo_id": 6608317,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "duration": 0,
+          "review_id": 13023967,
+          "updated_at": "2025-06-18 12:51:21",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 22,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        }
+      ],
+      "status": "S",
+      "strength_ids": [
+        13,
+        10,
+        2,
+        4
+      ],
+      "registered_at": "2025-06-18 12:51:21",
+      "updated_at": "2025-06-18 12:51:21",
+      "meta": {
+        "owner": {
+          "_redacted": "owner PII removed before repo commit"
+        },
+        "is_liked_by_me": false,
+        "is_owner_me": false,
+        "like_count": 1,
+        "like_user_profile_image_list": [
+          "http://k.kakaocdn.net/dn/HWw7e/btr4w45ki76/X4xGd77uZtGSBsZXpU9cW0/img_640x640.jpg"
+        ],
+        "is_place_owner_pick": false,
+        "place": {
+          "confirm_id": "27388604",
+          "place_name": "자생한방병원"
+        }
+      }
+    },
+    {
+      "review_id": 12585485,
+      "star_rating": 5,
+      "contents": "목부터 허리가 안좋아서 입원하게 되었는데 의사 선생님도 전문성있게 잘 알려주시고 간호사 선생님도 케어를 잘 해주셔셔 빠르게 회복하고 있는 느낌이에요 !",
+      "photo_count": 1,
+      "photos": [
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/b8fe6c74ace812b3881b1ce6b98fd9168fa5a89d?original",
+          "photo_id": 6254119,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "review_id": 12585485,
+          "updated_at": "2025-04-20 15:07:02",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 5,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        }
+      ],
+      "status": "S",
+      "strength_ids": [
+        10,
+        2
+      ],
+      "registered_at": "2025-04-20 15:07:02",
+      "updated_at": "2025-04-20 15:07:02",
+      "meta": {
+        "owner": {
+          "_redacted": "owner PII removed before repo commit"
+        },
+        "is_liked_by_me": false,
+        "is_owner_me": false,
+        "like_count": 0,
+        "like_user_profile_image_list": [],
+        "is_place_owner_pick": false,
+        "place": {
+          "confirm_id": "27388604",
+          "place_name": "자생한방병원"
+        }
+      }
+    },
+    {
+      "review_id": 12475208,
+      "star_rating": 5,
+      "contents": "제 취미이자 용돈벌이 수단인 바이크로 인해 자주 사고도 경험해서 많은 병원생활을 경험해 봤지만 이곳은 다른 병원과 달리 진료시간도 식사시간도 체계적이고 제가 가장 중요하게 생각하는 시스템화가 잘 되어있는 병원입니다!\n그리고 의료진분들이 제가 말씀드리는 아픈부위가 어디다 하구 말씀을 매번드릴때마다 정말 디테일하게 봐주시고 해결해주시려고 하셔서 걷는거 조차 힘들고 엎드리는거 조차 힘들던 제가 다시 한번 올라잇정신으로🔥🔥🔥 운동도 다시꿈꿀수 있게 많은 보템이 되어주셔서 감사해 짧지만 글올려봅니다!\n\n그리고 워낙 유명하고 강남이든 어디든 소문이 자자한 자생한방병원이니 만큼 교통사고환자들에게 이보다 좋은 환경에서 치료받을수 있는 병원도 이근처에서 찾아보기 힘드실거다 말씀드리며!!\n\n매일 환자를 위해 힘써주시는 병원 의료진분들게 아직 퇴원은 못했지만 감사한마음에 서툴지만 글 남깁니다 항상 감사합니다 🙇🏻‍♂️",
+      "photo_count": 7,
+      "photos": [
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/05223bb78a46926c60ded2112bac93bb10a4395e?original",
+          "photo_id": 6172024,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "review_id": 12475208,
+          "updated_at": "2025-04-05 21:21:44",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 211,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        },
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/a3a219e73ece5500717344a074d71bd3a7942011?original",
+          "photo_id": 6172025,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "review_id": 12475208,
+          "updated_at": "2025-04-05 21:21:44",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 201,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        },
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/0b9c472e343c6c5bc46fcb9ff1aff993e49bd05f?original",
+          "photo_id": 6172026,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "review_id": 12475208,
+          "updated_at": "2025-04-05 21:21:44",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 18,
+            "like_count": 0,
+            "near": false,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        },
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/2dcf19a0b0e63b0e3edcae016767b3c3e626f58e?original",
+          "photo_id": 6172051,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "review_id": 12475208,
+          "updated_at": "2025-04-05 21:24:14",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 236,
+            "like_count": 0,
+            "near": false,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        },
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/6d2b4fc9890ec69c50616ae17cdae745b3512d34?original",
+          "photo_id": 6172052,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "review_id": 12475208,
+          "updated_at": "2025-04-05 21:24:14",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 249,
+            "like_count": 0,
+            "near": false,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        },
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/0c35cba71aef5dfcf6d3daacc062a0c9a01eff2a?original",
+          "photo_id": 6172053,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "review_id": 12475208,
+          "updated_at": "2025-04-05 21:24:14",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 18,
+            "like_count": 0,
+            "near": false,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        },
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/8a86170f1ca08ec42d7589929f8d9fc3a571c4e9?original",
+          "photo_id": 6172054,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "review_id": 12475208,
+          "updated_at": "2025-04-05 21:24:14",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 206,
+            "like_count": 0,
+            "near": false,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        }
+      ],
+      "status": "S",
+      "registered_at": "2025-04-05 21:21:44",
+      "updated_at": "2025-04-05 21:24:14",
+      "meta": {
+        "owner": {
+          "_redacted": "owner PII removed before repo commit"
+        },
+        "is_liked_by_me": false,
+        "is_owner_me": false,
+        "like_count": 0,
+        "like_user_profile_image_list": [],
+        "is_place_owner_pick": false,
+        "place": {
+          "confirm_id": "27388604",
+          "place_name": "자생한방병원"
+        }
+      }
+    },
+    {
+      "review_id": 12420348,
+      "star_rating": 5,
+      "contents": "교통사고 난 후 증상들 때문에 다음날 검사받으러 왔습니다. 침, 약침, 물리치료 등 스트레칭 방법까지 알려주시고 꼼꼼히 봐주셨어요.",
+      "photo_count": 3,
+      "photos": [
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/d0a8fc8155c39e94ad6ffba2ee106f9711df1936?original",
+          "photo_id": 6130466,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "review_id": 12420348,
+          "updated_at": "2025-03-29 10:09:08",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 29,
+            "like_count": 0,
+            "near": false,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        },
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/e530a14e7e735ef2a853feb5fb0f5bbb80c42874?original",
+          "photo_id": 6130467,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "review_id": 12420348,
+          "updated_at": "2025-03-29 10:09:08",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 180,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        },
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/fe4d8fc0d30a8a9993d92af490605230ee908112?original",
+          "photo_id": 6130468,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "review_id": 12420348,
+          "updated_at": "2025-03-29 10:09:08",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 194,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        }
+      ],
+      "status": "S",
+      "strength_ids": [
+        10,
+        2,
+        4
+      ],
+      "registered_at": "2025-03-29 10:09:08",
+      "updated_at": "2025-03-29 10:09:25",
+      "meta": {
+        "owner": {
+          "_redacted": "owner PII removed before repo commit"
+        },
+        "is_liked_by_me": false,
+        "is_owner_me": false,
+        "like_count": 0,
+        "like_user_profile_image_list": [],
+        "is_place_owner_pick": false,
+        "place": {
+          "confirm_id": "27388604",
+          "place_name": "자생한방병원"
+        }
+      }
+    },
+    {
+      "review_id": 12419777,
+      "star_rating": 5,
+      "contents": "효과는 진짜로 맞자마자 허리가 아프지 않았어요.\n\n치료분야교통사고의료진박상원 의료상담원장병의원명강남\n\n-사고 후 병원에 가게 된 상황\n\n사고는 삼중 추돌로 저는 가운데 자동차로 고속도로 1차로의 사고였습니다.\n\n간략히 말씀드리자면\n\n고속도로에서 앞차 급정거 <이미 2번 그랬음>\n차선 거리 확보, 가다가 정체 구간에 앞차 급정거- 깜박이\n저도 정차 하며 깜박이를 키고 바로 백미러를 보니,\n다른 행동을 하시는지 속도 그대로,,, 저는 보았어요,,\n\nBMW가 나에게 돌진하는 것을....\n\n다행히 좋은 차량이라 브레이크를 차가 밟아준 덕분에 덜 다치고, 골절은 없습니다.\n뒷차가 브레이크를 밟으며 저를 밀었고 앞차와 또 박으면서 두번의 충돌이 있었습니다.\n\n사고 당일은 허리가 너무 아파서 집에 도착 후 자동차에서 내리지 못하고 친구의 도움으로 집으로 올라갔습니다\n그래도 걸을 수 있고, 첫날이라 놀라서 통증인가?\n스스로 놀란 것만 진정되면 될 거라 생각했습니다.\n귀가 후 자고 나니 눈뜬 순간부터 아픈 곳의 범위가 내려갔습니다.\n골반이 점점 아프고 발이 저리기 시작했습니다.\n\n사고가 난 후 바로 병원으로 가고 싶었지만, 교통사고로 자생한방병원이 유명하다는 얘기를 이미 듣고, 알고 있었고, 이곳으로 오고 싶어서 하루가 지난 토요일 오전으로 진료를 예약했습니다.\n\n\n\n- 의사와 의료진의 대응\n\n양방, 한방이 있는 병원이어서 허리 엑스레이 4장을 찍었고\n엑스레이로 골절을 확인하시고, 추나 치료가 안 아플까 해서 여쭤봤더니 처음에는 추나 치료를 하면 몸이 놀랄 수 있기 때문에 이틀만 지나고 하자고 말씀하셔서 침, 약침, 침전기자극술을 받았어요.\n\n효과는 진짜로 맞자마자 허리가 아프지 않았어요.\n\n엄살이 심한 타입이라 응? 일시불과 할부의 차이인가 생각할 정도로 맞을 때 물론 침이니까 아프지만 (사실 진짜 안 아프게 놔주세요.\n\n일부러 제일 안 아프다는 교수님 찾아옴, 부드럽게 놔주시고 아파하면 항상 그만큼만 ! 저랑 항상 아픈 곳 확인 후 침 놔주십니다.)\n\n바로 입원할 수 있는 상황이었고 (일 끝나고 집 복귀하는 금요일 오후)\n입원을 결정하게 된 것은 어지러움 증, 두통을 호소하게 되어\n그리고 후유증의 두려움 초반에 잘 치료해서 나아지자 생각했어요,\n\n- 병원서비스와 시설\n\n1주간의 입원 기간 동안 하루 두번의 치료, 한번은 침상, 한번은 외래 치료를 반복하며,\n담당 빅상원 원장님의 휴진일때는 다른 선생님의 대진으로 누락되지 않고, 치료 스케줄을 받았습니다.\n(A4용지로 뽑아서 일주일의 스케줄을 테이프로 제 자리에 붙여주십시다…최고)\n\n침상에서는 침치료와 저주파요법,\n외래로 진료 볼 때는 추나, 약침, 침, 전기뜸 등의 치료가 이루어졌습니다.\n\n매일 간호사님이 하루 세번(아침,점심,저녁), 원장님, 주치의님까지\n잠은 잘 잤는지, 통증의 정도와, 부위확인을 해주시고, 그에 맞는 치료를 받았습니다.\n귀찮으실수도 있는데 진짜 자생한방병원 친절함이 미쳤습니다 여기가 호텔이야 병원이야\n\n입원 기간 동안 치료에 집중할 수 있는 여건이 되다 보니 통원 치료보다 효과가 확실 했을꺼라 생각합니다. 저에게 원장님께서 무조건 ‘절 대 안 정’을 말씀하셨습니다.\n절대 안정 누워서 쉬세요, 아무것도 말고 쉬세요.\n근데 원장님 말씀이 이제 와보니 맞아요 ㅋㅋ\n\n특히 교통사고는 후유증이 심하고 처음에 사고 난 후 어떻게 관리하는가에 따라 아픈 정도가 달라질 것이라고 하셨습니다.\n\n사고 후 수시로 잠을 깰 정도의 허리와 골반 통증이 있었으나,\n치료를 받으며 완화되어, 깨지 않고 푹 잘 수 있게 되었습니다.\n침 치료 동안에 아프진 않은지, 불편하지 않은지 꼼꼼하게 확인해주시며,\n(저에게 맞는 침치료 방법으로 진료해 주십니다 이게 진짜… 자생한방병원의 장점)\n\n제가 엄살이 심하다고 말씀드렸더니 침을 잘 맞는다고 하시더라고요 .\n침을 잘 맞는다 = 침이 어디로 갔는지 근육이 다 느낀다\n다 느껴서 그 느낌에 아프다 혹은 이상하다고 느낀다고 하셨어요.\n그래서 예민한 편인데 정말 박상원 원장님 침 부드럽게 잘 놓으십니다.",
+      "photo_count": 1,
+      "photos": [
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/26f1a0a0480ff448d4023ab1fa246d52efeaada2?original",
+          "photo_id": 6130039,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "review_id": 12419777,
+          "updated_at": "2025-03-29 06:14:31",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 59,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        }
+      ],
+      "status": "S",
+      "strength_ids": [
+        10,
+        2,
+        4
+      ],
+      "registered_at": "2025-03-29 06:14:31",
+      "updated_at": "2025-03-29 06:14:31",
+      "meta": {
+        "owner": {
+          "_redacted": "owner PII removed before repo commit"
+        },
+        "is_liked_by_me": false,
+        "is_owner_me": false,
+        "like_count": 1,
+        "like_user_profile_image_list": [
+          "http://t1.daumcdn.net/local/kakaomapPhoto/profile/99a86e4d66a0a2f2d1519f635b41342c1d77ae5e?original"
+        ],
+        "is_place_owner_pick": false,
+        "place": {
+          "confirm_id": "27388604",
+          "place_name": "자생한방병원"
+        }
+      }
+    },
+    {
+      "review_id": 11865012,
+      "star_rating": 5,
+      "contents": "교통사고로 발을 크게 다쳐서 입원했는데\n담당의분들도, 입원실의 간호사분들도 굉장히 친절하게 대해주십니다!\n치료때도, 아침저녁으로도 항상 몸상태를 여쭤봐주십니다\n\n식사량도 넉넉히 나오고, 가끔 질린다 싶으면 강남 한복판에서 온갖 음식을 배달시켜 먹을 수 있어서 짱입니다!\n\n문의사항이나 요구사항이 있으면 항상 최대한 들어주시려 해서 편하게 입원치료 잘 하고 있네요!\n\nP.S. 흡연실의 수다쟁이 고양이 엄청 귀여워요",
+      "photo_count": 6,
+      "photos": [
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/371cd35936272bccaf0818fcb8a364b6431144de?original",
+          "photo_id": 5713802,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "review_id": 11865012,
+          "updated_at": "2025-01-07 19:05:23",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 224,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        },
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/3e0d151085e892d9c4f0d98c5b400a36770e8dac?original",
+          "photo_id": 5713803,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "review_id": 11865012,
+          "updated_at": "2025-01-07 19:05:23",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 82,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        },
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/ace9024180992b2104f0d9e0281813e95d3617b3?original",
+          "photo_id": 5713804,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "review_id": 11865012,
+          "updated_at": "2025-01-07 19:05:23",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 84,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        },
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/ac8f0abc5e1a2bbb7e56c65a21f6cb5094d1754e?original",
+          "photo_id": 5713805,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "review_id": 11865012,
+          "updated_at": "2025-01-07 19:05:23",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 76,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        },
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/6115b1d38026b7883249860a2709aa23459523bd?original",
+          "photo_id": 5713806,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "review_id": 11865012,
+          "updated_at": "2025-01-07 19:05:23",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 72,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        },
+        {
+          "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/6babe2fd2dc8d6535d5fd40a5d0056ddd260b066?original",
+          "photo_id": 5713807,
+          "media_type": "PHOTO",
+          "status": "S",
+          "ui_type": "PROFILE",
+          "review_id": 11865012,
+          "updated_at": "2025-01-07 19:05:23",
+          "meta": {
+            "owner": {
+              "_redacted": "owner PII removed before repo commit"
+            },
+            "is_liked_by_me": false,
+            "view_count": 31,
+            "like_count": 0,
+            "near": true,
+            "place": {
+              "confirm_id": "27388604",
+              "place_name": "자생한방병원"
+            }
+          }
+        }
+      ],
+      "status": "S",
+      "strength_ids": [
+        10,
+        2,
+        4
+      ],
+      "registered_at": "2025-01-07 19:05:23",
+      "updated_at": "2025-01-07 19:06:48",
+      "meta": {
+        "owner": {
+          "_redacted": "owner PII removed before repo commit"
+        },
+        "is_liked_by_me": false,
+        "is_owner_me": false,
+        "like_count": 0,
+        "like_user_profile_image_list": [],
+        "is_place_owner_pick": false,
+        "place": {
+          "confirm_id": "27388604",
+          "place_name": "자생한방병원"
+        }
+      }
+    }
+  ],
+  "timeline_score_table": {
+    "act_review": {
+      "event": 0,
+      "place_banner": [
+        {
+          "title": "사진/영상 등록",
+          "score": 3
+        },
+        {
+          "title": "글 작성",
+          "score": 2
+        }
+      ]
+    }
+  },
+  "has_next": true,
+  "has_my_review": false
+}

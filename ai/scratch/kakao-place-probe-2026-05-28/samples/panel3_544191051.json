@@ -1,0 +1,1546 @@
+{
+  "medical": {
+    "emergency_center": {
+      "source_url": "http://m.e-gen.or.kr",
+      "medical_center_type": "한방병원",
+      "open_infos": [
+        {
+          "title": "월~금",
+          "value": "09:30~17:30"
+        },
+        {
+          "title": "토",
+          "value": "10:00~16:00"
+        }
+      ],
+      "emergency_type": "응급의료기관 이외",
+      "emergency_available_yn": "N",
+      "subject_names": "가정의학과/사상체질과/침구과/한방내과/한방부인과/한방소아과/한방신경정신과/한방안이비인후피부과/한방재활의학과"
+    },
+    "hira": {
+      "source_url": "https://www.hira.or.kr/main.do",
+      "medical_center_type": "한방병원",
+      "established_at": "2018-06-26",
+      "doctor_count": {
+        "total": 11,
+        "general": 1,
+        "intern": 3,
+        "resident": 0,
+        "specialist": 7
+      },
+      "subjects": [
+        {
+          "subject_name": "한방내과",
+          "doctor_count": 4,
+          "selected_doctor_count": 0
+        },
+        {
+          "subject_name": "침구과",
+          "doctor_count": 2,
+          "selected_doctor_count": 0
+        },
+        {
+          "subject_name": "한방신경정신과",
+          "doctor_count": 1,
+          "selected_doctor_count": 0
+        },
+        {
+          "subject_name": "가정의학과",
+          "doctor_count": 0,
+          "selected_doctor_count": 0
+        },
+        {
+          "subject_name": "한방부인과",
+          "doctor_count": 0,
+          "selected_doctor_count": 0
+        },
+        {
+          "subject_name": "한방소아과",
+          "doctor_count": 0,
+          "selected_doctor_count": 0
+        },
+        {
+          "subject_name": "한방안·이비인후·피부과",
+          "doctor_count": 0,
+          "selected_doctor_count": 0
+        },
+        {
+          "subject_name": "한방재활의학과",
+          "doctor_count": 0,
+          "selected_doctor_count": 0
+        },
+        {
+          "subject_name": "사상체질과",
+          "doctor_count": 0,
+          "selected_doctor_count": 0
+        }
+      ],
+      "devices": [
+        {
+          "device_name": "초음파영상진단기",
+          "count": 1
+        }
+      ]
+    },
+    "fiy_guide_link": "https://cs.kakao.com/helps?service=101&category=116&locale=ko&device=1222&articleId=1073192973"
+  },
+  "visitor": {
+    "labels": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ],
+    "weekly_uv_average": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      4330,
+      3852,
+      3030,
+      2639,
+      3861,
+      3263,
+      2555,
+      2930,
+      2582,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ],
+    "sunday_uv": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ],
+    "monday_uv": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      3945,
+      3803,
+      3013,
+      2592,
+      -1,
+      3546,
+      2843,
+      2968,
+      2798,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ],
+    "tuesday_uv": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      4878,
+      4395,
+      3065,
+      2915,
+      -1,
+      2983,
+      2484,
+      2539,
+      2259,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ],
+    "wednesday_uv": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      3578,
+      2978,
+      2457,
+      2072,
+      -1,
+      2983,
+      2320,
+      3118,
+      2888,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ],
+    "thursday_uv": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      4376,
+      4337,
+      3060,
+      2621,
+      -1,
+      3417,
+      2582,
+      2436,
+      2106,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ],
+    "friday_uv": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      3449,
+      3306,
+      3237,
+      2534,
+      -1,
+      3139,
+      3071,
+      3591,
+      2862,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ],
+    "saturday_uv": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      5756,
+      4294,
+      3353,
+      3102,
+      3861,
+      3512,
+      2035,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+    ],
+    "max_uv": 5756,
+    "updated_at": "2026-05-28 01:29:11",
+    "day_of_week": "THURSDAY"
+  },
+  "panel_card_tags": [
+    "TITLE",
+    "PHOTO",
+    "BIZ",
+    "NEWS",
+    "AI_MATE",
+    "SUMMARY",
+    "INFO",
+    "EVENT_KEYWORD",
+    "PRODUCT",
+    "AI_QUESTION",
+    "BOOKING",
+    "SPECIAL",
+    "VISITOR",
+    "REVIEW",
+    "RANKING",
+    "BLOG"
+  ],
+  "panel_tab_tags": [
+    "PRODUCT",
+    "PHOTO",
+    "REVIEW",
+    "BOOKING",
+    "SPECIAL",
+    "NEWS",
+    "BLOG",
+    "RANKING"
+  ],
+  "restrict": {
+    "fiy": {
+      "is_restrict": false
+    },
+    "blog": {
+      "is_restrict": false
+    },
+    "review_read": {
+      "is_restrict": false
+    },
+    "photo": {
+      "is_restrict": false
+    },
+    "fiy_add_info": {
+      "is_restrict": false
+    },
+    "ranking": {
+      "is_restrict": false
+    }
+  },
+  "summary": {
+    "meta": {
+      "updated_at": "2026-02-04 14:56:27"
+    },
+    "confirm_id": "544191051",
+    "name": "위담한방병원",
+    "status": "Y",
+    "category": {
+      "name": "한방병원",
+      "id1": "13",
+      "id2": "80",
+      "id3": "777",
+      "name1": "의료,건강",
+      "name2": "병원",
+      "name3": "한방병원"
+    },
+    "point": {
+      "lon": 127.05888616079129,
+      "lat": 37.50338640846398
+    },
+    "address": {
+      "disp": "서울 강남구 삼성로 402 티아빌딩 지하2층, 2-7층 (대치동)",
+      "jibun": "대치동 960-5",
+      "road": "서울 강남구 삼성로 402 티아빌딩 지하2층, 2-7층",
+      "base_zone_no": "06185",
+      "road_part": "삼성로 402 티아빌딩 지하2층, 2-7층",
+      "jibun_part": "대치동 960-5",
+      "address_detail_part": "티아빌딩 지하2층, 2-7층"
+    },
+    "road_view": {
+      "pano_id": "1198549208",
+      "pan": 65.0,
+      "tilt": -9.0,
+      "point": {
+        "lon": 127.05862822885442,
+        "lat": 37.503289228165734
+      },
+      "level": 1,
+      "url": "https://map.kakaocdn.net/map_roadview/2025/07/9148298/2_101503_9148298_20250709064615_cube/left_800.jpg"
+    },
+    "regions": [
+      {
+        "depth": 1,
+        "id": "I",
+        "name": "서울",
+        "simple_name": "서울"
+      },
+      {
+        "depth": 2,
+        "id": "I1000",
+        "name": "강남구",
+        "simple_name": "강남구"
+      },
+      {
+        "depth": 3,
+        "id": "I10000200",
+        "name": "대치동",
+        "simple_name": "대치동"
+      }
+    ],
+    "homepages": [
+      "http://www.weedahm.com/",
+      "https://youtube.com/@myweedahm",
+      "https://m.blog.naver.com/weedahmwin",
+      "https://weedahm.com/community/community4/?mod=editor"
+    ],
+    "related_links": {
+      "primary_links": [
+        {
+          "url": "http://www.weedahm.com/",
+          "display_text": "http://www.weedahm.com/"
+        }
+      ],
+      "secondary_links": [
+        {
+          "url": "https://youtube.com/@myweedahm",
+          "display_text": "https://youtube.com/@myweedahm"
+        },
+        {
+          "url": "https://m.blog.naver.com/weedahmwin",
+          "display_text": "https://m.blog.naver.com/weedahmwin"
+        },
+        {
+          "url": "https://weedahm.com/community/community4/?mod=editor",
+          "display_text": "https://weedahm.com/community/community4/"
+        }
+      ]
+    },
+    "phone_numbers": [
+      {
+        "tel": "1600-8850"
+      }
+    ],
+    "payments": [],
+    "display_info": {
+      "display_name1": "위담한방병원"
+    }
+  },
+  "my_store_notice": {
+    "status": "REGISTERED",
+    "mystore_intro": "위장이 굳어지는 '담적(痰積)' 병을 처음 밝혀낸 33년 전통 43만명 선택, 위담한방병원",
+    "main_photo_url": "http://t1.kakaocdn.net/mystore/42E88A8BF7B145648349E7C294917BEB",
+    "notice_count": 60,
+    "notices": [
+      {
+        "news_id": 452426,
+        "news_type": "NOTICE",
+        "title": "자주 체하고 소화도 안돼서 여러병원 다녀봤는데 잘 낫지도 않고 너무 힘들어요",
+        "content": "",
+        "is_announce": false,
+        "status": "S",
+        "photo_list": [],
+        "registered_at": "2025-12-29 10:55:48",
+        "report_key": "TALK_CHANNEL",
+        "is_reportable_status": false
+      }
+    ],
+    "is_available_booking": false
+  },
+  "talk_channel": {
+    "plus_friends_link": "http://pf.kakao.com/_YqsZxj/chat?t_src=kakaomap",
+    "is_subscriber": false,
+    "channel_home_scheme_link": "kakaoplus://plusfriend/home/@강남위담한방병원",
+    "channel_home_web_link": "http://pf.kakao.com/_YqsZxj",
+    "name": "위담한방병원",
+    "img_url": "http://k.kakaocdn.net/dn/drKTgT/btsNfQari87/vSkLpG5822WCeDT9gCyCgk/img_s.jpg",
+    "friend_count": 280,
+    "status_message": "위장이 굳어지는 '담적(痰積)' 병을 처음 밝혀낸 33년 전통 43만명의 선택, 위담한방병원",
+    "id": 387535226
+  },
+  "open_hours": {
+    "headline": {
+      "code": "BEFORE_OPEN",
+      "display_text": "진료 전",
+      "display_text_info": "09:00 진료 시작"
+    },
+    "week_from_today": {
+      "week_periods": [
+        {
+          "days": [
+            {
+              "day_of_the_week_desc": "목(5/28)",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 18:00",
+                "break_times_desc": [
+                  "12:30 ~ 14:00 휴게시간"
+                ]
+              },
+              "is_highlight": true
+            },
+            {
+              "day_of_the_week_desc": "금(5/29)",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 18:00",
+                "break_times_desc": [
+                  "12:30 ~ 14:00 휴게시간"
+                ]
+              },
+              "is_highlight": false
+            },
+            {
+              "day_of_the_week_desc": "토(5/30)",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 16:00"
+              },
+              "is_highlight": false
+            }
+          ]
+        },
+        {
+          "days": [
+            {
+              "day_of_the_week_desc": "일(5/31)",
+              "off_days_desc": "휴무일",
+              "is_highlight": false
+            }
+          ]
+        },
+        {
+          "days": [
+            {
+              "day_of_the_week_desc": "월(6/1)",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 18:00",
+                "break_times_desc": [
+                  "12:30 ~ 14:00 휴게시간"
+                ]
+              },
+              "is_highlight": false
+            },
+            {
+              "day_of_the_week_desc": "화(6/2)",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 18:00",
+                "break_times_desc": [
+                  "12:30 ~ 14:00 휴게시간"
+                ]
+              },
+              "is_highlight": false
+            },
+            {
+              "day_of_the_week_desc": "수(6/3)",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 18:00",
+                "break_times_desc": [
+                  "12:30 ~ 14:00 휴게시간"
+                ]
+              },
+              "is_highlight": false
+            }
+          ]
+        }
+      ]
+    },
+    "all": {
+      "periods": [
+        {
+          "period_title": "기본 영업시간",
+          "days": [
+            {
+              "day_of_the_week": "월",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 18:00",
+                "break_times_desc": [
+                  "12:30 ~ 14:00 휴게시간"
+                ]
+              }
+            },
+            {
+              "day_of_the_week": "화",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 18:00",
+                "break_times_desc": [
+                  "12:30 ~ 14:00 휴게시간"
+                ]
+              }
+            },
+            {
+              "day_of_the_week": "수",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 18:00",
+                "break_times_desc": [
+                  "12:30 ~ 14:00 휴게시간"
+                ]
+              }
+            },
+            {
+              "day_of_the_week": "목",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 18:00",
+                "break_times_desc": [
+                  "12:30 ~ 14:00 휴게시간"
+                ]
+              }
+            },
+            {
+              "day_of_the_week": "금",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 18:00",
+                "break_times_desc": [
+                  "12:30 ~ 14:00 휴게시간"
+                ]
+              }
+            },
+            {
+              "day_of_the_week": "토",
+              "on_days": {
+                "start_end_time_desc": "09:00 ~ 16:00"
+              }
+            }
+          ]
+        }
+      ],
+      "all_days_off_info": "매주 일요일, 공휴일"
+    }
+  },
+  "photos": {
+    "counts": {
+      "total": 356,
+      "mystore": 6,
+      "vendor": 0,
+      "vod": 0,
+      "kakaomap_review": 3,
+      "food": 0,
+      "indoor": 16,
+      "outdoor": 8,
+      "menu": 0
+    },
+    "photos": [
+      {
+        "confirm_id": "544191051",
+        "url": "http://t1.kakaocdn.net/mystore/42E88A8BF7B145648349E7C294917BEB",
+        "type": "MYSTORE",
+        "registered_at": "2025-12-08 16:11:02",
+        "updated_at": "2025-12-08 16:16:00",
+        "title": "매장주 제공",
+        "media_type": "PHOTO",
+        "ui_type": "TITLE"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "http://t1.kakaocdn.net/mystore/26ACDD764CED431AB20C3AAA3AFC5B74",
+        "type": "MYSTORE",
+        "registered_at": "2025-12-08 16:11:02",
+        "updated_at": "2025-12-08 16:16:00",
+        "title": "매장주 제공",
+        "media_type": "PHOTO",
+        "ui_type": "TITLE"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "http://t1.kakaocdn.net/mystore/33A111E0B45945A9BF7343F4D44A090B",
+        "type": "MYSTORE",
+        "registered_at": "2025-12-08 16:11:02",
+        "updated_at": "2025-12-08 16:16:00",
+        "title": "매장주 제공",
+        "media_type": "PHOTO",
+        "ui_type": "TITLE"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "http://t1.kakaocdn.net/mystore/1B5D8391E86F40D1BA4982C92B235F37",
+        "type": "MYSTORE",
+        "registered_at": "2025-12-08 16:11:02",
+        "updated_at": "2025-12-08 16:16:00",
+        "title": "매장주 제공",
+        "media_type": "PHOTO",
+        "ui_type": "TITLE"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "http://t1.kakaocdn.net/mystore/120CAD2C0AC742DF8CF1C70E6BE34FCF",
+        "type": "MYSTORE",
+        "registered_at": "2025-12-08 16:11:02",
+        "updated_at": "2025-12-08 16:16:00",
+        "title": "매장주 제공",
+        "media_type": "PHOTO",
+        "ui_type": "TITLE"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "http://t1.kakaocdn.net/mystore/0C67709F78C842B8A70939DFCA01C38A",
+        "type": "MYSTORE",
+        "registered_at": "2025-12-08 16:11:02",
+        "updated_at": "2025-12-08 16:16:00",
+        "title": "매장주 제공",
+        "media_type": "PHOTO",
+        "ui_type": "TITLE"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/c45630e435dfbebc095352b3a7269f35255d395b?original",
+        "type": "KMAPREVIEW",
+        "photo_id": 6558352,
+        "review_id": 12958487,
+        "registered_at": "2025-06-09 13:32:54",
+        "updated_at": "2025-08-21 14:48:48",
+        "kakaomap_review_photo_meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          }
+        },
+        "title": "",
+        "media_type": "PHOTO",
+        "ui_type": "PROFILE",
+        "duration": 0
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "https://postfiles.pstatic.net/MjAyNjA1MTFfMTQ0/MDAxNzc4NTAzMDE0NzA3.YRhdpI_usoQH7zksQk9L6bVJn5lUqh1HBXfv9jXttRMg.4znB67tbrsGVLmrHkDICUl8YqzfLJcr0flxjEJXNeKog.PNG/%EC%9C%84%EB%8B%B4%ED%95%9C%EB%B0%A9%EB%B3%91%EC%9B%901-003.png?type=w466",
+        "type": "BLOG",
+        "photo_id": 1628786281,
+        "review_id": 109937244,
+        "registered_at": "2026-05-13 05:20:21",
+        "updated_at": "2026-05-13 05:36:23",
+        "title": "역류성식도염치료 증상에 적합한 방법으로",
+        "blog_link_url": "http://blog.naver.com/bluedran/224282261151",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "https://postfiles.pstatic.net/MjAyNjA1MDhfOTQg/MDAxNzc4MjI0NzQ2MDU1.SSBYNiu9snLs90waHARGiSvczUNm71Ns8ScWu4nGXuQg.2dDEMA8niAXbehtEbUsXcNLsirZC6qaXYL41X7z8NQAg.PNG/%EC%9C%84%EB%8B%B4%ED%95%9C%EB%B0%A9%EB%B3%91%EC%9B%901-002.png?type=w466",
+        "type": "BLOG",
+        "photo_id": 1625973466,
+        "review_id": 109699026,
+        "registered_at": "2026-05-09 15:09:16",
+        "updated_at": "2026-05-09 15:25:27",
+        "title": "담적병 치료 잘하는 곳, 어디로 가야 할까요?",
+        "blog_link_url": "http://blog.naver.com/bluedran/224279081694",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "https://postfiles.pstatic.net/MjAyNjA0MjRfMTQ2/MDAxNzc2OTU4MzU5MjQx.LM62UhtTpiMNqloMedAs5BHt7_4MabAbWtsJtPbSLfkg.lGjmB2PaAAf7_r80YgrlLKSNgF5K3dKQ4MHFZRdJ2Cgg.JPEG/SE-ee17849d-2df4-401f-ae14-8d3dc9410dc3.jpg?type=w966",
+        "type": "BLOG",
+        "photo_id": 1622238413,
+        "review_id": 109393162,
+        "registered_at": "2026-05-04 03:19:27",
+        "updated_at": "2026-05-04 03:32:11",
+        "title": "왼쪽 명치통증 담적 치료 양한방병원 근본부터 잡아야 합니다",
+        "blog_link_url": "http://blog.naver.com/myweedahm/224263093769",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "https://postfiles.pstatic.net/MjAyNjA0MjZfMjgw/MDAxNzc3MjA4MTYzNDEz.qY6wQcbEb4BoMTIpJxMX1qBjWJKY-e-9BCCl3oGdBpMg.zq20YKgge3IZ4DE7D2FRKX-Jfkw0JoK39ER4BrzBbh0g.JPEG/SE-e6953871-c8ce-4a13-b6a6-e6674c20c077.jpg?type=w966",
+        "type": "BLOG",
+        "photo_id": 1618200494,
+        "review_id": 109045532,
+        "registered_at": "2026-04-27 20:11:28",
+        "updated_at": "2026-04-27 20:28:11",
+        "title": "소화기 질환 방귀가 자주 나오는 이유 강남 한방병원 맞춤 처방",
+        "blog_link_url": "http://blog.naver.com/myweedahm/224265959266",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "https://postfiles.pstatic.net/MjAyNjA0MjJfMTM4/MDAxNzc2ODYwODUxMzA3.wvmv-PsCUeSuQpJUMgmKWBG8Lk2VOcIJC70TDOcgz0Mg.v72a40_xsk2UVsjbF-CcRXLmkpnBGwEZCU2HsSD8QHYg.JPEG/SE-e94e1b14-f37e-4153-abce-58b33fe0ff21.jpg?type=w966",
+        "type": "BLOG",
+        "photo_id": 1614903172,
+        "review_id": 108774581,
+        "registered_at": "2026-04-24 10:18:45",
+        "updated_at": "2026-04-24 10:36:16",
+        "title": "위궤양에 좋은 음식 VS 안좋은 음식 5가지 확인하세요",
+        "blog_link_url": "http://blog.naver.com/myweedahm/224262242632",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "https://postfiles.pstatic.net/MjAyNjA0MTdfNTEg/MDAxNzc2NDExMjUyMzYz.Ho805hsIDmntm10-4OqbkDsIAVrLySjUTM6Df7NiU8gg.9q7yC9YrG6sLYRuJwkf7b411hZoSCRDt8JteYEjR-PAg.JPEG/%EC%9C%84%EB%8B%B4%ED%95%9C%EB%B0%A9%EB%B3%91%EC%9B%901-003.jpg?type=w466",
+        "type": "BLOG",
+        "photo_id": 1612704032,
+        "review_id": 108587111,
+        "registered_at": "2026-04-20 23:08:48",
+        "updated_at": "2026-04-20 23:27:48",
+        "title": "만성위염 증상 및 치료 원인으로",
+        "blog_link_url": "http://blog.naver.com/wlstngus123/224256144383",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "https://postfiles.pstatic.net/MjAyNjA0MDFfMTk1/MDAxNzc1MDAyMTMyOTAz.oRFbxdmrVdZQkCadIlD59lUW3XsEVOAG7-kyN_CS54Qg.bQrzrvDcoSnTPWZA0QQ2Gx6CTeuNsKIElBQH1dCmLwIg.PNG/%EC%9C%84%EB%8B%B4%ED%95%9C%EB%B0%A9%EB%B3%91%EC%9B%901-003.png?type=w966",
+        "type": "BLOG",
+        "photo_id": 1604934976,
+        "review_id": 107932149,
+        "registered_at": "2026-04-10 21:55:19",
+        "updated_at": "2026-04-10 22:15:08",
+        "title": "위식도역류질환 반복되는 증상, 방치하지 않도록",
+        "blog_link_url": "http://blog.naver.com/wlstngus123/224237075784",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "https://postfiles.pstatic.net/MjAyNjA0MDdfMTE5/MDAxNzc1NTI1Mjc1NTUw.rXBiN-CbCVntBrsQl9hOWeiiBPzLJ_qxQp1AIZRolNAg.Yl2Qq6yM60sL-MYFcda_B3tVzyfHJjgkPsig58o2gNwg.PNG/%EC%9C%84%EB%8B%B4%ED%95%9C%EB%B0%A9%EB%B3%91%EC%9B%901-003.png?type=w966",
+        "type": "BLOG",
+        "photo_id": 1604428734,
+        "review_id": 107889831,
+        "registered_at": "2026-04-08 14:24:24",
+        "updated_at": "2026-04-08 14:45:43",
+        "title": "과민성대장증후군 잦은 복통으로 고통스럽다면",
+        "blog_link_url": "http://blog.naver.com/wlstngus123/224243644348",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "https://postfiles.pstatic.net/MjAyNjA0MDZfMjQw/MDAxNzc1NDU1MjE5Nzc0.30cyztAz_6U768EtlTFQ4rFuWqMJ-ziKoj7XZMoopBcg.WZI3Knl4mTLcVTo-XvwRbKC7f2-bM-jjtlH311XjU48g.PNG/%EC%9C%84%EB%8B%B4%ED%95%9C%EB%B0%A9%EB%B3%91%EC%9B%901-003.png?type=w466",
+        "type": "BLOG",
+        "photo_id": 1602951383,
+        "review_id": 107761135,
+        "registered_at": "2026-04-07 00:41:17",
+        "updated_at": "2026-04-07 00:56:57",
+        "title": "기능성위장장애 개인별 맞춤 처방으로",
+        "blog_link_url": "http://blog.naver.com/bluedran/224242662509",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "https://postfiles.pstatic.net/MjAyNjAzMzFfNDUg/MDAxNzc0OTA5OTYzMzAy.1Hh_U9whWTzTqQqfk55WpHfIvVnglDoMAIwSKYqekW8g.uhe3hZ8rKN0c2FtDUxrZoZwqf0debfIFD_NqY3IxDhIg.PNG/%EC%9C%84%EB%8B%B4%ED%95%9C%EB%B0%A9%EB%B3%91%EC%9B%901-003.png?type=w466",
+        "type": "BLOG",
+        "photo_id": 1599008051,
+        "review_id": 107434062,
+        "registered_at": "2026-04-01 06:09:24",
+        "updated_at": "2026-04-01 06:26:53",
+        "title": "담적한의원 답답한 증상이 반복되는 원인은",
+        "blog_link_url": "http://blog.naver.com/wlstngus123/224235725941",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "https://postfiles.pstatic.net/MjAyNjAzMjZfMjc0/MDAxNzc0NDkwNDg5NjA4.167ThusJYzRQgdAVUYowmT0wlnE4x28ckIB2p0zWhccg.XVtnlItKrfcn50fss5zIS4jX3SWgYr88e1H6h6J0q94g.JPEG/DSCF8218.JPG?type=w966",
+        "type": "BLOG",
+        "photo_id": 1595725439,
+        "review_id": 107155844,
+        "registered_at": "2026-03-29 00:12:58",
+        "updated_at": "2026-03-29 00:27:22",
+        "title": "크론병 증상 완치 염증성 장질환 치료 한의원 선택법",
+        "blog_link_url": "http://blog.naver.com/myweedahm/224230058159",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "https://postfiles.pstatic.net/MjAyNjAzMjZfMTQz/MDAxNzc0NDkwNTkxOTk1.X2V2-OZYka8Ggrwa3-EF5CWjN51gHlMyM3is0njyK50g.bO6jauDPunu2NGg7bdLHTlS_IG2M8-IrZJAp6k1UC2wg.JPEG/DSCF8056.JPG?type=w966",
+        "type": "BLOG",
+        "photo_id": 1595725405,
+        "review_id": 107155844,
+        "registered_at": "2026-03-29 00:12:54",
+        "updated_at": "2026-03-29 00:27:22",
+        "title": "크론병 증상 완치 염증성 장질환 치료 한의원 선택법",
+        "blog_link_url": "http://blog.naver.com/myweedahm/224230058159",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "https://postfiles.pstatic.net/MjAyNjAzMjZfMjQ0/MDAxNzc0NDkwNDY2OTI3.AxW4FD9AeCI8odK2E3rQgevUsGnDjlN8O-Hw2CVx16Ag.0-W_tdHdRUbLVtMaO4ITwb_wrSJcGjVXW2XYMcJKYT8g.JPEG/DSCF8176.JPG?type=w466",
+        "type": "BLOG",
+        "photo_id": 1595725417,
+        "review_id": 107155844,
+        "registered_at": "2026-03-29 00:12:55",
+        "updated_at": "2026-03-29 00:27:22",
+        "title": "크론병 증상 완치 염증성 장질환 치료 한의원 선택법",
+        "blog_link_url": "http://blog.naver.com/myweedahm/224230058159",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "https://postfiles.pstatic.net/MjAyNTExMDZfMzEg/MDAxNzYyMzU2Mzg4MTg2.ihbfQ5hMexKxx_E3_TkhtGcr53XXyc1dH97Tf84hkpog.MIAsDGnXfYLkjFMBEFB5fqZk232X3Y5WVHOkOVClfm4g.PNG/20251106_002601.png?type=w966",
+        "type": "BLOG",
+        "photo_id": 1496360036,
+        "review_id": 98795203,
+        "registered_at": "2025-11-15 09:27:05",
+        "updated_at": "2025-11-15 09:49:37",
+        "title": "배변장애 잦은방귀 가스차는이유 및 관리법",
+        "blog_link_url": "http://blog.naver.com/weedahmwin/224066194770",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "https://postfiles.pstatic.net/MjAyNTExMTFfNiAg/MDAxNzYyNzkzNjEzNDQx.RttQZTI0vSPBgD32fVrI4tkjHCk1Y_Xfl7c6sWFnHckg.gp5FXs6hW8YbfyqWJ9E0zTDZnj3TFl-OssbcnPFCAdEg.JPEG/202112271515122500993-2-251074.jpg?type=w966",
+        "type": "BLOG",
+        "photo_id": 1494079836,
+        "review_id": 98605807,
+        "registered_at": "2025-11-11 07:11:00",
+        "updated_at": "2025-11-11 13:45:36",
+        "title": "[공지] 위담한방병원 네이버밴드 이벤트｜아세코밸리 골프 9홀 이용권 증정",
+        "blog_link_url": "http://blog.naver.com/weedahmwin/224071710350",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "https://postfiles.pstatic.net/MjAyNTExMTFfNDgg/MDAxNzYyNzkzNjEzNDY5.exOsJPqOTB17wTyKCu3US2a-BuP42y1O906kfJGjDU0g.Lm8I6VBVHJMH0yTyIwZ8gbfhPb2bxm8NW3MGJYsGSvkg.PNG/20251111_015322.png?type=w966",
+        "type": "BLOG",
+        "photo_id": 1494079815,
+        "review_id": 98605807,
+        "registered_at": "2025-11-11 07:10:59",
+        "updated_at": "2025-11-11 13:45:36",
+        "title": "[공지] 위담한방병원 네이버밴드 이벤트｜아세코밸리 골프 9홀 이용권 증정",
+        "blog_link_url": "http://blog.naver.com/weedahmwin/224071710350",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "https://postfiles.pstatic.net/MjAyNTExMTFfMTYw/MDAxNzYyNzkzNjEzNDU4.DfC66i42tLoOoPz4g80qTFWXIqgQNhY8WRHhV5fExRMg.QlM23nirieWhXWa-kuXzR-vyKI42cPHKe6TIlCwziIwg.PNG/20251111_015305.png?type=w966",
+        "type": "BLOG",
+        "photo_id": 1494079763,
+        "review_id": 98605807,
+        "registered_at": "2025-11-11 07:10:55",
+        "updated_at": "2025-11-11 13:45:36",
+        "title": "[공지] 위담한방병원 네이버밴드 이벤트｜아세코밸리 골프 9홀 이용권 증정",
+        "blog_link_url": "http://blog.naver.com/weedahmwin/224071710350",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "https://postfiles.pstatic.net/MjAyNTExMDlfMjcg/MDAxNzYyNjg2NzAyODQ3.gUAjKn_47rxicFRSFUY1pDUqa_ygN9fiAQRCjUtodkUg.K8RdQwjbufCeW-gUof2M27eXgyJmDWHZcK-NDP7SawIg.JPEG/floor02_11_002.jpg?type=w966",
+        "type": "BLOG",
+        "photo_id": 1493048973,
+        "review_id": 98522449,
+        "registered_at": "2025-11-10 08:12:32",
+        "updated_at": "2025-11-10 08:43:05",
+        "title": "잦은설사 복통｜장건강을 지키는 식습관과 생활루틴",
+        "blog_link_url": "http://blog.naver.com/weedahmwin/224070161605",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "https://postfiles.pstatic.net/MjAyNTA5MDVfMiAg/MDAxNzU2OTk5OTMxNDA1.URG5ygCDrZF-pUl6x0WpJs_l4Fwfb6K81p2ok7g1h6kg.FLmjuCbgV0u-BzL8YdtR4VSCAMNIwGnioFpVhqRGnhcg.JPEG/floor02_11_001.jpg?type=w773",
+        "type": "BLOG",
+        "photo_id": 1460753885,
+        "review_id": 93968970,
+        "registered_at": "2025-09-06 15:53:47",
+        "updated_at": "2025-09-06 16:04:10",
+        "title": "스트레스성 공황장애 원인 초기증상 극복방법은?",
+        "blog_link_url": "http://blog.naver.com/weedahmwin/223995770255",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "https://postfiles.pstatic.net/MjAyNTA5MDVfMjcg/MDAxNzU2OTk5OTMxNDA1.egftRAm3C8T73OJpl1YNyn38OGtJdKxxQI2FdFhCja4g.MGgVUKQicNa_VzuDKs3Uf6iFK1p1m3gzxDYVD5Y_t9og.JPEG/floor02_11_003.jpg?type=w773",
+        "type": "BLOG",
+        "photo_id": 1460753886,
+        "review_id": 93968970,
+        "registered_at": "2025-09-06 15:53:47",
+        "updated_at": "2025-09-06 16:04:10",
+        "title": "스트레스성 공황장애 원인 초기증상 극복방법은?",
+        "blog_link_url": "http://blog.naver.com/weedahmwin/223995770255",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "https://postfiles.pstatic.net/MjAyNTA5MDVfMjAw/MDAxNzU2OTk5OTMxNDA2.G-uYYyjOrK6tqfUzSxLyMcErmI7Frnbl_wIibcfgdW4g.UizHqjtcegq-3b4YDryGmCKamqy4bfjD2bZQUFbC_NAg.JPEG/floor02_11_002.jpg?type=w773",
+        "type": "BLOG",
+        "photo_id": 1460753877,
+        "review_id": 93968970,
+        "registered_at": "2025-09-06 15:53:47",
+        "updated_at": "2025-09-06 16:04:10",
+        "title": "스트레스성 공황장애 원인 초기증상 극복방법은?",
+        "blog_link_url": "http://blog.naver.com/weedahmwin/223995770255",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "https://postfiles.pstatic.net/MjAyNTA5MDVfMTE0/MDAxNzU2OTk5OTM4NDYy.2Eg6jUaicN0lHS1Ntp52lyIC-ed-wrNQ3KDHQuxBAjQg.5UCV6M21ymyYnRfuWJE4x4SBQyFTnAyU4Wwz6uL_B34g.JPEG/floor04_01_002.jpg?type=w773",
+        "type": "BLOG",
+        "photo_id": 1460754061,
+        "review_id": 93968970,
+        "registered_at": "2025-09-06 15:54:01",
+        "updated_at": "2025-09-06 16:04:10",
+        "title": "스트레스성 공황장애 원인 초기증상 극복방법은?",
+        "blog_link_url": "http://blog.naver.com/weedahmwin/223995770255",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      },
+      {
+        "confirm_id": "544191051",
+        "url": "https://postfiles.pstatic.net/MjAyNTA5MDVfNDUg/MDAxNzU2OTk5OTM4NDYz.tKFC_jfz--eBL87Tx5iZNpzebbCUsAwyAhhVvBb-WKYg.Q5IL0k_KJiRMpQtYsWiRj9FBfGlCGAA_IbmDmQGH2w4g.JPEG/floor04_01_005.jpg?type=w773",
+        "type": "BLOG",
+        "photo_id": 1460753951,
+        "review_id": 93968970,
+        "registered_at": "2025-09-06 15:53:53",
+        "updated_at": "2025-09-06 16:04:10",
+        "title": "스트레스성 공황장애 원인 초기증상 극복방법은?",
+        "blog_link_url": "http://blog.naver.com/weedahmwin/223995770255",
+        "media_type": "PHOTO",
+        "ui_type": "POST"
+      }
+    ]
+  },
+  "blog_review": {
+    "review_count": 765,
+    "reviews": [
+      {
+        "confirm_id": "544191051",
+        "review_id": "110559933",
+        "title": "과민대장증후군 치료 잘하는 곳? 꼭 알아보세요 (위담한방병원)",
+        "contents": "본 게시글은 의료법 제 56조 1항을 준수하여 작성되었습니다. 모든 시술은 개인에 따라 차이가 있을 수 있으며 부작용이 발생할 수 있으므로 담당 의료진과 충분한 상담을 통해 진행하시길 바랍니다. 과민대장증후군 치료 잘하는 곳? 꼭 알아보세요 (위담한방병원) 목차 1. 과민대장증후군 질환은 어떤 상태일까? 2. 과민대장증후군 장 자극과 생활 습관 3. 과민대",
+        "registered_at": "2026-05-20 21:15:00",
+        "author": "[redacted]",
+        "origin_url": "https://blog.naver.com/wlstngus123/224291709652",
+        "photo_count": 8,
+        "photos": [
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjA1MjBfNjEg/MDAxNzc5MjY2MjUyMjA1.pmq_vCO5cDyqwjkUhv5kzvgb9nYVWC8Jff5rMj45gbIg.2DhacOLQ4HmoUDfDKEyWzZo08X5WrUsqIhhopChMgGog.JPEG/collage-003.jpg?type=w466",
+            "photo_id": 1636117612
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjA1MjBfMjg0/MDAxNzc5MjY2MjUxNTE1.PeHq4JuG5L_YdV425TO7I_crgMEnMjQ5l0brn8is394g.JNjQ6_PTHt7oF1aYG15F8P9gm_-PdVOU2NeflfnXOvog.JPEG/collage-005.jpg?type=w466",
+            "photo_id": 1636117784
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjA1MjBfMjMx/MDAxNzc5MjY2NzY4MzQw.Yu1GHJXLaptXE4i0dZaxRQ8YQkBbsOTK-7boJ4bt_u4g.Nyt2L9UJ9hnLzk1Tcu52-2UuDwQljRvi8iXl7PiELjAg.PNG/1-003.png?type=w966",
+            "photo_id": 1636117632
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjA1MjBfMjQg/MDAxNzc5MjY2MjUxODUw.BVHoDn9921kubCScjKE1eWYn9qjo_Nl-UtAnCNiq0U8g.HXdiFqSx01svZJpgZ-MnpT-4_SGNlKhGUQMsx5aZPIgg.JPEG/collage-006.jpg?type=w466",
+            "photo_id": 1636117652
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjA1MjBfMTc3/MDAxNzc5MjY2MjUyMjE3.RtLMBROlkQnmY7HdLx0AcBbD6MARr5-X_Bx0Sf--gXIg.miymqacipadKza_ZS9-1fSFnAyoJQzzjDE_og8QCzsAg.JPEG/collage-004.jpg?type=w466",
+            "photo_id": 1636117614
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjA1MjBfMjQ4/MDAxNzc5MjY2MjU0MDA4.8wk3yNne0O7s_Q_3wiy7_jO7dwByNOZfrTtAwzaaPSMg.OgV8fC4s2lqqfWG-rE40ki04ITUwQmdV2RdXdsF2kBkg.JPEG/%EC%9C%84%EB%8B%B4%ED%95%9C%EB%B0%A9%EB%B3%91%EC%9B%90%EA%B3%BC%EB%AF%BC%EB%8C%80%EC%9E%A5%EC%A6%9D%ED%9B%84%EA%B5%B01-002.jpg?type=w466",
+            "photo_id": 1636117606
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjA1MjBfMSAg/MDAxNzc5MjY2MjUyNTIx.VwbSQz1WwM_mCqKkCHMMp0OE7fvzhovGB216H7aGvPIg.KnFN6X4BXSybxVcXrP2EPVYosHMljgriNBA2fZi0vwog.JPEG/collage-008.jpg?type=w466",
+            "photo_id": 1636117641
+          },
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjA1MjBfMTUg/MDAxNzc5MjY2MjUyMTA4.wYxC5pNcRw1mh3d9jHW2BxIIK0WtAcKhVTQo_qpM0oQg.nsA7Vl1O186MGmg0dy0Wlkv16tEgkw7TrhD9StqUyN0g.JPEG/collage-007.jpg?type=w466",
+            "photo_id": 1636117609
+          }
+        ]
+      },
+      {
+        "confirm_id": "544191051",
+        "review_id": "110343270",
+        "title": "소화불량 병원 체기가 오래가요 어지럼증한의원에서 말하는 진짜 원인",
+        "contents": "소화불량 병원 체기가 오래가요 어지럼증한의원에서 말하는 진짜 원인 어지럼증의 원인이 위장에 있다고요? 체기가 몇 달째 안 풀리고 어지럼증까지 생겼다면 위장이 보내는 신호를 그냥 지나치신 겁니다 예민한 체질이 아니라 원인이 따로 있습니다 안녕하세요 소화불량 병원 위담한방병원입니다 두 달 넘게 속이 불편한 상태가 이어진 40대 직장인이 내원하셨습니다 “밥을 먹",
+        "registered_at": "2026-05-18 10:11:00",
+        "author": "[redacted]",
+        "origin_url": "https://blog.naver.com/myweedahm/224286814911",
+        "photo_count": 0
+      },
+      {
+        "confirm_id": "544191051",
+        "review_id": "110071736",
+        "title": "담적 치료 잘하는 곳? 위장이 보내는 신호",
+        "contents": "담적 치료 잘하는 곳? 위장이 보내는 신호 위담한방병원 서울특별시 강남구 삼성로 402 안녕하세요. 위담한방병원입니다. 감기가 다 나았음에도 불구하고 목에 무언가가 걸린듯한 느낌이 가시지 않아 고생하시는 분들이 많습니다. 가래를 뱉으려 해고 나오는 것이 없고 억지로 헛기침을 해도 시원치 않은 증상은 단순한 불편함을 넘어 일상의 질을 떨어뜨리곤 하는데요. 중",
+        "registered_at": "2026-05-14 14:22:00",
+        "author": "[redacted]",
+        "origin_url": "https://blog.naver.com/bluedran/224285242105",
+        "photo_count": 1,
+        "photos": [
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjA1MTRfMjIg/MDAxNzc4NzMwMjcwODI3.YMagrmXnKDODi3Gblkz4Otv4hioVApyvUgk6GJjKeyIg.0jJ4vBqYGZf2KAN4o8iRe6xK7GVokQ-qWVGp8WUDYvQg.JPEG/%EC%9C%84%EB%8B%B4%ED%95%9C%EB%B0%A9%EB%B3%91%EC%9B%901-001.jpg?type=w466",
+            "photo_id": 1630270631
+          }
+        ]
+      },
+      {
+        "confirm_id": "544191051",
+        "review_id": "110163698",
+        "title": "목이 아파요 가슴 조이는 느낌 신물 올라올때 확인하세요<필독>",
+        "contents": "목이 아파요 가슴 조이는 느낌 신물 올라올때 확인하세요 이상 없다는 말에 또 한 번 무너졌나요? 내시경은 깨끗한데 왜 아플까? 정답은 위 점막이 아닌 외벽에 있습니다 굳어진 외벽을 풀어야 합니다 안녕하세요 담적증후군을 임상 기반으로 깊이 있게 연구하는 위담한방병원입니다 “원장님, 정말 목에 뭐가 걸린 것 같아요\" \"신물 올라올때는 정말 타 죽는 느낌에 자다",
+        "registered_at": "2026-05-14 11:30:00",
+        "author": "[redacted]",
+        "origin_url": "https://blog.naver.com/myweedahm/224284881175",
+        "photo_count": 1,
+        "photos": [
+          {
+            "url": "https://postfiles.pstatic.net/MjAyNjA1MTRfMjYw/MDAxNzc4NzA5NDQzMDY0.WDHIwtQm3VG3e1JIs-MXs0B-VwNCS7j71d-qXdhwo8kg.hcyKflQyZCvyM2J2kdVRAbd3HFHDKRgFMQ7MjiZsk2Ug.JPEG/%EB%AA%A9%EC%9D%B4_%EC%95%84%ED%8C%8C%EC%9A%94_(4).jpg?type=w466",
+            "photo_id": 1631432580
+          }
+        ]
+      }
+    ],
+    "current_review_count": 4,
+    "last_review_id": "110163698",
+    "last_registered_at": "2026-05-14 11:30:00",
+    "requested_page_size": 4,
+    "requested_page": 1
+  },
+  "kakaomap_review": {
+    "score_set": {
+      "review_count": 86,
+      "total_score": 359,
+      "average_score": 4.2,
+      "photo_count": 3,
+      "strength_counts": [
+        {
+          "id": 10,
+          "count": 34
+        },
+        {
+          "id": 2,
+          "count": 29
+        },
+        {
+          "id": 4,
+          "count": 7
+        },
+        {
+          "id": 13,
+          "count": 2
+        }
+      ],
+      "strength_uv": 38
+    },
+    "strength_description": [
+      {
+        "id": 13,
+        "name": "가격",
+        "icon_url": "https://t1.kakaocdn.net/kakaomap_mobile/android/icon_review_price.png"
+      },
+      {
+        "id": 10,
+        "name": "전문성",
+        "icon_url": "https://t1.kakaocdn.net/kakaomap_mobile/android/icon_review_smart.png"
+      },
+      {
+        "id": 2,
+        "name": "친절",
+        "icon_url": "https://t1.kakaocdn.net/kakaomap_mobile/android/icon_review_kind.png"
+      },
+      {
+        "id": 4,
+        "name": "주차",
+        "icon_url": "https://t1.kakaocdn.net/kakaomap_mobile/android/icon_review_parking.png"
+      }
+    ],
+    "reviews": [
+      {
+        "review_id": 13582627,
+        "star_rating": 5,
+        "contents": "유튜브보고 위담한방병원 다녀왔습니다. 담적으로 유명한 곳이던데 저도 이번에 가서 처음으로 제대로 알았네요. \n\n대표원장님도 유튜브로 많이 봐서 반갑기도하고. 진료 잘 봐주시고 잘 오셨다고 하는데 신뢰가 가더라고요. 생활습관, 식습관까지 같이 짚어주시는데 한번 열심히 따라가보려고 합니다. 치료는 오늘 하루 받았는데 속이 벌써 좀 편해진 것 같아요. \n\n검사 받는거는 보험적용되서 얼마 안하던데 위장 아픈분들은 검사라도 한번 받아보는거 나쁘지 않을 것 같네요~",
+        "photo_count": 0,
+        "status": "S",
+        "registered_at": "2025-08-28 15:11:34",
+        "updated_at": "2025-08-28 15:11:34",
+        "meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          },
+          "is_liked_by_me": false,
+          "is_owner_me": false,
+          "like_count": 6,
+          "like_user_profile_image_list": [
+            "http://th-p.talk.kakao.co.kr/th/talkp/wkJS7kP6na/xDBqopCSKL6S45lvXnWyPK/ey2eea.jpg",
+            "http://t1.daumcdn.net/local/kakaomapPhoto/profile/4008bffd5439171d7333db7e5719d0fd5e922545?original",
+            ""
+          ],
+          "is_place_owner_pick": true,
+          "place": {
+            "confirm_id": "544191051",
+            "place_name": "위담한방병원"
+          }
+        }
+      },
+      {
+        "review_id": 13217897,
+        "star_rating": 5,
+        "contents": "소화가 너무안돼 찾다보니 위담까지 왔네요\n다른분들 리뷰처럼 친절하고 확실히 못고치는병 낫게 해주는 끝판왕 느낌 \n치료비랑 약값이 좀 비싼데 효과는 확실하네요",
+        "photo_count": 0,
+        "status": "S",
+        "registered_at": "2025-07-14 22:13:34",
+        "updated_at": "2025-07-14 22:13:34",
+        "meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          },
+          "is_liked_by_me": false,
+          "is_owner_me": false,
+          "like_count": 3,
+          "like_user_profile_image_list": [
+            "http://k.kakaocdn.net/dn/h4NSr/btq4bKnabWX/hp9nhJBkRMFQLzr1G41sKK/img_640x640.jpg",
+            "",
+            "http://k.kakaocdn.net/dn/beqn3k/btsP5tZlgMw/d6IwptTT72QeX9zgIOo3oK/img_640x640.jpg"
+          ],
+          "is_place_owner_pick": true,
+          "place": {
+            "confirm_id": "544191051",
+            "place_name": "위담한방병원"
+          }
+        }
+      },
+      {
+        "review_id": 10898525,
+        "star_rating": 5,
+        "contents": "80대 엄마가 가슴답답, 속쓰림, 어지럼증, 불안, 지속적인 만성위장질환으로 고생하시다가 위담한방병원에서 담적 진단을 받고 한달째 치료 중임.\n가슴답답 속쓰림 어지럼증 불안 모두 조금씩 나아지고 있음.\n소체 9.0으로 뚫림.",
+        "photo_count": 0,
+        "status": "S",
+        "registered_at": "2024-08-31 13:23:51",
+        "updated_at": "2024-08-31 13:23:51",
+        "meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          },
+          "is_liked_by_me": false,
+          "is_owner_me": false,
+          "like_count": 1,
+          "like_user_profile_image_list": [
+            "http://k.kakaocdn.net/dn/beqn3k/btsP5tZlgMw/d6IwptTT72QeX9zgIOo3oK/img_640x640.jpg"
+          ],
+          "is_place_owner_pick": true,
+          "place": {
+            "confirm_id": "544191051",
+            "place_name": "위담한방병원"
+          }
+        }
+      }
+    ],
+    "photos": [
+      {
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/c45630e435dfbebc095352b3a7269f35255d395b?original",
+        "photo_id": 6558352,
+        "media_type": "PHOTO",
+        "status": "S",
+        "ui_type": "PROFILE",
+        "duration": 0,
+        "review_id": 12958487,
+        "updated_at": "2025-08-21 14:48:48",
+        "meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          },
+          "is_liked_by_me": false,
+          "near": false,
+          "place": {
+            "confirm_id": "544191051",
+            "place_name": "위담한방병원"
+          }
+        }
+      },
+      {
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/03067cf4ed9bf9d9c8a17d86b5029e4f0ab47bfebe871a1f6f929fe93872eaac",
+        "photo_id": 4528295,
+        "media_type": "PHOTO",
+        "status": "S",
+        "ui_type": "PROFILE",
+        "review_id": 10101823,
+        "updated_at": "2024-07-06 08:57:23",
+        "meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          },
+          "is_liked_by_me": false,
+          "near": false,
+          "place": {
+            "confirm_id": "544191051",
+            "place_name": "위담한방병원"
+          }
+        }
+      },
+      {
+        "url": "http://t1.daumcdn.net/local/kakaomapPhoto/review/e3ec0484c5ad832e9869981c1ee985cb902ae32c258d7bfc84cd6788d7352ccc",
+        "photo_id": 4449707,
+        "media_type": "PHOTO",
+        "status": "S",
+        "ui_type": "PROFILE",
+        "review_id": 9985850,
+        "updated_at": "2024-07-06 08:57:23",
+        "meta": {
+          "owner": {
+            "_redacted": "owner PII removed before repo commit"
+          },
+          "is_liked_by_me": false,
+          "near": false,
+          "place": {
+            "confirm_id": "544191051",
+            "place_name": "위담한방병원"
+          }
+        }
+      }
+    ],
+    "timeline_score_table": {
+      "act_review": {
+        "event": 0,
+        "place_banner": [
+          {
+            "title": "사진/영상 등록",
+            "score": 3
+          },
+          {
+            "title": "글 작성",
+            "score": 2
+          }
+        ]
+      }
+    },
+    "has_next": false,
+    "has_my_review": false
+  },
+  "find_way": {
+    "subway": {
+      "station_simple_name": "삼성역",
+      "exit_num": "3",
+      "to_exit_distance": 651,
+      "subway_list": [
+        {
+          "subway_line_id": "SES2",
+          "subway_line_icon_name": "2"
+        }
+      ],
+      "to_exit_minute": 16
+    }
+  },
+  "navi_guides": [
+    {
+      "guide_id": "783169",
+      "name": "주차장",
+      "flag": "G",
+      "type": "PARKING",
+      "point": {
+        "lon": 127.058972392211,
+        "lat": 37.5033103205767
+      }
+    },
+    {
+      "guide_id": "783170",
+      "name": "입구",
+      "flag": "G",
+      "point": {
+        "lon": 127.058725104314,
+        "lat": 37.503374144857
+      }
+    }
+  ],
+  "trend_rank": {
+    "show_ranking_card": true
+  },
+  "place_add_info": {
+    "facilities": {
+      "is_parking": true,
+      "is_fordisabled": true
+    },
+    "tags": [
+      "강남",
+      "담적",
+      "대치동",
+      "위장병",
+      "한방병원",
+      "2차병원",
+      "공황장애",
+      "동맥경화",
+      "만성두통클리닉",
+      "만성피로",
+      "변비치료",
+      "불면증",
+      "역류성식도염",
+      "위내시경",
+      "자궁질환",
+      "크론병",
+      "통증치료",
+      "한방클리닉"
+    ],
+    "simple_parking_infos": {
+      "texts": [
+        "무료 주차"
+      ],
+      "has_ai_mate_data": false
+    },
+    "full_detail_infos": [
+      {
+        "title": "상세 정보",
+        "items": [
+          {
+            "icon": {
+              "text": "장소키워드",
+              "url": "https://t1.daumcdn.net/localimg/place/2026/infoIcon/icon_tag_line.svg"
+            },
+            "contents": [
+              {
+                "label": "강남"
+              },
+              {
+                "label": "담적"
+              },
+              {
+                "label": "대치동"
+              },
+              {
+                "label": "위장병"
+              },
+              {
+                "label": "한방병원"
+              },
+              {
+                "label": "2차병원"
+              },
+              {
+                "label": "공황장애"
+              },
+              {
+                "label": "동맥경화"
+              },
+              {
+                "label": "만성두통클리닉"
+              },
+              {
+                "label": "만성피로"
+              },
+              {
+                "label": "변비치료"
+              },
+              {
+                "label": "불면증"
+              },
+              {
+                "label": "역류성식도염"
+              },
+              {
+                "label": "위내시경"
+              },
+              {
+                "label": "자궁질환"
+              },
+              {
+                "label": "크론병"
+              },
+              {
+                "label": "통증치료"
+              },
+              {
+                "label": "한방클리닉"
+              }
+            ]
+          },
+          {
+            "icon": {
+              "text": "주차 가능",
+              "url": "https://t1.daumcdn.net/localimg/place/2026/infoIcon/icon_parkingsquare_line.svg"
+            },
+            "tags": {
+              "text": "무료",
+              "color": "Blue"
+            },
+            "contents": [
+              {
+                "label": "주차 가능"
+              }
+            ]
+          },
+          {
+            "icon": {
+              "text": "장애인 시설",
+              "url": "https://t1.daumcdn.net/localimg/place/2026/infoIcon/icon_wheel_line.svg"
+            },
+            "contents": [
+              {
+                "label": "장애인 시설"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "add_info_summaries": [
+      {
+        "texts": [
+          "무료 주차"
+        ],
+        "icon": {
+          "text": "주차정보",
+          "url": "https://t1.daumcdn.net/localimg/place/2026/infoIconMini/parkingicon.svg"
+        },
+        "has_ai_mate_data": false
+      }
+    ],
+    "simple_detail_infos": [
+      {
+        "text": "장애인 시설",
+        "url": "https://t1.daumcdn.net/localimg/place/2026/infoIcon/icon_wheel_line.svg"
+      }
+    ]
+  },
+  "reward": {
+    "fiy": {
+      "basic_info": 0,
+      "contact": 200,
+      "menu": 0,
+      "open_hour": 200,
+      "delete_place": 200,
+      "add_info": 0,
+      "max_amount": 400
+    }
+  },
+  "ai_content_warning": {
+    "is_home_tab_display_enabled": false,
+    "is_info_tab_display_enabled": false
+  }
+}

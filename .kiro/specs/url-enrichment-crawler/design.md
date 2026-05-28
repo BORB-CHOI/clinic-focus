@@ -1,11 +1,17 @@
 # Design Document
 
+> ⚠️ **부분 변경 (2026-05-28)**: 아래 ②의 **카카오 홈페이지 추출은 Playwright `KakaoPlaceRenderer` → httpx `panel3` 로 대체**됨.
+> 카카오 비공식 `place-api.map.kakao.com/places/panel3/{id}` 가 `summary.homepages` 를 단발 httpx 로 직접 주므로 브라우저 렌더링 불필요.
+> `enrich_urls.py` 2단계는 이제 `KakaoPlaceAdapter.fetch_panel3` + `extract_homepage`(`be/adapters/kakao_place_adapter.py`)를 쓴다.
+> `kakao_place_renderer.py` 는 호출부 0(고아) — 폐기 후보. **단 BrowserManager·JSRenderer(자체 사이트 SPA 렌더링)는 그대로 유효**.
+> 자세한 건 `docs/plans/task-queue.md` Phase B 카카오 raw 노트(사실 14·17·24) 참조.
+
 ## Overview
 
 Playwright 기반 브라우저 렌더링을 기존 URL 보강 및 크롤링 파이프라인에 통합하여:
-1. 카카오 장소 페이지에서 홈페이지 URL 추출 (현재 0% → 예상 +50~200개)
-2. SPA 병원 홈페이지 크롤링 성공률 향상 (~50% → 90%+)
-3. 네이버 쿼리 다변화로 히트율 개선 (1.3% → 예상 3~5%)
+1. ~~카카오 장소 페이지에서 홈페이지 URL 추출 (Playwright)~~ → **httpx panel3 로 대체 (위 노트)**
+2. SPA 병원 홈페이지 크롤링 성공률 향상 (~50% → 90%+) — **유효 (BrowserManager + JSRenderer)**
+3. 네이버 쿼리 다변화로 히트율 개선 (1.3% → 예상 3~5%) — 유효
 
 ## Architecture
 

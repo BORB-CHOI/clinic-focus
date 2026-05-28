@@ -3,7 +3,7 @@
 Task 6 검증:
 - async 전환 (asyncio.run 패턴)
 - 네이버 단계에서 search_hospital_multi_query 사용
-- 카카오 단계에 KakaoPlaceRenderer + Playwright 통합
+- 카카오 단계: place_id → panel3 상세 API → summary.homepages 추출 (Playwright 제거)
 - URL 발견 후 URLValidator 검증
 - 중단 재개 로직 (이미 URL 있는 병원 스킵)
 - 최종 리포트 출력 개선
@@ -189,78 +189,65 @@ class TestRunStep1Naver:
 # ─── run_step2_kakao 테스트 ────────────────────────────────────────────
 
 
+def _panel3_with_homepage(url: str) -> dict:
+    """summary.homepages 만 채운 최소 panel3 stub (extract_homepage 입력)."""
+    return {"summary": {"homepages": [url]}}
+
+
 class TestRunStep2Kakao:
     @pytest.mark.asyncio
-    async def test_kakao_with_playwright_integration(self, hospitals_no_url, mock_db, mock_validator):
-        """카카오 검색 → Playwright 렌더링 → URL 저장 흐름."""
+    async def test_kakao_panel3_integration(self, hospitals_no_url, mock_db, mock_validator):
+        """카카오 검색 → place_id → panel3 homepages → URL 저장 흐름."""
         with patch("be.scripts.enrich_urls.KAKAO_KEY", "test-key"):
             with patch("be.adapters.kakao_adapter.KakaoAdapter.search_hospital") as mock_kakao:
-                mock_kakao.return_value = {"place_url": "http://place.map.kakao.com/12345"}
+                mock_kakao.return_value = {"id": "12345"}
 
-                with patch("be.core.browser_manager.BrowserManager.__aenter__") as mock_enter:
-                    mock_bm = AsyncMock()
-                    mock_enter.return_value = mock_bm
+                with patch(
+                    "be.adapters.kakao_place_adapter.KakaoPlaceAdapter.fetch_panel3",
+                    return_value=_panel3_with_homepage("https://hospital-homepage.com"),
+                ):
+                    found, rejected = await run_step2_kakao(
+                        mock_db, hospitals_no_url, mock_validator
+                    )
 
-                    with patch("be.core.browser_manager.BrowserManager.__aexit__", new_callable=AsyncMock):
-                        with patch(
-                            "be.adapters.kakao_place_renderer.KakaoPlaceRenderer.extract_homepage_url",
-                            new_callable=AsyncMock,
-                            return_value="https://hospital-homepage.com",
-                        ):
-                            found, rejected = await run_step2_kakao(
-                                mock_db, hospitals_no_url, mock_validator
-                            )
-
-                            assert found == 3
-                            assert rejected == 0
-                            assert mock_db.update_website_url.call_count == 3
+                    assert found == 3
+                    assert rejected == 0
+                    assert mock_db.update_website_url.call_count == 3
 
     @pytest.mark.asyncio
-    async def test_kakao_no_place_url_skips(self, hospitals_no_url, mock_db, mock_validator):
-        """카카오 검색 결과에 place_url 없으면 스킵."""
+    async def test_kakao_no_place_id_skips(self, hospitals_no_url, mock_db, mock_validator):
+        """카카오 검색 결과에 place_id(id) 없으면 panel3 호출 없이 스킵."""
         with patch("be.scripts.enrich_urls.KAKAO_KEY", "test-key"):
             with patch("be.adapters.kakao_adapter.KakaoAdapter.search_hospital") as mock_kakao:
-                mock_kakao.return_value = {"place_url": ""}
+                mock_kakao.return_value = {"id": ""}
 
-                with patch("be.core.browser_manager.BrowserManager.__aenter__") as mock_enter:
-                    mock_bm = AsyncMock()
-                    mock_enter.return_value = mock_bm
+                with patch(
+                    "be.adapters.kakao_place_adapter.KakaoPlaceAdapter.fetch_panel3",
+                ) as mock_panel3:
+                    found, rejected = await run_step2_kakao(
+                        mock_db, hospitals_no_url, mock_validator
+                    )
 
-                    with patch("be.core.browser_manager.BrowserManager.__aexit__", new_callable=AsyncMock):
-                        with patch(
-                            "be.adapters.kakao_place_renderer.KakaoPlaceRenderer.extract_homepage_url",
-                            new_callable=AsyncMock,
-                        ) as mock_renderer:
-                            found, rejected = await run_step2_kakao(
-                                mock_db, hospitals_no_url, mock_validator
-                            )
-
-                            assert found == 0
-                            mock_renderer.assert_not_called()
+                    assert found == 0
+                    mock_panel3.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_kakao_renderer_returns_none_skips(self, hospitals_no_url, mock_db, mock_validator):
-        """Playwright 렌더러가 None 반환 시 스킵."""
+    async def test_kakao_no_homepage_skips(self, hospitals_no_url, mock_db, mock_validator):
+        """panel3 homepages 가 비어 홈페이지를 못 뽑으면 스킵."""
         with patch("be.scripts.enrich_urls.KAKAO_KEY", "test-key"):
             with patch("be.adapters.kakao_adapter.KakaoAdapter.search_hospital") as mock_kakao:
-                mock_kakao.return_value = {"place_url": "http://place.map.kakao.com/12345"}
+                mock_kakao.return_value = {"id": "12345"}
 
-                with patch("be.core.browser_manager.BrowserManager.__aenter__") as mock_enter:
-                    mock_bm = AsyncMock()
-                    mock_enter.return_value = mock_bm
+                with patch(
+                    "be.adapters.kakao_place_adapter.KakaoPlaceAdapter.fetch_panel3",
+                    return_value={"summary": {"homepages": []}},
+                ):
+                    found, rejected = await run_step2_kakao(
+                        mock_db, hospitals_no_url, mock_validator
+                    )
 
-                    with patch("be.core.browser_manager.BrowserManager.__aexit__", new_callable=AsyncMock):
-                        with patch(
-                            "be.adapters.kakao_place_renderer.KakaoPlaceRenderer.extract_homepage_url",
-                            new_callable=AsyncMock,
-                            return_value=None,
-                        ):
-                            found, rejected = await run_step2_kakao(
-                                mock_db, hospitals_no_url, mock_validator
-                            )
-
-                            assert found == 0
-                            assert rejected == 0
+                    assert found == 0
+                    assert rejected == 0
 
     @pytest.mark.asyncio
     async def test_kakao_validation_rejected(self, hospitals_no_url, mock_db):
@@ -270,25 +257,19 @@ class TestRunStep2Kakao:
 
         with patch("be.scripts.enrich_urls.KAKAO_KEY", "test-key"):
             with patch("be.adapters.kakao_adapter.KakaoAdapter.search_hospital") as mock_kakao:
-                mock_kakao.return_value = {"place_url": "http://place.map.kakao.com/12345"}
+                mock_kakao.return_value = {"id": "12345"}
 
-                with patch("be.core.browser_manager.BrowserManager.__aenter__") as mock_enter:
-                    mock_bm = AsyncMock()
-                    mock_enter.return_value = mock_bm
+                with patch(
+                    "be.adapters.kakao_place_adapter.KakaoPlaceAdapter.fetch_panel3",
+                    return_value=_panel3_with_homepage("https://bad-hospital.com"),
+                ):
+                    found, rejected = await run_step2_kakao(
+                        mock_db, hospitals_no_url, validator
+                    )
 
-                    with patch("be.core.browser_manager.BrowserManager.__aexit__", new_callable=AsyncMock):
-                        with patch(
-                            "be.adapters.kakao_place_renderer.KakaoPlaceRenderer.extract_homepage_url",
-                            new_callable=AsyncMock,
-                            return_value="https://bad-hospital.com",
-                        ):
-                            found, rejected = await run_step2_kakao(
-                                mock_db, hospitals_no_url, validator
-                            )
-
-                            assert found == 0
-                            assert rejected == 3
-                            mock_db.update_website_url.assert_not_called()
+                    assert found == 0
+                    assert rejected == 3
+                    mock_db.update_website_url.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_no_kakao_key_skips(self, hospitals_no_url, mock_db, mock_validator):

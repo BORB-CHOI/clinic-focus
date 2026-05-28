@@ -252,10 +252,93 @@ SK = `entity` (S)
 > **미해명 항목** (다음 세션):
 > - ~~GraphQL `votedKeyword.details` · `themes` 비어있는 이유~~ → 사실 8 갱신: 병원 카테고리는 노출 안 함이 확정. 우리 측에서 후기 본문 raw 로 직접 키워드 추출해야 함
 > - 정보 탭 (`진료영역` · `대표 키워드` · `원장 이력` · `편의시설`) query 명 — visitor 탭 외 다른 탭(`/home`·`/information`) 진입 시 호출되는 GraphQL 캡처 필요
-> - 카카오 비공식 엔드포인트의 실제 구조 (place_id 형식·ncpt-style 차단 여부)
-> - 1만 풀커버 시 EC2 IP rate-limit (직렬 50~70시간 부담 + 병렬화 시 IP 차단 임계 미실측)
+> - ~~카카오 비공식 엔드포인트의 실제 구조 (place_id 형식·ncpt-style 차단 여부)~~ → 아래 카카오 raw 노트(사실 13~24) 로 해소
+> - 1만 풀커버 시 EC2 IP rate-limit (직렬 50~70시간 부담 + 병렬화 시 IP 차단 임계 미실측. 네이버·카카오 양쪽 동일하게 미실측)
+>
+> ---
+>
+> **2026-05-28 실측 raw 노트 — 카카오맵** (사용자 캡처 4 endpoint + EC2 실측. 결정은 미확정, raw 사실만 박음)
+>
+> 환경: EC2 IP `13.223.112.152` 동일. 4 endpoint 모두 httpx 단발 호출(Playwright 미사용). 사용자 캡처: 검색 `searchJson` + 상세 `panel3/8094954` + 후기 `tab/reviews/kakaomap/8094954` + 블로그 `tab/reviews/blog/8094954?page=1`.
+>
+> **사실 13 — robots.txt + 약관 (네이버 사실 1·2 동일)**: `map.kakao.com` · `place.map.kakao.com` 모두 자동화 금지. 카카오 약관 "회사가 정하지 않은 비정상적인 방법으로 시스템에 접근하는 행위" 금지 — 자동화 수집은 약관 위반 소지.
+>
+> **사실 14 — 호출 단순성 (vs 네이버)**: 4 endpoint 모두 **ncpt 토큰 발급·Playwright Chromium 부팅 불필요**. httpx 단발 + 헤더 셋(`User-Agent` PC + `Referer` + `Accept: application/json` + `pf: web`)만 맞으면 200. 헤더 누락 시 `406 Not Acceptable`(`place-api.map.kakao.com`) 또는 `302 → www.kakao.com/500.ko.html`(`m.map.kakao.com`). 네이버 흐름의 토큰 발급 비용 0.
+>
+> **사실 15 — 검색 (`m.map.kakao.com/actions/searchJson`)**: `type=PLACE&q={쿼리}&pageNo=1` 단발. PC UA + `Referer: https://m.map.kakao.com/actions/searchView` + `X-Requested-With: XMLHttpRequest` 박으면 200 (41KB). 사용자 캡처의 `wxEnc/wyEnc` 좌표 enc·`cidx`·`rcode`·`busStopCount`·`placeCount` 는 **선택 파라미터** — 없어도 동작. 응답 `placeList[].confirmid` 가 place_id, `cate_name_depth2: "병원"` 필터로 의료기관 한정.
+>
+> **사실 16 — 5건 표본 매칭률 (네이버와 동일 패턴)**: 5건 중 3건 성공, 2건 실패 (`에이솝병원 강남`·`예이진한의원 강남` — 차단 아니라 매칭 실패). 매칭률 카카오 = 네이버 = 3/5. 1건당 1~3초 (네이버 18~25초 vs).
+>
+> | 쿼리 | place_id | 검색 reviewCount | reviews 응답 | blog review_count | photos.counts.total |
+> |---|---|---|---|---|---|
+> | 자생한방병원 강남 | `27388604` | 324 | 303 | 324 | 704 |
+> | 더서울병원 성북 | `202729757` | 1096 | 73 | 1096 | (별도) |
+> | 위담한방병원 강남 | `544191051` | 765 | 86 | 765 | (별도) |
+> | 에이솝병원 강남 | place 없음 | — | — | — | — |
+> | 예이진한의원 강남 | place 없음 | — | — | — | — |
+>
+> **사실 17 — `panel3` 한 호출의 풍부함**: `GET https://place-api.map.kakao.com/places/panel3/{place_id}` 단발에 다음을 묶어서 줌:
+> - `summary` — 이름·주소·전화·홈페이지·결제수단·meta
+> - `place_add_info.tags[]` — **자칭/카테고리 정제 키워드 raw** (자생한방 18개: `2차병원·관절염·근육통·도수치료·무릎관절치료·물리치료·비염·생리통클리닉·신경클리닉·실손24·안면신경마비·오십견·자동차보험진료기관·추나요법·턱관절질환·통증치료·한방클리닉·회전근개손상`). `primary_focus` 시드 직접 사용 가능
+> - `medical.hira` — HIRA 공공 데이터 정제본 (`medical_center_type`·`specialized_field`·`doctor_count{total,general,intern,resident,specialist}`·`subjects[]`·`established_at`·`open_infos[]`)
+> - `medical.emergency_center` — 응급의료 메타
+> - `photos.counts` — `{total, mystore, vendor, vod, kakaomap_review, food, indoor, outdoor, menu}` 자체 사진 분류
+> - `visitor.{day_of_week, max_uv, monday_uv[24], ..., sunday_uv[24], labels[0..23]}` — 시간대별/요일별 방문자 UV (`-1` = 데이터 없음)
+> - `blog_review.{review_count, reviews[]}` — 블로그 1페이지 내장
+> - `kakaomap_review.{score_set, strength_description, reviews[], has_next}` — 후기 1페이지 내장 (단 더서울 케이스는 null — 노출 조건 미실측)
+> - `open_hours.{all, headline, week_from_today}` — 영업시간
+> - `panel_card_tags[]` / `panel_tab_tags[]` — UI 표시 키 (`TITLE/PHOTO/BIZ/NEWS/AI_MATE/SUMMARY/INFO/EVENT_KEYWORD/PRODUCT/AI_QUESTION/BOOKING/SPECIAL/VISITOR/REVIEW/RANKING/BLOG`)
+> - `my_store_notice.{notice_count, notices, mystore_intro, main_photo_url}` — 사업자 본인 박은 자기소개·공지 (자칭 시그널 핵심. 더서울·위담만 노출. 노출 조건 미실측)
+> - `ai_content_warning.{is_home_tab_display_enabled, is_info_tab_display_enabled}` — 카카오가 "AI 콘텐츠 경고" UI 가시성을 boolean 으로 노출 (의료법 회색지대 인지)
+>
+> **즉 panel3 1회 = 네이버 visitorReviews + getPhotoViewerItems + 정보 탭 3 호출에 해당**. 1만 풀커버 시 호출 비용 ⅓ 절약.
+>
+> **사실 18 — 후기 (`tab/reviews/kakaomap/{id}`)**: `score_set.{review_count, average_score, strength_counts}` + `strength_description[].{id, name, icon_url}` + `reviews[].{review_id, contents, star_rating, photo_count, photos[], strength_ids[], registered_at, updated_at, status, meta}` + `has_next` + `timeline_score_table`. 핵심:
+> - **`strength_description` 라벨이 4종 고정** (`13:가격, 10:전문성, 2:친절, 4:주차`) — 4건 표본 모두 동일 매핑. 카테고리 무관. 네이버는 카테고리별 분기인데 (병원은 빈 배열) 카카오는 좁은 고정 셋
+> - **`star_rating` 0~5 정수 노출** — 네이버 병원 카테고리 `rating=null` 과 다름
+> - 본문 평균 61~288자, 최대 1972자
+> - 1 호출 11~20건 반환. `?page=2` 박아도 같은 items — **페이지네이션 키 미실측** (cursor/offset 후보)
+> - `only_photo_review=true` 필터 = 사진 후기만 (Vision 시드 노이즈 감소)
+> - `reviews[].photos[].kakaomap_review_photo_meta.owner.{map_user_id, nickname, image_url}` = **마스킹 없이 raw** (네이버는 서버 측에서 `su****` 마스킹). 저장 정책 결정 필요
+>
+> **사실 19 — 블로그 (`tab/reviews/blog/{id}?page=N`)**: `review_count` + `reviews[].{review_id, confirm_id, title, contents, origin_url, author, photo_count, photos[], registered_at}`. 핵심:
+> - **`origin_url` 100% `blog.naver.com`** — 4건 표본 40 URL 전부. 카카오가 네이버 블로그를 자체 큐레이션
+> - 네이버 `getPhotoViewerItems.ugc.externalLink.url` 과 **같은 시드 풀, 다른 큐레이션 시그널**: 카카오 blog tab = 텍스트 본문 위주, 네이버 photo ugc = 사진 첨부 위주. **두 채널 합집합 = BlogSignal 시드 가장 풍부한 회수**
+> - `contents` 발췌 본문 (수백 자 raw) — 블로그 원문 추가 fetch 없이도 키워드 빈도 가능
+> - `?page=N` 동작 확인 (reviews 와 달리 페이지네이션 정상)
+> - 위담 케이스 `contents` 첫 문장: "본 게시글은 의료법 제 56조 1항을 준수하여 작성되었습니다." = **광고성 블로그 표시 마커**. 광고/실후기 분리 룰 토큰 후보
+> - `author` raw 닉네임 — 마스킹 없이 노출 (작성자 본인 노출 의도)
+>
+> **사실 20 — `panel3.place_add_info.tags` 와 분류 스키마**: 자생한방 18개 태그 중 `2차병원·관절염·근육통·도수치료·물리치료·비염·통증치료·한방클리닉·추나요법` 은 `standard_specialty='한의원'`·`primary_focus=['추나·도수','침구']` 와 정렬됨. `자동차보험진료기관·실손24` 는 보험 청구 정책 시그널 (자칭 마케팅 키워드). 카카오 태그 풀이 우리 `primary_focus` 22 후보군 예시 (`ai/CLAUDE.md` 분류 스키마 섹션) 와 매핑 가능. **즉 룰 기반 분류기의 자칭 추출 입력으로 panel3.tags 가 자체 사이트 텍스트보다 정제도 높음**.
+>
+> **사실 21 — `panel3.medical.hira` 와 HIRA 직접 호출 비교**: 카카오 정제본은 `doctor_count` 세분화·`specialized_field`·`established_at` 노출. 단 HIRA 공공 API 의 `ykiho`·정확한 진료과목 코드·요양기관번호는 카카오에 없음. **HIRA 직접 호출 흐름은 유지, 카카오 정제본은 보조 시그널**. 충돌 시 HIRA 우선.
+>
+> **사실 22 — 개인정보 raw 노출 (네이버 사실 9 비교)**: `reviews[].photos[].kakaomap_review_photo_meta.owner.map_user_id` (9~10자리 숫자 ID) + `nickname` (작성자 닉네임 원문) + `image_url` (카카오톡 프로필 사진 URL) **마스킹 없이 원본**. 네이버는 서버 측 마스킹(`su****`) 후 노출. 카카오 raw 저장 시 우리 측 마스킹 의무 발생 — `kakao_place_adapter._mask_review_item` 가 화이트리스트 방식으로 owner 통째 제거. `loginIdno`·session 정보는 비로그인 호출이라 없음. (실측 raw 의 owner·author 식별자는 repo 커밋 전 redact 처리됨 — `samples/*.json` 의 `owner`/`author` 는 placeholder)
+>
+> **사실 23 — `m.map.kakao.com/actions/searchJson` 모바일 UA 차단**: 모바일 UA 또는 Referer 누락 시 `302 → https://www.kakao.com/500.ko.html` 500 페이지로 리다이렉트. PC UA + `Referer: https://m.map.kakao.com/actions/searchView` 박으면 200. 즉 카카오는 진입점 봇 차단을 검색 엔드포인트 한 군데에 집중, `place-api.*` 는 헤더만 맞으면 통과. **검색은 단순 헤더 위장, 상세 4 endpoint 는 헤더 셋 외 추가 차단 없음**.
+>
+> **사실 24 — 실측 코드·query·응답 raw 저장**: [`ai/scratch/kakao-place-probe-2026-05-28/`](../../ai/scratch/kakao-place-probe-2026-05-28/) (README + probe_search·probe_panel3·probe_reviews·probe_blog 실행 스크립트 + queries/*.http 4개 + samples/*.json 13개). 다음 세션이 코드 디테일 재현 시 이 폴더만 보면 됨.
+>
+> **운영 비용·제약 추가 메모 (수치 raw)**:
+> - **EC2 부담**: 1건당 httpx 1~3초 (네이버 18~25초 vs ⅛). 1만 풀커버 시 단일 EC2 직렬 ≈ 3~8시간. Playwright 시스템 의존성 없음
+> - **호출 수**: panel3 1회로 네이버 3 호출분 회수 → **풀커버 호출 비용 카카오 = 1회/병원 vs 네이버 = 3 호출/병원**
+> - **검색 매칭 실패율** = 2/5 (40%, 네이버와 동일) — 정확한 병원명 + 지역 조합 필요. HIRA `yadmNm` 매칭률 미실측
+> - **EC2 IP rate-limit**: 4 endpoint 표본 16회 호출 안정. 1만 풀커버 시 임계 미실측 (네이버와 동일하게 IP 풀·딜레이·재시도 정책 필요)
+>
+> **카카오 미해명 항목** (다음 세션):
+> - `reviews` 페이지네이션 키 — `?page=N` 무시. cursor/offset/sort 후보 미실측
+> - `panel3.kakaomap_review` 가 더서울 케이스에만 `null` 인 조건 (해당 병원은 reviews 호출 시 73건 노출되는데 panel3 안엔 없음)
+> - `panel3.my_store_notice.mystore_intro` 노출 조건 (더서울·위담만 노출, 자생한방·춘원당 미노출)
+> - 카카오 자체 광고/실후기 분리 룰 — 블로그 본문 첫 문장 "의료법 제 56조 1항" 마커 빈도
+> - 1만 풀커버 시 IP rate-limit 임계 (네이버와 공통 미해명)
 
-> ⚠️ **Phase B 진입 전 결정 — Vision 입력 전략** (2026-05-27 추가, 다음 세션 2순위 의제)
+> ✅ **결정됨 (2026-05-28, 사용자) — Vision 입력 = 병원 자체 사이트 한정**
+>
+> Vision 분석 입력은 **병원 자체 사이트 이미지(옵션 A/D)만** 쓴다. 네이버·카카오 크롤링으로 얻은 이미지는 **Vision 분석 입력에서 제외**. 이유: Vision 시그널(30%)은 "병원이 자기 사이트에서 무엇을 시각적으로 내세우는가"가 핵심이라 외부 플랫폼 큐레이션 사진이 섞이면 자칭 시그널이 오염됨.
+>
+> **단 네이버·카카오 사진은 FE 대표 이미지 용도로는 활용**. 공식 API(네이버 `v1/search/local`·카카오 `dapi.kakao.com/keyword`) 응답에 **이미지 URL 필드가 아예 없음**(2026-05-28 실측 확인) → FE 가 검색 결과·상세에 쓸 병원 대표 이미지는 크롤링 사진(카카오 `my_store_notice.main_photo_url` 우선 → `panel3.photos[].url` 폴백)에서만 회수 가능. 이건 Vision 분석이 아니라 **이미지 URL/S3 저장**만 하는 별개 경로. 아래 옵션 E·F 는 그래서 **Vision 입력이 아니라 FE 대표 이미지 시드**로 재분류됨.
+>
+> ---
 >
 > 현재 BE 의 `crawl_data.json` `images[]` 필드는 **사이트 HTML `<img>` 태그 URL 메타만** 담음 (`url`·`page_url`·`alt_text` 3 필드). 이미지 바이트 다운로드·Vision 분석은 Phase C AI 책임. 단 다음 사실로 입력 전략 재검토 필요:
 >
@@ -284,6 +367,17 @@ SK = `entity` (S)
 > ---
 >
 > **2026-05-28 실측 raw 노트** (위 후기 시그널 전략 박스의 "사실 9" 참조). 10개 표본 분석으로 잡음·시술 사진 hit률·alt 보유율 raw 수치는 박음. 결정 1~4 의 옵션 채택 여부(A vs D vs B/C) 는 미확정.
+>
+> **FE 대표 이미지 시드 (2026-05-28 — Vision 입력 아님, 위 결정 박스 참조)**:
+>
+> 아래는 Vision 분석이 아니라 **FE 가 쓸 병원 대표 이미지 URL 회수 경로**. Vision 입력은 자체 사이트(A/D)로 동결됨.
+>
+> | 시드 | 출처 | 비고 |
+> |---|---|---|
+> | E. 네이버 photoViewer ibu 사진 | 네이버가 노출하는 병원 공식 사진 (`photoType="ibu"`, `businessName` 박힘) | ibu = 병원이 직접 올린 공식 사진. ugc/visitor 는 외부·후기라 대표 이미지 부적합 |
+> | F. 카카오 `my_store_notice.main_photo_url` → `panel3.photos[].url` | 사업자 본인 설정 대표 사진 우선, 없으면 사진 배열 폴백 | main_photo_url = mystore 등록 병원만(더서울·위담 O, 자생·춘원당 X). 폴백 `photos[]` 는 후기 사진이라 owner PII 메타 제거 후 URL 만 |
+>
+> 본체 흐름: 카카오 `parse_place` 가 `representative_image_url` 1개를 뽑아 DDB `KAKAO#PLACE` 에 저장 → BE `/api/hospitals/{id}` 응답·검색 카드에 노출. S3 미러는 핫링크 깨짐 대비 추후 (URL 저장만으로 PoC 충분). **개인정보**: 폴백 사진의 `kakaomap_review_photo_meta.owner` 는 저장 안 함 (URL 만).
 
 - [ ] `be/core/crawlers/site_crawler.py` (현 `crawler.py`) — 자체 사이트, **HTML 잡음 정제 추가** (이슈 [#13](https://github.com/BORB-CHOI/clinic-focus/issues/13))
   - 페이지 간 중복 단락 자동 검출 (한 사이트에서 N회 이상 반복 = 푸터/메뉴 판정)
@@ -298,9 +392,10 @@ SK = `entity` (S)
   - 상위 30~50개 포스트 URL → 본문 추출 (httpx + BS4)
   - 키워드 빈도 + 주제 분포 (TF-IDF 또는 Bedrock 임베딩 클러스터링)
   - `NAVER#BLOG` entity 적재
-- [ ] `be/core/crawlers/kakao_crawler.py` 확장 (현 `kakao_adapter.py`·`kakao_place_renderer.py` 기반) — **위 후기 시그널 전략 박스 결정 후 진입**
-  - 로컬 API 카테고리 HP8 (이미) + 장소 상세 페이지에서 리뷰 추출 (비공식 `place.map.kakao.com/main/v/{id}` · `comment/v/{id}`)
-  - `KAKAO#PLACE` + `KAKAO#REVIEWS` entity 적재
+- [~] 카카오 — **어댑터 완성, 크롤 실행만 남음** (2026-05-28, 커밋 `9d0f256`·`7d79ab8`)
+  - [x] 비공식 실측 완료 — 공식 `dapi.kakao.com` 으로 place_id 획득 → `place-api.map.kakao.com` panel3/reviews/blog httpx 단발(ncpt·Playwright 불필요). 사실 13~24
+  - [x] `be/adapters/kakao_place_adapter.py` — fetch + 순수 파서(parse_place/reviews/blog) + PII 제거 + place_id 검증. AI `build_signal_chunks` 가 소비할 형태(tags·키워드 빈도·블로그 시드)
+  - [ ] 1,084개에 실제 크롤 실행 → `KAKAO#PLACE`/`KAKAO#REVIEWS` DDB 적재 (외부 크롤 일괄 시점)
 - [ ] `be/core/crawlers/google_places_crawler.py` 신규
   - Places API: `findPlaceFromText` → `place_id` → `place/details` (`reviews` 필드 5개 한정 — 무료 tier)
   - `GOOGLE#PLACE` + `GOOGLE#REVIEWS` entity 적재
@@ -312,20 +407,39 @@ SK = `entity` (S)
 
 ### Phase C — AI 본체화 + 4 시그널 통합
 
-- [ ] `ai/scratch/` → `ai/` 본체 마이그레이션
-  - [ ] `ai/search/kb_store.py` 신규 — `ingest_hospital(hospital_id, signals: SignalBundle, metadata) -> None`
-  - [ ] `ai/search/kb_store.py` — `retrieve_hospital(query: SearchQuery) -> list[SearchResult]`
-  - [ ] `ai/__init__.py` export 갱신: 추가 `ingest_hospital`·`retrieve_hospital`, 제거 `index_hospital`·`search_similar`
-  - [ ] `ai/scratch/` 폴더 삭제
-- [ ] **`ingest_hospital` — 4 시그널 본문 합쳐 KB ingest**
-  - 본문 구성: `[자체 사이트 본문 page_type 우선순위] + [네이버 블로그 상위 N개 본문] + [네이버 플레이스 키워드 빈도] + [카카오 리뷰 키워드] + [구글 리뷰 키워드] + [AI 분류 결과·설명]`
-  - metadata 에 `signals_included: ["self_claim","blog","reviews_naver","reviews_kakao","reviews_google","vision"]` 박음 (어떤 시그널이 채워졌는지 추적)
-  - 빈 시그널은 본문에서 제외, metadata 키 자체 누락 (KB 가 빈 list/None 거절)
-- [ ] **`classify_hospital(crawl_data, external_signals, vision_results) -> Classification`** 재설계
-  - 입력: `CrawlData` + `ExternalSignalBundle` + `VisionResults`
-  - 4 시그널 각각 점수 계산 → 교차 검증
-  - 자칭 도배 페널티 (자칭 ↑ + 나머지 시그널 ↓ → 신뢰도 강제 감점)
-  - 신뢰도 약점 수정: `primary_focus=[]` 또는 데이터 부족 시 `confidence ≤ 50`·`level="정보 부족"` 강제 (run-log-2026-05-26.md 2건)
+> ✅ **결정 (2026-05-28, 사용자) — 임베딩·분류·설명 파이프라인 입력·시점**
+>
+> 세 산출물(CLASSIFICATION·임베딩 청크·DESCRIPTION)의 입력·실행 시점·범위·임베딩 관계를 분리해 못박는다. 배경: 현재 `index_hospital` 은 **병원당 벡터 1개**(청킹 없음)에 **DESCRIPTION 합본**을 임베딩 → 두 문제. ① 커버리지 — DESCRIPTION 이 시연 10개뿐이라 자연어 검색이 10개만 본다. ② 희석 — 4 시그널을 한 벡터에 합치면 강한 의료 신호가 잡신호(주차·친절·광고)와 평균돼 정확도 하락(데이터 많은 병원이 역설적으로 불리). **Titan 임베딩은 10개 제한이 없고 전체 자유**(§0-1)이므로, 검색 임베딩을 LLM(DESCRIPTION, 10개 한정)에 묶지 않고 **정제 원본 시그널 청크**로 전환해 풀커버한다.
+>
+> | 산출물 | 입력 | 실행 시점·범위 | 저장 | 임베딩 관계 |
+> |---|---|---|---|---|
+> | **CLASSIFICATION** (태깅·신뢰도) | 4 시그널(자칭 키워드·공공 진료과목/HIRA·블로그·후기 빈도) + 심평원 META | ingest **전**, **전체 1만** (룰 기반·LLM 없음·공짜) | DDB `CLASSIFICATION` + `META` GSI 키 | **연결** — 청크 metadata(`standard_specialty`·`primary_focus`·`confidence_score`·`sigungu`·`lat`/`lng`) 공급 |
+> | **임베딩 청크** | **정제 원본 시그널 텍스트**(시그널별 분리) | CLASSIFICATION **직후**, **전체 1만** (Titan·공짜) | 벡터 S3 (KB 경유) | **본체** — DESCRIPTION 아님 |
+> | **DESCRIPTION** (LLM 설명문) | 4 시그널 + CLASSIFICATION 결과 | **시연 10개만** (Haiku/Nova·비용 한정) | DDB `DESCRIPTION` | **분리** — 벡터 미포함, 상세페이지 표시용 |
+>
+> **청킹 전략**: 병원당 벡터 1개 ❌ → **시그널별 청크**(자칭/Vision/블로그/후기)로 분리, 각 청크에 `signal_type` + 위 CLASSIFICATION 메타 부착. KB ingest 시 한 병원을 **시그널별 문서로 나눠** 올려 signal 경계 유지(KB 크기 자동청킹은 각 문서 안에서만 동작 — 합본 1문서로 올리면 시그널 경계가 크기로 잘림). 쿼리는 가장 가까운 청크가 매칭 → 잡신호 청크는 안 걸리고 관련 청크만, "왜 걸렸나" 추적 가능.
+>
+> **정확도 방어 (이미 구현)**: `_build_meta_filter` 의 구·과목 필터 + `confidence_score ≥ 70` 게이팅 + 신뢰도 정렬 → 총망라(recall)로 가도 지리·과목·저신뢰 오매칭은 메타필터/재랭킹이 정리(precision). recall = 원본 청크, precision = 필터/재랭킹 역할분담.
+>
+> **의료법 §56③**: 후기·블로그 raw 는 임베딩 **입력**으로 허용(저장·임베딩 OK). 단 **검색 결과 화면에 매칭된 raw 청크(후기 본문·광고 문구) 노출 금지** — 이름·주력 태그·신뢰도 정제 필드만 표시.
+>
+> **표준 진료과목 보너스**: `standard_specialty` 는 심평원 공공데이터(HIRA 진료과목)로 상당 부분 채워져 LLM 없이도 메타필터 키 확보 가능.
+>
+> → 이 결정이 아래 `ingest_hospital` 본문 구성 항목의 "[AI 분류 결과·설명]" 포함 가정을 **갱신**: DESCRIPTION 은 임베딩 본문에서 **분리**하고, 임베딩 본문 = 시그널 원본 청크. CLASSIFICATION 결과는 본문이 아니라 **metadata** 로만 들어간다.
+>
+> ---
+
+- [x] **`ai/search/kb_store.py` 신규 — KB 경유 ingest/retrieve** (2026-05-28, 커밋 `665c496`·`cb502bb`)
+  - [x] `ingest_hospital(hospital_id, signal_chunks: dict[str,str], metadata, *, trigger_ingestion=False)` — 시그널별 `{id}/{signal_type}.txt` + metadata 사이드카 KB 적재. 청크 빌더(`build_signal_chunks`·`build_ingest_metadata`)는 호출자가 조립
+  - [x] `retrieve_hospital(query) -> list[SearchResult]` — KB Retrieve, team_id 필터 + 메타필터 + hospital_id dedup
+  - [x] `ai/__init__.py` export: `ingest_hospital`·`retrieve_hospital` 추가, `index_hospital`·`search_similar` 제거. 옛 `ai/search/vector_store.py`(S3 Vectors 직접) 삭제
+  - [x] 시그널별 청크 결정 적용 — CLASSIFICATION 은 metadata 로만, DESCRIPTION 임베딩 미포함, 빈 시그널 제외, 후기 청크는 키워드 빈도만(§56③)
+  - [ ] `ai/scratch/` 폴더 삭제 (probe·레퍼런스 보존 중 — 본체 안정화 후)
+  - [ ] 카카오/네이버/구글 시그널을 `build_signal_chunks` 에 연결 (현재 자체 사이트만 — 외부 크롤 DDB 적재 후)
+- [~] **`classify_hospital` 룰 경로 추가** (2026-05-28, 커밋 `ad26f37`·`f4804d0`)
+  - [x] `use_llm=False` 룰 단독 경로 — 자칭·블로그 키워드 룰 추출, Bedrock/Vision 0회, 전체 1만 적용. 룰 단독 신뢰도 상한 70 cap
+  - [x] 자칭 도배 페널티·교차 검증·표준과목 추론은 기존 룰 로직 재사용
+  - [ ] `external_signals`(카카오·네이버·구글)·`vision_results` 입력으로 4 시그널 완전 통합 — 외부 시그널 DDB 적재 후
 - [ ] **`generate_description` 4 시그널 종합**
   - 프롬프트 입력에 4 시그널 다 들어가도록 `ai/prompts/hospital_description.md` 갱신
   - 각 단락 `citations` 가 실제 그 단락이 인용한 시그널만 박도록 강제 (현재 자칭만 박힘)
@@ -379,7 +493,7 @@ SK = `entity` (S)
   - `FEEDBACK#{device_id}#{ts}` entity INSERT
   - 임계 도달 시 `ai.recompute_confidence` 비동기 호출 (EventBridge 안 쓰니 inline)
   - 201/409 응답 명세 그대로
-- [ ] `be/handlers/ingest_hospital.py` (현 `index_hospital.py`) — `run_index_pipeline` 함수에서 위 phase C 의 본체 함수들 순차 호출 (classify → extract → describe → related → ingest)
+- [~] `be/handlers/index_hospital.py` — `run_index_pipeline(hospital_id, *, demo=False)` 신 패턴 적용 (2026-05-28, 커밋 `4092e12`). demo=False 룰 베이스라인(classify use_llm=False → 분류 저장 → 시그널 청크 ingest), demo=True 만 LLM/Vision(설명·진료항목·관련병원). 파일명 `ingest_hospital.py` 로 rename 은 미적용
 - [ ] `be/handlers/api.py` CORS `allow_origins=["*"]` → CloudFront 도메인 + `localhost:5173`
 - [ ] 응답 포맷 일관성 — `{"data": ..., "meta": ...}` / `{"error": {...}}`
 - [ ] 표준 에러 코드 매핑 (`INVALID_PARAMETER` 422→400, `NOT_FOUND` 404, `DUPLICATE_FEEDBACK` 409, `AI_SERVICE_ERROR` 502)
@@ -416,7 +530,7 @@ SK = `entity` (S)
 - [ ] HIRA → 서울 5개구 풀커버 (이슈 [#18](https://github.com/BORB-CHOI/clinic-focus/issues/18) 의 "병원 목록 소스" 부분)
   - 강남 4과목 88개 → 5개구(강남·서초·송파·성동·중구) 4과목 ~1000개 → 5개구 전체 진료과목 ~1만
 - [ ] **풀크롤링 (1만 전체)** — 자체 사이트 + 외부 4소스(네이버 플레이스·블로그·카카오·구글). LLM·Vision 미사용
-- [ ] **룰 기반 분류 일괄 (트랙 A, 1만)** — `classify_hospital(crawl_data, external_signals, vision_results=None, use_vision=False)` 호출. self_claim + blog + reviews 시그널만 채움. Vision sub-block 은 None
+- [~] **룰 기반 분류 일괄 (트랙 A, 1만)** — 배치 스크립트 `be/scripts/run_classification.py` 준비 완료(커밋 `4092e12`): DDB 순회 → `classify_hospital(use_llm=False)` → 분류 저장 + 시그널 청크 ingest, 마지막 1회 trigger. **실제 1만 실행은 외부 크롤 일괄 후**. (현재 외부 시그널 미적재라 자체 사이트 시그널만 채워짐)
 - [ ] **LLM 시연 분류 (트랙 B, 10개)** — `MAX_LLM_DEMO_HOSPITALS=10` 환경변수 강제. 풀커버 결과 중 발표용 10개 선정 (강남, 진료과목 다양, 사이트 풍부)
 - [ ] **Vision 시연 (트랙 C, 같은 10개)** — `MAX_VISION_IMAGES=10` 환경변수 강제. Marketplace 구독 완료 전제. 같은 10개에 대해 트랙 B 결과와 비교 출력 (발표 자료용)
 - [ ] **`generate_description` 시연 (10개)** — 트랙 B·C 결과 합쳐 자연어 통합 설명 생성. 9990개는 `ai_description=null` 그대로 (FE 차등 렌더링)

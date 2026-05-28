@@ -1,0 +1,38 @@
+# 카카오 검색 — `m.map.kakao.com/actions/searchJson`
+# 사용자 캡처 + 2026-05-28 EC2 실측 (httpx 단발 호출, ncpt 불필요)
+#
+# 필수: PC UA + Referer=actions/searchView + Accept: application/json
+# 모바일 UA 또는 Referer 없으면 302 → kakao.com/500.ko.html (봇 차단)
+#
+# 응답 placeList[].confirmid 가 place_id. cate_name_depth2="병원" 필터로 의료기관 한정.
+
+GET https://m.map.kakao.com/actions/searchJson?type=PLACE&q={쿼리}&pageNo=1
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36
+Referer: https://m.map.kakao.com/actions/searchView
+Accept: application/json, text/javascript, */*; q=0.01
+X-Requested-With: XMLHttpRequest
+Accept-Language: ko-KR,ko;q=0.9
+
+# 응답 골격 (실측):
+# {
+#   "placeList": [
+#     {
+#       "confirmid": "27388604",        # place_id
+#       "name": "자생한방병원",
+#       "cate_name_depth1": "의료,건강",
+#       "cate_name_depth2": "병원",
+#       "cate_name_depth3": "한방병원",
+#       "reviewCount": 324,
+#       "tel": "1577-0033",
+#       "roadview": "...",              # roadview id
+#       ...
+#     }, ...
+#   ]
+# }
+#
+# 선택 파라미터(사용자 캡처에 박힌 것 — 우리는 안 박아도 동작):
+#   wxEnc / wyEnc      좌표 enc (영역 한정 검색)
+#   cidx               카테고리 인덱스
+#   sort               0=관련도 (기본), 1=거리, 2=정확도?
+#   rcode              지역 코드
+#   busStopCount / placeCount  카운트 힌트 (응답 캐싱용)

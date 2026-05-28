@@ -31,15 +31,17 @@ from ai import classify_hospital, generate_description
 | `extract_services_and_doctors` | `pipeline/extract.py` | 진료 항목·의료기기·의료진 추출 |
 | `analyze_images` | `pipeline/vision.py` | Bedrock Vision (Textract 제거됨 — 한국어 미지원) |
 | `embed_text` | `search/embed.py` | Titan Embed v2 (1024차원). 디버깅·실험용 — 운영 검색은 KB 내부 처리 |
-| `find_related_hospitals` | `search/related.py` | 같은 주력 + 빈자리 보완 추천 (KB Retrieve 경유로 재설계 예정) |
+| `find_related_hospitals` | `search/related.py` | 같은 주력 + 빈자리 보완 추천 (KB `retrieve_hospital` 경유) |
 | `recompute_confidence` / `aggregate_feedback_stats` | `search/feedback.py` | 피드백 반영 |
 
-### 재설계 대기 — PR `feat/ai/aws-clients`에서 처리 예정
+### KB 경유 전환 — 완료 (2026-05-28)
 
-| 옛 함수 | 새 함수 | 변경 사유 |
+| 옛 함수 (폐기·삭제됨) | 새 함수 | 변경 사유 |
 | --- | --- | --- |
-| `index_hospital` / `index_hospital_with_meta` (`search/vector_store.py`) | `ingest_hospital` (`search/kb_store.py` 신규) | S3 Vectors 직접 호출 → Bedrock KB DataSource S3 업로드 + ingestion job |
-| `search_similar` (`search/vector_store.py`) | `retrieve_hospital` (`search/kb_store.py`) | 자연어 검색은 KB Retrieve API 경유. 수동 카테고리 탐색은 BE DynamoDB GSI로 분리 |
+| `index_hospital` / `index_hospital_with_meta` (옛 `search/vector_store.py`) | `ingest_hospital` (`search/kb_store.py`) | S3 Vectors 직접 호출 → Bedrock KB DataSource S3 업로드 + ingestion job. 시그널별 청크 적재 |
+| `search_similar` (옛 `search/vector_store.py`) | `retrieve_hospital` (`search/kb_store.py`) | 자연어 검색은 KB Retrieve API 경유. 수동 카테고리 탐색은 BE DynamoDB GSI로 분리 |
+
+> `ai/search/vector_store.py` 는 삭제됨. `ai/__init__.py` 도 `ingest_hospital`·`retrieve_hospital` 만 export.
 
 > **2026-05-24 결정** — 강사 제공 KB `kmuproj-team-03` (ID `GTBJ6HLFDK`, Titan v2 셋팅) 사용으로 전환. `SafeRole-kmuproj-10`에 `s3vectors:*` 권한 없음이 확인됐고, 강사가 KB로 셋팅한 흐름을 따르는 것이 가이드와 일치. 자세한 건 `../docs/plans/task-queue.md` "진행 중인 결정사항" 참조.
 
@@ -97,9 +99,8 @@ from ai import classify_hospital, generate_description
 | 파일 | 설명 |
 | --- | --- |
 | `embed.py` | `embed_text` — Titan Embed v2 직접 호출, 1024차원 벡터 (디버깅·실험용) |
-| `vector_store.py` | (PR `feat/ai/aws-clients`에서 폐기 예정) — 기존 `index_hospital` · `search_similar`의 S3 Vectors 직접 호출 구현 |
-| `kb_store.py` (신규 예정) | `ingest_hospital` · `retrieve_hospital` — Bedrock KB DataSource S3 업로드 + Retrieve API |
-| `related.py` | `find_related_hospitals` — KB Retrieve 경유 추천 (재설계 예정) |
+| `kb_store.py` | `ingest_hospital`(시그널별 청크 KB 적재) · `retrieve_hospital`(KB Retrieve) · `build_signal_chunks` · `build_ingest_metadata`. 옛 `vector_store.py`(S3 Vectors 직접) 대체·삭제 |
+| `related.py` | `find_related_hospitals` — `retrieve_hospital`(KB Retrieve) 경유 추천 |
 | `feedback.py` | `aggregate_feedback_stats` · `recompute_confidence` — 피드백 집계 · 신뢰도 재계산 |
 
 ### `scripts/`

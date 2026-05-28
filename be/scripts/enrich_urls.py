@@ -2,7 +2,8 @@
 
 실행 순서:
   1단계: 네이버 지역 검색 API → search_hospital_multi_query (쿼리 다변화)
-  2단계: 카카오 로컬 검색 API → place_url → Playwright 렌더링 → 홈페이지 링크 추출
+  2단계: 카카오 로컬 검색 API → place_id → panel3 상세 API → summary.homepages 추출
+         (Playwright 제거 — panel3 httpx 단발이 homepages 를 직접 줌)
 
 URL 발견 후 URLValidator로 검증 → 유효한 경우만 DynamoDB 저장.
 
@@ -28,9 +29,8 @@ load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path
 
 from be.adapters.dynamo_adapter import DynamoAdapter
 from be.adapters.kakao_adapter import KakaoAdapter
-from be.adapters.kakao_place_renderer import KakaoPlaceRenderer
+from be.adapters.kakao_place_adapter import KakaoPlaceAdapter, extract_homepage
 from be.adapters.naver_map_adapter import NaverMapAdapter
-from be.core.browser_manager import BrowserManager
 from be.core.url_validator import URLValidator
 
 
@@ -117,7 +117,10 @@ async def run_step2_kakao(
     *,
     dry_run: bool = False,
 ) -> tuple[int, int]:
-    """2단계: 카카오 로컬 검색 → Playwright 장소 페이지 렌더링 → 홈페이지 URL 보강.
+    """2단계: 카카오 로컬 검색 → place_id → panel3 상세 → summary.homepages 보강.
+
+    panel3 의 `summary.homepages` 가 홈페이지·SNS·블로그·카페 URL 을 직접 주므로
+    `extract_homepage` 로 자체 도메인 1개를 골라 검증·저장한다 (Playwright 불필요).
 
     Returns:
         (kakao_found, validation_rejected)
@@ -127,26 +130,25 @@ async def run_step2_kakao(
         return 0, 0
 
     kakao = KakaoAdapter()
+    place_adapter = KakaoPlaceAdapter()
     found = 0
     rejected = 0
     total = len(no_url)
     start_time = time.time()
 
-    async with BrowserManager() as bm:
-        renderer = KakaoPlaceRenderer(bm)
-
+    try:
         for i, hospital in enumerate(no_url, 1):
             kakao_info = kakao.search_hospital(hospital.name, hospital.location.address)
-            place_url = (kakao_info or {}).get("place_url", "")
+            place_id = str((kakao_info or {}).get("id", ""))
 
-            if not place_url:
+            if not place_id:
                 await asyncio.sleep(0.15)
             else:
-                # Playwright로 카카오 장소 페이지에서 홈페이지 URL 추출
-                homepage = await renderer.extract_homepage_url(place_url)
+                # panel3 상세 API → summary.homepages 에서 자체 홈페이지 추출
+                panel3 = place_adapter.fetch_panel3(place_id)
+                homepage = extract_homepage(panel3) if panel3 else None
 
                 if homepage:
-                    # URL 유효성 검증
                     validated_url = await validator.validate(homepage)
                     if validated_url:
                         if not dry_run:
@@ -156,7 +158,8 @@ async def run_step2_kakao(
                     else:
                         rejected += 1
 
-                await asyncio.sleep(0.5)  # Playwright는 느리므로 0.5초 간격
+                # 회색지대 API — 요청 간격 유지 (rate-limit 미실측)
+                await asyncio.sleep(0.3)
 
             # 20개마다 진행률 + ETA 출력
             if i % 20 == 0:
@@ -172,6 +175,8 @@ async def run_step2_kakao(
                     f"발견: {found} | 검증실패: {rejected} | "
                     f"속도: {rate:.1f}건/초 | ETA: {eta_min}분 {eta_sec}초"
                 )
+    finally:
+        place_adapter.close()
 
     return found, rejected
 
@@ -203,8 +208,8 @@ async def main() -> None:
     )
     print(f"  → 네이버 발견: {naver_found}개 / 검증 실패: {naver_rejected}개 / 잔여: {len(still_missing)}개")
 
-    # ── 2단계: 카카오 (Playwright) ─────────────────────────────
-    print(f"\n[ 2단계 ] 카카오 장소 페이지 Playwright 렌더링 ({len(still_missing)}개 대상)")
+    # ── 2단계: 카카오 (panel3 상세 API) ────────────────────────
+    print(f"\n[ 2단계 ] 카카오 panel3 상세 API → homepages 추출 ({len(still_missing)}개 대상)")
     print("-" * 60)
     kakao_found, kakao_rejected = await run_step2_kakao(
         db, still_missing, validator
