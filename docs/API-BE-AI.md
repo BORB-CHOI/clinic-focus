@@ -269,17 +269,19 @@ PoC에서는 **3트랙으로 분기**한다 (자세한 건 `../ai/CLAUDE.md` "AI
 - `BedrockInvocationError` — Bedrock 호출 실패
 - `InsufficientDataError` — 크롤링 데이터가 너무 빈약 (페이지 0개, 또는 전부 빈 텍스트)
 
-#### 현 구현 약점 (V2에서 수정 예정)
+#### 신뢰도 계산 — 옛 약점과 해소 (2026-05-28)
 
 2026-05-26 강남구 14개 병원 e2e 검증(PR [#25](https://github.com/BORB-CHOI/clinic-focus/pull/25), scratch 우회로 — 제거됨)에서 확인된 신뢰도 계산 버그. 룰 단독 경로는 이후 `_cap_rule_only_confidence`(70 상한) + 빈 페이지 `InsufficientDataError` 로 일부 완화됨 — 아래 항목 전수 적용 여부는 재검증 필요.
 
 - **`5. 강남우태하피부과의원`** — `primary_focus=[]`(빈 리스트)임에도 `confidence.score=100` 출력. 자칭 컨셉을 추출하지 못한 데이터 부족 상황인데 신뢰도가 최고값으로 잡힘.
 - **`12. 개포센트럴이비인후과의원`** — 병원 이름에 "이비인후과"가 명시돼 있음에도 피부과로 오분류, `primary_focus=[]`, `confidence.score=100`. 크롤 성공 1페이지·이미지 0개인 데이터 부족 케이스임에도 confidence가 낮아지지 않음.
 
-두 케이스 모두 `classify_hospital`의 `compute_confidence` 로직이 **빈 크롤 데이터·`primary_focus=[]` 조건을 감지하지 못함**에서 발생. 현 로직은 4 시그널 점수가 모두 0이어도 confidence 산식에서 높은 값이 나오는 경로가 존재. V2 AI 트랙 B sprint에서 다음을 수정 예정:
-- `primary_focus`가 비어있으면 `confidence.score`를 `CONFIDENCE_THRESHOLD_LOW`(기본 70) 미만으로 강제하고 `level="정보 부족"` 처리
-- 크롤 성공 페이지 수·이미지 수가 임계치 미만이면 `InsufficientDataError`를 던지거나 confidence에 페널티 부여
-- 외부 시그널(카카오/네이버/구글)이 전부 None(외부 크롤링 미완료)이면 confidence 에 추가 패널티 부여 (단일 소스 과신 방지)
+두 케이스 모두 `_cross_validate_signals` 가 **focus 후보를 하나도 못 만들 때 전체 가중치(합≈1.0)를 기여도로 반환** → `_compute_confidence` 에서 score=100 "확실" 이 나오던 버그. 아래로 해소됨(2026-05-28):
+
+- ✅ **focus 후보 0 → 기여도 0** (`_cross_validate_signals`). `primary_focus=[]` 이면 score≈0 → `level="정보 부족"`. 회귀 테스트 `TestEmptyFocusConfidence` 추가
+- ✅ **빈 페이지 → `InsufficientDataError`** (`classify_hospital` 진입 검증). 페이지 0개·전부 빈 html_text 면 분류 자체를 막음
+- ✅ **룰 단독(use_llm=False) 경로 70 cap** (`_cap_rule_only_confidence`). LLM·Vision 교차검증 없는 경로는 "확실" 불가
+- ⚠️ 잔여 — 외부 시그널 전부 None 일 때의 **명시적** 추가 페널티는 미적용. 현재는 외부 기여도가 자연히 낮아지는 것에 의존(단일 소스 과신 방지를 명시 페널티로 강화할지는 실데이터 후 판단)
 
 #### 사용 예시
 ```python
