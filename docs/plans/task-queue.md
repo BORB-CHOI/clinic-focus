@@ -406,15 +406,38 @@ SK = `entity` (S)
 
 ### Phase C — AI 본체화 + 4 시그널 통합
 
+> ✅ **결정 (2026-05-28, 사용자) — 임베딩·분류·설명 파이프라인 입력·시점**
+>
+> 세 산출물(CLASSIFICATION·임베딩 청크·DESCRIPTION)의 입력·실행 시점·범위·임베딩 관계를 분리해 못박는다. 배경: 현재 `index_hospital` 은 **병원당 벡터 1개**(청킹 없음)에 **DESCRIPTION 합본**을 임베딩 → 두 문제. ① 커버리지 — DESCRIPTION 이 시연 10개뿐이라 자연어 검색이 10개만 본다. ② 희석 — 4 시그널을 한 벡터에 합치면 강한 의료 신호가 잡신호(주차·친절·광고)와 평균돼 정확도 하락(데이터 많은 병원이 역설적으로 불리). **Titan 임베딩은 10개 제한이 없고 전체 자유**(§0-1)이므로, 검색 임베딩을 LLM(DESCRIPTION, 10개 한정)에 묶지 않고 **정제 원본 시그널 청크**로 전환해 풀커버한다.
+>
+> | 산출물 | 입력 | 실행 시점·범위 | 저장 | 임베딩 관계 |
+> |---|---|---|---|---|
+> | **CLASSIFICATION** (태깅·신뢰도) | 4 시그널(자칭 키워드·공공 진료과목/HIRA·블로그·후기 빈도) + 심평원 META | ingest **전**, **전체 1만** (룰 기반·LLM 없음·공짜) | DDB `CLASSIFICATION` + `META` GSI 키 | **연결** — 청크 metadata(`standard_specialty`·`primary_focus`·`confidence_score`·`sigungu`·`lat`/`lng`) 공급 |
+> | **임베딩 청크** | **정제 원본 시그널 텍스트**(시그널별 분리) | CLASSIFICATION **직후**, **전체 1만** (Titan·공짜) | 벡터 S3 (KB 경유) | **본체** — DESCRIPTION 아님 |
+> | **DESCRIPTION** (LLM 설명문) | 4 시그널 + CLASSIFICATION 결과 | **시연 10개만** (Haiku/Nova·비용 한정) | DDB `DESCRIPTION` | **분리** — 벡터 미포함, 상세페이지 표시용 |
+>
+> **청킹 전략**: 병원당 벡터 1개 ❌ → **시그널별 청크**(자칭/Vision/블로그/후기)로 분리, 각 청크에 `signal_type` + 위 CLASSIFICATION 메타 부착. KB ingest 시 한 병원을 **시그널별 문서로 나눠** 올려 signal 경계 유지(KB 크기 자동청킹은 각 문서 안에서만 동작 — 합본 1문서로 올리면 시그널 경계가 크기로 잘림). 쿼리는 가장 가까운 청크가 매칭 → 잡신호 청크는 안 걸리고 관련 청크만, "왜 걸렸나" 추적 가능.
+>
+> **정확도 방어 (이미 구현)**: `_build_meta_filter` 의 구·과목 필터 + `confidence_score ≥ 70` 게이팅 + 신뢰도 정렬 → 총망라(recall)로 가도 지리·과목·저신뢰 오매칭은 메타필터/재랭킹이 정리(precision). recall = 원본 청크, precision = 필터/재랭킹 역할분담.
+>
+> **의료법 §56③**: 후기·블로그 raw 는 임베딩 **입력**으로 허용(저장·임베딩 OK). 단 **검색 결과 화면에 매칭된 raw 청크(후기 본문·광고 문구) 노출 금지** — 이름·주력 태그·신뢰도 정제 필드만 표시.
+>
+> **표준 진료과목 보너스**: `standard_specialty` 는 심평원 공공데이터(HIRA 진료과목)로 상당 부분 채워져 LLM 없이도 메타필터 키 확보 가능.
+>
+> → 이 결정이 아래 `ingest_hospital` 본문 구성 항목의 "[AI 분류 결과·설명]" 포함 가정을 **갱신**: DESCRIPTION 은 임베딩 본문에서 **분리**하고, 임베딩 본문 = 시그널 원본 청크. CLASSIFICATION 결과는 본문이 아니라 **metadata** 로만 들어간다.
+>
+> ---
+
 - [ ] `ai/scratch/` → `ai/` 본체 마이그레이션
   - [ ] `ai/search/kb_store.py` 신규 — `ingest_hospital(hospital_id, signals: SignalBundle, metadata) -> None`
   - [ ] `ai/search/kb_store.py` — `retrieve_hospital(query: SearchQuery) -> list[SearchResult]`
   - [ ] `ai/__init__.py` export 갱신: 추가 `ingest_hospital`·`retrieve_hospital`, 제거 `index_hospital`·`search_similar`
   - [ ] `ai/scratch/` 폴더 삭제
-- [ ] **`ingest_hospital` — 4 시그널 본문 합쳐 KB ingest**
-  - 본문 구성: `[자체 사이트 본문 page_type 우선순위] + [네이버 블로그 상위 N개 본문] + [네이버 플레이스 키워드 빈도] + [카카오 리뷰 키워드] + [구글 리뷰 키워드] + [AI 분류 결과·설명]`
-  - metadata 에 `signals_included: ["self_claim","blog","reviews_naver","reviews_kakao","reviews_google","vision"]` 박음 (어떤 시그널이 채워졌는지 추적)
-  - 빈 시그널은 본문에서 제외, metadata 키 자체 누락 (KB 가 빈 list/None 거절)
+- [ ] **`ingest_hospital` — 4 시그널 본문 **시그널별 청크**로 KB ingest** (위 2026-05-28 결정 박스 적용)
+  - 청크 분리: `[자체 사이트 본문 page_type 우선순위]` · `[네이버 블로그 상위 N개 본문]` · `[네이버 플레이스 키워드 빈도]` · `[카카오 리뷰/태그 키워드]` · `[구글 리뷰 키워드]` · `[Vision 결과]` — 각각 별도 문서로 올려 signal 경계 유지
+  - **AI 분류 결과·DESCRIPTION 은 본문 미포함**: CLASSIFICATION 은 청크 metadata 로만, DESCRIPTION(10개)은 임베딩과 분리된 상세페이지 표시용
+  - 각 청크 metadata 에 `signal_type` + `standard_specialty`·`primary_focus`·`confidence_score`·`sigungu`·`lat`/`lng`(CLASSIFICATION 공급)
+  - 빈 시그널은 청크 자체 생성 안 함, metadata 키 누락 (KB 가 빈 list/None 거절)
 - [ ] **`classify_hospital(crawl_data, external_signals, vision_results) -> Classification`** 재설계
   - 입력: `CrawlData` + `ExternalSignalBundle` + `VisionResults`
   - 4 시그널 각각 점수 계산 → 교차 검증
