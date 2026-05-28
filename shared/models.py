@@ -187,6 +187,25 @@ class KakaoBlog(BaseModel):
     seeds: list[KakaoBlogSeed] = []
 
 
+class NaverBlogPost(BaseModel):
+    """네이버 블로그 검색 결과 1건. v1/search/blog 응답 정제 (HTML 태그 제거)."""
+    model_config = ConfigDict(extra="ignore")
+
+    title: str = ""
+    link: str = ""           # 블로그 포스트 URL (BlogSignal 시드)
+    description: str = ""    # 검색 API 발췌 본문 (키워드 추출 입력, 화면 노출 금지)
+    post_date: str | None = None
+
+
+class NaverBlog(BaseModel):
+    """parse_naver_blog() 출력 — DDB NAVER#BLOG entity. 블로그 시그널(20%)."""
+    model_config = ConfigDict(extra="ignore")
+
+    total: int | None = None
+    keyword_frequency: dict[str, int] = {}  # 발췌 본문 키워드 빈도 (자체 추출)
+    posts: list[NaverBlogPost] = []
+
+
 class NaverPlace(BaseModel):
     """네이버 플레이스 정제본 — DDB NAVER#PLACE / NAVER#PLACE#REVIEWS.
 
@@ -387,6 +406,9 @@ class ExcludedService(BaseModel):
 
     name: str
     reason: str
+    # 이 병원이 다루지 않는 분야의 동네 대안 병원 ID — find_related_hospitals 가 역으로 채움.
+    # 상세페이지 ⑧ "안 다루는 분야 옆 대안" 링크용. 비면 대안 미발견.
+    alternative_hospital_ids: list[str] = []
 
 
 class Equipment(BaseModel):

@@ -1,0 +1,254 @@
+[
+  {
+    "data": {
+      "visitorReviews": {
+        "items": [
+          {
+            "id": "6a106f033304626f2d6a7884",
+            "reviewId": "6a106f033304626f2d6a7895",
+            "rating": null,
+            "author": {
+              "id": "2VLeL",
+              "nickname": "Upang",
+              "from": "NAVER",
+              "imageUrl": null,
+              "objectId": "5da924078f87a842bc8f4a72",
+              "url": "https://m.place.naver.com/my/5da924078f87a842bc8f4a72/review?v=2",
+              "borderImageUrl": null
+            },
+            "body": "김수헌 원장님이 척추 통증에 대한 진료 봐주셨어요. \n제 통증에 대한 자세한 상담에 약 처방까지 최고였어요~ 아프지 않는 게 제일 좋겠지만ㅠ 불가피하게 또 허리가 아프게 되면 다시 찾아뵙겠습니다. 감사해요~",
+            "visitCount": 3,
+            "viewCount": 594,
+            "visited": "5.22.금",
+            "visitedDate": "2026.05.22.",
+            "created": "5.22.금",
+            "themes": [],
+            "votedKeywords": [],
+            "userIdno": "2VLeL",
+            "loginIdno": "",
+            "nickname": null,
+            "reactionStat": {
+              "totalCount": 0,
+              "typeCount": [
+                {
+                  "name": "fun",
+                  "count": 0
+                },
+                {
+                  "name": "helpful",
+                  "count": 0
+                },
+                {
+                  "name": "wannago",
+                  "count": 0
+                },
+                {
+                  "name": "cool",
+                  "count": 0
+                }
+              ]
+            }
+          },
+          {
+            "id": "6a06e3f54db001fdd8c27171",
+            "reviewId": "6a06e3f54db001fdd8c27188",
+            "rating": null,
+            "author": {
+              "id": "6gLH9",
+              "nickname": "Qazwsxedcplm",
+              "from": "NAVER",
+              "imageUrl": "https://myplace-phinf.pstatic.net/20230715_256/1689383607470o62UA_JPEG/IMG_1647.jpeg",
+              "objectId": "5f2411dd9ec8258e4a830341",
+              "url": "https://m.place.naver.com/my/5f2411dd9ec8258e4a830341/review?v=2",
+              "borderImageUrl": null
+            },
+            "body": "어깨 통증으로 인해 방문했습니다\n원장님께 진료를 받았는데 너무 친절하고 다정하셔서 정말 감동받았습니다\n환자가 많아서 피곤하시고 힘드실텐데 한명 한명다정하게 해주시는 것을 보니 성품이 정말 좋으시고 체력도 엄청 좋으실 것 같다는 생각도 들었어요 \n다정도 체력이라는 말이 있잖아요?!\n왜 아픈지에 대해 자세히 설명해주시고 어떤 점을 주의해야 하는지도 자세히 설명해주셨습니다\n처음 왔는데 다음에 아프게 되면 여기를 또 방문할 것 같아요",
+            "visitCount": 1,
+            "viewCount": 1478,
+            "visited": "5.15.금",
+            "visitedDate": "2026.05.15.",
+            "created": "5.15.금",
+            "themes": null,
+            "votedKeywords": [],
+            "userIdno": "6gLH9",
+            "loginIdno": "",
+            "nickname": null,
+            "reactionStat": {
+              "totalCount": 0,
+              "typeCount": [
+                {
+                  "name": "fun",
+                  "count": 0
+                },
+                {
+                  "name": "helpful",
+                  "count": 0
+                },
+                {
+                  "name": "wannago",
+                  "count": 0
+                },
+                {
+                  "name": "cool",
+                  "count": 0
+                }
+              ]
+            }
+          },
+          {
+            "id": "6a04109c3e3712ff1471c073",
+            "reviewId": "6a04109c3e3712ff1471c085",
+            "rating": null,
+            "author": {
+              "id": "429VX",
+              "nickname": "김경복48",
+              "from": "NAVER",
+              "imageUrl": null,
+              "objectId": "5daacfe48f87a842bc78c7c4",
+              "url": "https://m.place.naver.com/my/5daacfe48f87a842bc78c7c4/review?v=2",
+              "borderImageUrl": null
+            },
+            "body": "Good good good!",
+            "visitCount": 1,
+            "viewCount": 1757,
+            "visited": "5.13.수",
+            "visitedDate": "2026.05.13.",
+            "created": "5.13.수",
+            "themes": null,
+            "votedKeywords": [],
+            "userIdno": "429VX",
+            "loginIdno": "",
+            "nickname": null,
+            "reactionStat": {
+              "totalCount": 0,
+              "typeCount": [
+                {
+                  "name": "fun",
+                  "count": 0
+                },
+                {
+                  "name": "helpful",
+                  "count": 0
+                },
+                {
+                  "name": "wannago",
+                  "count": 0
+                },
+                {
+                  "name": "cool",
+                  "count": 0
+                }
+              ]
+            }
+          }
+        ],
+        "starDistribution": null,
+        "total": 291,
+        "score": null
+      }
+    }
+  },
+  {
+    "data": {
+      "visitorReviewStats": {
+        "id": "778531046",
+        "name": null,
+        "review": {
+          "avgRating": 4.02,
+          "totalCount": 348,
+          "scores": [
+            {
+              "count": 10,
+              "score": null
+            },
+            {
+              "count": 3,
+              "score": null
+            },
+            {
+              "count": 1,
+              "score": null
+            },
+            {
+              "count": 1,
+              "score": null
+            },
+            {
+              "count": 2,
+              "score": null
+            },
+            {
+              "count": 8,
+              "score": null
+            },
+            {
+              "count": 23,
+              "score": null
+            },
+            {
+              "count": 12,
+              "score": null
+            },
+            {
+              "count": 50,
+              "score": null
+            }
+          ],
+          "starDistribution": [
+            {
+              "count": 10,
+              "score": "0.5"
+            },
+            {
+              "count": 3,
+              "score": "1.0"
+            },
+            {
+              "count": 0,
+              "score": "1.5"
+            },
+            {
+              "count": 1,
+              "score": "2.0"
+            },
+            {
+              "count": 1,
+              "score": "2.5"
+            },
+            {
+              "count": 2,
+              "score": "3.0"
+            },
+            {
+              "count": 8,
+              "score": "3.5"
+            },
+            {
+              "count": 23,
+              "score": "4.0"
+            },
+            {
+              "count": 12,
+              "score": "4.5"
+            },
+            {
+              "count": 50,
+              "score": "5.0"
+            }
+          ],
+          "imageReviewCount": 36,
+          "authorCount": 64,
+          "maxSingleReviewScoreCount": 50,
+          "maxScoreWithMaxCount": "5.0"
+        },
+        "analysis": {
+          "themes": [],
+          "menus": [],
+          "votedKeyword": null
+        },
+        "visitorReviewsTotal": 356,
+        "ratingReviewsTotal": 65
+      }
+    }
+  }
+]

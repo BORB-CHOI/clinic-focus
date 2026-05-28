@@ -316,7 +316,25 @@ primary_topics는 아래에서 선택:
 ---"""
 
 
-def _analyze_blog(crawl_data: CrawlData) -> BlogSignal:
+def _naver_blog_text(naver_blog) -> str:
+    """네이버 블로그 posts 의 title + description 을 합쳐 반환 (키워드 추출 입력).
+
+    naver_blog 는 NaverBlog 모델 또는 parse_naver_blog() dict. 없으면 "".
+    작성자 PII 는 parse 단계에서 이미 제거됨.
+    """
+    nb = _as_dict(naver_blog)
+    if not nb:
+        return ""
+    parts: list[str] = []
+    for post in (nb.get("posts") or []):
+        title = (post.get("title") or "") if isinstance(post, dict) else getattr(post, "title", "")
+        desc = (post.get("description") or "") if isinstance(post, dict) else getattr(post, "description", "")
+        if title or desc:
+            parts.append(f"{title} {desc}".strip())
+    return "\n".join(parts)
+
+
+def _analyze_blog(crawl_data: CrawlData, naver_blog=None) -> BlogSignal:
     """블로그 키워드 분석.
 
     LLM 호출로 주제를 추출하고, 단순 키워드 카운팅도 병행한다.
@@ -326,10 +344,14 @@ def _analyze_blog(crawl_data: CrawlData) -> BlogSignal:
         p for p in crawl_data.pages
         if p.page_type == "blog" and p.html_text.strip()
     ]
-    if not blog_pages:
+    naver_text = _naver_blog_text(naver_blog)
+    if not blog_pages and not naver_text:
         return BlogSignal(total_posts=0, keyword_frequency={}, primary_topics=[])
 
+    # 자체 사이트 blog + 네이버 블로그 발췌 본문 합산
     combined_text = "\n\n".join(p.html_text for p in blog_pages)
+    if naver_text:
+        combined_text = f"{combined_text}\n\n{naver_text}" if combined_text else naver_text
     keyword_counter = _count_medical_keywords(combined_text)
 
     # LLM 호출로 주제 추출 (실패 시 카운팅 결과만 사용)
@@ -360,8 +382,11 @@ def _analyze_blog(crawl_data: CrawlData) -> BlogSignal:
                 focus_votes[focus] += 1
         primary_topics = [f for f, _ in focus_votes.most_common(3)]
 
+    nb = _as_dict(naver_blog)
+    naver_post_count = len(nb.get("posts") or []) if nb else 0
+
     return BlogSignal(
-        total_posts=len(blog_pages),
+        total_posts=len(blog_pages) + naver_post_count,
         keyword_frequency=dict(keyword_counter.most_common(20)),
         primary_topics=primary_topics,
     )
@@ -413,9 +438,18 @@ def _analyze_reviews(
             except (ValueError, TypeError, InvalidOperation):
                 pass
 
-    # -- 네이버 키워드 통계 합산 --
+    # -- 네이버 키워드 통계 합산 (비어 있으면 후기 본문에서 직접 추출 — 실측 사실 8:
+    #    네이버는 병원 카테고리 키워드 통계를 주지 않으므로 keyword_stats 가 보통 빈 dict) --
     if naver_d:
-        for kw, cnt in (naver_d.get("keyword_stats") or {}).items():
+        naver_kw = naver_d.get("keyword_stats") or {}
+        if not naver_kw:
+            review_items = naver_d.get("reviews") or []
+            combined_naver_text = " ".join(
+                (it.get("body") or "") if isinstance(it, dict) else getattr(it, "body", "")
+                for it in review_items
+            )
+            naver_kw = dict(_count_medical_keywords(combined_naver_text))
+        for kw, cnt in naver_kw.items():
             try:
                 merged_keyword_freq[str(kw)] += int(cnt)
             except (ValueError, TypeError, InvalidOperation):
@@ -470,6 +504,13 @@ def _analyze_reviews(
                 else getattr(item, "text", "")
             ) or ""
             review_text_parts.append(text)
+    if naver_d:
+        for item in (naver_d.get("reviews") or []):
+            body = (
+                item.get("body") if isinstance(item, dict)
+                else getattr(item, "body", "")
+            ) or ""
+            review_text_parts.append(body)
 
     primary_topics: list[str] = []
     if review_text_parts:
@@ -928,20 +969,23 @@ def _extract_self_claim_rule(crawl_data: CrawlData) -> SelfClaimSignal:
 # ---------------------------------------------------------------------------
 
 
-def _analyze_blog_rule(crawl_data: CrawlData) -> BlogSignal:
+def _analyze_blog_rule(crawl_data: CrawlData, naver_blog=None) -> BlogSignal:
     """블로그 키워드 분석 — 룰 기반 (Bedrock 미호출).
 
-    page_type=="blog" 페이지에서 _count_medical_keywords 로 빈도를 카운트하고
-    _KEYWORD_TO_FOCUS 로 primary_topics 를 매핑한다.
+    자체 사이트 blog 페이지 + 네이버 블로그 발췌 본문에서 _count_medical_keywords 로
+    빈도를 카운트하고 _KEYWORD_TO_FOCUS 로 primary_topics 를 매핑한다.
     """
     blog_pages = [
         p for p in crawl_data.pages
         if p.page_type == "blog" and p.html_text.strip()
     ]
-    if not blog_pages:
+    naver_text = _naver_blog_text(naver_blog)
+    if not blog_pages and not naver_text:
         return BlogSignal(total_posts=0, keyword_frequency={}, primary_topics=[])
 
     combined_text = "\n\n".join(p.html_text for p in blog_pages)
+    if naver_text:
+        combined_text = f"{combined_text}\n\n{naver_text}" if combined_text else naver_text
     keyword_counter = _count_medical_keywords(combined_text)
 
     # primary_topics: 상위 5개 키워드를 focus 로 매핑 (중복 제거, 투표 순)
@@ -951,8 +995,11 @@ def _analyze_blog_rule(crawl_data: CrawlData) -> BlogSignal:
             focus_votes[focus] += 1
     primary_topics = [f for f, _ in focus_votes.most_common(3)]
 
+    nb = _as_dict(naver_blog)
+    naver_post_count = len(nb.get("posts") or []) if nb else 0
+
     return BlogSignal(
-        total_posts=len(blog_pages),
+        total_posts=len(blog_pages) + naver_post_count,
         keyword_frequency=dict(keyword_counter.most_common(20)),
         primary_topics=primary_topics,
     )
@@ -971,6 +1018,7 @@ def classify_hospital(
     kakao_reviews=None,
     kakao_blog=None,
     naver_reviews=None,
+    naver_blog=None,
     google_reviews=None,
 ) -> Classification:
     """크롤링 데이터를 받아 4 시그널 교차 검증으로 병원 주력 분야를 분류한다.
@@ -1057,11 +1105,11 @@ def classify_hospital(
         except Exception as exc:
             logger.warning("Vision 분석 실패, 계속 진행: %s", exc)
 
-    # 4. 블로그 키워드 분석
+    # 4. 블로그 키워드 분석 — 자체 사이트 + 네이버 블로그 발췌 본문
     if use_llm:
-        blog_signal = _analyze_blog(crawl_data)
+        blog_signal = _analyze_blog(crawl_data, naver_blog)
     else:
-        blog_signal = _analyze_blog_rule(crawl_data)
+        blog_signal = _analyze_blog_rule(crawl_data, naver_blog)
     logger.info(
         "블로그 분석 완료 (%s) — posts=%d topics=%s",
         "LLM" if use_llm else "룰",
