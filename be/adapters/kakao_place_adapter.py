@@ -22,10 +22,13 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlsplit
 
 import httpx
+
+if TYPE_CHECKING:
+    from shared.models import KakaoBlog, KakaoPlace, KakaoReviews
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +68,12 @@ class KakaoPlaceAdapter:
 
     def __init__(self, timeout: float = 15.0) -> None:
         self._client = httpx.Client(timeout=timeout)
+
+    def __enter__(self) -> "KakaoPlaceAdapter":
+        return self
+
+    def __exit__(self, *exc) -> None:
+        self.close()
 
     @staticmethod
     def _headers(place_id: str) -> dict[str, str]:
@@ -163,6 +172,35 @@ def _representative_image(panel3: dict[str, Any]) -> str | None:
     return None
 
 
+def _flatten_address(address: Any) -> str | None:
+    """summary.address(dict 또는 str) → 표시용 문자열 1개.
+
+    카카오는 address 를 {disp·road·jibun·...} dict 로 준다. disp(표시 주소) 우선,
+    없으면 road → jibun 폴백. 이미 문자열이면 그대로.
+    """
+    if isinstance(address, str):
+        return address or None
+    if isinstance(address, dict):
+        for key in ("disp", "road", "jibun"):
+            val = address.get(key)
+            if isinstance(val, str) and val.strip():
+                return val
+    return None
+
+
+def _flatten_phones(phone_numbers: Any) -> list[str]:
+    """summary.phone_numbers([{tel: ...}] 또는 [str]) → 전화번호 문자열 리스트."""
+    result: list[str] = []
+    for item in phone_numbers or []:
+        if isinstance(item, str) and item.strip():
+            result.append(item)
+        elif isinstance(item, dict):
+            tel = item.get("tel")
+            if isinstance(tel, str) and tel.strip():
+                result.append(tel)
+    return result
+
+
 def parse_place(panel3: dict[str, Any], place_id: str) -> dict[str, Any]:
     """panel3 raw → DDB `KAKAO#PLACE` entity.
 
@@ -183,8 +221,8 @@ def parse_place(panel3: dict[str, Any], place_id: str) -> dict[str, Any]:
     return {
         "place_id": place_id,
         "name": summary.get("name"),
-        "address": summary.get("address"),
-        "phone_numbers": summary.get("phone_numbers") or [],
+        "address": _flatten_address(summary.get("address")),
+        "phone_numbers": _flatten_phones(summary.get("phone_numbers")),
         "homepage_url": extract_homepage(panel3),
         "homepages_raw": (summary.get("homepages") or []),
         "category": {
@@ -277,3 +315,29 @@ def parse_blog(blog_json: dict[str, Any]) -> dict[str, Any]:
         "total_posts": blog_json.get("review_count"),
         "seeds": seeds,
     }
+
+
+# ---------------------------------------------------------------------------
+# 모델 승격 — parse_* dict 를 shared Pydantic 모델로 변환
+#
+# parse_* 는 DDB 적재(dict 필요)·오프라인 테스트 호환을 위해 dict 를 유지한다.
+# to_kakao_* 는 경계(핸들러·AI 소비 시점)에서 타입 검증을 거는 승격 경로.
+# kb_store/classify 는 dict·모델 둘 다 받으므로 어느 쪽을 넘겨도 동작한다.
+# ---------------------------------------------------------------------------
+
+def to_kakao_place(parsed: dict[str, Any]) -> "KakaoPlace":
+    """parse_place() dict → KakaoPlace 모델."""
+    from shared.models import KakaoPlace
+    return KakaoPlace.model_validate(parsed)
+
+
+def to_kakao_reviews(parsed: dict[str, Any]) -> "KakaoReviews":
+    """parse_reviews() dict → KakaoReviews 모델."""
+    from shared.models import KakaoReviews
+    return KakaoReviews.model_validate(parsed)
+
+
+def to_kakao_blog(parsed: dict[str, Any]) -> "KakaoBlog":
+    """parse_blog() dict → KakaoBlog 모델."""
+    from shared.models import KakaoBlog
+    return KakaoBlog.model_validate(parsed)

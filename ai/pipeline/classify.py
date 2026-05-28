@@ -18,6 +18,7 @@ import os
 import re
 from collections import Counter
 from datetime import datetime, timezone
+from decimal import InvalidOperation
 from typing import TYPE_CHECKING, Any
 
 # bedrock_client 는 boto3 에 의존하므로 함수 호출 시점까지 import 를 지연한다.
@@ -36,6 +37,11 @@ from shared.models import (
     SelfClaimSignal,
     SignalContributions,
     VisionSignal,
+    # 외부 플랫폼 시그널 타입 힌트용 (TYPE_CHECKING 없이 런타임 import — 순환 없음)
+    GoogleReviews,
+    KakaoPlace,
+    KakaoReviews,
+    NaverPlace,
 )
 
 logger = logging.getLogger(__name__)
@@ -138,6 +144,26 @@ _KEYWORD_TO_FOCUS: dict[str, list[str]] = {
     "망막":         ["망막"],
     "황반":         ["망막"],
 }
+
+
+# ---------------------------------------------------------------------------
+# 내부 헬퍼 — 외부 시그널 입력 정규화
+# ---------------------------------------------------------------------------
+
+def _as_dict(obj) -> dict | None:
+    """외부 시그널 입력을 dict 로 정규화한다.
+
+    dict 또는 Pydantic 모델(model_dump 보유) 둘 다 수용한다.
+    kb_store._as_dict 와 동일한 패턴 — boto3 의존 없이 classify.py 내부에 사본을 둔다.
+    """
+    if obj is None:
+        return None
+    if isinstance(obj, dict):
+        return obj
+    model_dump = getattr(obj, "model_dump", None)
+    if callable(model_dump):
+        return model_dump()
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -342,12 +368,185 @@ def _analyze_blog(crawl_data: CrawlData) -> BlogSignal:
 
 
 # ---------------------------------------------------------------------------
-# 내부 헬퍼 — 후기 분석 (현재 BE 미수집)
+# 내부 헬퍼 — 후기 분석 (카카오·네이버·구글 외부 시그널)
 # ---------------------------------------------------------------------------
 
-def _analyze_reviews() -> ReviewSignal:
-    """후기 분석 — 현재 BE에서 후기 데이터를 아직 수집하지 않으므로 빈 시그널 반환."""
-    return ReviewSignal(total_reviews=0, keyword_frequency={}, primary_topics=[])
+def _analyze_reviews(
+    kakao_reviews: "KakaoReviews | dict | None" = None,
+    naver_reviews: "NaverPlace | dict | None" = None,
+    google_reviews: "GoogleReviews | dict | None" = None,
+) -> ReviewSignal:
+    """외부 후기 시그널을 합산해 ReviewSignal 을 반환한다.
+
+    세 인자 모두 None 이면 빈 시그널(하위 호환).
+    각 인자는 dict 또는 대응 Pydantic 모델(KakaoReviews·NaverPlace·GoogleReviews) 둘 다 수용.
+
+    키워드 빈도:
+    - 카카오: keyword_frequency (strength 라벨 빈도 — "전문성"·"친절"·"주차"·"가격")
+    - 네이버: keyword_stats (자체 추출 키워드 빈도)
+    - 구글: keyword_frequency (자체 추출) + 없으면 리뷰 본문 text 에서 직접 추출
+
+    후기 총수:
+    - 카카오 total_reviews + 구글 user_ratings_total 합산.
+    - 네이버 visitor_count 는 후기 수가 아니므로 제외.
+
+    의료법 §56③ 준수:
+    - 개별 후기 본문(contents/text)은 primary_topics 추출용 임시 입력으로만 사용.
+    - ReviewSignal 어느 필드에도 후기 본문 raw 를 담지 않는다.
+    """
+    kakao_d = _as_dict(kakao_reviews)
+    naver_d = _as_dict(naver_reviews)
+    google_d = _as_dict(google_reviews)
+
+    # 입력이 전혀 없으면 빈 시그널 (하위 호환)
+    if kakao_d is None and naver_d is None and google_d is None:
+        return ReviewSignal(total_reviews=0, keyword_frequency={}, primary_topics=[])
+
+    merged_keyword_freq: Counter = Counter()
+
+    # -- 카카오 키워드 빈도 합산 (strength 라벨: 전문성·친절 등 — 의료 focus 아님) --
+    if kakao_d:
+        for kw, cnt in (kakao_d.get("keyword_frequency") or {}).items():
+            try:
+                # DDB 는 숫자를 Decimal 로 줄 수 있어 int 변환 (NaN Decimal 은 InvalidOperation)
+                merged_keyword_freq[str(kw)] += int(cnt)
+            except (ValueError, TypeError, InvalidOperation):
+                pass
+
+    # -- 네이버 키워드 통계 합산 --
+    if naver_d:
+        for kw, cnt in (naver_d.get("keyword_stats") or {}).items():
+            try:
+                merged_keyword_freq[str(kw)] += int(cnt)
+            except (ValueError, TypeError, InvalidOperation):
+                pass
+
+    # -- 구글 keyword_frequency 합산 (비어 있으면 리뷰 본문에서 직접 추출) --
+    google_kw_freq: dict = {}
+    if google_d:
+        google_kw_freq = google_d.get("keyword_frequency") or {}
+        if not google_kw_freq:
+            # keyword_frequency 가 비어 있으면 리뷰 본문 text 에서 직접 추출
+            review_items = google_d.get("reviews") or []
+            combined_google_text = " ".join(
+                (it.get("text") or "") if isinstance(it, dict) else getattr(it, "text", "")
+                for it in review_items
+            )
+            google_kw_freq = dict(_count_medical_keywords(combined_google_text))
+        for kw, cnt in google_kw_freq.items():
+            try:
+                merged_keyword_freq[str(kw)] += int(cnt)
+            except (ValueError, TypeError, InvalidOperation):
+                pass
+
+    # -- 후기 총수 합산 (카카오 + 구글) --
+    # DDB 는 숫자를 Decimal 로 주므로 isinstance(int) 체크 대신 안전 변환.
+    def _safe_int(value) -> int:
+        try:
+            return int(value)
+        except (ValueError, TypeError, InvalidOperation):
+            return 0
+
+    total_reviews = 0
+    if kakao_d:
+        total_reviews += _safe_int(kakao_d.get("total_reviews"))
+    if google_d:
+        total_reviews += _safe_int(google_d.get("user_ratings_total"))
+
+    # -- primary_topics: 카카오·구글 후기 본문에서 의료 키워드 추출 후 focus 매핑 --
+    # 의료법 §56③: 본문은 임시 입력으로만 사용, ReviewSignal 에는 저장하지 않음
+    review_text_parts: list[str] = []
+    if kakao_d:
+        for item in (kakao_d.get("reviews") or []):
+            contents = (
+                item.get("contents") if isinstance(item, dict)
+                else getattr(item, "contents", "")
+            ) or ""
+            review_text_parts.append(contents)
+    if google_d:
+        for item in (google_d.get("reviews") or []):
+            text = (
+                item.get("text") if isinstance(item, dict)
+                else getattr(item, "text", "")
+            ) or ""
+            review_text_parts.append(text)
+
+    primary_topics: list[str] = []
+    if review_text_parts:
+        combined_review_text = " ".join(review_text_parts)
+        kw_counter = _count_medical_keywords(combined_review_text)
+        focus_votes: Counter = Counter()
+        for kw in [kw for kw, _ in kw_counter.most_common(5)]:
+            for focus in _KEYWORD_TO_FOCUS.get(kw, []):
+                focus_votes[focus] += 1
+        primary_topics = [f for f, _ in focus_votes.most_common(3)]
+
+    return ReviewSignal(
+        total_reviews=total_reviews,
+        keyword_frequency=dict(merged_keyword_freq.most_common(20)),
+        primary_topics=primary_topics,
+    )
+
+
+# ---------------------------------------------------------------------------
+# 내부 헬퍼 — 카카오 tags 를 자칭 시그널에 합류
+# ---------------------------------------------------------------------------
+
+def _merge_kakao_tags_into_self_claim(
+    signal: SelfClaimSignal,
+    kakao_place: "KakaoPlace | dict | None" = None,
+) -> SelfClaimSignal:
+    """카카오 place tags 를 자칭 시그널에 병합한다.
+
+    tags 는 카카오가 정제한 자칭 키워드라 사이트 텍스트보다 신호가 깨끗하다.
+    - keywords·primary_focus 보강에만 사용
+    - spam_score 는 사이트 텍스트 기준 그대로 유지 (과도한 페널티 방지)
+    """
+    kakao_d = _as_dict(kakao_place)
+    if not kakao_d:
+        return signal
+
+    tags: list[str] = kakao_d.get("tags") or []
+    if not tags:
+        return signal
+
+    # tags 를 의료 키워드 카운팅에 넣어 추가 기여 분 계산
+    tags_text = " ".join(tags)
+    tag_kw_counter = _count_medical_keywords(tags_text)
+
+    # 기존 keywords 에 중복 없이 추가
+    existing_kw_set = set(signal.keywords)
+    extra_keywords: list[str] = []
+    for kw, _ in tag_kw_counter.most_common():
+        if kw not in existing_kw_set:
+            extra_keywords.append(kw)
+            existing_kw_set.add(kw)
+
+    # primary_focus 보강 — 기존 focus 에 없는 항목만 추가
+    existing_focus_set = set(signal.primary_focus)
+    extra_focus: list[str] = []
+    for kw in extra_keywords:
+        for focus in _KEYWORD_TO_FOCUS.get(kw, []):
+            if focus not in existing_focus_set:
+                extra_focus.append(focus)
+                existing_focus_set.add(focus)
+
+    # 기존 tags 에서 직접 focus 스키마 항목 추출 (키워드 매핑 없이 직접 매핑 가능한 경우)
+    # 예: tags 에 "추나요법" 같은 라벨이 있어도 _KEYWORD_TO_FOCUS 에 없으면 keyword 로만 보존
+    extra_tags_not_in_kw: list[str] = []
+    for tag in tags:
+        if tag not in existing_kw_set:
+            extra_tags_not_in_kw.append(tag)
+            existing_kw_set.add(tag)
+
+    new_keywords = signal.keywords + extra_keywords + extra_tags_not_in_kw
+    new_primary_focus = signal.primary_focus + extra_focus
+
+    return SelfClaimSignal(
+        keywords=new_keywords,
+        primary_focus=new_primary_focus,
+        spam_score=signal.spam_score,  # spam_score 는 사이트 텍스트 기준 그대로
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -767,6 +966,12 @@ def classify_hospital(
     crawl_data: CrawlData,
     use_vision: bool = True,  # noqa: FBT001 — 명세에서 bool 파라미터로 정의됨
     use_llm: bool = True,     # noqa: FBT001 — False 이면 LLM/Vision 0회 호출 (트랙 A)
+    *,
+    kakao_place=None,
+    kakao_reviews=None,
+    kakao_blog=None,
+    naver_reviews=None,
+    google_reviews=None,
 ) -> Classification:
     """크롤링 데이터를 받아 4 시그널 교차 검증으로 병원 주력 분야를 분류한다.
 
@@ -776,6 +981,12 @@ def classify_hospital(
             use_llm=False 일 때는 이 값과 무관하게 Vision 을 건너뛴다.
         use_llm: True 이면 자칭·블로그 추출에 Bedrock LLM 사용 (트랙 B/C).
             False 이면 키워드 룰만 사용하고 Bedrock 미호출 (트랙 A, 1만 풀커버).
+        kakao_place: KakaoPlace 모델 또는 parse_place() dict. tags 가 자칭 시그널 보강에 사용됨.
+        kakao_reviews: KakaoReviews 모델 또는 parse_reviews() dict. strength 라벨 빈도 포함.
+        kakao_blog: KakaoBlog 모델 또는 parse_blog() dict. (현재 미사용 — 향후 블로그 시그널 확장용)
+        naver_reviews: NaverPlace 모델 또는 네이버 place dict. keyword_stats 포함.
+        google_reviews: GoogleReviews 모델 또는 parse_google_reviews() dict.
+            각 인자는 dict 또는 대응 Pydantic 모델 둘 다 수용한다.
 
     Returns:
         Classification: primary_focus, confidence, detailed_signals 포함.
@@ -799,6 +1010,11 @@ def classify_hospital(
         self_claim_signal = _extract_self_claim(crawl_data)
     else:
         self_claim_signal = _extract_self_claim_rule(crawl_data)
+
+    # 2-a. 카카오 tags 합류 — 정제된 자칭 키워드로 keywords·primary_focus 보강
+    #       spam_score 는 사이트 텍스트 기준 그대로 유지 (과도한 페널티 방지)
+    self_claim_signal = _merge_kakao_tags_into_self_claim(self_claim_signal, kakao_place)
+
     logger.info(
         "자칭 추출 완료 (%s) — focus=%s spam=%.2f",
         "LLM" if use_llm else "룰",
@@ -853,8 +1069,9 @@ def classify_hospital(
         blog_signal.primary_topics,
     )
 
-    # 5. 후기 분석 (현재 빈 시그널)
-    review_signal = _analyze_reviews()
+    # 5. 후기 분석 — 외부 플랫폼 시그널(카카오·네이버·구글) 통합
+    #    use_llm 분기와 무관하게 외부 후기 키워드는 룰·LLM 양 경로 모두 동일하게 적용
+    review_signal = _analyze_reviews(kakao_reviews, naver_reviews, google_reviews)
 
     # 6. 4 시그널 교차 검증
     primary_focus, raw_contributions = _cross_validate_signals(
