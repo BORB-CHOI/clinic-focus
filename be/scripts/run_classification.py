@@ -56,12 +56,15 @@ def main():
                 skipped += 1
                 continue
 
-            # 룰 분류 (LLM 0회) → DDB 저장
-            classification = classify_hospital(crawl_data, use_llm=False)
+            # 외부 시그널 로드 (적재된 것만 — 없으면 None, 자체 사이트만 분류)
+            external = db.load_external_signals(hospital_id)
+
+            # 룰 분류 (LLM 0회) → DDB 저장. 외부 후기·카카오 tags 까지 4 시그널 교차검증.
+            classification = classify_hospital(crawl_data, use_llm=False, **external)
             db.save_classification(classification)
 
             # 시그널 청크 KB ingest — 배치라 트리거는 마지막 1회만
-            signal_chunks = build_signal_chunks(crawl_data=crawl_data)
+            signal_chunks = build_signal_chunks(crawl_data=crawl_data, **external)
             metadata = build_ingest_metadata(hospital_meta, classification)
             ingest_hospital(hospital_id, signal_chunks, metadata, trigger_ingestion=False)
 
