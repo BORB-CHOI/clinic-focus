@@ -219,25 +219,33 @@ def _all_medical_keywords_set() -> set[str]:
 # Specialty / Focus 추론
 # ---------------------------------------------------------------------------
 
-# 절대 다수결 임계값 — 1위 specialty 가 전체 매칭의 절반을 *초과*해야 확정.
-# 0.5 정확히는 동률 (예: 라식+사마귀 1:1) → 모호로 판정해 메타필터를 안 걺.
-# 더 보수적으로 가려면 0.6, 더 공격적이면 0.4. 0.5 가 합리적 균형점.
-_SPECIALTY_MAJORITY_THRESHOLD = 0.5
+# primary 가중 투표 파라미터 (infer_specialty).
+# - 보조 과목 가중: 한 증상이 매핑된 2번째 이후 진료과의 표 무게. primary(1.0)보다
+#   작아야 정준 과목이 단독 매핑을 못 이긴다. 0.4 → 보조 2개 합(0.8)도 primary 1개 못 넘음.
+_SECONDARY_SPECIALTY_WEIGHT = 0.4
+# - 확정 마진: 1위가 2위보다 이만큼 앞서야 확정. 미만이면 모호 → None(하드필터 안 걺).
+#   0.5 → 단독 primary(1.0) vs 보조뿐(0.4) 은 통과, primary 동수(라식 vs 사마귀)는 차단.
+_SPECIALTY_MARGIN = 0.5
 
 
 def infer_specialty(medical_terms: list[str]) -> str | None:
     """매칭된 의료 키워드로부터 표준 진료과목을 추론한다.
 
-    추론 알고리즘:
-      1. 각 키워드의 specialty 후보를 모아 빈도 카운트.
-      2. 1위 specialty 의 점유율(top_count / total) 이 임계값을 *초과*하면 확정.
-         정확히 임계값(예: 0.5 동률) 이면 모호로 판정해 None.
-      3. 1위 specialty 가 ``VALID_SPECIALTIES`` 에 있을 때만 반환.
+    추론 알고리즘 (primary 가중 투표):
+      1. 각 키워드의 진료과 리스트는 사전(.md) 섹션 순서대로이며 **첫 과목이 정준
+         (primary)**. primary 1.0, 보조 0.4(``_SECONDARY_SPECIALTY_WEIGHT``) 가중 합산.
+      2. 1위가 2위보다 ``_SPECIALTY_MARGIN`` 이상 앞서면 확정, 아니면 None(모호).
+      3. 1위가 ``VALID_SPECIALTIES`` 에 있을 때만 반환.
+
+    대용량 사전은 한 증상을 여러 과목에 매핑(아토피→피부과+소아+한의원)하므로 단순
+    빈도 과반으로는 늘 None 이 된다. primary 가중으로 정준 과목을 띄우되, 동률/박빙은
+    None — specialty 가 하드 메타필터라 오추론은 정답 병원을 통째 제외하기 때문.
 
     예시:
-      - ["사마귀"]                → {"피부과": 1}, 점유율 1.0 → "피부과"
-      - ["허리", "디스크"]        → {"정형외과": 2, "신경외과": 1}, 0.67 → "정형외과"
-      - ["라식", "사마귀"]        → {"안과": 1, "피부과": 1}, 0.5 → None (모호)
+      - ["사마귀"]        → 피부과 1.0 → "피부과"
+      - ["아토피"]        → 피부과 1.0 / 소아 0.4 / 한의원 0.4 → "피부과" (정준)
+      - ["허리 디스크"]   → 정형외과 1.0 / 보조 0.4 → "정형외과"
+      - ["라식", "사마귀"] → 안과 1.0 vs 피부과 1.0, 차 0 → None (모호)
 
     Args:
         medical_terms: ``extract_medical_terms`` 결과.
@@ -248,27 +256,27 @@ def infer_specialty(medical_terms: list[str]) -> str | None:
     if not medical_terms:
         return None
 
-    counter: Counter[str] = Counter()
+    scores: Counter[str] = Counter()
     for term in medical_terms:
-        for sp in KEYWORD_TO_SPECIALTY.get(term, []):
-            counter[sp] += 1
+        for i, sp in enumerate(KEYWORD_TO_SPECIALTY.get(term, [])):
+            scores[sp] += 1.0 if i == 0 else _SECONDARY_SPECIALTY_WEIGHT
 
-    if not counter:
+    if not scores:
         return None
 
-    top_sp, top_count = counter.most_common(1)[0]
-    total = sum(counter.values())
-    majority = top_count / total
-
-    if majority <= _SPECIALTY_MAJORITY_THRESHOLD:
-        logger.debug(
-            "specialty 추론 모호 — 1위 %s 점유율 %.2f <= 임계값 %s. 후보: %s",
-            top_sp, majority, _SPECIALTY_MAJORITY_THRESHOLD, dict(counter),
-        )
-        return None
+    ranked = scores.most_common()
+    top_sp, top_score = ranked[0]
+    second_score = ranked[1][1] if len(ranked) > 1 else 0.0
 
     if top_sp not in VALID_SPECIALTIES:
         logger.warning("추론된 specialty 가 화이트리스트에 없음: %s", top_sp)
+        return None
+
+    if top_score - second_score < _SPECIALTY_MARGIN:
+        logger.debug(
+            "specialty 추론 모호 — 1위 %s(%.1f) vs 2위(%.1f) 차이 < %.1f. 후보: %s",
+            top_sp, top_score, second_score, _SPECIALTY_MARGIN, dict(scores),
+        )
         return None
 
     return top_sp

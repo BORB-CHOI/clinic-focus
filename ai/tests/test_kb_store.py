@@ -403,11 +403,13 @@ class TestSynonymEnrichment:
         assert _enrich_with_synonyms("") == ""
 
     def test_no_duplicate_terms_added(self):
-        """이미 본문에 있는 표현은 중복 부착하지 않는다."""
+        """이미 본문에 있는 표현은 중복 부착하지 않는다 (정확 일치 기준)."""
         out = _enrich_with_synonyms("사마귀 심상성 우췌 둘 다 언급")
         added = out.split("[관련 의학 용어]")[-1] if "[관련 의학 용어]" in out else ""
-        assert "사마귀" not in added  # 이미 본문에 있으므로 추가 줄에 없어야
-        assert "심상성 우췌" not in added
+        added_terms = [t.strip() for t in added.split(",")]
+        # 본문에 이미 있는 정확한 표현은 추가 목록에 없어야 (substring 인 "심상성 사마귀" 등은 허용)
+        assert "사마귀" not in added_terms
+        assert "심상성 우췌" not in added_terms
 
     def test_build_signal_chunks_enriches_self_claim(self):
         """build_signal_chunks 의 self_claim 청크가 동의어 주입을 거친다."""

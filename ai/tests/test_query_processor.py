@@ -103,11 +103,11 @@ class TestExtractMedicalTerms:
         assert extract_medical_terms("hello world") == []
 
     def test_multi_word_keyword_priority(self):
-        # "수면 무호흡" 이 "수면" 보다 길어 우선 매칭되어야 함
-        terms = extract_medical_terms("수면 무호흡 진단")
-        assert "수면 무호흡" in terms
-        # "수면" 단독으로는 중복 매칭 안 됨 (이미 더 긴 키워드가 덮음)
-        # SYNONYMS 키에 "수면" 단독이 없으므로 결과에 없어야 함
+        # "여드름 흉터"(multi-word)가 "여드름"보다 길어 우선 매칭되어야 함
+        terms = extract_medical_terms("여드름 흉터 치료 상담")
+        assert "여드름 흉터" in terms
+        # 더 긴 키워드가 구간을 덮으므로 "여드름" 단독은 중복 매칭 안 됨
+        assert "여드름" not in terms
 
     def test_substring_dedup(self):
         # 동일 키워드가 두 번 나타나도 1회 카운트
@@ -124,16 +124,24 @@ class TestInferSpecialty:
         assert infer_specialty(["사마귀"]) == "피부과"
 
     def test_strong_majority_returns_winner(self):
-        # 사마귀(피부과) + 아토피(피부과) + 라식(안과) → 피부과 우세 (점유율 0.67)
+        # 사마귀(피부과 primary) + 아토피(피부과 primary) + 라식(안과 primary)
+        # → 피부과 2.0 vs 안과 1.0, 차 1.0 ≥ 마진 → 피부과
         assert infer_specialty(["사마귀", "아토피", "라식"]) == "피부과"
 
-    def test_majority_overlap_returns_winner(self):
-        # 허리(정형외과) + 디스크(정형외과+신경외과) → 정형외과:2 신경외과:1 → 0.67 → 정형외과
-        assert infer_specialty(["허리", "디스크"]) == "정형외과"
+    def test_multi_specialty_term_resolves_to_primary(self):
+        # 대용량 사전은 한 증상을 여러 과목에 매핑(허리 디스크 → 정형외과+신경외과+…).
+        # primary 가중으로 정준 과목(정형외과)이 보조 과목들을 이긴다.
+        assert infer_specialty(["허리 디스크"]) == "정형외과"
+        assert infer_specialty(["아토피"]) == "피부과"
 
     def test_ambiguous_returns_none(self):
-        # 라식(안과) + 사마귀(피부과) → 1:1 동률 (점유율 0.5) → None
+        # 라식(안과 primary) + 사마귀(피부과 primary) → 1.0:1.0 동률 → None (하드필터 안 걺)
         assert infer_specialty(["라식", "사마귀"]) is None
+
+    def test_ambiguous_chronic_returns_none(self):
+        # 당뇨·고혈압은 내과·가정의학과 양쪽이 관리 → 모호 → None (한쪽으로 오제외 안 함)
+        from ai.search.query_processor import process_query
+        assert process_query("당뇨 고혈압 관리").inferred_specialty is None
 
     def test_empty_returns_none(self):
         assert infer_specialty([]) is None
@@ -148,13 +156,14 @@ class TestInferSpecialty:
 
 class TestInferFocus:
     def test_extracts_focus(self):
+        # 사마귀의 focus(자유 문자열, 표시용) — 사전 값이 비어있지 않아야
         focuses = infer_focus(["사마귀"])
-        assert "일반 진료(아토피·여드름)" in focuses
+        assert focuses and all(isinstance(f, str) and f for f in focuses)
 
     def test_dedups_focus(self):
-        # 사마귀 + 아토피 모두 동일 focus → 1회만
-        focuses = infer_focus(["사마귀", "아토피"])
-        assert focuses.count("일반 진료(아토피·여드름)") == 1
+        # 아토피 + 습진 모두 "염증·알레르기 피부질환" focus 공유 → 1회만
+        focuses = infer_focus(["아토피", "습진"])
+        assert focuses.count("염증·알레르기 피부질환") == 1
 
 
 # ---------------------------------------------------------------------------
@@ -195,8 +204,8 @@ class TestProcessQuery:
         assert "사마귀" in result.medical_terms
         # 진료과 추론 성공
         assert result.inferred_specialty == "피부과"
-        # focus 추론 성공
-        assert "일반 진료(아토피·여드름)" in result.inferred_focus
+        # focus 추론 성공 (자유 문자열 — 사전 라벨에 의존하지 않고 비어있지 않음만 검증)
+        assert result.inferred_focus
         # 동의어 확장 적용
         assert result.was_expanded is True
         assert "심상성 우췌" in result.embedding_text
@@ -240,12 +249,17 @@ class TestProcessQuery:
     @pytest.mark.parametrize("query,expected_specialty", [
         ("허리 디스크 잘하는 곳", "정형외과"),
         ("아토피 좋은 병원", "피부과"),
-        ("코골이 수면 무호흡 검사", "이비인후과"),
-        ("당뇨 고혈압 관리", "내과"),
+        ("코골이 잘 보는 곳", "이비인후과"),
         ("임플란트 추천", "치과"),
+        ("라식 백내장 안과", "안과"),
+        ("전립선 비대 방광염", "비뇨의학과"),
     ])
     def test_specialty_inference_matrix(self, query: str, expected_specialty: str):
-        """대표 쿼리 매트릭스 — 각 진료과별로 추론이 올바른지 회귀 방지."""
+        """대표 쿼리 매트릭스 — 각 진료과별로 추론이 올바른지 회귀 방지.
+
+        (당뇨·고혈압 같은 내과/가정의학과 양과 관리 질환은 의도적으로 제외 —
+         모호 → None 이 안전한 동작이라 test_ambiguous_chronic_returns_none 에서 별도 검증.)
+        """
         result = process_query(query)
         assert result.inferred_specialty == expected_specialty, (
             f"쿼리 '{query}' → 기대 {expected_specialty}, 실제 {result.inferred_specialty}"

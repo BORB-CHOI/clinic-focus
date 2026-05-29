@@ -1,89 +1,136 @@
 """
-검색어 처리 지식사전 — 데이터는 ``ai/data/medical_dictionary.json`` 에 있고
-본 모듈은 **loader** 다 (PR #33 후속, 2026-05-29 데이터 외부화).
+검색어 처리 지식사전 — 데이터는 사람이 읽고 편집하는 마크다운
+``ai/data/medical_dictionary.md`` 에 있고, 본 모듈은 그 .md 를 파싱하는 **loader** 다.
 
-왜 외부 데이터 파일인가:
-- 의료 전문가가 코드 변경 없이 사전(.json)만 PR 로 수정·확장 가능.
-- 특정 케이스 하드코딩이 아니라 "지식사전" 으로 운영 — 진료과별로 계속 채워나감.
-- ``dictionaries.py`` 는 로드·정규화·캐시만 담당.
+왜 마크다운 지식사전인가:
+- 의료 전문가가 코드 없이 .md 표만 보고 PR 로 항목을 추가·수정 (진료과별 섹션).
+- 특정 케이스 하드코딩이 아니라 22 진료과 전반을 덮는 "대용량 지식사전" 으로 운영.
+- ``dictionaries.py`` 는 파싱·정규화·캐시만.
 
-소비처 (둘 다 같은 사전을 씀 — 단일 출처):
+소비처(단일 출처):
 - ``query_processor.py`` — **쿼리 측** 확장·진료과 추론 (사용자 입력 → 본문 매칭).
 - ``kb_store.py`` (``_enrich_with_synonyms``) — **문서 측** 주입. 병원 청크에 동의어
-  클러스터를 부착해 본문이 "심상성 우췌"라고만 적혀 있어도 "사마귀" 쿼리에 매칭됨.
+  클러스터를 부착해 본문이 "심상성 우췌"라고만 적혀도 "사마귀" 쿼리에 매칭.
 
-설계 원칙 (사전 추가 시 지킬 것):
-- ``synonyms`` 는 *일반어(키) → 본문 학명·전문용어·영문·치료(값)* 단방향으로 채운다.
-  문서-측 주입은 키·값을 묶어 양방향 클러스터로 변환해 쓰므로 한쪽만 채우면 된다.
-- ``stopwords`` 에 의료 용어 절대 금지 (임베딩 의미 신호 손실).
-- **의료법 §56 회색지대**: 평가·광고 표현("잘하는", "최고", "전문", "효과") 절대 금지.
-  사전이 광고성 표현을 담으면 검색 결과 자체가 회색지대를 끌어당긴다.
-- ``standard_specialty`` 는 22 후보 한정 (ai/CLAUDE.md "분류 스키마").
+마크다운 형식 (loader 가 이 규약을 파싱):
+    ## 불용어
+    어디, 추천, 좋은, 병원, ...        (쉼표 구분, 여러 줄 가능)
 
-JSON 스키마: {version, note, stopwords[], synonyms{}, keyword_to_specialty{},
-keyword_to_focus{}, valid_specialties[]}.
+    ## 진료과: 피부과
+    | 일반어 | 동의어 (학명·전문용어·영문·치료) | 주력분야 |
+    |---|---|---|
+    | 사마귀 | 심상성 우췌, verruca, 냉동치료 | 일반 진료(아토피·여드름) |
+
+- ``## 진료과: {표준진료과목}`` 섹션의 표 한 행 = 사전 1항목.
+  · 1열 일반어 = 키, 2열 = 동의어(쉼표 구분), 3열 = primary_focus(선택).
+  · 같은 일반어가 여러 진료과 섹션에 나오면 진료과·동의어가 병합된다(예: 보톡스 → 피부과+성형외과).
+- 셀 안에 ``|`` 금지(표 구분자와 충돌). 동의어 구분은 쉼표.
+
+설계 원칙(항목 추가 시):
+- **의료법 §56**: 평가·광고·효능 표현("잘하는·최고·전문·효과·탁월·완치") 절대 금지.
+  질환명·해부학·시술명·검사명·학명·영문 같은 사실 정보만.
+- ``standard_specialty`` 는 22 후보 한정(아래 VALID_SPECIALTIES).
 """
 
 from __future__ import annotations
 
-import json
+import re
 from pathlib import Path
 
-# ai/data/medical_dictionary.json — 본 파일(ai/search/) 기준 한 단계 위의 data/.
-_DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "medical_dictionary.json"
+_DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "medical_dictionary.md"
+
+# ai/CLAUDE.md "분류 스키마" 22 후보군과 동기화 (메타필터 specialty 검증·섹션 인식).
+VALID_SPECIALTIES: frozenset[str] = frozenset({
+    "내과", "소아청소년과", "이비인후과", "안과", "피부과", "성형외과",
+    "정형외과", "신경외과", "외과", "산부인과", "비뇨의학과",
+    "정신건강의학과", "가정의학과", "재활의학과", "마취통증의학과", "신경과",
+    "한의원", "치과",
+    "종합병원", "요양병원", "보건소", "기타",
+})
+
+_HEADER_RE = re.compile(r"^##\s+(.+?)\s*$")
+_SPECIALTY_HEADER_RE = re.compile(r"^##\s+진료과:\s*(.+?)\s*$")
 
 
-def _load() -> dict:
-    with _DATA_PATH.open(encoding="utf-8") as f:
-        return json.load(f)
+def _split_csv(cell: str) -> list[str]:
+    return [t.strip() for t in cell.split(",") if t.strip()]
 
 
-_RAW = _load()
+def _parse() -> dict:
+    """medical_dictionary.md 를 파싱해 사전 구조를 만든다."""
+    stopwords: set[str] = set()
+    synonyms: dict[str, list[str]] = {}
+    kw_to_specialty: dict[str, list[str]] = {}
+    kw_to_focus: dict[str, list[str]] = {}
+    version = "unknown"
 
-DICTIONARY_VERSION: str = _RAW.get("version", "unknown")
+    text = _DATA_PATH.read_text(encoding="utf-8")
 
-# ---------------------------------------------------------------------------
-# 검색 의도 표현 (불용어) — 의미 검색 노이즈. 의료 용어 미포함.
-# ---------------------------------------------------------------------------
-STOPWORDS: frozenset[str] = frozenset(_RAW["stopwords"])
+    # 버전 (> 최종 업데이트: YYYY-MM-DD 형태가 있으면 추출)
+    m = re.search(r"최종 업데이트[:\s]+(\d{4}-\d{2}-\d{2})", text)
+    if m:
+        version = m.group(1)
 
-# ---------------------------------------------------------------------------
-# 의학 동의어 (일반어 → 본문 학명·전문용어·영문·치료). 쿼리 확장 + 문서 주입 양용.
-# ---------------------------------------------------------------------------
-SYNONYMS: dict[str, list[str]] = {k: list(v) for k, v in _RAW["synonyms"].items()}
+    section: str | None = None       # "불용어" | specialty | None
+    cur_specialty: str | None = None
 
-# ---------------------------------------------------------------------------
-# 의료 키워드 → 표준 진료과목 22 매핑 (한 키가 복수 과목 가능, 추론 시 다수결).
-# ---------------------------------------------------------------------------
-KEYWORD_TO_SPECIALTY: dict[str, list[str]] = {
-    k: list(v) for k, v in _RAW["keyword_to_specialty"].items()
-}
+    def _add(d: dict[str, list[str]], key: str, vals: list[str]) -> None:
+        cur = d.setdefault(key, [])
+        for v in vals:
+            if v and v not in cur:
+                cur.append(v)
 
-# ---------------------------------------------------------------------------
-# 의료 키워드 → primary_focus (자유 문자열, 메타필터 아님 — query_interpretation 표시용).
-# ---------------------------------------------------------------------------
-KEYWORD_TO_FOCUS: dict[str, list[str]] = {
-    k: list(v) for k, v in _RAW["keyword_to_focus"].items()
-}
+    for raw in text.splitlines():
+        line = raw.rstrip()
+        sp_m = _SPECIALTY_HEADER_RE.match(line)
+        if sp_m:
+            cur_specialty = sp_m.group(1).strip()
+            section = "specialty" if cur_specialty in VALID_SPECIALTIES else None
+            continue
+        h_m = _HEADER_RE.match(line)
+        if h_m:
+            section = "불용어" if h_m.group(1).strip().startswith("불용어") else None
+            cur_specialty = None
+            continue
 
-# ---------------------------------------------------------------------------
-# 진료과목 화이트리스트 (메타필터 specialty 검증용). ai/CLAUDE.md 22 후보와 동기화.
-# ---------------------------------------------------------------------------
-VALID_SPECIALTIES: frozenset[str] = frozenset(_RAW["valid_specialties"])
+        if section == "불용어":
+            if line.strip() and not line.startswith(">"):
+                stopwords.update(_split_csv(line))
+            continue
+
+        if section == "specialty" and line.startswith("|"):
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            if len(cells) < 2:
+                continue
+            common = cells[0]
+            # 헤더행·구분행 스킵
+            if not common or common in ("일반어",) or set(common) <= {"-", ":", " "}:
+                continue
+            syns = _split_csv(cells[1]) if len(cells) >= 2 else []
+            focus = cells[2].strip() if len(cells) >= 3 else ""
+            _add(synonyms, common, syns)
+            _add(kw_to_specialty, common, [cur_specialty])  # type: ignore[list-item]
+            if focus:
+                _add(kw_to_focus, common, [focus])
+
+    return {
+        "version": version,
+        "stopwords": stopwords,
+        "synonyms": synonyms,
+        "keyword_to_specialty": kw_to_specialty,
+        "keyword_to_focus": kw_to_focus,
+    }
 
 
-# ---------------------------------------------------------------------------
-# 동의어 클러스터 — 문서-측 주입용 양방향 그룹.
-#
-# SYNONYMS 는 단방향(일반어→학명)이지만, 문서(병원 청크)에는 어느 표현이 적혀
-# 있을지 모른다. {키 + 값} 을 한 클러스터로 묶어, 청크에 클러스터의 *아무* 멤버라도
-# 있으면 나머지 멤버를 부착한다 → 양방향 매칭.
-# ---------------------------------------------------------------------------
+_PARSED = _parse()
+
+DICTIONARY_VERSION: str = _PARSED["version"]
+STOPWORDS: frozenset[str] = frozenset(_PARSED["stopwords"])
+SYNONYMS: dict[str, list[str]] = _PARSED["synonyms"]
+KEYWORD_TO_SPECIALTY: dict[str, list[str]] = _PARSED["keyword_to_specialty"]
+KEYWORD_TO_FOCUS: dict[str, list[str]] = _PARSED["keyword_to_focus"]
+
 
 def build_synonym_clusters() -> list[list[str]]:
-    """SYNONYMS 를 {키 + 값} 단위 클러스터 리스트로 변환한다.
-
-    각 클러스터는 같은 개념의 동의어 묶음. 문서-측 주입(_enrich_with_synonyms)이
-    "청크에 멤버 1개라도 있으면 나머지 부착" 에 사용한다.
-    """
+    """SYNONYMS 를 {키 + 값} 단위 클러스터 리스트로 변환 (문서-측 주입용 양방향 그룹)."""
     return [[key, *values] for key, values in SYNONYMS.items()]
