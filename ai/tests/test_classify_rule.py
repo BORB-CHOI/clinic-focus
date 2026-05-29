@@ -273,6 +273,43 @@ class TestConfidence:
         assert result.confidence.score > 0
 
 
+class TestEmptyFocusConfidence:
+    """주력 분야를 하나도 식별하지 못하면(focus 후보 0) 기여도가 0 이어야 한다.
+
+    회귀 가드 — 옛 버그: focus 후보가 없을 때 _cross_validate_signals 가 전체
+    가중치(합≈1.0)를 반환해 confidence.score=100 '확실' 이 나왔음
+    (docs/API-BE-AI.md '현 구현 약점' 사례). 이제 0 → score≈0 '정보 부족'.
+    """
+
+    def test_no_focus_candidates_yields_zero_contributions(self) -> None:
+        from ai.pipeline.classify import _cross_validate_signals
+        from shared.models import BlogSignal, ReviewSignal, SelfClaimSignal
+
+        self_claim = SelfClaimSignal(keywords=[], primary_focus=[], spam_score=0.0)
+        blog = BlogSignal(total_posts=0, keyword_frequency={}, primary_topics=[])
+        reviews = ReviewSignal(total_reviews=0, keyword_frequency={}, primary_topics=[])
+
+        primary_focus, contributions = _cross_validate_signals(
+            self_claim=self_claim, blog=blog, reviews=reviews, vision=None,
+        )
+        assert primary_focus == []
+        assert sum(contributions.values()) == 0.0
+
+    def test_no_focus_candidates_compute_confidence_is_low(self) -> None:
+        from ai.pipeline.classify import _compute_confidence, _cross_validate_signals
+        from shared.models import BlogSignal, ReviewSignal, SelfClaimSignal
+
+        _, contributions = _cross_validate_signals(
+            self_claim=SelfClaimSignal(keywords=[], primary_focus=[], spam_score=0.0),
+            blog=BlogSignal(total_posts=0, keyword_frequency={}, primary_topics=[]),
+            reviews=ReviewSignal(total_reviews=0, keyword_frequency={}, primary_topics=[]),
+            vision=None,
+        )
+        confidence = _compute_confidence(contributions, vision=None)
+        assert confidence.score < 70
+        assert confidence.level == "정보 부족"
+
+
 # ---------------------------------------------------------------------------
 # 테스트 (d-2) 룰 단독 신뢰도 상한 보정 — 핵심 설계 검증
 # ---------------------------------------------------------------------------

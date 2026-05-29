@@ -56,16 +56,16 @@
 
 `ai/__init__.py`가 BE에 노출하는 함수 (`../docs/API-BE-AI.md` 명세):
 
-- `classify_hospital(crawl_data, use_vision=True) -> Classification`
+- `classify_hospital(crawl_data, use_vision=True, use_llm=True, *, kakao_place=None, kakao_reviews=None, kakao_blog=None, naver_reviews=None, naver_blog=None, google_reviews=None) -> Classification` — `use_llm=False` 면 룰 단독(트랙 A, 1만). 외부 시그널은 개별 키워드 인자(`build_signal_chunks` 와 시그니처 일치, 핸들러가 `db.load_external_signals()` 결과를 `**` 전개)
 - `generate_description(classification, detailed_signals, hospital_meta) -> HospitalDescription` ⭐ **핵심**
 - `extract_services_and_doctors(crawl_data, classification, vision_results) -> ServicesAndDoctors`
 - `find_related_hospitals(hospital_id, location, primary_focus, excluded_services, limit=5) -> list[RelatedHospital]`
 - `aggregate_feedback_stats(hospital_id) -> FeedbackStats`
 - `retrieve_hospital(query: SearchQuery) -> list[SearchResult]` — KB Retrieve 래퍼 (자연어 검색만)
-- `ingest_hospital(hospital_id, content_text, metadata, trigger_ingestion=False) -> None` — KB DataSource S3 업로드 + ingestion job
+- `ingest_hospital(hospital_id, signal_chunks, metadata, *, trigger_ingestion=False) -> None` — 시그널별 청크(`build_signal_chunks`)·메타(`build_ingest_metadata`)를 호출자가 조립해 넘김. KB DataSource S3 업로드 + ingestion job
 - `recompute_confidence(hospital_id, recent_feedback) -> Confidence`
 - `embed_text(text) -> list[float]` — Titan v2 직접 호출 (디버깅·실험용. 운영 검색은 KB가 내부 수행)
-- `analyze_images(image_urls, extract_text=False) -> list[ImageAnalysisResult]`
+- `analyze_images(image_urls) -> list[ImageAnalysisResult]` — OCR 은 Bedrock Vision 이 흡수(Textract 미사용)
 
 ## `generate_description` 프롬프트 원칙 ⭐ 절대 어기지 말 것
 
@@ -129,7 +129,7 @@ shared/models.py 의 `standard_specialty` 는 현재 `str` (Literal 미강제). 
 치과       예: "임플란트" · "교정" · "심미보철" · "구강악안면외과"
 ```
 
-> **결정 근거**: 강남 502 표본은 치과의원 41% + 한의원 31% + 의원 20% 구성. V1 4과목 PoC (피부·정형·이비인후·안과) 만으로는 표본의 6% 만 커버. 22 후보군으로 약 94% 커버. 민간 3사(닥터나우 15·굿닥 13·모두닥 17) 공통 패턴인 "한의원·치과 평탄화 + 양방 12~17 + 기타" 와 일치. 실측 데이터·외부 분류 비교·산출 스크립트는 [`ai/scratch/specialty-schema-analysis-2026-05-27.md`](scratch/specialty-schema-analysis-2026-05-27.md). 스키마 확장이 결정되어 Phase C 룰 기반 분류기 차단 해제됨.
+> **결정 근거**: 강남 502 표본은 치과의원 41% + 한의원 31% + 의원 20% 구성. V1 4과목 PoC (피부·정형·이비인후·안과) 만으로는 표본의 6% 만 커버. 22 후보군으로 약 94% 커버. 민간 3사(닥터나우 15·굿닥 13·모두닥 17) 공통 패턴인 "한의원·치과 평탄화 + 양방 12~17 + 기타" 와 일치. 실측 데이터·외부 분류 비교·산출 스크립트는 [`docs/plans/specialty-schema-analysis-2026-05-27.md`](../docs/plans/specialty-schema-analysis-2026-05-27.md). 스키마 확장이 결정되어 Phase C 룰 기반 분류기 차단 해제됨.
 
 ## KB 메타데이터 (Retrieve 필터링용)
 

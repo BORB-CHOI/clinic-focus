@@ -1,10 +1,11 @@
 # 분류 스키마 확장 — 실측 기반 의사결정 (2026-05-27)
 
 > 일회성 분석 노트. Phase A "분류 스키마 실 데이터 기반 확장" 작업의 산출물.
-> phase C 본체 마이그레이션과 함께 ai/scratch 폴더 통째 삭제 시 같이 사라진다.
-> 결론(권고안)은 ai/CLAUDE.md "분류 스키마" 박스에 박혀 본체로 살아남음.
+> 원래 ai/scratch/ 에 있었으나 scratch 제거 시 ai/CLAUDE.md 가 결정 근거로
+> 참조 중이라 docs/plans/ 로 이전(영구 보존). 결론(권고안)은 ai/CLAUDE.md
+> "분류 스키마" 박스에 본체로 박혀 있음.
 
-상위 컨텍스트: [`docs/plans/task-queue.md`](../../docs/plans/task-queue.md) Phase A "분류 스키마 확장" 항목.
+상위 컨텍스트: [`task-queue.md`](task-queue.md) Phase A "분류 스키마 확장" 항목.
 
 ## 1. 배경
 
@@ -167,8 +168,11 @@ telno, yadmNm, ykiho
 
 ## 8. 산출 파일
 
-- `ai/scratch/measure_specialty_distribution.py` — 종별 분포 측정 스크립트
-- `ai/scratch/measure_body_keywords.py` — 의원 99개 본문 키워드 매칭 스크립트
-- `ai/scratch/specialty-distribution-2026-05-27.json` — 종별 카운트 raw
-- `ai/scratch/body-keywords-2026-05-27.json` — 의원 본문 키워드 매칭 raw
-- 본 노트
+아래 측정 스크립트·raw JSON 은 ai/scratch/ 에 있었으나 scratch 제거와 함께 삭제됨
+(일회성 측정, git 이력에 보존). 측정 결과·결론은 본 노트에 박혀 있어 재현 불필요.
+
+- `measure_specialty_distribution.py` — 종별 분포 측정 스크립트 (삭제됨)
+- `measure_body_keywords.py` — 의원 99개 본문 키워드 매칭 스크립트 (삭제됨)
+- `specialty-distribution-2026-05-27.json` — 종별 카운트 raw (삭제됨)
+- `body-keywords-2026-05-27.json` — 의원 본문 키워드 매칭 raw (삭제됨)
+- 본 노트 (docs/plans/ 로 이전·보존)

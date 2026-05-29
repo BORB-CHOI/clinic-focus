@@ -245,19 +245,11 @@ class GoogleReviews(BaseModel):
     reviews: list[GoogleReviewItem] = []
 
 
-class ExternalSignalBundle(BaseModel):
-    """한 병원의 외부 플랫폼 시그널 묶음 — DDB 로드 결과를 한 덩어리로 전달.
-
-    classify_hospital / build_signal_chunks 는 개별 인자로도 받지만,
-    핸들러가 DDB 에서 모아 한 번에 넘길 때 이 번들을 쓸 수 있다. 모두 Optional.
-    """
-    model_config = ConfigDict(extra="ignore")
-
-    kakao_place: KakaoPlace | None = None
-    kakao_reviews: KakaoReviews | None = None
-    kakao_blog: KakaoBlog | None = None
-    naver_place: NaverPlace | None = None
-    google_reviews: GoogleReviews | None = None
+# 외부 시그널은 묶음 모델 대신 개별 인자로 전달한다 — classify_hospital /
+# build_signal_chunks 가 kakao_place·kakao_reviews·kakao_blog·naver_reviews·
+# naver_blog·google_reviews 를 키워드 인자로 받고, 핸들러는 DynamoAdapter.
+# load_external_signals() 가 돌려준 dict 를 ``**`` 로 전개한다(옛 ExternalSignalBundle
+# 컨테이너는 미사용이라 제거, 2026-05-28).
 
 
 # ---------------------------------------------------------------------------

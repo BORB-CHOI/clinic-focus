@@ -96,18 +96,11 @@ class GoogleReviews(BaseModel):
     # 키워드 추출 후 즉시 폐기
 ```
 
-### `ExternalSignalBundle` — 외부 3개 소스 컨테이너
-```python
-class ExternalSignalBundle(BaseModel):
-    """4 시그널 중 외부 3개 소스를 하나로 묶은 컨테이너.
-    각 필드가 None 이면 해당 소스의 크롤링이 아직 미완료됨을 의미.
-    naver_blog 는 포스트 수가 0일 수 있으나 필드 자체는 항상 list.
-    """
-    naver_place: NaverPlace | None = None
-    naver_blog: list[NaverBlogPost] = []
-    kakao_place: KakaoPlace | None = None
-    google_reviews: GoogleReviews | None = None
-```
+> **외부 시그널은 묶음 모델 없이 개별 인자로 전달한다.** `classify_hospital` /
+> `build_signal_chunks` 가 `kakao_place`·`kakao_reviews`·`kakao_blog`·`naver_reviews`·
+> `naver_blog`·`google_reviews` 를 키워드 인자로 받고, BE 핸들러는
+> `DynamoAdapter.load_external_signals()` 가 돌려준 dict 를 `**` 로 전개한다.
+> (옛 `ExternalSignalBundle` 컨테이너는 미사용이라 제거됨 — 2026-05-28.)
 
 ### `Classification`
 ```python
@@ -276,39 +269,39 @@ PoC에서는 **3트랙으로 분기**한다 (자세한 건 `../ai/CLAUDE.md` "AI
 - `BedrockInvocationError` — Bedrock 호출 실패
 - `InsufficientDataError` — 크롤링 데이터가 너무 빈약 (페이지 0개, 또는 전부 빈 텍스트)
 
-#### 현 구현 약점 (V2에서 수정 예정)
+#### 신뢰도 계산 — 옛 약점과 해소 (2026-05-28)
 
-2026-05-26 강남구 14개 병원 e2e 검증(`ai/scratch/run-log-2026-05-26.md`)에서 확인된 신뢰도 계산 버그.
+2026-05-26 강남구 14개 병원 e2e 검증(PR [#25](https://github.com/BORB-CHOI/clinic-focus/pull/25), scratch 우회로 — 제거됨)에서 확인된 신뢰도 계산 버그. 룰 단독 경로는 이후 `_cap_rule_only_confidence`(70 상한) + 빈 페이지 `InsufficientDataError` 로 일부 완화됨 — 아래 항목 전수 적용 여부는 재검증 필요.
 
 - **`5. 강남우태하피부과의원`** — `primary_focus=[]`(빈 리스트)임에도 `confidence.score=100` 출력. 자칭 컨셉을 추출하지 못한 데이터 부족 상황인데 신뢰도가 최고값으로 잡힘.
 - **`12. 개포센트럴이비인후과의원`** — 병원 이름에 "이비인후과"가 명시돼 있음에도 피부과로 오분류, `primary_focus=[]`, `confidence.score=100`. 크롤 성공 1페이지·이미지 0개인 데이터 부족 케이스임에도 confidence가 낮아지지 않음.
 
-두 케이스 모두 `classify_hospital`의 `compute_confidence` 로직이 **빈 크롤 데이터·`primary_focus=[]` 조건을 감지하지 못함**에서 발생. 현 로직은 4 시그널 점수가 모두 0이어도 confidence 산식에서 높은 값이 나오는 경로가 존재. V2 AI 트랙 B sprint에서 다음을 수정 예정:
-- `primary_focus`가 비어있으면 `confidence.score`를 `CONFIDENCE_THRESHOLD_LOW`(기본 70) 미만으로 강제하고 `level="정보 부족"` 처리
-- 크롤 성공 페이지 수·이미지 수가 임계치 미만이면 `InsufficientDataError`를 던지거나 confidence에 페널티 부여
-- `external_signals` 가 None(외부 크롤링 미완료)이면 confidence 에 추가 패널티 부여 (단일 소스 과신 방지)
+두 케이스 모두 `_cross_validate_signals` 가 **focus 후보를 하나도 못 만들 때 전체 가중치(합≈1.0)를 기여도로 반환** → `_compute_confidence` 에서 score=100 "확실" 이 나오던 버그. 아래로 해소됨(2026-05-28):
+
+- ✅ **focus 후보 0 → 기여도 0** (`_cross_validate_signals`). `primary_focus=[]` 이면 score≈0 → `level="정보 부족"`. 회귀 테스트 `TestEmptyFocusConfidence` 추가
+- ✅ **빈 페이지 → `InsufficientDataError`** (`classify_hospital` 진입 검증). 페이지 0개·전부 빈 html_text 면 분류 자체를 막음
+- ✅ **룰 단독(use_llm=False) 경로 70 cap** (`_cap_rule_only_confidence`). LLM·Vision 교차검증 없는 경로는 "확실" 불가
+- ⚠️ 잔여 — 외부 시그널 전부 None 일 때의 **명시적** 추가 페널티는 미적용. 현재는 외부 기여도가 자연히 낮아지는 것에 의존(단일 소스 과신 방지를 명시 페널티로 강화할지는 실데이터 후 판단)
 
 #### 사용 예시
 ```python
 from ai import classify_hospital
-from shared.models import CrawlData, ExternalSignalBundle
+from shared.models import CrawlData
 
 crawl_data = CrawlData(...)           # 김경재가 자체 사이트 크롤링 후 채워서 전달
-external_signals = ExternalSignalBundle(
-    naver_place=...,                  # 네이버 플레이스 크롤링 결과
-    naver_blog=[...],                 # 네이버 블로그 포스트 목록
-    kakao_place=...,                  # 카카오 로컬 API 결과
-    google_reviews=...,               # 구글 Places 리뷰 집계
-)
 
-# 4 시그널 전부 활성화 (V2 기본)
+# 4 시그널 전부 활성화 (V2 기본) — 외부 시그널은 개별 키워드 인자
+# 보통 BE 핸들러가 db.load_external_signals(hospital_id) 결과를 **external 로 전개
 result = classify_hospital(
-    crawl_data=crawl_data,
-    external_signals=external_signals,
+    crawl_data,
     use_vision=True,
+    kakao_place=...,                  # 카카오 panel3 정제본 (KakaoPlace)
+    kakao_reviews=...,                # 카카오 후기 키워드 빈도 (KakaoReviews)
+    naver_reviews=...,                # 네이버 플레이스 후기 (NaverPlace)
+    google_reviews=...,               # 구글 Places 리뷰 집계 (GoogleReviews)
 )
 
-# 외부 크롤링 미완료 시 graceful 처리 (external_signals=None → self_claim만 사용)
+# 외부 크롤링 미완료 시 graceful 처리 (외부 인자 생략 → self_claim 만 사용)
 result = classify_hospital(crawl_data, use_vision=False)
 
 # DynamoDB single-table 에 저장 (entity SK="CLASSIFICATION")
@@ -556,7 +549,7 @@ ingest_hospital(hospital_id, signal_chunks, metadata, trigger_ingestion=False)
 
 #### 실측 함정 (2026-05-26 검증)
 
-`ai/scratch/kb_ingest.py` 14개 병원 ingest + `numberOfDocumentsFailed: 0` 통과로 확인된 사항.
+14개 병원 ingest + `numberOfDocumentsFailed: 0` 통과(PR [#25](https://github.com/BORB-CHOI/clinic-focus/pull/25) scratch 우회로 — 제거됨, 본체는 `ai/search/kb_store.py`)로 확인된 사항.
 
 1. **`metadataAttributes` 는 단순 dict, list-form 거절** — AWS 문서에 list-form 예시(`[{"key":..., "value":{"type":"STRING","stringValue":...}}]`)가 일부 있지만, DataSource 메타 파일에 그 형식을 쓰면 `"metadata file is not in valid JSON format"`으로 거절됨. 메타 파일은 반드시 `{"metadataAttributes": {"key": "value", ...}}` 단순 dict. list-form은 KB Retrieve filter expression 전용 문법임.
 2. **빈 list·None 값 거절** — `"primary_focus": []`, `"lat": null` 같이 빈 리스트나 null 값이 들어가면 `"invalid metadata attributes"`로 거절됨. 해당 키는 **dict에서 아예 제외**해야 함. `primary_focus`가 비어있으면 키 생략, `lat`/`lng`가 None이면 키 생략.
@@ -651,7 +644,7 @@ filter = {
 
 #### 실측 함정 (2026-05-26 검증)
 
-`ai/scratch/retrieve_test.py` 하드코딩 4쿼리 + `search.sh` 자연어 검색으로 확인된 사항.
+하드코딩 4쿼리 + 자연어 검색(PR [#25](https://github.com/BORB-CHOI/clinic-focus/pull/25) scratch 우회로 — 제거됨, 본체는 `ai/search/kb_store.py` `retrieve_hospital`)으로 확인된 사항.
 
 1. **`team_id` 필터 필수** — KB DataSource를 02팀과 공유하므로, 필터 없이 Retrieve하면 02팀이 ingest한 문서도 결과에 섞임. 모든 Retrieve 호출에 아래 필터를 기본 적용할 것:
 
@@ -897,34 +890,28 @@ class FeedbackStats(BaseModel):
 ```python
 def classify_hospital(
     crawl_data: CrawlData,
-    external_signals: ExternalSignalBundle | None = None,
-    vision_results: list[ImageAnalysisResult] | None = None,
     use_vision: bool = True,
+    use_llm: bool = True,
+    *,
+    kakao_place=None, kakao_reviews=None, kakao_blog=None,
+    naver_reviews=None, naver_blog=None, google_reviews=None,
 ) -> Classification:
-    # 1. 자칭 컨셉 추출 (트랙 A: 룰 기반 / 트랙 B: LLM)
-    self_claim_result = extract_self_claim_with_llm(crawl_data.pages)
+    # 1. 자칭 컨셉 추출 (트랙 A: 룰 기반 use_llm=False / 트랙 B: LLM)
+    #    카카오 tags 가 있으면 자칭 키워드·focus 보강
+    self_claim_result = extract_self_claim(crawl_data.pages, use_llm, kakao_place)
 
-    # 2. Vision 분석 (vision_results 가 미리 전달됐으면 재사용, 없으면 내부 호출)
-    if vision_results is not None:
-        vision_result = build_vision_signal(vision_results)
-    elif use_vision and crawl_data.images:
+    # 2. Vision 분석 (use_llm=True 이고 이미지가 있을 때만)
+    if use_llm and use_vision and crawl_data.images:
         raw = analyze_images([img.url for img in crawl_data.images])
         vision_result = build_vision_signal(raw)
     else:
         vision_result = None
 
-    # 3. 블로그 키워드 빈도 (external_signals 에서 추출)
-    blog_result = (
-        analyze_blog_topics(external_signals.naver_blog)
-        if external_signals and external_signals.naver_blog
-        else None
-    )
+    # 3. 블로그 키워드 빈도 (자체 사이트 blog + 네이버 블로그)
+    blog_result = analyze_blog_topics(crawl_data, naver_blog, kakao_blog)
 
-    # 4. 후기 키워드 분석 (네이버+카카오+구글 합산)
-    review_result = (
-        aggregate_review_keywords(external_signals)
-        if external_signals else None
-    )
+    # 4. 후기 키워드 분석 (카카오+네이버+구글 합산, §56③ 본문 미저장)
+    review_result = aggregate_review_keywords(kakao_reviews, naver_reviews, google_reviews)
 
     # 5. 4 시그널 교차 검증
     primary_focus, signal_scores = cross_validate_signals(
@@ -936,8 +923,8 @@ def classify_hospital(
     if is_keyword_spamming(self_claim_result, vision_result, blog_result):
         signal_scores = apply_spamming_penalty(signal_scores)
 
-    # 7. 신뢰도 점수 (primary_focus=[] 또는 외부 시그널 전부 None 시 ≤50 강제)
-    confidence = compute_confidence(signal_scores, primary_focus, external_signals)
+    # 7. 신뢰도 점수 (룰 단독 use_llm=False 경로는 70 cap)
+    confidence = compute_confidence(signal_scores, vision_result)
 
     return Classification(
         hospital_id=crawl_data.hospital_id,
@@ -1108,13 +1095,13 @@ def handle_feedback(feedback: FeedbackEntry):
 ```python
 # tests/test_classify.py
 from ai import classify_hospital
-from shared.models import CrawlData, ExternalSignalBundle, NaverBlogPost, KakaoPlace
+from shared.models import CrawlData, NaverBlog, NaverBlogPost, KakaoReviews
 
 def test_classify_with_sample_data():
     crawl_data = CrawlData.model_validate_json(
         open("tests/fixtures/sample_hospital.json").read()
     )
-    # external_signals 없이 호출 — self_claim 만 사용, confidence 패널티 적용
+    # 외부 인자 없이 호출 — self_claim 만 사용, confidence 패널티 적용
     result = classify_hospital(crawl_data, use_vision=False)
     assert result.confidence.level in ["확실", "추정", "정보 부족"]
 
@@ -1122,18 +1109,16 @@ def test_classify_with_external_signals():
     crawl_data = CrawlData.model_validate_json(
         open("tests/fixtures/sample_hospital.json").read()
     )
-    external = ExternalSignalBundle(
-        naver_blog=[
-            NaverBlogPost(url="https://...", title="아토피 치료", text_excerpt="...",
-                          published_at=datetime.utcnow(), topic="아토피"),
-        ],
-        kakao_place=KakaoPlace(place_id="12345", name="○○의원",
-                               category_group_code="HP8",
-                               review_count=30,
-                               review_keywords={"친절": 15, "청결": 8}),
-    )
-    result = classify_hospital(crawl_data, external_signals=external, use_vision=False)
-    # 4 시그널 중 blog·reviews 가 채워졌으므로 signals.blog·reviews 가 None 이 아니어야
+    naver_blog = NaverBlog(total=1, posts=[
+        NaverBlogPost(title="아토피 치료", link="https://...",
+                      description="...", post_date="20260501"),
+    ])
+    kakao_reviews = KakaoReviews(total_reviews=30,
+                                 keyword_frequency={"친절": 15, "청결": 8})
+    # 외부 시그널은 개별 키워드 인자 (dict 또는 모델 양받)
+    result = classify_hospital(crawl_data, use_vision=False,
+                               naver_blog=naver_blog, kakao_reviews=kakao_reviews)
+    # blog·reviews 가 채워졌으므로 signals.blog·reviews 기여도가 잡혀야
     assert result.confidence.signals.blog is not None
     assert result.confidence.signals.reviews is not None
 ```

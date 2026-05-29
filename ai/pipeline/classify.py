@@ -762,8 +762,11 @@ def _cross_validate_signals(
     )
 
     if not all_focus_candidates:
-        # 어떤 시그널도 후보를 만들지 못한 경우
-        return [], {k: weights[k] for k in _WEIGHTS}
+        # 어떤 시그널도 focus 후보를 만들지 못함 → 주력 분야 미식별.
+        # 기여도를 0 으로 두어 confidence 가 "정보 부족"(score≈0)으로 떨어지게 한다.
+        # (옛 버그: 여기서 전체 가중치를 반환해 primary_focus=[] 인데 score=100
+        #  "확실" 이 나왔음 — docs/API-BE-AI.md "현 구현 약점" 사례.)
+        return [], {k: 0.0 for k in _WEIGHTS}
 
     # 후보별 가중 점수 계산
     def _normalize(counter: Counter) -> dict[str, float]:

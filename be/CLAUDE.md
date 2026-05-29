@@ -39,8 +39,10 @@ from ai import (
     ingest_hospital,             # KB DataSource 적재. 옛 index_hospital 폐기
     recompute_confidence,
 )
-from shared.models import CrawlData, SearchQuery, ExternalSignalBundle
-# ingest 메타는 별도 모델 없이 build_ingest_metadata(meta, classification) 가 평탄 dict 반환
+from shared.models import CrawlData, SearchQuery
+# 외부 시그널은 묶음 모델 없이 개별 인자 — DynamoAdapter.load_external_signals() 가
+# 돌려준 dict 를 classify_hospital(**external)·build_signal_chunks(**external) 로 전개
+# ingest 메타도 별도 모델 없이 build_ingest_metadata(meta, classification) 가 평탄 dict 반환
 from ai.search.kb_store import build_signal_chunks, build_ingest_metadata
 ```
 

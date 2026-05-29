@@ -138,7 +138,7 @@ def extract_homepage(panel3: dict[str, Any]) -> str | None:
 
     SNS·블로그·카페 호스트는 건너뛰고 첫 자체 도메인 URL 을 고른다.
     자체 도메인이 하나도 없으면 첫 항목으로 폴백.
-    Playwright `KakaoPlaceRenderer` 가 하던 일을 httpx panel3 로 대체.
+    (옛 Playwright 렌더러가 하던 홈페이지 추출을 httpx panel3 응답 파싱으로 대체.)
     """
     homepages = ((panel3.get("summary") or {}).get("homepages")) or []
     urls = [h for h in homepages if isinstance(h, str) and h.startswith(("http://", "https://"))]

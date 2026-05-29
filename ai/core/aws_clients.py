@@ -18,7 +18,7 @@ from typing import Any
 import boto3
 
 # ---------------------------------------------------------------------------
-# 개인 계정 세션 (Bedrock · S3 Vectors · Textract)
+# 개인 계정 세션 (Bedrock LLM/Vision — Sonnet 4.6, 서울 리전)
 # ---------------------------------------------------------------------------
 
 _ai_session: boto3.Session | None = None
@@ -79,16 +79,6 @@ def get_bedrock_runtime_client(use_vision: bool = False) -> Any:
     추후 강사 정책 완화되면 텍스트만 다시 지원 계정으로 분리 가능.
     """
     return _get_ai_session().client("bedrock-runtime", region_name=_ai_region_name())
-
-
-def get_s3vectors_client() -> Any:
-    """개인 계정 S3 Vectors 클라이언트."""
-    return _get_ai_session().client("s3vectors", region_name=_ai_region_name())
-
-
-def get_textract_client() -> Any:
-    """개인 계정 Textract 클라이언트."""
-    return _get_ai_session().client("textract", region_name=_ai_region_name())
 
 
 def get_s3_client_for_images() -> Any:

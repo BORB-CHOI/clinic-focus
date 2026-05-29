@@ -8,7 +8,8 @@ end-to-end로 동작하는지 확인한다.
 
 사전 조건:
     1. 개인 계정 자격증명 설정 (aws configure 기본 프로파일 또는 AWS_PROFILE)
-       — Bedrock·S3 Vectors·Textract 는 개인 계정에서 운영
+       — Bedrock(LLM/Vision) 은 개인 계정 운영. 벡터 검색은 KB 경유(S3 Vectors
+         직접 호출 ❌), OCR 은 Bedrock Vision 흡수(Textract 미사용)
     2. ap-northeast-2 리전(서울)에서 아래 모델 액세스 활성화 (Bedrock 콘솔)
        - global.anthropic.claude-sonnet-4-6  (Global cross-region inference profile)
        - amazon.titan-embed-text-v2:0       (임베딩은 지원 계정 us-east-1)

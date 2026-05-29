@@ -1,10 +1,10 @@
 """
-ai/vision.py — Bedrock Vision + Textract 이미지 분석 모듈
+ai/vision.py — Bedrock Vision 이미지 분석 모듈
 
 책임:
 - 병원 사이트 이미지를 Bedrock Claude Vision으로 분석
 - 의료기기·시술 장비 식별, 이미지 카테고리 분류, 확신도 산출
-- extract_text=True 시 Textract OCR 보조 (결과는 로깅 전용)
+- OCR 은 Bedrock Vision 이 흡수 (한국어 미지원으로 Textract 미사용)
 - MAX_VISION_IMAGES 환경변수로 호출 비용 통제
 """
 
@@ -20,7 +20,7 @@ import urllib.request
 from urllib.parse import urlparse
 
 from ai.core import bedrock_client
-from ai.core.aws_clients import get_s3_client_for_images, get_textract_client
+from ai.core.aws_clients import get_s3_client_for_images
 from ai.core.exceptions import BedrockInvocationError, ImageNotFoundError
 from shared.models import ImageAnalysisResult
 
@@ -217,30 +217,6 @@ def _parse_vision_response(response: dict, image_url: str) -> ImageAnalysisResul
         )
 
 
-def _run_textract_ocr(image_bytes: bytes, url: str) -> None:
-    """Textract AnalyzeDocument로 텍스트를 추출해 로그에 남긴다.
-
-    결과를 ImageAnalysisResult에 포함하지 않음 (현재 모델에 텍스트 필드 없음).
-    Textract 호출 실패는 전체 흐름에 영향을 주지 않는다.
-    """
-    try:
-        textract = get_textract_client()
-        response = textract.analyze_document(
-            Document={"Bytes": image_bytes},
-            FeatureTypes=["TABLES", "FORMS"],
-        )
-        blocks = response.get("Blocks", [])
-        lines = [
-            b["Text"]
-            for b in blocks
-            if b.get("BlockType") == "LINE" and b.get("Text")
-        ]
-        extracted = " | ".join(lines[:20])  # 로그 길이 제한
-        logger.info("Textract OCR (url=%s): %s", url, extracted if extracted else "(텍스트 없음)")
-    except Exception as exc:
-        logger.warning("Textract 호출 실패, 건너뜀 (url=%s): %s", url, exc)
-
-
 # ---------------------------------------------------------------------------
 # 공개 함수
 # ---------------------------------------------------------------------------
@@ -248,19 +224,18 @@ def _run_textract_ocr(image_bytes: bytes, url: str) -> None:
 
 def analyze_images(
     image_urls: list[str],
-    extract_text: bool = False,
 ) -> list[ImageAnalysisResult]:
     """이미지 URL 리스트를 Bedrock Vision으로 분석해 ImageAnalysisResult 리스트 반환.
 
     동작:
     1. MAX_VISION_IMAGES 환경변수(기본 10) 초과분 앞에서 잘라냄
     2. 각 URL: 다운로드 → base64 인코딩 → Bedrock Vision 호출 → 파싱
-    3. extract_text=True면 Textract OCR 보조 호출 (결과는 로깅만)
-    4. 개별 이미지 오류는 건너뛰고 나머지 계속 처리
+    3. 개별 이미지 오류는 건너뛰고 나머지 계속 처리
+
+    OCR 은 Bedrock Vision 프롬프트가 흡수한다(한국어 미지원으로 Textract 미사용).
 
     Args:
         image_urls: 분석할 이미지 URL 목록 (s3:// 또는 http/https)
-        extract_text: True면 Textract OCR 보조 실행
 
     Returns:
         성공적으로 분석된 이미지의 ImageAnalysisResult 리스트
@@ -322,10 +297,6 @@ def analyze_images(
             result.confidence,
             url,
         )
-
-        # 5. Textract OCR (보조, extract_text=True 시)
-        if extract_text:
-            _run_textract_ocr(image_bytes, url)
 
     logger.info(
         "analyze_images 완료: 입력 %d개 → 성공 %d개",
