@@ -594,10 +594,28 @@ def _dedup_by_hospital(raw_results: list[dict]) -> dict[str, dict]:
     return by_hospital
 
 
+def _build_interpretation(processed) -> str | None:
+    """ProcessedQuery 로부터 사용자 표시용 "이렇게 이해했어요" 문자열을 만든다.
+
+    예: "사마귀 어디가 좋을까" → "사마귀 · 진료과: 피부과".
+    FE 가 검색 결과 상단에 노출하면 사용자가 오해석을 즉시 인지하고 재검색 가능.
+    의료 키워드를 하나도 못 뽑았으면 None (해석 표시 안 함).
+    """
+    if not processed.medical_terms:
+        return None
+    parts: list[str] = [", ".join(processed.medical_terms)]
+    if processed.inferred_specialty:
+        parts.append(f"진료과: {processed.inferred_specialty}")
+    if processed.inferred_focus:
+        parts.append(f"분야: {' / '.join(processed.inferred_focus)}")
+    return " · ".join(parts)
+
+
 def _raw_to_search_result(
     item: dict,
     similarity_score: float | None = None,
     distance_km: float | None = None,
+    query_interpretation: str | None = None,
 ) -> "SearchResult":
     """KB Retrieve raw result 항목을 SearchResult 로 변환한다."""
     from shared.models import SearchResult  # 순환 import 방지
@@ -619,7 +637,7 @@ def _raw_to_search_result(
         similarity_score=similarity_score,
         distance_km=distance_km,
         matched_focus=matched_focus,
-        query_interpretation=None,
+        query_interpretation=query_interpretation,
     )
 
 
@@ -656,6 +674,7 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
     processed = process_query(q_text)
     retrieve_text = processed.embedding_text or q_text
     effective_specialty = query.specialty or processed.inferred_specialty
+    interpretation = _build_interpretation(processed)  # FE "이렇게 이해했어요" 박스용
     if processed.was_expanded or processed.inferred_specialty:
         logger.info(
             "retrieve_hospital: 쿼리 전처리 — terms=%s specialty=%s expanded=%s",
@@ -744,6 +763,7 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
                     item,
                     similarity_score=round(score, 4),
                     distance_km=round(dist_km, 3),
+                    query_interpretation=interpretation,
                 )
             )
         return results
@@ -765,5 +785,11 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
     results = []
     for item in sorted_items[: query.limit]:
         score = float(item.get("score") or 0.0)
-        results.append(_raw_to_search_result(item, similarity_score=round(score, 4)))
+        results.append(
+            _raw_to_search_result(
+                item,
+                similarity_score=round(score, 4),
+                query_interpretation=interpretation,
+            )
+        )
     return results

@@ -707,7 +707,7 @@ class TestRetrieveHospital:
 
         # "사마귀" → 피부과 추론 + 동의어(냉동치료 등) 확장. specialty 명시 안 함.
         query = self._make_query(query_text="사마귀 어디가 좋을까")
-        retrieve_hospital(query)
+        results = retrieve_hospital(query)
 
         call_kwargs = mock_runtime.retrieve.call_args[1]
         kb_filter = (
@@ -723,6 +723,10 @@ class TestRetrieveHospital:
         assert _specialty_in_filter(kb_filter, "피부과"), f"추론 진료과 필터 없음: {kb_filter}"
         assert retrieve_text != "사마귀 어디가 좋을까", "동의어 확장이 적용되지 않음"
         assert "사마귀" in retrieve_text
+        # query_interpretation("이렇게 이해했어요") 가 결과에 채워져야 한다
+        assert results and results[0].query_interpretation is not None
+        assert "사마귀" in results[0].query_interpretation
+        assert "피부과" in results[0].query_interpretation
 
     # (a-3) 사용자가 specialty 를 명시하면 추론값보다 우선한다
     @patch("boto3.client")
