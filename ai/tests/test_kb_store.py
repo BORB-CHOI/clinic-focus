@@ -35,6 +35,7 @@ from shared.models import (
     SignalContributions,
 )
 from ai.search.kb_store import (
+    _enrich_with_synonyms,
     build_blog_chunk,
     build_ingest_metadata,
     build_reviews_chunk,
@@ -371,6 +372,62 @@ class TestBuildSignalChunks:
         )
         for key, text in chunks.items():
             assert text.strip(), f"{key} 시그널 텍스트가 비어있음"
+
+
+class TestSynonymEnrichment:
+    """문서-측 동의어 주입(_enrich_with_synonyms) — '사마귀≠심상성 우췌' 양방향 매칭."""
+
+    def test_reverse_injection_academic_to_common(self):
+        """본문에 학명만 있어도 일반어가 부착된다 (사용자가 '사마귀'로 검색 가능)."""
+        out = _enrich_with_synonyms("저희 의원은 심상성 우췌 냉동요법을 시행합니다.")
+        assert "사마귀" in out
+        assert "[관련 의학 용어]" in out
+
+    def test_forward_injection_common_to_academic(self):
+        """본문에 일반어가 있으면 학명·영문이 부착된다."""
+        out = _enrich_with_synonyms("사마귀 치료를 전문으로 합니다.")
+        assert "심상성 우췌" in out
+        assert "verruca" in out
+
+    def test_short_key_no_false_trigger(self):
+        """len<2 키(점·목·침·냉)는 부분문자열 오매칭을 일으키지 않는다."""
+        out = _enrich_with_synonyms("이 시점에 주목해 주세요. 목요일 일정 안내입니다.")
+        assert "[관련 의학 용어]" not in out
+
+    def test_no_match_returns_unchanged(self):
+        """의료 키워드가 없으면 원문 그대로 반환한다."""
+        text = "주차 가능하며 친절하게 안내해 드립니다."
+        assert _enrich_with_synonyms(text) == text
+
+    def test_empty_returns_empty(self):
+        assert _enrich_with_synonyms("") == ""
+
+    def test_no_duplicate_terms_added(self):
+        """이미 본문에 있는 표현은 중복 부착하지 않는다."""
+        out = _enrich_with_synonyms("사마귀 심상성 우췌 둘 다 언급")
+        added = out.split("[관련 의학 용어]")[-1] if "[관련 의학 용어]" in out else ""
+        assert "사마귀" not in added  # 이미 본문에 있으므로 추가 줄에 없어야
+        assert "심상성 우췌" not in added
+
+    def test_build_signal_chunks_enriches_self_claim(self):
+        """build_signal_chunks 의 self_claim 청크가 동의어 주입을 거친다."""
+        from datetime import datetime, timezone
+        from shared.models import CrawlData, CrawledPage
+
+        crawl = CrawlData(
+            hospital_id="h1",
+            website_url="https://x.kr",
+            pages=[CrawledPage(
+                url="https://x.kr",
+                page_type="main",
+                html_text="심상성 우췌 냉동요법 클리닉입니다.",
+                fetched_at=datetime.now(tz=timezone.utc),
+            )],
+            images=[],
+        )
+        chunks = build_signal_chunks(crawl_data=crawl)
+        assert "self_claim" in chunks
+        assert "사마귀" in chunks["self_claim"]  # 문서-측 주입으로 일반어 추가됨
 
 
 # ===========================================================================
