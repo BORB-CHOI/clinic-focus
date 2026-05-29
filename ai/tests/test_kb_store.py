@@ -693,6 +693,68 @@ class TestRetrieveHospital:
 
         assert _has_team_id_filter(kb_filter), f"team_id 필터 없음: {kb_filter}"
 
+    # (a-2) process_query 연동 — 추론 진료과가 메타필터에 들어가고 동의어 확장본으로 검색
+    @patch("boto3.client")
+    @patch.dict(os.environ, _RETRIEVE_ENV)
+    def test_query_processor_infers_specialty_and_expands(self, mock_boto3):
+        """specialty 미지정 의료 쿼리 → process_query 가 진료과를 추론해 필터에 넣고,
+        동의어 확장본을 KB Retrieve 쿼리 텍스트로 사용한다."""
+        mock_runtime = MagicMock()
+        mock_runtime.retrieve.return_value = {
+            "retrievalResults": [_make_kb_result("h_001", 0.9)]
+        }
+        mock_boto3.return_value = mock_runtime
+
+        # "사마귀" → 피부과 추론 + 동의어(냉동치료 등) 확장. specialty 명시 안 함.
+        query = self._make_query(query_text="사마귀 어디가 좋을까")
+        retrieve_hospital(query)
+
+        call_kwargs = mock_runtime.retrieve.call_args[1]
+        kb_filter = (
+            call_kwargs["retrievalConfiguration"]["vectorSearchConfiguration"]["filter"]
+        )
+        retrieve_text = call_kwargs["retrievalQuery"]["text"]
+
+        def _specialty_in_filter(f: dict, value: str) -> bool:
+            if f.get("equals", {}).get("key") == "standard_specialty":
+                return f["equals"]["value"] == value
+            return any(_specialty_in_filter(c, value) for c in f.get("andAll", []))
+
+        assert _specialty_in_filter(kb_filter, "피부과"), f"추론 진료과 필터 없음: {kb_filter}"
+        assert retrieve_text != "사마귀 어디가 좋을까", "동의어 확장이 적용되지 않음"
+        assert "사마귀" in retrieve_text
+
+    # (a-3) 사용자가 specialty 를 명시하면 추론값보다 우선한다
+    @patch("boto3.client")
+    @patch.dict(os.environ, _RETRIEVE_ENV)
+    def test_explicit_specialty_overrides_inference(self, mock_boto3):
+        """query.specialty 가 있으면 process_query 추론값을 덮어쓰지 않고 명시값을 쓴다."""
+        mock_runtime = MagicMock()
+        mock_runtime.retrieve.return_value = {
+            "retrievalResults": [_make_kb_result("h_001", 0.9)]
+        }
+        mock_boto3.return_value = mock_runtime
+
+        # "사마귀"는 피부과를 추론하지만 사용자가 가정의학과를 명시 → 명시값 우선
+        query = self._make_query(query_text="사마귀 어디가 좋을까", specialty="가정의학과")
+        retrieve_hospital(query)
+
+        call_kwargs = mock_runtime.retrieve.call_args[1]
+        kb_filter = (
+            call_kwargs["retrievalConfiguration"]["vectorSearchConfiguration"]["filter"]
+        )
+
+        def _specialty_value(f: dict) -> str | None:
+            if f.get("equals", {}).get("key") == "standard_specialty":
+                return f["equals"]["value"]
+            for c in f.get("andAll", []):
+                v = _specialty_value(c)
+                if v is not None:
+                    return v
+            return None
+
+        assert _specialty_value(kb_filter) == "가정의학과"
+
     # (b) 같은 hospital_id 여러 result → 최고 score 1개로 dedup
     @patch("boto3.client")
     @patch.dict(os.environ, _RETRIEVE_ENV)
@@ -780,8 +842,10 @@ class TestRetrieveHospital:
         mock_runtime.retrieve.return_value = {"retrievalResults": []}
         mock_boto3.return_value = mock_runtime
 
-        # 위치/지역/specialty 없는 순수 자연어 쿼리 → fallback 분기 없이 종료
-        query = self._make_query()
+        # 위치/지역/specialty 없는 순수 자연어 쿼리 → fallback 분기 없이 종료.
+        # 의료 키워드가 없어 process_query 가 진료과를 추론하지 않는 쿼리를 써야
+        # effective_specialty 가 None 으로 남아 "필터 team_id 만" 조건이 성립한다.
+        query = self._make_query(query_text="집 근처 추천 좀")
         results = retrieve_hospital(query)
 
         # retrieve 는 1회만 호출돼야 한다 (fallback 없음)

@@ -644,10 +644,23 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
         KBRetrieveError: KB Retrieve API 호출 실패 시.
     """
     from ai.core.exceptions import InvalidQueryError, KBRetrieveError  # 순환 import 방지
+    from ai.search.query_processor import process_query
 
     q_text = (query.query_text or "").strip()
     if not q_text:
         raise InvalidQueryError("retrieve_hospital: query_text 가 비어있습니다. KB Retrieve 는 빈 쿼리 불가.")
+
+    # 검색어 전처리 — 불용어 제거 + 의료 동의어 확장 + 진료과 추론.
+    # embedding_text(동의어 확장본)로 임베딩 매칭률을 높이고, 추론 진료과는
+    # 사용자가 specialty 를 명시 안 했을 때만 메타필터로 보강(명시값 우선).
+    processed = process_query(q_text)
+    retrieve_text = processed.embedding_text or q_text
+    effective_specialty = query.specialty or processed.inferred_specialty
+    if processed.was_expanded or processed.inferred_specialty:
+        logger.info(
+            "retrieve_hospital: 쿼리 전처리 — terms=%s specialty=%s expanded=%s",
+            processed.medical_terms, processed.inferred_specialty, processed.was_expanded,
+        )
 
     kb_id = os.environ.get("KB_ID")
     region = os.environ.get("AWS_REGION", "us-east-1")
@@ -666,11 +679,11 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
         lat_range = (query.lat - deg_offset, query.lat + deg_offset)  # type: ignore[operator]
         lng_range = (query.lng - deg_offset, query.lng + deg_offset)  # type: ignore[operator]
 
-    # --- 1차 호출: 전체 필터 적용 ---
+    # --- 1차 호출: 전체 필터 적용 (specialty 는 추론값 보강) ---
     kb_filter = _build_kb_filter(
         sido=query.sido,
         sigungu=query.sigungu,
-        specialty=query.specialty,
+        specialty=effective_specialty,
         min_confidence=query.min_confidence,
         lat_range=lat_range,
         lng_range=lng_range,
@@ -678,16 +691,16 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
 
     # 같은 병원에서 여러 청크가 나올 수 있으므로 limit * 3 배로 넉넉히 요청
     n_request = min(query.limit * 3, _KB_MAX_RESULTS)
-    raw = _kb_retrieve(client, kb_id, q_text, kb_filter, n_request)
+    raw = _kb_retrieve(client, kb_id, retrieve_text, kb_filter, n_request)
 
     # --- fallback: 빈 결과 시 지역/specialty/confidence 완화 (team_id 는 유지) ---
-    if not raw and (query.sido or query.sigungu or query.specialty or has_location):
+    if not raw and (query.sido or query.sigungu or effective_specialty or has_location):
         logger.info(
             "retrieve_hospital: 결과 0건 → 지역/specialty/min_confidence 필터 완화 fallback (query=%r)",
             q_text,
         )
         fallback_filter = _build_kb_filter()  # team_id 만 남김
-        raw = _kb_retrieve(client, kb_id, q_text, fallback_filter, n_request)
+        raw = _kb_retrieve(client, kb_id, retrieve_text, fallback_filter, n_request)
 
     if not raw:
         return []

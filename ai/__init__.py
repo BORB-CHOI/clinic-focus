@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from ai.search.embed import embed_text  # noqa: F401
     from ai.search.feedback import aggregate_feedback_stats, recompute_confidence  # noqa: F401
     from ai.search.kb_store import ingest_hospital, retrieve_hospital  # noqa: F401
+    from ai.search.query_processor import ProcessedQuery, process_query  # noqa: F401
     from ai.search.related import find_related_hospitals  # noqa: F401
 
 
@@ -44,6 +45,9 @@ def __getattr__(name: str):  # noqa: ANN001, ANN202
         "find_related_hospitals":       ("ai.search.related",      "find_related_hospitals"),
         "recompute_confidence":         ("ai.search.feedback",     "recompute_confidence"),
         "aggregate_feedback_stats":     ("ai.search.feedback",     "aggregate_feedback_stats"),
+        # 검색어 전처리(불용어·동의어·진료과 추론). boto3 의존 없으나 export 패턴 통일.
+        "process_query":                ("ai.search.query_processor", "process_query"),
+        "ProcessedQuery":               ("ai.search.query_processor", "ProcessedQuery"),
     }
     if name in _module_map:
         module_path, attr = _module_map[name]
@@ -63,4 +67,6 @@ __all__ = [
     "find_related_hospitals",
     "recompute_confidence",
     "aggregate_feedback_stats",
+    "process_query",
+    "ProcessedQuery",
 ]
