@@ -35,6 +35,7 @@ from shared.models import (
     SignalContributions,
 )
 from ai.search.kb_store import (
+    _enrich_with_synonyms,
     build_blog_chunk,
     build_ingest_metadata,
     build_reviews_chunk,
@@ -373,6 +374,64 @@ class TestBuildSignalChunks:
             assert text.strip(), f"{key} 시그널 텍스트가 비어있음"
 
 
+class TestSynonymEnrichment:
+    """문서-측 동의어 주입(_enrich_with_synonyms) — '사마귀≠심상성 우췌' 양방향 매칭."""
+
+    def test_reverse_injection_academic_to_common(self):
+        """본문에 학명만 있어도 일반어가 부착된다 (사용자가 '사마귀'로 검색 가능)."""
+        out = _enrich_with_synonyms("저희 의원은 심상성 우췌 냉동요법을 시행합니다.")
+        assert "사마귀" in out
+        assert "[관련 의학 용어]" in out
+
+    def test_forward_injection_common_to_academic(self):
+        """본문에 일반어가 있으면 학명·영문이 부착된다."""
+        out = _enrich_with_synonyms("사마귀 치료를 전문으로 합니다.")
+        assert "심상성 우췌" in out
+        assert "verruca" in out
+
+    def test_short_key_no_false_trigger(self):
+        """len<2 키(점·목·침·냉)는 부분문자열 오매칭을 일으키지 않는다."""
+        out = _enrich_with_synonyms("이 시점에 주목해 주세요. 목요일 일정 안내입니다.")
+        assert "[관련 의학 용어]" not in out
+
+    def test_no_match_returns_unchanged(self):
+        """의료 키워드가 없으면 원문 그대로 반환한다."""
+        text = "주차 가능하며 친절하게 안내해 드립니다."
+        assert _enrich_with_synonyms(text) == text
+
+    def test_empty_returns_empty(self):
+        assert _enrich_with_synonyms("") == ""
+
+    def test_no_duplicate_terms_added(self):
+        """이미 본문에 있는 표현은 중복 부착하지 않는다 (정확 일치 기준)."""
+        out = _enrich_with_synonyms("사마귀 심상성 우췌 둘 다 언급")
+        added = out.split("[관련 의학 용어]")[-1] if "[관련 의학 용어]" in out else ""
+        added_terms = [t.strip() for t in added.split(",")]
+        # 본문에 이미 있는 정확한 표현은 추가 목록에 없어야 (substring 인 "심상성 사마귀" 등은 허용)
+        assert "사마귀" not in added_terms
+        assert "심상성 우췌" not in added_terms
+
+    def test_build_signal_chunks_enriches_self_claim(self):
+        """build_signal_chunks 의 self_claim 청크가 동의어 주입을 거친다."""
+        from datetime import datetime, timezone
+        from shared.models import CrawlData, CrawledPage
+
+        crawl = CrawlData(
+            hospital_id="h1",
+            website_url="https://x.kr",
+            pages=[CrawledPage(
+                url="https://x.kr",
+                page_type="main",
+                html_text="심상성 우췌 냉동요법 클리닉입니다.",
+                fetched_at=datetime.now(tz=timezone.utc),
+            )],
+            images=[],
+        )
+        chunks = build_signal_chunks(crawl_data=crawl)
+        assert "self_claim" in chunks
+        assert "사마귀" in chunks["self_claim"]  # 문서-측 주입으로 일반어 추가됨
+
+
 # ===========================================================================
 # 5. build_ingest_metadata 테스트
 # ===========================================================================
@@ -693,6 +752,72 @@ class TestRetrieveHospital:
 
         assert _has_team_id_filter(kb_filter), f"team_id 필터 없음: {kb_filter}"
 
+    # (a-2) process_query 연동 — 추론 진료과가 메타필터에 들어가고 동의어 확장본으로 검색
+    @patch("boto3.client")
+    @patch.dict(os.environ, _RETRIEVE_ENV)
+    def test_query_processor_infers_specialty_and_expands(self, mock_boto3):
+        """specialty 미지정 의료 쿼리 → process_query 가 진료과를 추론해 필터에 넣고,
+        동의어 확장본을 KB Retrieve 쿼리 텍스트로 사용한다."""
+        mock_runtime = MagicMock()
+        mock_runtime.retrieve.return_value = {
+            "retrievalResults": [_make_kb_result("h_001", 0.9)]
+        }
+        mock_boto3.return_value = mock_runtime
+
+        # "사마귀" → 피부과 추론 + 동의어(냉동치료 등) 확장. specialty 명시 안 함.
+        query = self._make_query(query_text="사마귀 어디가 좋을까")
+        results = retrieve_hospital(query)
+
+        call_kwargs = mock_runtime.retrieve.call_args[1]
+        kb_filter = (
+            call_kwargs["retrievalConfiguration"]["vectorSearchConfiguration"]["filter"]
+        )
+        retrieve_text = call_kwargs["retrievalQuery"]["text"]
+
+        def _specialty_in_filter(f: dict, value: str) -> bool:
+            if f.get("equals", {}).get("key") == "standard_specialty":
+                return f["equals"]["value"] == value
+            return any(_specialty_in_filter(c, value) for c in f.get("andAll", []))
+
+        assert _specialty_in_filter(kb_filter, "피부과"), f"추론 진료과 필터 없음: {kb_filter}"
+        assert retrieve_text != "사마귀 어디가 좋을까", "동의어 확장이 적용되지 않음"
+        assert "사마귀" in retrieve_text
+        # query_interpretation("이렇게 이해했어요") 가 결과에 채워져야 한다
+        assert results and results[0].query_interpretation is not None
+        assert "사마귀" in results[0].query_interpretation
+        assert "피부과" in results[0].query_interpretation
+
+    # (a-3) 사용자가 specialty 를 명시하면 추론값보다 우선한다
+    @patch("boto3.client")
+    @patch.dict(os.environ, _RETRIEVE_ENV)
+    def test_explicit_specialty_overrides_inference(self, mock_boto3):
+        """query.specialty 가 있으면 process_query 추론값을 덮어쓰지 않고 명시값을 쓴다."""
+        mock_runtime = MagicMock()
+        mock_runtime.retrieve.return_value = {
+            "retrievalResults": [_make_kb_result("h_001", 0.9)]
+        }
+        mock_boto3.return_value = mock_runtime
+
+        # "사마귀"는 피부과를 추론하지만 사용자가 가정의학과를 명시 → 명시값 우선
+        query = self._make_query(query_text="사마귀 어디가 좋을까", specialty="가정의학과")
+        retrieve_hospital(query)
+
+        call_kwargs = mock_runtime.retrieve.call_args[1]
+        kb_filter = (
+            call_kwargs["retrievalConfiguration"]["vectorSearchConfiguration"]["filter"]
+        )
+
+        def _specialty_value(f: dict) -> str | None:
+            if f.get("equals", {}).get("key") == "standard_specialty":
+                return f["equals"]["value"]
+            for c in f.get("andAll", []):
+                v = _specialty_value(c)
+                if v is not None:
+                    return v
+            return None
+
+        assert _specialty_value(kb_filter) == "가정의학과"
+
     # (b) 같은 hospital_id 여러 result → 최고 score 1개로 dedup
     @patch("boto3.client")
     @patch.dict(os.environ, _RETRIEVE_ENV)
@@ -780,8 +905,10 @@ class TestRetrieveHospital:
         mock_runtime.retrieve.return_value = {"retrievalResults": []}
         mock_boto3.return_value = mock_runtime
 
-        # 위치/지역/specialty 없는 순수 자연어 쿼리 → fallback 분기 없이 종료
-        query = self._make_query()
+        # 위치/지역/specialty 없는 순수 자연어 쿼리 → fallback 분기 없이 종료.
+        # 의료 키워드가 없어 process_query 가 진료과를 추론하지 않는 쿼리를 써야
+        # effective_specialty 가 None 으로 남아 "필터 team_id 만" 조건이 성립한다.
+        query = self._make_query(query_text="집 근처 추천 좀")
         results = retrieve_hospital(query)
 
         # retrieve 는 1회만 호출돼야 한다 (fallback 없음)

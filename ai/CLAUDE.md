@@ -61,7 +61,8 @@
 - `extract_services_and_doctors(crawl_data, classification, vision_results) -> ServicesAndDoctors`
 - `find_related_hospitals(hospital_id, location, primary_focus, excluded_services, limit=5) -> list[RelatedHospital]`
 - `aggregate_feedback_stats(hospital_id) -> FeedbackStats`
-- `retrieve_hospital(query: SearchQuery) -> list[SearchResult]` — KB Retrieve 래퍼 (자연어 검색만)
+- `retrieve_hospital(query: SearchQuery) -> list[SearchResult]` — KB Retrieve 래퍼 (자연어 검색만). 내부에서 `process_query` 로 동의어 확장·진료과 추론 후 검색
+- `process_query(query: str) -> ProcessedQuery` — 검색어 전처리(불용어 제거·의료 동의어 확장·진료과 추론). `ai/search/dictionaries.py` 사전 기반, LLM·boto3 미사용. `retrieve_hospital` 이 호출하지만 BE 가 FE 미리보기 등에 직접 호출도 가능
 - `ingest_hospital(hospital_id, signal_chunks, metadata, *, trigger_ingestion=False) -> None` — 시그널별 청크(`build_signal_chunks`)·메타(`build_ingest_metadata`)를 호출자가 조립해 넘김. KB DataSource S3 업로드 + ingestion job
 - `recompute_confidence(hospital_id, recent_feedback) -> Confidence`
 - `embed_text(text) -> list[float]` — Titan v2 직접 호출 (디버깅·실험용. 운영 검색은 KB가 내부 수행)

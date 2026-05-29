@@ -291,6 +291,56 @@ def build_reviews_chunk(
     return "\n".join(parts)
 
 
+# 한 청크에 부착할 동의어 최대 개수 — 임베딩 본문 비대 방지.
+_MAX_SYNONYM_ADDITIONS = 60
+
+# 동의어 클러스터 캐시 (dictionaries 에서 1회 로드).
+_SYNONYM_CLUSTERS: list[list[str]] | None = None
+
+
+def _enrich_with_synonyms(text: str) -> str:
+    """문서(병원 청크)에 동의어 클러스터를 부착해 임베딩 어휘를 **양방향** 확장한다.
+
+    문제: 병원 본문에 "심상성 우췌"로만 적혀 있으면 사용자가 "사마귀"로 검색해도
+    Titan v2 의 한국어 의학 동의어 갭(cos 0.25) 때문에 못 찾는다(쿼리 확장만으로는
+    쿼리에 트리거 단어가 정확히 있어야 작동 — 취약).
+
+    해결(설계 문서 트랙 A): 청크에 클러스터 멤버가 하나라도 있으면 나머지 멤버를
+    `[관련 의학 용어]` 줄로 덧붙인다. 그러면 본문이 어느 표현을 쓰든 임베딩이 일반어·
+    학명·영문·치료를 모두 담아 어느 방향 쿼리에도 매칭된다. 임베딩 전용(화면 미표시)
+    이라 §56 무관.
+
+    오매칭 방지: 길이 2 미만 멤버(점·목·침·냉)는 **트리거로 쓰지 않는다** — "시점"의
+    "점" 같은 부분문자열 사고 차단. 단 트리거된 클러스터의 짧은 멤버는 부착 대상에는
+    포함(임베딩 어휘 보강).
+    """
+    global _SYNONYM_CLUSTERS
+    if not text:
+        return text
+    if _SYNONYM_CLUSTERS is None:
+        from ai.search.dictionaries import build_synonym_clusters  # 순환·boto3 무관
+        _SYNONYM_CLUSTERS = build_synonym_clusters()
+
+    additions: list[str] = []
+    seen: set[str] = set()
+    for cluster in _SYNONYM_CLUSTERS:
+        # 트리거: len>=2 멤버가 본문에 등장해야 클러스터 활성 (짧은 키 오매칭 방지)
+        if not any(len(m) >= 2 and m in text for m in cluster):
+            continue
+        for m in cluster:
+            if m not in text and m not in seen:
+                seen.add(m)
+                additions.append(m)
+                if len(additions) >= _MAX_SYNONYM_ADDITIONS:
+                    break
+        if len(additions) >= _MAX_SYNONYM_ADDITIONS:
+            break
+
+    if not additions:
+        return text
+    return f"{text}\n[관련 의학 용어] {', '.join(additions)}"
+
+
 def build_signal_chunks(
     crawl_data: "CrawlData | None" = None,
     kakao_place: "KakaoPlace | dict | None" = None,
@@ -303,6 +353,8 @@ def build_signal_chunks(
     """모든 시그널 청크를 조립하여 비어있지 않은 것만 반환.
 
     각 인자는 dict 또는 대응 Pydantic 모델(KakaoPlace 등) 둘 다 받는다.
+    자칭·블로그 청크는 ``_enrich_with_synonyms`` 로 **문서-측 동의어 주입**해 임베딩
+    어휘를 양방향 확장한다(후기 청크는 §56 상 키워드 빈도 요약이라 주입 생략).
 
     Returns:
         {signal_type: text} — signal_type ∈ {"self_claim", "blog", "reviews"}.
@@ -312,11 +364,11 @@ def build_signal_chunks(
 
     sc = build_self_claim_chunk(crawl_data=crawl_data, kakao_place=kakao_place)
     if sc:
-        result["self_claim"] = sc
+        result["self_claim"] = _enrich_with_synonyms(sc)
 
     bc = build_blog_chunk(crawl_data=crawl_data, kakao_blog=kakao_blog, naver_blog=naver_blog)
     if bc:
-        result["blog"] = bc
+        result["blog"] = _enrich_with_synonyms(bc)
 
     rc = build_reviews_chunk(
         kakao_reviews=kakao_reviews,
@@ -594,10 +646,28 @@ def _dedup_by_hospital(raw_results: list[dict]) -> dict[str, dict]:
     return by_hospital
 
 
+def _build_interpretation(processed) -> str | None:
+    """ProcessedQuery 로부터 사용자 표시용 "이렇게 이해했어요" 문자열을 만든다.
+
+    예: "사마귀 어디가 좋을까" → "사마귀 · 진료과: 피부과".
+    FE 가 검색 결과 상단에 노출하면 사용자가 오해석을 즉시 인지하고 재검색 가능.
+    의료 키워드를 하나도 못 뽑았으면 None (해석 표시 안 함).
+    """
+    if not processed.medical_terms:
+        return None
+    parts: list[str] = [", ".join(processed.medical_terms)]
+    if processed.inferred_specialty:
+        parts.append(f"진료과: {processed.inferred_specialty}")
+    if processed.inferred_focus:
+        parts.append(f"분야: {' / '.join(processed.inferred_focus)}")
+    return " · ".join(parts)
+
+
 def _raw_to_search_result(
     item: dict,
     similarity_score: float | None = None,
     distance_km: float | None = None,
+    query_interpretation: str | None = None,
 ) -> "SearchResult":
     """KB Retrieve raw result 항목을 SearchResult 로 변환한다."""
     from shared.models import SearchResult  # 순환 import 방지
@@ -619,7 +689,7 @@ def _raw_to_search_result(
         similarity_score=similarity_score,
         distance_km=distance_km,
         matched_focus=matched_focus,
-        query_interpretation=None,
+        query_interpretation=query_interpretation,
     )
 
 
@@ -644,10 +714,24 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
         KBRetrieveError: KB Retrieve API 호출 실패 시.
     """
     from ai.core.exceptions import InvalidQueryError, KBRetrieveError  # 순환 import 방지
+    from ai.search.query_processor import process_query
 
     q_text = (query.query_text or "").strip()
     if not q_text:
         raise InvalidQueryError("retrieve_hospital: query_text 가 비어있습니다. KB Retrieve 는 빈 쿼리 불가.")
+
+    # 검색어 전처리 — 불용어 제거 + 의료 동의어 확장 + 진료과 추론.
+    # embedding_text(동의어 확장본)로 임베딩 매칭률을 높이고, 추론 진료과는
+    # 사용자가 specialty 를 명시 안 했을 때만 메타필터로 보강(명시값 우선).
+    processed = process_query(q_text)
+    retrieve_text = processed.embedding_text or q_text
+    effective_specialty = query.specialty or processed.inferred_specialty
+    interpretation = _build_interpretation(processed)  # FE "이렇게 이해했어요" 박스용
+    if processed.was_expanded or processed.inferred_specialty:
+        logger.info(
+            "retrieve_hospital: 쿼리 전처리 — terms=%s specialty=%s expanded=%s",
+            processed.medical_terms, processed.inferred_specialty, processed.was_expanded,
+        )
 
     kb_id = os.environ.get("KB_ID")
     region = os.environ.get("AWS_REGION", "us-east-1")
@@ -666,11 +750,11 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
         lat_range = (query.lat - deg_offset, query.lat + deg_offset)  # type: ignore[operator]
         lng_range = (query.lng - deg_offset, query.lng + deg_offset)  # type: ignore[operator]
 
-    # --- 1차 호출: 전체 필터 적용 ---
+    # --- 1차 호출: 전체 필터 적용 (specialty 는 추론값 보강) ---
     kb_filter = _build_kb_filter(
         sido=query.sido,
         sigungu=query.sigungu,
-        specialty=query.specialty,
+        specialty=effective_specialty,
         min_confidence=query.min_confidence,
         lat_range=lat_range,
         lng_range=lng_range,
@@ -678,16 +762,16 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
 
     # 같은 병원에서 여러 청크가 나올 수 있으므로 limit * 3 배로 넉넉히 요청
     n_request = min(query.limit * 3, _KB_MAX_RESULTS)
-    raw = _kb_retrieve(client, kb_id, q_text, kb_filter, n_request)
+    raw = _kb_retrieve(client, kb_id, retrieve_text, kb_filter, n_request)
 
     # --- fallback: 빈 결과 시 지역/specialty/confidence 완화 (team_id 는 유지) ---
-    if not raw and (query.sido or query.sigungu or query.specialty or has_location):
+    if not raw and (query.sido or query.sigungu or effective_specialty or has_location):
         logger.info(
             "retrieve_hospital: 결과 0건 → 지역/specialty/min_confidence 필터 완화 fallback (query=%r)",
             q_text,
         )
         fallback_filter = _build_kb_filter()  # team_id 만 남김
-        raw = _kb_retrieve(client, kb_id, q_text, fallback_filter, n_request)
+        raw = _kb_retrieve(client, kb_id, retrieve_text, fallback_filter, n_request)
 
     if not raw:
         return []
@@ -731,6 +815,7 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
                     item,
                     similarity_score=round(score, 4),
                     distance_km=round(dist_km, 3),
+                    query_interpretation=interpretation,
                 )
             )
         return results
@@ -752,5 +837,11 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
     results = []
     for item in sorted_items[: query.limit]:
         score = float(item.get("score") or 0.0)
-        results.append(_raw_to_search_result(item, similarity_score=round(score, 4)))
+        results.append(
+            _raw_to_search_result(
+                item,
+                similarity_score=round(score, 4),
+                query_interpretation=interpretation,
+            )
+        )
     return results
