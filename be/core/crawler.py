@@ -73,6 +73,17 @@ _NOISE_BLACKLIST = (
 _REPEAT_RATIO_THRESHOLD = 0.7
 _REPEAT_MIN_PAGES = 3
 
+# 페이지를 **통째로** 버릴 노이즈 마커 (단락 블랙리스트 _NOISE_BLACKLIST 와 별개).
+# 에러·준비중·로그인벽 페이지는 진료 정보가 없으므로 시그널에서 제외한다.
+_PAGE_NOISE_MARKERS = (
+    "페이지를 찾을 수 없", "404 not found", "준비중입니다", "준비 중입니다",
+    "공사중", "서비스 점검", "접근 권한이 없", "로그인이 필요", "잘못된 접근",
+    "페이지가 존재하지 않", "정보 부족",
+)
+# 자체 블로그(자칭 동류) RSS 아카이브 상한 — depth 가 블로그 글 수십~수백 개를 빨아들이면
+# 자칭 본문이 과대해져 도배 효과가 난다. 진료정보(about/service/doctors)는 무제한, blog 만 캡.
+_MAX_BLOG_PAGES = 8
+
 # 단락 분리 기준 — 문장부호·줄바꿈 외에 메뉴성 짧은 토막은 길이로 거른다.
 _MIN_PARAGRAPH_LEN = 10
 
@@ -140,6 +151,49 @@ def _denoise_pages(pages: list[CrawledPage]) -> list[CrawledPage]:
             text = f"{text} [정보 부족]".strip()
         cleaned.append(page.model_copy(update={"html_text": text}))
     return cleaned
+
+
+def _filter_noise_pages(pages: list[CrawledPage]) -> list[CrawledPage]:
+    """페이지를 **통째로** 거르는 단계 (`_denoise_pages` 이후 실행).
+
+    `_denoise_pages` 가 단락 단위로 네비/푸터/블랙리스트를 지운다면, 여기선 페이지 단위로:
+      1) 에러·준비중·로그인벽 페이지(_PAGE_NOISE_MARKERS) 제외 — 진료 정보 없음.
+      2) 본문이 거의 동일한 중복 페이지 제거 — `/` 와 `/index` 같은 같은 화면.
+      3) 자체 블로그(page_type=blog) 페이지 수 상한(_MAX_BLOG_PAGES) — RSS 아카이브 도배 방지.
+         진료정보(main/about/service/doctors)는 캡 없이 전부 유지.
+
+    크롤 시점(crawl_one_hospital)과 기존 데이터 재처리(reprocess_crawl) 둘 다 이 함수를 쓴다.
+    """
+    kept: list[CrawledPage] = []
+    seen: set[str] = set()
+    blog_count = 0
+    for p in pages:
+        text = (p.html_text or "").strip()
+        low = text.lower()
+
+        # 1) 에러/준비중/로그인벽 — 짧은데 노이즈 마커가 있으면 통째 제외.
+        #    (긴 본문에 우연히 마커가 섞인 정상 페이지는 살린다 — 길이 가드 300자)
+        if len(text) < 300 and any(m in low for m in _PAGE_NOISE_MARKERS):
+            continue
+
+        # 2) 거의 동일한 중복 페이지 — 공백 제거 본문 해시로 1회만.
+        norm = re.sub(r"\s+", "", text)
+        if norm:
+            key = f"{len(norm)}:{hash(norm)}"
+            if key in seen:
+                continue
+            seen.add(key)
+
+        # 3) 블로그 RSS 아카이브 상한 (진료정보 page_type 은 캡 없음).
+        if p.page_type == "blog":
+            if blog_count >= _MAX_BLOG_PAGES:
+                continue
+            blog_count += 1
+
+        kept.append(p)
+
+    # 전부 걸러졌다면(극단) 원본 유지 — 빈 CrawlData 보다 낫다.
+    return kept or pages
 
 
 async def crawl_one_hospital(
@@ -279,7 +333,7 @@ async def crawl_one_hospital(
     return CrawlData(
         hospital_id=hospital_id,
         website_url=website_url,
-        pages=_denoise_pages(pages),  # 이슈 #13 — 페이지 간 반복·잡음 정제
+        pages=_filter_noise_pages(_denoise_pages(pages)),  # 단락 정제(#13) → 페이지 단위 노이즈 제거
         images=images,
         public_data=PublicData(license_number="", specialists=[], registered_devices=[]),
     )
