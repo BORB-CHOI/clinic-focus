@@ -21,11 +21,15 @@ def get_bedrock_client(use_vision: bool = False) -> Any:
 
 
 def invoke_model(prompt: str, model_id: str | None = None) -> dict:
-    """텍스트 프롬프트를 Bedrock Claude 텍스트 모델에 전송 (지원 계정 Haiku/Nova)."""
+    """텍스트 프롬프트를 Bedrock Claude 텍스트 모델에 전송 (개인 계정 Haiku, 서울).
+
+    ⚠️ 반드시 **global. inference profile** 형태여야 한다 — 직접 모델 ID
+    (`anthropic.claude-haiku-4-5-...`)는 on-demand 호출 미지원(ValidationException).
+    """
     client = get_bedrock_client(use_vision=False)
     model = model_id or os.getenv(
         "BEDROCK_LLM_MODEL_ID",
-        "anthropic.claude-haiku-4-5-20251001-v1:0",
+        "global.anthropic.claude-haiku-4-5-20251001-v1:0",
     )
     body = json.dumps({
         "anthropic_version": "bedrock-2023-05-31",
