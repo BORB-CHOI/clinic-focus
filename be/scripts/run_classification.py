@@ -35,11 +35,6 @@ def main(argv: list[str] | None = None):
         "--sigungu", default=None,
         help="특정 시군구만 분류 (예: 강남구). 미지정 시 전체 META.",
     )
-    parser.add_argument(
-        "--skip-vision-holders", action="store_true",
-        help="VISION#RESULTS 보유(LLM+Vision 데모) 병원은 건너뜀 — 룰 분류로 덮어쓰지 않게. "
-             "데모 500 보존하며 나머지에만 네이버 등 외부 시그널 반영할 때 사용.",
-    )
     args = parser.parse_args(argv)
 
     db = DynamoAdapter()
@@ -75,11 +70,6 @@ def main(argv: list[str] | None = None):
             hospital_meta = db.load_hospital_meta(hospital_id)
             if not hospital_meta:
                 skipped += 1  # META 없으면 분류 불가
-                continue
-
-            # 데모(LLM+Vision) 보존 — VISION#RESULTS 있으면 룰로 덮어쓰지 않고 건너뜀.
-            if args.skip_vision_holders and db.get_entity(hospital_id, "VISION#RESULTS"):
-                skipped += 1
                 continue
 
             # 자체사이트 크롤본문 — 없으면 빈 CrawlData 로 진행(웹사이트 필수 아님).
