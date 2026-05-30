@@ -737,7 +737,10 @@ def _build_kb_filter(
         conditions.append({"equals": {"key": "sigungu", "value": sigungu}})
     if specialty:
         conditions.append({"equals": {"key": "standard_specialty", "value": specialty}})
-    if min_confidence is not None:
+    if min_confidence:
+        # min_confidence=0(또는 None)이면 신뢰도 하드필터 없음 — 모든 병원 노출.
+        # 의료법: 특정 병원만 보이고 일부가 검색에서 사라지면 차별 노출 소지가 있어,
+        # 신뢰도는 '거르는' 기준이 아니라 '정렬/표시'용으로만 쓴다(랭킹은 relevance 우선).
         conditions.append(
             {"greaterThanOrEquals": {"key": "confidence_score", "value": min_confidence}}
         )

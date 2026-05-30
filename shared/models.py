@@ -329,7 +329,7 @@ class SearchQuery(BaseModel):
     sido: str | None = None
     sigungu: str | None = None
     specialty: str | None = None
-    min_confidence: int = 70
+    min_confidence: int = 0  # 0=신뢰도 하드필터 없음(전체 노출). >0 일 때만 거른다.
     sort: Literal["distance", "confidence", "relevance"] = "relevance"
     limit: int = 20
 

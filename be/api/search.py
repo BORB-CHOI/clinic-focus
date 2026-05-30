@@ -57,7 +57,7 @@ def search_hospitals(
     sido: str | None = Query(None),
     sigungu: str | None = Query(None),
     specialty: str | None = Query(None),
-    min_confidence: int = Query(70),
+    min_confidence: int = Query(0, description="0=전체 노출(기본). >0 일 때만 신뢰도 하한 필터"),
     sort: str = Query("relevance"),
     limit: int = Query(20, le=50),
     offset: int = Query(0),
