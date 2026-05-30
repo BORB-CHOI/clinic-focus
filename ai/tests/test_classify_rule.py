@@ -576,13 +576,14 @@ class TestSpamPenalty:
             _make_page("service", SPAM_TEXT),
         ]
         spam_data = _make_crawl_data(spam_pages, hospital_id="spam-hospital-001")
-        # 외부 제3자 후기 블로그는 정형외과 내용 → 자칭(탈모)과 어긋남 → blog_mismatch=True
-        naver_blog = {"posts": [
+        # 외부 place앵커 블로그(카카오)는 정형외과 내용 → 자칭(탈모)과 어긋남 → blog_mismatch=True
+        kakao_blog = {"seeds": [
             {"title": "척추 디스크 후기",
-             "description": "허리 디스크 어깨 회전근개 무릎 관절 정형외과"},
+             "contents": "허리 디스크 어깨 회전근개 무릎 관절 정형외과",
+             "origin_url": "https://blog.naver.com/x/1"},
         ]}
 
-        result = classify_hospital(spam_data, use_llm=False, naver_blog=naver_blog)
+        result = classify_hospital(spam_data, use_llm=False, kakao_blog=kakao_blog)
         assert result.hospital_id == "spam-hospital-001"
         # 자칭 도배 + 블로그 어긋남 → 페널티로 score 가 LOW 미만 '정보 부족'
         assert result.confidence.score < CONFIDENCE_THRESHOLD_LOW, (
@@ -690,27 +691,28 @@ class TestAnalyzeBlogRule:
     def test_blog_posts_counted(self) -> None:
         from ai.pipeline.classify import _analyze_blog_rule
 
-        # 블로그 시그널 = 외부 제3자 후기 블로그(naver)만. 자체 blog 페이지는 self_claim 으로 빠진다.
-        naver_blog = {"posts": [
-            {"title": "척추 디스크 후기", "description": "허리 디스크 치료"},
-            {"title": "어깨 무릎 후기", "description": "관절 회복"},
+        # 블로그 시그널 = 카카오 place앵커 blog seeds. 자체 blog 페이지는 self_claim 으로 빠진다.
+        kakao_blog = {"seeds": [
+            {"title": "척추 디스크 후기", "contents": "허리 디스크 치료", "origin_url": "https://blog.naver.com/a/1"},
+            {"title": "어깨 무릎 후기", "contents": "관절 회복", "origin_url": "https://blog.naver.com/b/2"},
         ]}
         # 자체 blog 페이지가 있어도 블로그 시그널엔 안 들어감 (저자=병원 → self_claim)
         crawl_data = _make_crawl_data([
             _make_page("blog", "자체 블로그 글", url="https://h.com/blog/1"),
         ])
-        signal = _analyze_blog_rule(crawl_data, naver_blog=naver_blog)
-        assert signal.total_posts == 2  # naver 2건만, 자체 blog 페이지 미포함
+        signal = _analyze_blog_rule(crawl_data, kakao_blog=kakao_blog)
+        assert signal.total_posts == 2  # 카카오 seed 2건만, 자체 blog 페이지 미포함
 
     def test_primary_topics_extracted(self) -> None:
         from ai.pipeline.classify import _analyze_blog_rule
 
-        # 외부 네이버 블로그 후기 본문에서 토픽 추출 (자체 blog 아님)
-        naver_blog = {"posts": [
+        # 카카오 place앵커 블로그 발췌 본문에서 토픽 추출 (자체 blog 아님)
+        kakao_blog = {"seeds": [
             {"title": "척추 디스크 후기",
-             "description": "허리 디스크 어깨 회전근개 무릎 관절"},
+             "contents": "허리 디스크 어깨 회전근개 무릎 관절",
+             "origin_url": "https://blog.naver.com/c/3"},
         ]}
-        signal = _analyze_blog_rule(_make_crawl_data([]), naver_blog=naver_blog)
+        signal = _analyze_blog_rule(_make_crawl_data([]), kakao_blog=kakao_blog)
         # 척추/어깨/무릎 중 하나 이상이 primary_topics 에 매핑돼야 함
         ortho_topics = {"척추", "어깨·견관절", "무릎·관절"}
         assert ortho_topics & set(signal.primary_topics), (
