@@ -10,11 +10,11 @@
 ## 0. 한눈에
 
 ```
-                          ┌─ raw 수집 ─────────────┐      ┌─ 가공 산출 ──────────────┐
-  HIRA · 카카오/네이버     │ 자체사이트 본문 → S3      │      │ 룰 분류(전수) → CLASSIFICATION │
-  · 심평원 · (자체사이트)  │ 플레이스/블로그/후기 → DDB │  →   │ LLM·Vision(10개) → DESC/SERVICES │
-                          └────────────────────────┘      │ 임베딩 청크 → KB 벡터          │
-                                                           └──────────────────────────┘
+                          ┌─ raw 수집 ───────────────┐    ┌─ 가공 산출 ───────────────────────┐
+  HIRA · 카카오/네이버     │ 자체사이트 본문 → S3      │    │ 룰 분류(전수) → CLASSIFICATION    │
+  · 심평원 · (자체사이트)  │ 플레이스/블로그/후기 → DDB │  → │ LLM·Vision(10개) → DESC/SERVICES │
+                          └──────────────────────────┘    │ 임베딩 청크 → KB 벡터             │
+                                                          └──────────────────────────────────┘
    저장 3층:  본문 = S3   /   벡터 = KB(Bedrock)   /   메타·가공·수집메타 = DynamoDB
 ```
 
@@ -162,6 +162,30 @@ LOW = 70, HIGH = 95, CONFIDENCE_LEVEL1_CAP = 70, MIN_CERTAIN_SIGNALS = 2
 `ingest_hospital(...)`: 청크 `{prefix}{id}/{signal}.txt` + `.metadata.json` 을 DataSource S3에 PUT,
 배치는 `trigger_ingestion=False` 로 적재 후 마지막에 `StartIngestionJob` 1회.
 
+### 4-1. 사전(.md) 기반 임베딩 동의어 보강 — 한국어 의학 어휘 갭 메우기
+
+**문제**: Titan Embed v2 는 한국어 의학 동의어 갭이 크다(예 "사마귀" ↔ "심상성 우췌" cos ≈ 0.25).
+병원 본문이 학명("심상성 우췌")으로만 적혀 있으면 사용자가 "사마귀"로 검색해도 임베딩이 안 잡힌다.
+쿼리 확장만으로는 쿼리에 트리거 단어가 정확히 있어야 해서 취약하다.
+
+**해결 — 사전 파일 `ai/data/medical_dictionary.md`** (142KB, 진료과별 표):
+```
+## 진료과: 피부과
+| 일반어 | 동의어 (학명·전문용어·영문·치료) | 주력분야 |
+| 여드름 | acne, 심상성 좌창, 좌창, 면포, comedone, 아크네 | 여드름·흉터 |
+```
+- `ai/search/dictionaries.py` 가 이 .md 를 파싱 → `build_synonym_clusters()` 로 동의어 클러스터 생성.
+- **두 곳에서 소비** (양방향 확장):
+  - **문서 측**(`kb_store._enrich_with_synonyms`) — 청크에 클러스터 멤버가 하나라도 있으면 나머지를
+    `[관련 의학 용어] …` 줄로 덧붙임(최대 60개). 본문이 어느 표현을 쓰든 임베딩이 일반어·학명·영문을 다 담음.
+  - **쿼리 측**(`process_query`) — 검색어를 동의어·진료과로 확장.
+- **장치**: 길이 2 미만 멤버(점·목·침)는 트리거로 안 씀(부분문자열 오매칭 차단). 임베딩 전용(화면 미표시)이라 §56 무관.
+- **의료법**: .md 자체가 효능·광고어(최고·전문·완치) 금지 + medical-language-reviewer 검수 통과. focus 라벨의
+  효능·심미 암시는 중립화(재생→치료, 심미→미용). 표준 시술명은 사실 용어라 recall 위해 유지(미노출).
+
+→ **"왜 자체사이트 1만 풀커버인데 검색이 되나"의 핵심**: 비싼 LLM 재작성 없이, 사전 .md 한 장으로
+문서·쿼리 양쪽 어휘를 맞춰 한국어 의학 검색 recall 을 끌어올린다.
+
 ---
 
 ## 5. 검색 시점 — LLM 0회 (Semantic Search)
@@ -171,3 +195,23 @@ LOW = 70, HIGH = 95, CONFIDENCE_LEVEL1_CAP = 70, MIN_CERTAIN_SIGNALS = 2
 
 > 출처 명시·평가어 금지 등 의료법 원칙은 [`../CLAUDE.md`](../CLAUDE.md) "의료법 회색지대" + [`ai/CLAUDE.md`](../ai/CLAUDE.md)
 > `generate_description` 원칙. 후기 본문 raw 는 임베딩 입력만, 화면은 키워드 빈도만.
+
+---
+
+## 6. 현재 미수집 시그널·데이터 한계 (2026-05-30, 솔직본)
+
+스키마엔 자리가 있으나 **아직 안 채워진** 것들. PoC 범위·외부 제약 때문이며, 영향과 함께 명시한다.
+
+| 미수집 | 현황 | 원인 | 영향 |
+|---|---|---|---|
+| **의료기기** (`registered_devices`) | `public_data` **0/2133 빈값**, `PUBLIC#DEVICES` 엔티티 0 | 심평원 공공 API 의 기기 신고 데이터 미연동 | 상세페이지 **장비 영역 비고**, **"병원이 공식 신고한 의료기기" 적법표현 근거 없음** |
+| **의사·전문의** (`specialists`/doctors) | `public_data.specialists` **빈값**, `PUBLIC#DOCTORS` 0 | HIRA `getHospBasisList` 응답에 진료과목·전문의(`dgsbjtCdNm`) 없음 — 미연동 | 상세페이지 **DoctorsSection 빈값**, `extract_services_and_doctors` 의 의사 파트 비게 됨 |
+| **Vision** (이미지 분석 30%) | `VISION#RESULTS` 0, `SignalContributions.vision = None` | 개인계정 Sonnet Marketplace 구독 대기(사용자 트랙) | 4시그널 중 1축 결손 → **근거 종류 수 천장**에 자주 걸려 "확실" 적음 (§3-3). 시연 10개 활성화 시 그 10개만 채움 |
+| **네이버 플레이스 후기** | `NAVER#PLACE#REVIEWS` 0 | 회색지대 Playwright(18~25초/건) → 로컬 PC 크롤로 분리(보류) | 후기 시그널이 카카오 단독. 로컬 raw 도착 시 합류 |
+| **가공 산출(시연 10개)** | `DESCRIPTION`·`SERVICES`·`RELATED` 0 | LLM 데모 미실행 | 9990개는 `ai_description=null` (FE 태그카드 차등 렌더 — 설계 의도) |
+
+**현재 살아있는 시그널 = 자칭(자체사이트 정제) + 블로그(카카오 place앵커) + 후기(카카오).**
+→ 즉 4시그널 중 **3축**으로 도는 상태. Vision·네이버가 들어오면 교차 검증이 더 단단해지고 "확실" 등급이 는다.
+
+> 이미지 자체는 자체사이트 크롤 시 수집됨(`SITE#IMAGES`/S3, 평균 21장/병원) — **분석(Vision)** 만 미실행.
+> 즉 "이미지 미수집"이 아니라 "이미지 분석 미실행"이다.
