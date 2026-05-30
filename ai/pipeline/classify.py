@@ -56,6 +56,12 @@ CLASSIFIER_VERSION = "v1.0"
 CONFIDENCE_THRESHOLD_HIGH: int = int(os.getenv("CONFIDENCE_THRESHOLD_HIGH", "95"))
 CONFIDENCE_THRESHOLD_LOW: int = int(os.getenv("CONFIDENCE_THRESHOLD_LOW", "70"))
 
+# 근거 종류 수가 얇을 때(present 시그널 < MIN_CERTAIN_SIGNALS) score 상한.
+# 교차검증 없이는 "확실" 불가 — 옛 룰 단독 70 cap 을 모든 경로로 일반화한 값.
+CONFIDENCE_LEVEL1_CAP: int = int(os.getenv("CONFIDENCE_LEVEL1_CAP", "70"))
+# "확실" 등급에 필요한 최소 present 시그널 종류 수 (교차 일치 천장 기준, 결정 5-1).
+MIN_CERTAIN_SIGNALS: int = int(os.getenv("MIN_CERTAIN_SIGNALS", "2"))
+
 # 시그널 가중치 — 합 반드시 1.0
 _WEIGHTS: dict[str, float] = {
     "self_claim": 0.25,
@@ -70,14 +76,13 @@ _SPAM_THRESHOLD: float = 0.7
 _SPAM_PENALTY_FACTOR: float = 0.35  # 자칭 기여도를 35% 수준으로 강하게 감점
 
 # 자칭 페이지 타입
-_SELF_CLAIM_PAGE_TYPES = {"main", "about", "service"}
+# 자칭(self_claim) = 병원이 직접 쓴 것: 소개·진료안내 + 자체 blog 페이지(자체운영 블로그).
+# 외부 제3자 후기 블로그(naver_blog 검색결과)는 별도 '블로그 시그널' 이라 여기 포함 안 함
+# (저자 기준 분리 — 2026-05-30: 병원 자기 글 vs 남이 쓴 후기 블로그를 섞지 않는다).
+_SELF_CLAIM_PAGE_TYPES = {"main", "about", "service", "blog"}
 
-# Vision 없을 때 자칭·블로그·후기로 재배분하는 정규화 비율
-_WEIGHTS_NO_VISION: dict[str, float] = {
-    k: v / (1.0 - _WEIGHTS["vision"])
-    for k, v in _WEIGHTS.items()
-    if k != "vision"
-}
+# (옛 _WEIGHTS_NO_VISION 제거: Vision 전용 재배분 대신 _cross_validate_signals 가
+#  present 시그널 일반으로 가중치를 재분배한다. confidence-missing-signals 결정.)
 
 # ---------------------------------------------------------------------------
 # 분류 스키마 (M1 동결)
@@ -338,21 +343,14 @@ def _naver_blog_text(naver_blog) -> str:
 def _analyze_blog(crawl_data: CrawlData, naver_blog=None) -> BlogSignal:
     """블로그 키워드 분석.
 
-    LLM 호출로 주제를 추출하고, 단순 키워드 카운팅도 병행한다.
-    블로그 페이지가 없으면 빈 BlogSignal(total_posts=0) 반환.
+    외부 제3자 후기 블로그(naver_blog)만 본다 — 자체 blog 페이지는 자칭(self_claim)으로
+    귀속(저자 기준 분리). LLM 으로 주제 추출 + 키워드 카운팅 병행.
     """
-    blog_pages = [
-        p for p in crawl_data.pages
-        if p.page_type == "blog" and p.html_text.strip()
-    ]
     naver_text = _naver_blog_text(naver_blog)
-    if not blog_pages and not naver_text:
+    if not naver_text:
         return BlogSignal(total_posts=0, keyword_frequency={}, primary_topics=[])
 
-    # 자체 사이트 blog + 네이버 블로그 발췌 본문 합산
-    combined_text = "\n\n".join(p.html_text for p in blog_pages)
-    if naver_text:
-        combined_text = f"{combined_text}\n\n{naver_text}" if combined_text else naver_text
+    combined_text = naver_text
     keyword_counter = _count_medical_keywords(combined_text)
 
     # LLM 호출로 주제 추출 (실패 시 카운팅 결과만 사용)
@@ -387,7 +385,7 @@ def _analyze_blog(crawl_data: CrawlData, naver_blog=None) -> BlogSignal:
     naver_post_count = len(nb.get("posts") or []) if nb else 0
 
     return BlogSignal(
-        total_posts=len(blog_pages) + naver_post_count,
+        total_posts=naver_post_count,
         keyword_frequency=dict(keyword_counter.most_common(20)),
         primary_topics=primary_topics,
     )
@@ -671,30 +669,23 @@ def _is_keyword_spamming(
 
 
 def _apply_spamming_penalty(
-    raw_contributions: dict[str, float],
-) -> dict[str, float]:
-    """자칭 도배 페널티 적용 — 자칭 기여도를 _SPAM_PENALTY_FACTOR 로 감점.
+    contributions: dict[str, float | None],
+) -> dict[str, float | None]:
+    """자칭 도배 페널티 — 자칭 기여도를 _SPAM_PENALTY_FACTOR 로 감점한다.
 
-    자칭에서 깎인 만큼을 나머지 시그널에 비례 배분한다.
-    결과 합은 원래 가중치 합(1.0)과 동일.
+    옛 설계는 자칭에서 깎은 만큼을 나머지 시그널로 재배분해 총합(1.0)을 보존했다.
+    그러나 그 재배분은 **결손·엇갈림 시그널에 가짜 기여를 만들어** §3 원칙 3
+    (가짜 비율 금지)과 충돌한다(예: 자칭과 어긋나는 블로그가 도리어 비중을 받음).
+    이제 깎인 기여는 어디로도 재배분하지 않고 사라져 전체 score 가 내려간다 —
+    자칭이 도배로 의심되고 다른 시그널이 이를 뒷받침하지 못하면 신뢰도가
+    낮아지는 게 맞다.
+
+    결손(None) 자칭은 감점 대상이 아니다(그대로 None 유지).
     """
-    penalized = dict(raw_contributions)
-    original_self = penalized["self_claim"]
-    penalized["self_claim"] = original_self * _SPAM_PENALTY_FACTOR
-    excess = original_self - penalized["self_claim"]
-
-    # 나머지 시그널 비율로 재배분
-    other_keys = [k for k in penalized if k != "self_claim"]
-    other_sum = sum(penalized[k] for k in other_keys)
-    if other_sum > 0:
-        for k in other_keys:
-            penalized[k] += excess * (penalized[k] / other_sum)
-    else:
-        # 나머지가 전부 0 이면 균등 배분
-        share = excess / len(other_keys)
-        for k in other_keys:
-            penalized[k] += share
-
+    penalized = dict(contributions)
+    self_contrib = penalized.get("self_claim")
+    if self_contrib is not None:
+        penalized["self_claim"] = self_contrib * _SPAM_PENALTY_FACTOR
     return penalized
 
 
@@ -716,27 +707,45 @@ def _topics_to_focus_votes(topics: list[str]) -> Counter:
     return votes
 
 
+def _is_present(signal_type: str, sig: Any) -> bool:
+    """시그널이 **수집됨(present)** 인지 판정. 결손(미수집)과 구분한다.
+
+    present 시그널만 score 풀과 등급 천장(coverage)에 들어간다. 여기서는
+    데이터가 실제로 들어왔는지(coverage)만 본다 — top_focus 와 일치하는지(agreement)는
+    _signal_alignment 가 0~1 로 별도 반영한다. "수집은 됐으나 엇갈림"은 present(=True)
+    이면서 alignment 0 으로 표현된다.
+    """
+    if sig is None:
+        return False
+    if signal_type == "self_claim":
+        return bool(sig.primary_focus) or bool(sig.keywords)
+    if signal_type == "blog":
+        return sig.total_posts > 0 or bool(sig.keyword_frequency)
+    if signal_type == "reviews":
+        return sig.total_reviews > 0 or bool(sig.keyword_frequency)
+    if signal_type == "vision":
+        return sig.total_images_analyzed > 0
+    return False
+
+
 def _cross_validate_signals(
     self_claim: SelfClaimSignal,
     blog: BlogSignal,
     reviews: ReviewSignal,
     vision: VisionSignal | None,
-) -> tuple[list[str], dict[str, float]]:
+) -> tuple[list[str], dict[str, float | None]]:
     """4 시그널의 방향성 정렬 정도를 계산해 primary_focus 와 기여도를 반환한다.
 
     반환:
       primary_focus: list[str]  — 상위 주력 분야 (최대 3개)
-      raw_contributions: dict[str, float]  — 0~1 사이 기여도 (페널티 적용 전)
+      contributions: dict[str, float | None] — 시그널별 기여도(페널티 적용 전).
+        * present 시그널: ``재분배 가중치 × top_focus 일치도`` (0~1).
+          엇갈리면(일치도 0) 그대로 0 기여 — §1-1 의 0.5 베이스라인 제거.
+        * 결손 시그널: ``None`` ("수집 안 됨"). 0(엇갈림)과 명시적으로 구분.
+        present 시그널끼리 가중치를 재분배(합 1.0)하므로 결손은 점수에서 빠진다
+        (반값도 0점도 아님 — §3 원칙 1).
     """
-    # 유효 가중치 계산 — Vision 없으면 재배분
-    weights: dict[str, float]
-    if vision is None:
-        weights = _WEIGHTS_NO_VISION.copy()
-        weights["vision"] = 0.0  # 계산 편의상 포함
-    else:
-        weights = dict(_WEIGHTS)
-
-    # 각 시그널의 focus 투표
+    # 각 시그널의 focus 투표 (결손 시그널은 빈 투표라 focus 선정에 0 기여)
     self_votes = _topics_to_focus_votes(self_claim.primary_focus)
     blog_votes = _topics_to_focus_votes(blog.primary_topics)
     review_votes = _topics_to_focus_votes(reviews.primary_topics)
@@ -762,14 +771,6 @@ def _cross_validate_signals(
         | set(vision_votes.keys())
     )
 
-    if not all_focus_candidates:
-        # 어떤 시그널도 focus 후보를 만들지 못함 → 주력 분야 미식별.
-        # 기여도를 0 으로 두어 confidence 가 "정보 부족"(score≈0)으로 떨어지게 한다.
-        # (옛 버그: 여기서 전체 가중치를 반환해 primary_focus=[] 인데 score=100
-        #  "확실" 이 나왔음 — docs/API-BE-AI.md "현 구현 약점" 사례.)
-        return [], {k: 0.0 for k in _WEIGHTS}
-
-    # 후보별 가중 점수 계산
     def _normalize(counter: Counter) -> dict[str, float]:
         total = sum(counter.values())
         if total == 0:
@@ -781,24 +782,22 @@ def _cross_validate_signals(
     rev_norm = _normalize(review_votes)
     vis_norm = _normalize(vision_votes)
 
+    # 후보별 가중 점수 계산 — focus 선정엔 기본 _WEIGHTS 사용
+    # (결손 시그널은 빈 norm 이라 가중치와 무관하게 0 기여 → 선정에 영향 없음).
     weighted_scores: dict[str, float] = {}
     for focus in all_focus_candidates:
-        score = (
-            weights["self_claim"] * sc_norm.get(focus, 0.0)
-            + weights["blog"]       * blog_norm.get(focus, 0.0)
-            + weights["reviews"]    * rev_norm.get(focus, 0.0)
-            + weights["vision"]     * vis_norm.get(focus, 0.0)
+        weighted_scores[focus] = (
+            _WEIGHTS["self_claim"] * sc_norm.get(focus, 0.0)
+            + _WEIGHTS["blog"]     * blog_norm.get(focus, 0.0)
+            + _WEIGHTS["reviews"]  * rev_norm.get(focus, 0.0)
+            + _WEIGHTS["vision"]   * vis_norm.get(focus, 0.0)
         )
-        weighted_scores[focus] = score
 
-    # 상위 3개 주력 분야 선정
+    # 상위 3개 주력 분야 선정 (후보가 없으면 primary_focus=[], top_focus=None)
     sorted_focus = sorted(
         weighted_scores.items(), key=lambda x: x[1], reverse=True
     )
-    primary_focus = [f for f, _ in sorted_focus[:3] if _ > 0.0]
-
-    # 시그널 기여도 계산 — 각 시그널이 primary_focus 방향으로 얼마나 정렬됐는지
-    # primary_focus 상위 항목에 대한 각 시그널의 지지 비율 × 가중치
+    primary_focus = [f for f, s in sorted_focus[:3] if s > 0.0]
     top_focus = primary_focus[0] if primary_focus else None
 
     def _signal_alignment(norm: dict[str, float]) -> float:
@@ -807,20 +806,34 @@ def _cross_validate_signals(
             return 0.0
         return norm.get(top_focus, 0.0)
 
-    self_align = _signal_alignment(sc_norm)
-    blog_align = _signal_alignment(blog_norm)
-    rev_align = _signal_alignment(rev_norm)
-    vis_align = _signal_alignment(vis_norm) if vision is not None else 0.0
-
-    raw_contributions: dict[str, float] = {
-        "self_claim": weights["self_claim"] * (0.5 + 0.5 * self_align),
-        "blog":       weights["blog"]       * (0.5 + 0.5 * blog_align),
-        "reviews":    weights["reviews"]    * (0.5 + 0.5 * rev_align),
-        "vision":     weights["vision"]     * (0.5 + 0.5 * vis_align)
-                      if vision is not None else 0.0,
+    align: dict[str, float] = {
+        "self_claim": _signal_alignment(sc_norm),
+        "blog":       _signal_alignment(blog_norm),
+        "reviews":    _signal_alignment(rev_norm),
+        "vision":     _signal_alignment(vis_norm),
     }
 
-    return primary_focus, raw_contributions
+    # present 판정 — 수집된 시그널만 점수 풀에 남긴다 (§3 원칙 1).
+    sig_objs: dict[str, Any] = {
+        "self_claim": self_claim,
+        "blog":       blog,
+        "reviews":    reviews,
+        "vision":     vision,
+    }
+    present = {k for k in _WEIGHTS if _is_present(k, sig_objs[k])}
+
+    # present 끼리 가중치 재분배 (합 1.0). 결손은 풀에서 빠진다 → 점수 제외.
+    norm_sum = sum(_WEIGHTS[k] for k in present)
+    redistributed = (
+        {k: _WEIGHTS[k] / norm_sum for k in present} if norm_sum > 0 else {}
+    )
+
+    contributions: dict[str, float | None] = {
+        k: (redistributed[k] * align[k] if k in present else None)
+        for k in _WEIGHTS
+    }
+
+    return primary_focus, contributions
 
 
 # ---------------------------------------------------------------------------
@@ -828,79 +841,64 @@ def _cross_validate_signals(
 # ---------------------------------------------------------------------------
 
 def _compute_confidence(
-    raw_contributions: dict[str, float],
-    vision: VisionSignal | None,
+    contributions: dict[str, float | None],
 ) -> Confidence:
-    """SignalContributions 합산 후 0~100 신뢰도 점수와 등급을 반환한다.
+    """present 시그널 기여도 합으로 0~100 신뢰도 점수와 등급을 산정한다.
 
-    Vision 이 없으면 vision 기여도는 0, 나머지가 100% 를 구성한다.
+    confidence-missing-signals 결정 3원칙:
+      1. 결손(None) 시그널은 점수 계산에서 **제외**(반값·0점 아님). present 끼리
+         재분배된 기여도(_cross_validate_signals)만 합산한다.
+      2. score 천장은 **present 시그널 종류 수**(coverage)로 제한 — present 가
+         MIN_CERTAIN_SIGNALS 미만이면 "확실" 불가(CONFIDENCE_LEVEL1_CAP 상한).
+         use_llm 분기 cap 을 이 천장으로 흡수·일반화했다.
+      3. SignalContributions 는 결손을 ``None``("수집 안 됨")으로, present 는 일치
+         기여 비율(%)로 채운다 — 가짜 비율 금지.
+
+    Args:
+        contributions: _cross_validate_signals(+페널티) 가 만든 시그널별 기여도.
+            present 는 float(0~1), 결손은 None.
     """
-    # 합산 전에 Vision 없는 경우 재정규화
-    contrib = dict(raw_contributions)
-    if vision is None:
-        contrib["vision"] = 0.0
-        other_sum = sum(v for k, v in contrib.items() if k != "vision")
-        if other_sum > 0:
-            scale = (1.0 - _WEIGHTS["vision"]) / other_sum if other_sum > 0 else 1.0
-            for k in contrib:
-                if k != "vision":
-                    contrib[k] *= scale / (1.0 - _WEIGHTS["vision"])
+    present = [k for k, v in contributions.items() if v is not None]
+    n_present = len(present)
 
-    # 0~100 정수 기여도
-    # 각 기여도는 해당 시그널 가중치(0~가중치) 범위 → 전체 합산 후 100 스케일
-    total_raw = sum(contrib.values())
-    # 최대 가능 점수는 1.0 (가중치 합). 실제 점수를 0~100 으로 스케일.
-    score = int(round(min(total_raw, 1.0) * 100))
-    score = max(0, min(100, score))
+    if n_present == 0:
+        # 진짜 아무것도 수집 못 함 → 정보 부족, 전 시그널 "수집 안 됨".
+        return Confidence(
+            score=0,
+            level="정보 부족",
+            signals=SignalContributions(),  # 전부 None 기본값
+        )
 
-    if score >= CONFIDENCE_THRESHOLD_HIGH:
+    score_raw = sum(contributions[k] for k in present)  # 0~1
+    score = max(0, min(100, int(round(score_raw * 100))))
+
+    if n_present < MIN_CERTAIN_SIGNALS:
+        # 근거 종류 수가 얇으면 "확실" 불가 — coverage 천장 (§3 원칙 2).
+        score = min(score, CONFIDENCE_LEVEL1_CAP)
+        level = "추정" if score >= CONFIDENCE_THRESHOLD_LOW else "정보 부족"
+    elif score >= CONFIDENCE_THRESHOLD_HIGH:
         level = "확실"
     elif score >= CONFIDENCE_THRESHOLD_LOW:
         level = "추정"
     else:
         level = "정보 부족"
 
-    # SignalContributions — 각 시그널 기여도를 0~100 정수로 변환
-    # 전체 score 합에서 각 시그널 비율을 정수 퍼센트로 표현
-    def _to_int_pct(value: float) -> int:
-        if total_raw == 0:
-            return 0
-        return int(round((value / total_raw) * 100))
+    # SignalContributions — 결손은 None("수집 안 됨"), present 는 일치 기여 비율(%).
+    def _pct(value: float | None) -> int | None:
+        if value is None:
+            return None                       # 수집 안 됨 (가짜 비율 금지)
+        if score_raw <= 0:
+            return 0                           # present 지만 전부 엇갈림
+        return int(round((value / score_raw) * 100))
 
     signals = SignalContributions(
-        self_claim=_to_int_pct(contrib["self_claim"]),
-        vision=_to_int_pct(contrib["vision"]),
-        blog=_to_int_pct(contrib["blog"]),
-        reviews=_to_int_pct(contrib["reviews"]),
+        self_claim=_pct(contributions["self_claim"]),
+        vision=_pct(contributions["vision"]),
+        blog=_pct(contributions["blog"]),
+        reviews=_pct(contributions["reviews"]),
     )
 
     return Confidence(score=score, level=level, signals=signals)
-
-
-def _cap_rule_only_confidence(confidence: Confidence) -> Confidence:
-    """룰 단독(use_llm=False) 경로 전용 상한 보정.
-
-    LLM·Vision 교차검증이 없으므로 "확실" 판정은 불가능하다.
-    score 를 CONFIDENCE_THRESHOLD_LOW(70) 로 cap 하고 level 을 재산정한다.
-    signals 비율 구성은 그대로 유지한다.
-
-    Args:
-        confidence: _compute_confidence 가 계산한 원본 Confidence.
-
-    Returns:
-        score 가 70 이하로 cap 된 새 Confidence (level 재산정 포함).
-    """
-    capped_score = min(confidence.score, CONFIDENCE_THRESHOLD_LOW)
-
-    if capped_score >= CONFIDENCE_THRESHOLD_HIGH:
-        # CONFIDENCE_THRESHOLD_LOW <= CONFIDENCE_THRESHOLD_HIGH 일 때도 안전하게
-        level = "확실"
-    elif capped_score >= CONFIDENCE_THRESHOLD_LOW:
-        level = "추정"
-    else:
-        level = "정보 부족"
-
-    return Confidence(score=capped_score, level=level, signals=confidence.signals)
 
 
 # ---------------------------------------------------------------------------
@@ -976,21 +974,15 @@ def _extract_self_claim_rule(crawl_data: CrawlData) -> SelfClaimSignal:
 def _analyze_blog_rule(crawl_data: CrawlData, naver_blog=None) -> BlogSignal:
     """블로그 키워드 분석 — 룰 기반 (Bedrock 미호출).
 
-    자체 사이트 blog 페이지 + 네이버 블로그 발췌 본문에서 _count_medical_keywords 로
-    빈도를 카운트하고 _KEYWORD_TO_FOCUS 로 primary_topics 를 매핑한다.
+    **외부 제3자 후기 블로그**(네이버 블로그 검색 발췌)만 본다. 병원 자체 blog 페이지는
+    자기가 쓴 것이라 자칭(self_claim)으로 귀속하므로 여기서 제외한다(저자 기준 분리).
+    crawl_data 인자는 시그니처 호환용(자체 blog 는 이제 self_claim 으로 빠짐).
     """
-    blog_pages = [
-        p for p in crawl_data.pages
-        if p.page_type == "blog" and p.html_text.strip()
-    ]
     naver_text = _naver_blog_text(naver_blog)
-    if not blog_pages and not naver_text:
+    if not naver_text:
         return BlogSignal(total_posts=0, keyword_frequency={}, primary_topics=[])
 
-    combined_text = "\n\n".join(p.html_text for p in blog_pages)
-    if naver_text:
-        combined_text = f"{combined_text}\n\n{naver_text}" if combined_text else naver_text
-    keyword_counter = _count_medical_keywords(combined_text)
+    keyword_counter = _count_medical_keywords(naver_text)
 
     # primary_topics: 상위 5개 키워드를 focus 로 매핑 (중복 제거, 투표 순)
     focus_votes: Counter = Counter()
@@ -1003,7 +995,7 @@ def _analyze_blog_rule(crawl_data: CrawlData, naver_blog=None) -> BlogSignal:
     naver_post_count = len(nb.get("posts") or []) if nb else 0
 
     return BlogSignal(
-        total_posts=len(blog_pages) + naver_post_count,
+        total_posts=naver_post_count,
         keyword_frequency=dict(keyword_counter.most_common(20)),
         primary_topics=primary_topics,
     )
@@ -1058,14 +1050,19 @@ def classify_hospital(
         InsufficientDataError: 페이지가 0개이거나 모든 html_text 가 빈 문자열.
         BedrockInvocationError: Bedrock API 호출 실패 (use_llm=True 일 때만).
     """
-    # 1. 데이터 유효성 검사
-    if not crawl_data.pages:
+    # 1. 데이터 유효성 검사 — 자체사이트가 비어도 외부 시그널이 있으면 분류한다.
+    #    (병원 웹사이트는 필수 아님: 후기·블로그만으로도 주력을 추정. 둘 다 없을 때만 거부.)
+    _has_site_text = bool(crawl_data.pages) and any(
+        p.html_text.strip() for p in crawl_data.pages
+    )
+    _has_external = any(
+        x is not None
+        for x in (kakao_place, kakao_reviews, kakao_blog,
+                  naver_reviews, naver_blog, google_reviews)
+    )
+    if not _has_site_text and not _has_external:
         raise InsufficientDataError(
-            f"병원 {crawl_data.hospital_id}: 크롤링된 페이지가 없습니다."
-        )
-    if all(not p.html_text.strip() for p in crawl_data.pages):
-        raise InsufficientDataError(
-            f"병원 {crawl_data.hospital_id}: 모든 페이지의 html_text 가 비어 있습니다."
+            f"병원 {crawl_data.hospital_id}: 자체사이트·외부 시그널이 모두 없습니다."
         )
 
     # 2. 자칭 컨셉 추출
@@ -1138,33 +1135,34 @@ def classify_hospital(
     #    use_llm 분기와 무관하게 외부 후기 키워드는 룰·LLM 양 경로 모두 동일하게 적용
     review_signal = _analyze_reviews(kakao_reviews, naver_reviews, google_reviews)
 
-    # 6. 4 시그널 교차 검증
-    primary_focus, raw_contributions = _cross_validate_signals(
+    # 6. 4 시그널 교차 검증 — 결손은 None, present 끼리 재분배된 일치 기여도
+    primary_focus, contributions = _cross_validate_signals(
         self_claim=self_claim_signal,
         blog=blog_signal,
         reviews=review_signal,
         vision=vision_signal,
     )
-    logger.info("교차 검증 — primary_focus=%s contrib=%s", primary_focus, raw_contributions)
+    logger.info("교차 검증 — primary_focus=%s contrib=%s", primary_focus, contributions)
 
-    # 7. 자칭 도배 페널티
+    # 7. 자칭 도배 페널티 — 자칭 기여도만 감점(재배분 없음 → 총 score 하락)
     if _is_keyword_spamming(self_claim_signal, blog_signal, review_signal, vision_signal):
         logger.warning(
             "자칭 도배 의심 감지 (spam_score=%.2f) — 자칭 기여도 페널티 적용",
             self_claim_signal.spam_score,
         )
-        raw_contributions = _apply_spamming_penalty(raw_contributions)
+        contributions = _apply_spamming_penalty(contributions)
 
-    # 8. 신뢰도 점수 계산
-    confidence = _compute_confidence(raw_contributions, vision_signal)
-    # 룰 단독(use_llm=False) 경로는 LLM·Vision 교차검증이 없으므로
-    # "확실" 판정 불가. CONFIDENCE_THRESHOLD_LOW(70) 로 상한 cap.
-    if not use_llm:
-        confidence = _cap_rule_only_confidence(confidence)
+    # 8. 신뢰도 점수 계산 — 결손 제외·근거 종류 수 기반 등급 천장.
+    #    "확실" 가부는 present 시그널 종류 수가 결정(결정 5-2: use_llm 분기 cap 폐지).
+    #    룰 풀커버(1만)는 보통 자칭(+자체 blog 페이지)만 present 인데, 자체 블로그가
+    #    있어도 본문이 여러 focus 로 흩어지면 일치도가 희석돼 score 가 HIGH 에 못 미친다.
+    #    자칭·자체블로그가 단일 focus 로 또렷이 일치하는 병원만 룰 경로로도 확실 후보.
+    confidence = _compute_confidence(contributions)
     logger.info(
-        "신뢰도 계산 완료 — score=%d level=%s",
+        "신뢰도 계산 완료 — score=%d level=%s present=%s",
         confidence.score,
         confidence.level,
+        [k for k, v in contributions.items() if v is not None],
     )
 
     # 9. 표준 과목 — HIRA 기준값(권위) 우선, 없으면 텍스트 추론 fallback

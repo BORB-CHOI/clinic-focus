@@ -44,6 +44,17 @@ MAX_PAGES = 10
 # 최대 이미지 수집 수
 MAX_IMAGES = 30
 
+# 이미지 노이즈 필터 — 파일명·alt 에 이 토큰이 있으면 비-진료 장식/추적 이미지로 보고 스킵.
+# Vision 입력 품질을 위해 로고·아이콘·버튼·배너·SNS·1x1 추적 픽셀 등을 거른다.
+_IMAGE_NOISE_PATTERN = re.compile(
+    r"(logo|icon|btn|button|banner|bullet|sprite|bg|pixel|tracking|1x1|"
+    r"spacer|blank|favicon|sns|kakao|naver|facebook|map_)",
+    re.IGNORECASE,
+)
+
+# 추적 도메인 — 이 호스트가 src 에 들어간 이미지는 분석 가치 없음 (analytics·픽셀).
+_IMAGE_TRACKING_DOMAINS = ("google-analytics", "facebook.com/tr")
+
 USER_AGENT = "ClinicFocusBot/1.0 (research; contact@clinicfocus.kr)"
 
 # HTML 잡음 블랙리스트 (이슈 #13) — 의료 사이트 공통 비-진료 텍스트.
@@ -384,6 +395,15 @@ def _extract_images(soup: BeautifulSoup, page_url: str) -> list[CrawledImage]:
         # 절대 URL로 변환
         full_url = urljoin(page_url, src)
 
+        alt_text = img_tag.get("alt", "").strip() or None
+
+        # 노이즈 필터 — 파일명·alt 에 장식/추적 토큰이 있으면 스킵
+        if _IMAGE_NOISE_PATTERN.search(src) or _IMAGE_NOISE_PATTERN.search(alt_text or ""):
+            continue
+        # 추적 도메인 이미지 스킵
+        if any(dom in full_url.lower() for dom in _IMAGE_TRACKING_DOMAINS):
+            continue
+
         # 너무 작은 이미지 (아이콘 등) 필터링
         width = img_tag.get("width", "")
         height = img_tag.get("height", "")
@@ -396,8 +416,6 @@ def _extract_images(soup: BeautifulSoup, page_url: str) -> list[CrawledImage]:
         if full_url in seen_urls:
             continue
         seen_urls.add(full_url)
-
-        alt_text = img_tag.get("alt", "").strip() or None
 
         images.append(CrawledImage(
             url=full_url,

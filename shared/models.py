@@ -257,13 +257,20 @@ class GoogleReviews(BaseModel):
 # ---------------------------------------------------------------------------
 
 class SignalContributions(BaseModel):
-    """각 시그널이 신뢰도 점수에 기여한 비중 (0~100)."""
+    """각 시그널이 신뢰도 점수에 기여한 비중 (0~100).
+
+    값의 의미를 두 가지로 구분한다 (confidence-missing-signals 결정):
+      - ``int`` (0~100): 해당 시그널이 **수집됨(present)**. 0 은 "수집은 됐으나
+        주력과 엇갈려 기여 0%"(엇갈림)를 뜻한다.
+      - ``None``: 해당 시그널이 **미수집(결손)**. 화면엔 "수집 안 됨" 배지로 렌더.
+        가짜 비율을 노출하지 않기 위해 0 과 명시적으로 구분한다.
+    """
     model_config = ConfigDict(extra="forbid")
 
-    self_claim: int
-    vision: int
-    blog: int
-    reviews: int
+    self_claim: int | None = None
+    vision: int | None = None
+    blog: int | None = None
+    reviews: int | None = None
 
 
 class Confidence(BaseModel):
@@ -322,7 +329,7 @@ class SearchQuery(BaseModel):
     sido: str | None = None
     sigungu: str | None = None
     specialty: str | None = None
-    min_confidence: int = 70
+    min_confidence: int = 0  # 0=신뢰도 하드필터 없음(전체 노출). >0 일 때만 거른다.
     sort: Literal["distance", "confidence", "relevance"] = "relevance"
     limit: int = 20
 

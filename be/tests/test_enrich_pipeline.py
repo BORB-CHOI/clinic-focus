@@ -206,7 +206,7 @@ class TestRunStep2Kakao:
                     "be.adapters.kakao_place_adapter.KakaoPlaceAdapter.fetch_panel3",
                     return_value=_panel3_with_homepage("https://hospital-homepage.com"),
                 ):
-                    found, rejected = await run_step2_kakao(
+                    found, rejected, still_missing = await run_step2_kakao(
                         mock_db, hospitals_no_url, mock_validator
                     )
 
@@ -224,7 +224,7 @@ class TestRunStep2Kakao:
                 with patch(
                     "be.adapters.kakao_place_adapter.KakaoPlaceAdapter.fetch_panel3",
                 ) as mock_panel3:
-                    found, rejected = await run_step2_kakao(
+                    found, rejected, still_missing = await run_step2_kakao(
                         mock_db, hospitals_no_url, mock_validator
                     )
 
@@ -242,7 +242,7 @@ class TestRunStep2Kakao:
                     "be.adapters.kakao_place_adapter.KakaoPlaceAdapter.fetch_panel3",
                     return_value={"summary": {"homepages": []}},
                 ):
-                    found, rejected = await run_step2_kakao(
+                    found, rejected, still_missing = await run_step2_kakao(
                         mock_db, hospitals_no_url, mock_validator
                     )
 
@@ -263,7 +263,7 @@ class TestRunStep2Kakao:
                     "be.adapters.kakao_place_adapter.KakaoPlaceAdapter.fetch_panel3",
                     return_value=_panel3_with_homepage("https://bad-hospital.com"),
                 ):
-                    found, rejected = await run_step2_kakao(
+                    found, rejected, still_missing = await run_step2_kakao(
                         mock_db, hospitals_no_url, validator
                     )
 
@@ -275,7 +275,7 @@ class TestRunStep2Kakao:
     async def test_no_kakao_key_skips(self, hospitals_no_url, mock_db, mock_validator):
         """KAKAO_KEY 미설정 시 건너뜀."""
         with patch("be.scripts.enrich_urls.KAKAO_KEY", ""):
-            found, rejected = await run_step2_kakao(
+            found, rejected, still_missing = await run_step2_kakao(
                 mock_db, hospitals_no_url, mock_validator
             )
 

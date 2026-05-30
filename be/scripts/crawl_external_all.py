@@ -44,8 +44,9 @@ _GRAYZONE_WARNING = (
     "       합법 범위만 원하면 --source google 또는 naver_blog 로 한정하세요.\n"
 )
 
-# 호출 간 지연(초) — rate-limit 회피 (실측 전 보수적 기본값)
-_KAKAO_DELAY_SEC = 1.5
+# 호출 간 지연(초) — rate-limit 회피 (실측 전 보수적 기본값).
+# "천천히"(차단 방지) — 회색지대 카카오 place-api 는 병원당 3요청이라 간격을 넉넉히.
+_KAKAO_DELAY_SEC = 2.5
 _GOOGLE_DELAY_SEC = 0.2
 _NAVER_API_DELAY_SEC = 0.2  # 네이버 검색 API (블로그) — 공식, 가벼움
 
@@ -64,10 +65,34 @@ def _extract_region(address: str) -> str:
     return parts[0] if parts else ""
 
 
-def _iter_targets(dynamo, limit: int | None) -> list[tuple[str, str, str]]:
-    """대상 (hospital_id, name, address) 목록. META 에서 추출."""
+def _crawled_hospital_ids() -> set[str]:
+    """S3 크롤 버킷에서 crawl_data.json 보유 병원 id 집합 — 자체사이트 분류된 848개."""
+    import os
+
+    import boto3
+
+    s3 = boto3.client("s3", region_name=os.environ.get("AWS_REGION", "us-east-1"))
+    bucket = os.environ.get("S3_CRAWL_BUCKET", "kmuproj-10-clinic-focus-crawl")
+    ids: set[str] = set()
+    for page in s3.get_paginator("list_objects_v2").paginate(Bucket=bucket, Prefix="crawl/"):
+        for o in page.get("Contents", []):
+            if o["Key"].endswith("crawl_data.json"):
+                ids.add(o["Key"].split("/")[1])
+    return ids
+
+
+def _iter_targets(
+    dynamo, limit: int | None, only_ids: set[str] | None = None
+) -> list[tuple[str, str, str]]:
+    """대상 (hospital_id, name, address) 목록. META 에서 추출.
+
+    only_ids 가 주어지면 그 집합(예: 자체사이트 크롤된 848개)으로 한정한다 —
+    회색지대 소스는 전수(6117)가 비현실적(naver_place Playwright ~34시간)이라 필수.
+    """
     targets: list[tuple[str, str, str]] = []
     for hid in dynamo.iter_all_hospital_ids():
+        if only_ids is not None and hid not in only_ids:
+            continue
         meta = dynamo.load_hospital_meta(hid)
         if meta is None:
             continue
@@ -189,13 +214,20 @@ def main(argv: list[str] | None = None) -> int:
         help="크롤 대상 소스. google·naver_blog = 합법(공식 API). kakao·naver_place = 회색지대.",
     )
     parser.add_argument("--limit", type=int, default=None, help="대상 병원 수 제한 (테스트용)")
+    parser.add_argument(
+        "--only-crawled", action="store_true",
+        help="자체사이트 크롤된 병원(848개)으로 한정. 회색지대 소스에 권장(전수는 비현실적).",
+    )
     args = parser.parse_args(argv)
 
     load_env()
     from be.adapters.dynamo_adapter import DynamoAdapter
 
     dynamo = DynamoAdapter()
-    targets = _iter_targets(dynamo, args.limit)
+    only_ids = _crawled_hospital_ids() if args.only_crawled else None
+    if only_ids is not None:
+        logger.info("--only-crawled: 자체사이트 크롤된 %d개로 한정", len(only_ids))
+    targets = _iter_targets(dynamo, args.limit, only_ids=only_ids)
     logger.info("대상 병원 %d개 (source=%s)", len(targets), args.source)
 
     if not args.confirm:

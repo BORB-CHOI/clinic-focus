@@ -115,11 +115,21 @@ def recompute_confidence(
     base_score: int = _to_int(confidence_data.get("score"), default=70)
 
     raw_signals: dict = confidence_data.get("signals", {})
-    base_signals: dict[str, int] = {
-        "self_claim": _to_int(raw_signals.get("self_claim"), default=25),
-        "vision": _to_int(raw_signals.get("vision"), default=0),
-        "blog": _to_int(raw_signals.get("blog"), default=20),
-        "reviews": _to_int(raw_signals.get("reviews"), default=25),
+
+    # 기여도 비율 보존. 명시적 None(수집 안 됨)은 None 유지 — 가짜 기본값으로
+    # 되살리지 않는다(confidence-missing-signals §3 원칙 3). 필드 자체가 없는
+    # 옛 레코드만 기본값으로 채운다.
+    def _opt_pct(key: str, default: int) -> int | None:
+        if key not in raw_signals:
+            return default
+        raw = raw_signals.get(key)
+        return None if raw is None else _to_int(raw, default=default)
+
+    base_signals: dict[str, int | None] = {
+        "self_claim": _opt_pct("self_claim", 25),
+        "vision": _opt_pct("vision", 0),
+        "blog": _opt_pct("blog", 20),
+        "reviews": _opt_pct("reviews", 25),
     }
 
     total = len(recent_feedback)
@@ -149,11 +159,17 @@ def recompute_confidence(
     else:
         level = "정보 부족"
 
+    # 긍정 피드백 보정은 수집된(present) 후기 기여도에만 가산. 결손(None)이면 None 유지.
+    reviews_base = base_signals["reviews"]
+    reviews_out = (
+        None if reviews_base is None
+        else min(100, reviews_base + int(agree_ratio * 10))
+    )
     signals = SignalContributions(
-        self_claim=base_signals.get("self_claim", 25),
-        vision=base_signals.get("vision", 0),
-        blog=base_signals.get("blog", 20),
-        reviews=min(100, base_signals.get("reviews", 25) + int(agree_ratio * 10)),
+        self_claim=base_signals["self_claim"],
+        vision=base_signals["vision"],
+        blog=base_signals["blog"],
+        reviews=reviews_out,
     )
 
     return Confidence(score=new_score, level=level, signals=signals)

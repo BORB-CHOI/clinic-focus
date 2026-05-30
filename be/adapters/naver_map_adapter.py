@@ -15,6 +15,45 @@ NAVER_SEARCH_URL = "https://openapi.naver.com/v1/search/local.json"
 NAVER_GEOCODE_URL = "https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode"
 
 
+# 병원명 끝에 붙는 지점·부속 토큰 — 매칭 시 떼어내 본원명만 비교.
+# "OO의원 강남점" → "OO의원" 처럼 지점 표기 차이로 인한 오탈락을 막는다.
+_BRANCH_SUFFIX_RE = re.compile(
+    r"(본원|분원|본점|분점|[가-힣A-Za-z0-9]{1,12}점|[가-힣A-Za-z0-9]{1,12}지점)$"
+)
+
+
+def _strip_branch(name: str) -> str:
+    """이름 꼬리의 지점 표기를 1회 제거. ('강남점'·'역삼점'·'본원' 등)"""
+    return _BRANCH_SUFFIX_RE.sub("", name).strip()
+
+
+def _normalize_name(name: str) -> str:
+    """매칭용 정규화: 공백 제거 + 지점 토큰 제거.
+
+    공백·지점명 차이를 흡수해 부분문자열 비교 적중률을 높인다.
+    """
+    no_space = re.sub(r"\s+", "", name or "")
+    return _strip_branch(no_space)
+
+
+def _extract_gu_token(address: str) -> str:
+    """주소에서 구(區) 토큰 1개 추출. 없으면 빈 문자열."""
+    for part in (address or "").split():
+        if part.endswith("구") and len(part) >= 2:
+            return part
+    return ""
+
+
+# 동 기준명(숫자 제거) — "역삼1동"·"역삼동" 을 "역삼"으로 맞춰 행정동/법정동 표기차 흡수.
+_DONG_BASE_RE = re.compile(r"([가-힣]+)\d*동")
+
+
+def _extract_dong_base(address: str) -> str:
+    """주소에서 동 기준명 추출 (숫자·'동' 제거). 같은 구의 다른 지점 구분용. 없으면 ""."""
+    m = _DONG_BASE_RE.search(address or "")
+    return m.group(1) if m else ""
+
+
 class NaverMapAdapter:
     def __init__(self):
         self._client = httpx.Client(timeout=10.0)
@@ -24,6 +63,42 @@ class NaverMapAdapter:
             "X-Naver-Client-Id": NAVER_MAP_CLIENT_ID,
             "X-Naver-Client-Secret": NAVER_MAP_CLIENT_SECRET,
         }
+
+    @staticmethod
+    def _is_match(item: dict[str, Any], original_name: str, original_address: str = "") -> bool:
+        """검색 결과 1건이 원본 병원과 동일한지 판정.
+
+        완화된 이름 비교 + 구(區) 토큰 일치 요구로 오매칭을 막는다.
+          - 이름: 공백·지점명("강남점" 등) 제거 후 양방향 부분문자열 비교
+          - 주소: 원본 주소에 구 토큰이 있으면 결과 주소에도 같은 구가 있어야 함
+                  (원본에 구 토큰이 없으면 이름 일치만으로 인정)
+        """
+        title_raw = (
+            item.get("title", "")
+            .replace("<b>", "")
+            .replace("</b>", "")
+        )
+        name_norm = _normalize_name(original_name)
+        title_norm = _normalize_name(title_raw)
+        if not name_norm or not title_norm:
+            return False
+        if not (name_norm in title_norm or title_norm in name_norm):
+            return False
+
+        # 구 토큰 교차 검증 — 이름이 흔할 때의 타 지역(다른 구 지점) 오매칭 방지
+        gu = _extract_gu_token(original_address)
+        item_addr = f"{item.get('address', '')} {item.get('roadAddress', '')}"
+        if gu and gu not in item_addr:
+            return False
+
+        # 동 교차 검증 — 같은 구의 **다른 지점** 구분. 단 둘 다 동이 잡힐 때만 비교(관대):
+        # 결과 주소가 도로명만이라 동이 없으면 거부하지 않는다(행정/법정동 표기차 오탈락 방지).
+        dong = _extract_dong_base(original_address)
+        if dong:
+            item_dong = _extract_dong_base(item_addr)
+            if item_dong and item_dong != dong:
+                return False
+        return True
 
     def search_hospital(self, name: str, address: str = "") -> dict[str, Any] | None:
         """
@@ -62,11 +137,15 @@ class NaverMapAdapter:
             if not items:
                 return None
 
-            # 검색 결과 중 병원명이 실제로 포함된 것만 채택
-            name_clean = name.replace(" ", "")
+            # 검색 결과 중 병원명·구 토큰이 일치하는 것만 채택 (완화 매칭)
             for item in items:
-                title_clean = item.get("title", "").replace("<b>", "").replace("</b>", "").replace(" ", "")
-                if name_clean in title_clean or title_clean in name_clean:
+                if self._is_match(item, name, address):
+                    title_clean = (
+                        item.get("title", "")
+                        .replace("<b>", "")
+                        .replace("</b>", "")
+                        .replace(" ", "")
+                    )
                     return {
                         "title": title_clean,
                         "link": item.get("link", ""),
@@ -164,7 +243,7 @@ class NaverMapAdapter:
             if last_call_time > 0 and elapsed < self.RATE_LIMIT_SECONDS:
                 time.sleep(self.RATE_LIMIT_SECONDS - elapsed)
 
-            result = self._search_with_query(query, name)
+            result = self._search_with_query(query, name, address)
             last_call_time = time.time()
 
             if result and result.get("link"):
@@ -172,8 +251,10 @@ class NaverMapAdapter:
 
         return None
 
-    def _search_with_query(self, query: str, original_name: str) -> dict[str, Any] | None:
-        """단일 쿼리로 네이버 검색 수행. 병원명 매칭 확인."""
+    def _search_with_query(
+        self, query: str, original_name: str, original_address: str = ""
+    ) -> dict[str, Any] | None:
+        """단일 쿼리로 네이버 검색 수행. 병원명·구 토큰 매칭 확인."""
         try:
             resp = self._client.get(
                 NAVER_SEARCH_URL,
@@ -185,16 +266,17 @@ class NaverMapAdapter:
             if not items:
                 return None
 
-            # 매칭 확인: 원본 이름(특수문자 제거 후)과 비교
-            name_clean = self._sanitize_name(original_name).replace(" ", "")
+            # 매칭 확인: 지점명·공백 제거 후 비교 + 구 토큰 교차 검증.
+            # 이름 비교 기준은 특수문자 정리(_sanitize_name)된 원본 이름.
+            sanitized_name = self._sanitize_name(original_name)
             for item in items:
-                title_clean = (
-                    item.get("title", "")
-                    .replace("<b>", "")
-                    .replace("</b>", "")
-                    .replace(" ", "")
-                )
-                if name_clean in title_clean or title_clean in name_clean:
+                if self._is_match(item, sanitized_name, original_address):
+                    title_clean = (
+                        item.get("title", "")
+                        .replace("<b>", "")
+                        .replace("</b>", "")
+                        .replace(" ", "")
+                    )
                     return {
                         "title": title_clean,
                         "link": item.get("link", ""),

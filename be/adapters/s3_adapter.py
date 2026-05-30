@@ -67,5 +67,6 @@ class S3Adapter:
             Bucket=BUCKET,
             Key=key,
             Body=image_bytes,
+            ContentType="image/png",
         )
         return f"s3://{BUCKET}/{key}"
