@@ -36,6 +36,7 @@ import json
 import logging
 import math
 import os
+import re
 from typing import TYPE_CHECKING
 
 import boto3
@@ -488,6 +489,56 @@ def _enrich_with_synonyms(text: str) -> str:
     return f"{text}\n[관련 의학 용어] {', '.join(additions)}"
 
 
+# ── 의료광고(§56) 표현 스크럽 — 임베딩 입력에서만 중화 ──────────────────
+# 청크는 화면 미표시(임베딩 전용)이라 §56 직접 위반은 아니나, 광고·과장 어휘가 임베딩에 섞이면
+# (1) 자칭 광고가 검색 노출 근거가 되고 (2) 후기·블로그의 과장·체험단성 어휘가 시그널을 부풀린다.
+# 실측(강남 2133 자체사이트 + 후기/블로그) 기반 **명백 위반만**. "전문"(전문의·전문병원 = 합법 사실)
+# 등 회색·합법어는 제외. "완치/안전한/무통/부작용없"은 환자 후기에선 경험 서술일 수 있어 LIGHT 에서 제외.
+
+# STRONG (자칭 self_claim — 병원이 직접 쓴 광고라 적법성 차원에서 강하게)
+_AD_SCRUB_STRONG = [
+    r"\d+\s*년\s*무\s*사고", r"무\s*사고",
+    r"안전(하게|한|하고|성)?(?=\s*(진료|치료|시술|수술|관리|마취|분만|출산|성형))",
+    r"무\s*통(?![가-힣])", r"통증\s*(이)?\s*없[는이어요]*",
+    r"완\s*치", r"부작용\s*(이)?\s*(없|제로|최소화?)[는이어요]*",
+    r"(확실한|탁월한|뛰어난|놀라운)\s*효과", r"효과\s*(만점|짱|굿)",
+    # 효능·결과 보장 (§56 — medical-language-reviewer 권고)
+    r"(효과|성공|결과|완치|치료|완벽)\s*(보장|보증)", r"\d+\s*(건|례)\s*성공",
+    r"독보적[인]?", r"명\s*품", r"프리미엄", r"premium",
+    r"최상의?", r"유일(한|무이한)?", r"국내\s*유일",
+    # 우월·최신성 과장 (§56 — reviewer 권고: 최첨단·최신·유명·완벽)
+    r"최\s*첨단", r"최\s*신\s*(기술|장비|시설|의료기기|시스템|치료법|기기)",
+    r"유\s*명(한|하다|하고)?", r"완\s*벽(하게|한|히)?",
+    r"강력?\s*추천", r"강\s*추", r"인생\s*(병원|시술|템플?)",
+    r"국내\s*최고", r"최고의?", r"넘버\s*원", r"\bno\.?\s*1\b",
+    r"명\s*의(?![료원])", r"베스트", r"\bbest\b", r"\d+\s*위\b",
+]
+# LIGHT (후기·블로그 — 저자가 환자/제3자라 §56 직접 적용 X. 순수 과장·우월 광고어만, 경험 서술 보존)
+_AD_SCRUB_LIGHT = [
+    r"강력?\s*추천", r"강\s*추", r"효과\s*(만점|짱|굿)", r"인생\s*(병원|시술|템플?)",
+    r"국내\s*최고", r"최고의?", r"넘버\s*원", r"\bno\.?\s*1\b",
+    r"명\s*의(?![료원])", r"베스트", r"\bbest\b", r"독보적[인]?", r"명\s*품", r"프리미엄",
+    # 우월·최신성 과장 (reviewer 권고) — 환자 경험 서술(완치/안전/무통/부작용없)은 보존
+    r"최\s*첨단", r"최\s*신\s*(기술|장비|시설|의료기기|시스템|치료법|기기)",
+    r"유\s*명(한|하다|하고)?", r"완\s*벽(하게|한|히)?",
+]
+_AD_SCRUB_STRONG_RE = re.compile("|".join(_AD_SCRUB_STRONG), re.IGNORECASE)
+_AD_SCRUB_LIGHT_RE = re.compile("|".join(_AD_SCRUB_LIGHT), re.IGNORECASE)
+
+
+def _scrub_ad_phrases(text: str, *, aggressive: bool) -> str:
+    """청크 텍스트에서 의료광고·과장 표현을 중화(임베딩 입력 전용).
+
+    aggressive=True(자칭): STRONG 목록. False(후기·블로그): LIGHT 목록(순수 광고어만).
+    매칭 토큰만 공백 치환 — 의료 명사("안전한 수술"→"수술")는 보존. focus 라벨·화면엔 무관.
+    """
+    if not text:
+        return text
+    rx = _AD_SCRUB_STRONG_RE if aggressive else _AD_SCRUB_LIGHT_RE
+    cleaned = rx.sub(" ", text)
+    return re.sub(r"[ \t]{2,}", " ", cleaned)
+
+
 def build_signal_chunks(
     crawl_data: "CrawlData | None" = None,
     kakao_place: "KakaoPlace | dict | None" = None,
@@ -517,13 +568,14 @@ def build_signal_chunks(
     """
     result: dict[str, str] = {}
 
+    # 광고·과장 표현 스크럽(임베딩 전용) → 동의어 주입 순. 자칭=강하게, 후기·블로그=광고어만.
     sc = build_self_claim_chunk(crawl_data=crawl_data, kakao_place=kakao_place)
     if sc:
-        result["self_claim"] = _enrich_with_synonyms(sc)
+        result["self_claim"] = _enrich_with_synonyms(_scrub_ad_phrases(sc, aggressive=True))
 
     bc = build_blog_chunk(crawl_data=crawl_data, kakao_blog=kakao_blog, naver_blog=naver_blog)
     if bc:
-        result["blog"] = _enrich_with_synonyms(bc)
+        result["blog"] = _enrich_with_synonyms(_scrub_ad_phrases(bc, aggressive=False))
 
     rc = build_reviews_chunk(
         kakao_reviews=kakao_reviews,
@@ -531,7 +583,7 @@ def build_signal_chunks(
         google_reviews=google_reviews,
     )
     if rc:
-        result["reviews"] = _enrich_with_synonyms(rc)
+        result["reviews"] = _enrich_with_synonyms(_scrub_ad_phrases(rc, aggressive=False))
 
     vc = build_vision_chunk(vision_results=vision_results)
     if vc:

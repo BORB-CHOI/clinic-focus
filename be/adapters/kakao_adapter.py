@@ -22,6 +22,33 @@ def _dong_token(address: str) -> str:
     m = _DONG_RE.search(address)
     return m.group(1) if m else ""
 
+
+# 이름 비교용 종별 접미사 — 핵심 토큰만 남겨 place_name 과 대조(오매칭 방지).
+_NAME_SUFFIX_RE = re.compile(
+    r"(의원|병원|클리닉|치과|한의원|한방병원|피부과|성형외과|정형외과|신경외과|내과|"
+    r"이비인후과|안과|산부인과|소아청소년과|소아과|가정의학과|재활의학과|마취통증의학과|"
+    r"신경과|비뇨의학과|정신건강의학과|외과|재단법인|의료법인|의료재단|의료원|메디컬)"
+)
+
+
+def _name_core(name: str) -> str:
+    """이름 비교용 핵심 토큰: 괄호·공백·종별 접미사 제거."""
+    n = _PAREN_RE.sub(" ", name or "")
+    n = _NAME_SUFFIX_RE.sub("", n)
+    return re.sub(r"\s+", "", n)
+
+
+def _name_match(doc: dict, core: str) -> bool:
+    """검색 결과 place_name 이 병원 핵심 토큰과 일치하는지(양방향 부분일치).
+
+    core 가 2자 미만(흔한 이름)이면 신뢰 못 해 False — 이땐 지역(동/구) 매칭에 의존.
+    """
+    if len(core) < 2:
+        return False
+    pn = re.sub(r"\s+", "", doc.get("place_name", "") or "")
+    pn_core = _NAME_SUFFIX_RE.sub("", pn)
+    return core in pn or (len(pn_core) >= 2 and (pn_core in core or core in pn_core))
+
 KAKAO_REST_API_KEY = os.environ.get("KAKAO_REST_API_KEY", "")
 KAKAO_SEARCH_URL = "https://dapi.kakao.com/v2/local/search/keyword.json"
 
@@ -80,17 +107,24 @@ class KakaoAdapter:
         def _addr(d: dict) -> str:
             return f"{d.get('road_address_name', '')} {d.get('address_name', '')}"
 
-        # 지점 구분: 같은 동 우선 → 같은 구 → 그래도 없으면 첫 결과(관련도 1위).
-        # 지점명을 쿼리에 남겼으므로 카카오 관련도 정렬이 보통 올바른 지점을 1위로 준다.
-        if dong:
+        core = _name_core(name)
+
+        def _name_ok(d: dict) -> bool:
+            return _name_match(d, core)
+
+        # 우선순위: (동+이름) → (구+이름) → (이름) → (동) → (구).
+        # **맹목 docs[0] 폴백 제거** — 이름·지역 어느 것도 안 맞으면 None(틀린 URL/매칭 < 빈값).
+        for ok in (
+            lambda d: bool(dong) and dong in _addr(d) and _name_ok(d),
+            lambda d: bool(region) and region in _addr(d) and _name_ok(d),
+            _name_ok,
+            lambda d: bool(dong) and dong in _addr(d),
+            lambda d: bool(region) and region in _addr(d),
+        ):
             for d in documents:
-                if dong in _addr(d):
+                if ok(d):
                     return d
-        if region:
-            for d in documents:
-                if region in _addr(d):
-                    return d
-        return documents[0]
+        return None
 
     def get_hospital_info(self, name: str, address: str = "") -> dict[str, Any]:
         """병원 검색 결과에서 유용한 정보 추출."""
