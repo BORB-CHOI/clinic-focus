@@ -9,7 +9,7 @@
 **BE와 AI는 같은 EC2 인스턴스의 단일 Python 프로세스에서 돌아간다.** 모노레포의 `be/` `ai/` `shared/` 가 한 프로세스에 함께 로드되고, BE는 AI 함수를 Python 패키지 import로 직접 호출.
 
 ```python
-# be/handlers/ingest_hospital.py
+# be/handlers/index_hospital.py
 from ai import classify_hospital, generate_description
 from shared.models import CrawlData
 ```
@@ -33,18 +33,19 @@ class CrawlData(BaseModel):
     website_url: str
     pages: list[CrawledPage]
     images: list[CrawledImage]
-    public_data: PublicData  # 심평원 공공 데이터
+    public_data: PublicData | None = None  # 심평원 공공 데이터
 
 class CrawledPage(BaseModel):
     url: str
     page_type: Literal["main", "about", "service", "doctors", "blog", "other"]
     html_text: str           # HTML에서 추출한 plain text
     fetched_at: datetime
+    render_method: Literal["static", "playwright"] = "static"
 
 class CrawledImage(BaseModel):
     url: str                 # S3 URI
     page_url: str            # 어느 페이지에서 발견됐는지
-    alt_text: str | None
+    alt_text: str | None = None
 
 class PublicData(BaseModel):
     license_number: str
@@ -55,45 +56,140 @@ class PublicData(BaseModel):
 ### `NaverPlace` — 네이버 플레이스 장소 정보
 ```python
 class NaverPlace(BaseModel):
-    place_id: str                        # 네이버 플레이스 고유 ID
-    name: str
-    operating_hours: str | None          # "월~금 09:00~18:00" 형태 자유 문자열
-    phone: str | None
-    visitor_count: int | None            # 누적 방문자 수 (비공개 시 None)
-    keyword_stats: dict[str, int]        # {키워드: 언급 횟수}, 예: {"친절": 42, "청결": 31}
-    photo_urls: list[str]                # 대표 사진 URL 목록 (최대 10개)
+    # 네이버 플레이스 정제본 — DDB NAVER#PLACE / NAVER#PLACE#REVIEWS.
+    # 네이버 병원 카테고리는 키워드 통계를 노출하지 않으므로
+    # keyword_stats 는 우리 측에서 후기 본문으로 직접 추출한 결과를 담는다.
+    model_config = ConfigDict(extra="ignore")
+
+    place_id: str | None = None
+    name: str | None = None
+    visitor_count: int | None = None      # 누적 방문자 수
+    keyword_stats: dict[str, int] = {}    # 후기 키워드 빈도 (자체 추출)
+    blog_seeds: list[str] = []            # photoViewer ugc externalLink 블로그 시드 URL
 ```
 
 ### `NaverBlogPost` — 네이버 블로그 포스트 1건
 ```python
 class NaverBlogPost(BaseModel):
-    url: str
-    title: str
-    text_excerpt: str                    # 본문 앞 500자 (전문 저장은 DDB raw, 임베딩은 키워드만)
-    published_at: datetime
-    topic: str | None                    # LLM 또는 TF-IDF 분류 주제 (예: "아토피", "여드름")
+    # 네이버 블로그 검색 결과 1건. v1/search/blog 응답 정제 (HTML 태그 제거).
+    model_config = ConfigDict(extra="ignore")
+
+    title: str = ""
+    link: str = ""           # 블로그 포스트 URL (BlogSignal 시드)
+    description: str = ""    # 검색 API 발췌 본문 (키워드 추출 입력, 화면 노출 금지)
+    post_date: str | None = None
+
+class NaverBlog(BaseModel):
+    # parse_naver_blog() 출력 — DDB NAVER#BLOG entity. 블로그 시그널(20%).
+    model_config = ConfigDict(extra="ignore")
+
+    total: int | None = None
+    keyword_frequency: dict[str, int] = {}  # 발췌 본문 키워드 빈도 (자체 추출)
+    posts: list[NaverBlogPost] = []
 ```
 
 ### `KakaoPlace` — 카카오 로컬 API 장소 정보
 ```python
+class KakaoCategory(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    full: str | None = None
+    depth1: str | None = None
+    depth2: str | None = None
+    depth3: str | None = None
+
+class KakaoHira(BaseModel):
+    # panel3.medical.hira 정제본 (보조 — HIRA 직접 호출이 우선).
+    model_config = ConfigDict(extra="ignore")
+
+    medical_center_type: str | None = None
+    specialized_field: str | None = None
+    doctor_count: dict[str, int] = {}
+    established_at: str | None = None
+
 class KakaoPlace(BaseModel):
-    place_id: str                        # 카카오 place_id
-    name: str
-    category_group_code: str             # 병원은 "HP8" 고정
-    review_count: int | None             # 카카오맵 리뷰 수 (공개된 경우)
-    review_keywords: dict[str, int]      # {키워드: 언급 횟수} — 개별 후기 본문 미저장 (§56③)
+    # parse_place() 출력 — DDB KAKAO#PLACE entity. 자칭 키워드(tags)·대표 이미지·HIRA 보조본.
+    model_config = ConfigDict(extra="ignore")
+
+    place_id: str
+    name: str | None = None
+    address: str | None = None
+    phone_numbers: list[str] = []
+    homepage_url: str | None = None
+    homepages_raw: list[str] = []
+    category: KakaoCategory = KakaoCategory()
+    tags: list[str] = []                     # 자칭 키워드 시드 (primary_focus 입력)
+    facilities: dict = {}
+    mystore_intro: str | None = None
+    hira: KakaoHira = KakaoHira()
+    representative_image_url: str | None = None  # FE 대표 이미지 (Vision 입력 아님)
+    photo_counts: dict = {}
+    review_count: int | None = None
+    average_score: float | None = None
+
+class KakaoReviewItem(BaseModel):
+    # 카카오 후기 1건 (owner PII 제거됨). 본문은 임베딩 입력용, 화면 노출 금지.
+    model_config = ConfigDict(extra="ignore")
+
+    review_id: int | str | None = None
+    contents: str = ""
+    star_rating: int | None = None
+    strength_labels: list[str] = []
+    photo_count: int = 0
+    registered_at: str | None = None
+
+class KakaoReviews(BaseModel):
+    # parse_reviews() 출력 — DDB KAKAO#REVIEWS entity. 키워드 빈도는 화면 노출 가능.
+    model_config = ConfigDict(extra="ignore")
+
+    total_reviews: int | None = None
+    average_score: float | None = None
+    keyword_frequency: dict[str, int] = {}
+    reviews: list[KakaoReviewItem] = []
+    has_next: bool = False
+
+
+class KakaoBlogSeed(BaseModel):
+    # 카카오 블로그 시드 1건 (author 제거됨). origin_url 은 BlogSignal 시드.
+    model_config = ConfigDict(extra="ignore")
+
+    review_id: int | str | None = None
+    title: str = ""
+    contents: str = ""
+    origin_url: str | None = None
+    photo_count: int = 0
+    registered_at: str | None = None
+
+
+class KakaoBlog(BaseModel):
+    # parse_blog() 출력 — DDB KAKAO#BLOG entity. origin_url 100% blog.naver.com 시드.
+    model_config = ConfigDict(extra="ignore")
+
+    total_posts: int | None = None
+    seeds: list[KakaoBlogSeed] = []
 ```
 
 ### `GoogleReviews` — Google Places 리뷰 집계
 ```python
+class GoogleReviewItem(BaseModel):
+    # 구글 Places 리뷰 1건. author_name 은 보존하지 않는다 (PII).
+    model_config = ConfigDict(extra="ignore")
+
+    rating: int | None = None
+    text: str = ""
+    relative_time: str | None = None      # "2개월 전" 등 상대 시각 (절대 시각·작성자 미보존)
+
 class GoogleReviews(BaseModel):
-    place_id: str                        # Google place_id
-    rating: float | None                 # 평균 별점 (1~5)
-    user_ratings_total: int | None       # 총 리뷰 수
-    reviews_keywords: dict[str, int]     # {키워드: 언급 횟수}
-    # 개별 리뷰 본문은 저장하지 않는다 — 의료법 §56③ 광고성 후기 금지
-    # Google Places API 무료 tier 는 reviews 필드를 최대 5건만 반환하므로
-    # 키워드 추출 후 즉시 폐기
+    # parse_google_reviews() 출력 — DDB GOOGLE#PLACE / GOOGLE#REVIEWS.
+    # Places Details `reviews` 필드는 무료 tier 에서 최대 5건. rating 평균은 별도.
+    model_config = ConfigDict(extra="ignore")
+
+    place_id: str | None = None
+    name: str | None = None
+    rating: float | None = None           # 전체 평점 평균 (Places `rating`)
+    user_ratings_total: int | None = None
+    keyword_frequency: dict[str, int] = {}  # 리뷰 본문 키워드 빈도 (자체 추출)
+    reviews: list[GoogleReviewItem] = []
 ```
 
 > **외부 시그널은 묶음 모델 없이 개별 인자로 전달한다.** `classify_hospital` /
@@ -119,17 +215,11 @@ class Confidence(BaseModel):
     signals: SignalContributions
 
 class SignalContributions(BaseModel):
-    """4 시그널 각각의 신뢰도 기여 점수 (0~100).
-
-    - 해당 시그널 데이터가 없으면 None (가중치 재정규화 대상).
-    - 자칭 도배 페널티: self_claim 이 높고 vision·blog·reviews 가 모두 낮거나 None 이면
-      confidence.score 에 강제 감점 (-10 ~ -30 포인트). 자칭 내용이 타 시그널로
-      검증되지 않은 케이스를 과신하는 것을 방지.
-    """
-    self_claim: float          # 자칭 점수 0~100 (항상 존재)
-    vision: float | None       # Vision 시그널 없으면 None (use_vision=False 또는 이미지 없음)
-    blog: float | None         # 네이버 블로그 시그널 없으면 None
-    reviews: float | None      # 네이버+카카오+구글 후기 합산 점수. 3개 소스 중 1개 이상 있으면 산출
+    """각 시그널이 신뢰도 점수에 기여한 비중 (0~100). 네 필드 모두 필수 int."""
+    self_claim: int            # 자칭 점수 기여 0~100
+    vision: int                # Vision 시그널 기여 0~100
+    blog: int                  # 블로그 시그널 기여 0~100
+    reviews: int               # 후기 시그널 기여 0~100
 
 class DetailedSignals(BaseModel):
     """4 시그널 원본 데이터.
@@ -139,9 +229,9 @@ class DetailedSignals(BaseModel):
     confidence 산출 시 해당 가중치를 나머지 시그널에 재분배.
     """
     self_claim: SelfClaimSignal          # 항상 존재 (자체 사이트 크롤링 결과)
-    vision: VisionSignal | None          # use_vision=False 또는 이미지 0개 시 None
-    blog: BlogSignal | None              # 네이버 블로그 크롤링 미완료 시 None
-    reviews: ReviewSignal | None         # 외부 후기 소스 크롤링 미완료 시 None
+    vision: VisionSignal | None = None   # use_vision=False 또는 이미지 0개 시 None
+    blog: BlogSignal                     # 항상 존재 (비어 있으면 빈 시그널)
+    reviews: ReviewSignal                # 항상 존재 (비어 있으면 빈 시그널)
 ```
 
 ### `HospitalDescription` — AI 통합 상세 설명 ⭐
@@ -178,10 +268,10 @@ class SearchQuery(BaseModel):
 
 class SearchResult(BaseModel):
     hospital_id: str
-    similarity_score: float | None      # 자연어 검색 시 KB Retrieve score. 없으면 None
-    distance_km: float | None           # 위치 검색 시 거리. 없으면 None
+    similarity_score: float | None = None  # 자연어 검색 시 KB Retrieve score. 없으면 None
+    distance_km: float | None = None       # 위치 검색 시 거리. 없으면 None
     matched_focus: list[str]
-    query_interpretation: str | None    # LLM이 해석한 자연어 쿼리 의도
+    query_interpretation: str | None = None  # LLM이 해석한 자연어 쿼리 의도
 ```
 
 > **검색 경로 이원화**: 자연어 쿼리는 AI 모듈(`retrieve_hospital`)이 KB Retrieve API 경유로 처리하고, 단순 카테고리 탐색(`sigungu=강남구 & specialty=피부과` 같은 메타 완전일치 전체 목록)은 BE가 DynamoDB GSI로 직접 조회한다. AI는 자연어 검색만 책임 — KB Retrieve는 빈 쿼리 텍스트를 받지 못하고 `numberOfResults` 최대 100 제한이 있어 카테고리 탐색에 부적합.
@@ -225,17 +315,20 @@ def classify_hospital(
     use_vision: bool = True,
     use_llm: bool = True,
     *,
+    vision_results: "list[ImageAnalysisResult] | None" = None,
     kakao_place: "KakaoPlace | dict | None" = None,
     kakao_reviews: "KakaoReviews | dict | None" = None,
     kakao_blog: "KakaoBlog | dict | None" = None,
     naver_reviews: "NaverPlace | dict | None" = None,
+    naver_blog: "NaverBlog | dict | None" = None,
     google_reviews: "GoogleReviews | dict | None" = None,
 ) -> Classification:
     ...
 ```
 
 **파라미터 의미**:
-- 외부 시그널 인자(`kakao_place`·`kakao_reviews`·`kakao_blog`·`naver_reviews`·`google_reviews`) — 각각 dict 또는 대응 Pydantic 모델 둘 다 수용. 미적재면 None → self_claim 등 가용 시그널만으로 분류. `kakao_place.tags` 는 자칭 보강에, 후기 3종은 후기 시그널에 흩어져 들어간다.
+- 외부 시그널 인자(`kakao_place`·`kakao_reviews`·`kakao_blog`·`naver_reviews`·`naver_blog`·`google_reviews`) — 각각 dict 또는 대응 Pydantic 모델 둘 다 수용. 미적재면 None → self_claim 등 가용 시그널만으로 분류. `kakao_place.tags` 는 자칭 보강에, `naver_blog` 는 블로그 시그널에, 후기 3종은 후기 시그널에 흩어져 들어간다.
+- `vision_results` (keyword-only) — 사전 계산된 `ImageAnalysisResult` 리스트. 주어지면 `analyze_images` 를 재호출하지 않고 재사용한다(시연 10개는 `run_vision_demo` 가 DDB `VISION#RESULTS` 에 1회 적재하므로 중복 호출·비용 2배 방지). None 이고 `use_llm`·`use_vision`·이미지가 모두 있으면 `analyze_images` 로 직접 분석.
 - `use_llm=False` — 트랙 A 룰 기반(Bedrock 0회, 1만 풀커버). True 면 트랙 B/C(LLM/Vision 시연 10개).
 - `use_vision=False` — 자칭 명확한 케이스(비용 절감). `use_llm=False` 면 이 값과 무관하게 Vision 생략.
 
@@ -266,8 +359,8 @@ PoC에서는 **3트랙으로 분기**한다 (자세한 건 `../ai/CLAUDE.md` "AI
 - IAM 권한: 지원 계정 `bedrock:InvokeModel`, 개인 계정 `bedrock:InvokeModel`
 
 #### 예외
-- `BedrockInvocationError` — Bedrock 호출 실패
 - `InsufficientDataError` — 크롤링 데이터가 너무 빈약 (페이지 0개, 또는 전부 빈 텍스트)
+- `BedrockInvocationError` — Bedrock 호출 실패 (`use_llm=True` 일 때만; 룰 단독 경로는 Bedrock 미호출)
 
 #### 신뢰도 계산 — 옛 약점과 해소 (2026-05-28)
 
@@ -458,6 +551,9 @@ signal_chunks = build_signal_chunks(
     kakao_reviews=kakao_reviews,
     kakao_blog=kakao_blog,
     naver_reviews=naver_reviews,
+    naver_blog=naver_blog,
+    google_reviews=google_reviews,
+    vision_results=vision_results,   # analyze_images() 결과. 있으면 vision 청크 생성 (시연 10개)
 )
 metadata = build_ingest_metadata(hospital_meta, classification)
 ingest_hospital(hospital_id, signal_chunks, metadata, trigger_ingestion=False)
@@ -469,9 +565,10 @@ ingest_hospital(hospital_id, signal_chunks, metadata, trigger_ingestion=False)
 
 | signal_type | 내용 | S3 키 |
 |---|---|---|
-| `self_claim` | 자체 사이트 service/about/main 텍스트 + 카카오 자칭 키워드 | `{prefix}{hospital_id}/self_claim.txt` |
-| `blog` | 자체 사이트 blog 페이지 + 카카오 블로그 포스트 제목/발췌 | `{prefix}{hospital_id}/blog.txt` |
-| `reviews` | 카카오/네이버 후기 **키워드 빈도 요약만** (§56③) | `{prefix}{hospital_id}/reviews.txt` |
+| `self_claim` | 자체 사이트 service/about/main 텍스트 + 카카오 자칭 키워드(tags·mystore_intro·HIRA) | `{prefix}{hospital_id}/self_claim.txt` |
+| `blog` | 자체 사이트 blog 페이지 + 카카오 블로그 seeds + 네이버 블로그 포스트 제목/발췌 | `{prefix}{hospital_id}/blog.txt` |
+| `reviews` | 카카오/네이버/구글 후기 키워드 빈도 요약 + 후기 본문 원문(임베딩 전용·화면 미표시, §56③ 면제) | `{prefix}{hospital_id}/reviews.txt` |
+| `vision` | 이 병원이 공개한 사진에서 식별된 장비·시술 장면 + 이미지 유형 분포 (시연 10개 한정) | `{prefix}{hospital_id}/vision.txt` |
 
 각 .txt 옆에 `.txt.metadata.json` 사이드카 파일 동봉. 사이드카 포맷:
 ```json
@@ -538,6 +635,7 @@ ingest_hospital(hospital_id, signal_chunks, metadata, trigger_ingestion=False)
 |---|---|---|
 | `team_id` | string | 필수 — `"clinic-focus"` 고정. KB가 02팀과 공유라 retrieve 시 `team_id=clinic-focus` 필터로 격리 |
 | `hospital_id` | string | 필터 가능 (역추적용 핵심) |
+| `name` | string | 병원명 (비필터, 역추적·표시용) |
 | `standard_specialty` | string | 필터 가능 |
 | `primary_focus` | list[string] | 필터 가능 (`stringContains` 등). **비어있으면 키 자체 제외** |
 | `sido` | string | 필터 가능 |
@@ -545,7 +643,6 @@ ingest_hospital(hospital_id, signal_chunks, metadata, trigger_ingestion=False)
 | `confidence_score` | number | 필터 가능 (`>=` 비교) |
 | `lat` | number | 필터 가능 (bounding box용). null이면 키 제외 |
 | `lng` | number | 필터 가능 (bounding box용). null이면 키 제외 |
-| `last_updated` | string | 비필터 |
 
 #### 실측 함정 (2026-05-26 검증)
 
@@ -736,17 +833,17 @@ def recompute_confidence(
 ```
 
 #### 동작
-1. 기존 4 시그널 점수 로드 (DynamoDB)
-2. 최근 피드백 비율 계산 (agree vs disagree)
-3. 가중치 조정하여 신뢰도 재계산
-4. 부정 피드백 임계치 초과 시 인간 검수자 큐로 자동 enqueue
+1. 기존 분류 신뢰도 로드 — V2 single-table 에서 `PK=hospital_id`, `SK(entity)=CLASSIFICATION` 항목을 `get_item` (base 점수·시그널 추출, 없으면 기본값 score=70)
+2. 최근 피드백의 disagree 비율 계산
+3. disagree 비율에 따라 감점(≥0.7→20, ≥0.5→10, ≥0.3→5), agree 비율 ≥0.8 이면 보너스 가산
+4. `new_score` 로 `level`(확실/추정/정보 부족) 산정
 5. 변경된 `Confidence` 반환 (DB 업데이트는 BE 측 책임)
 
 #### 의존성
-- DynamoDB 조회 (직접 또는 BE 통해)
+- DynamoDB single-table 조회 (`DYNAMO_TABLE`, 기본 `kmuproj-10-clinic-Main`, SK=`CLASSIFICATION`)
 
 #### 예외
-- `InsufficientFeedbackError` — 피드백이 너무 적어 통계적 의미 없음 (예: 3건 미만)
+- `InsufficientFeedbackError` — 피드백이 3건 미만이면 통계적 의미 없음 (임계치 `_INSUFFICIENT_FEEDBACK_THRESHOLD = 3`)
 
 ---
 
@@ -809,14 +906,14 @@ class RelatedHospital(BaseModel):
     primary_focus: list[str]
     similarity_score: float
     recommendation_type: Literal["same_focus", "fills_gap"]
-    distance_km: float | None
+    distance_km: float | None = None
 ```
 
 #### 동작 흐름
-1. **same_focus 추천**: 현재 병원 설명 텍스트를 쿼리로 KB Retrieve 호출 → 상위 N개 + 같은 시군구 필터 (`bedrock-agent-runtime:Retrieve`)
-2. **fills_gap 추천**: `excluded_services` 각 항목을 쿼리 텍스트로 KB Retrieve + `sigungu` 필터로 동네 후보 검색
-3. 거리 계산 (`location` 위경도 기반 haversine)
-4. 두 종류를 섞어서 반환 (보통 same_focus 3개 + fills_gap 2개)
+1. **same_focus 추천**: `" ".join(primary_focus)` 를 쿼리 텍스트로 `retrieve_hospital(SearchQuery)` 호출. `location.lat/lng` 가 있으면 lat/lng + `radius_km=3.0`, 없으면 `sido`/`sigungu` 필터. `limit*2` 후보를 받아 본인(hospital_id) 제외 후 `limit-2` 개까지 채움
+2. **fills_gap 추천**: 남은 자리만큼 `excluded_services` 각 항목의 `name` 을 쿼리 텍스트로 `retrieve_hospital` (`radius_km=5.0` 또는 `sido`/`sigungu`, `limit=3`) 호출, 항목당 첫 매치 1개 추가. 동시에 해당 `ExcludedService.alternative_hospital_ids` 를 **in-place** 로 채움(영역 ② ↔ ⑧ 연결)
+3. 거리는 `retrieve_hospital` 결과의 `distance_km` 를 그대로 사용
+4. 두 종류를 섞어 `results[:limit]` 반환 (보통 same_focus + fills_gap)
 
 #### 의존성
 - IAM: `bedrock-agent-runtime:Retrieve`
@@ -829,7 +926,7 @@ class RelatedHospital(BaseModel):
 
 ### 10. `aggregate_feedback_stats`
 
-상세 페이지 영역 ⑥의 피드백 누적 통계를 계산. DynamoDB의 Feedback 테이블 집계.
+상세 페이지 영역 ⑥의 피드백 누적 통계를 계산. V2 single-table(`DYNAMO_TABLE`, 기본 `kmuproj-10-clinic-Main`)에서 `PK=hospital_id` & `entity begins_with "FEEDBACK#"` 로 집계.
 
 ```python
 def aggregate_feedback_stats(
@@ -842,14 +939,14 @@ class FeedbackStats(BaseModel):
     agree_count: int
     disagree_count: int
     agree_ratio: float
-    last_feedback_at: datetime | None
+    last_feedback_at: datetime | None = None
 ```
 
 #### 동작 흐름
-1. DynamoDB Feedback 테이블에서 `hospital_id` 기준 모든 피드백 조회
-2. `verdict` 별 카운트 집계
-3. agree/disagree 비율 계산
-4. 가장 최근 피드백 시각 반환
+1. single-table 에서 `PK=hospital_id` & `entity begins_with "FEEDBACK#"` 로 query (LastEvaluatedKey 페이지네이션 포함)
+2. 집계 entity `FEEDBACK#STATS` 는 카운트에서 제외
+3. `total`=실제 피드백 건수, `agree`=`verdict=="agree"` 건수, `disagree`=`total - agree`, `agree_ratio`=`agree/total`(total 0 이면 0.0)
+4. 피드백 항목의 `received_at` 중 가장 큰 값을 `last_feedback_at` 으로 반환
 
 #### 비고
 - 단순 집계라 캐싱 가능. 일정 시간(예: 1시간) 캐싱 후 재계산
@@ -871,13 +968,16 @@ class FeedbackStats(BaseModel):
 | `BEDROCK_EMBED_MODEL_ID` | `amazon.titan-embed-text-v2:0` | `embed_text` 직접 호출용 임베딩 모델 (KB는 자체적으로 동일 모델 사용) |
 | `KB_ID` | `GTBJ6HLFDK` | 강사 제공 Bedrock Knowledge Base ID (`kmuproj-team-03`, 지원 계정) |
 | `KB_DATA_SOURCE_ID` | `PLC6QYALDU` | KB DataSource ID (`main-datasource`) |
-| `KB_DATASOURCE_S3_BUCKET` | (강사 제공) | DataSource가 가리키는 S3 버킷 — `get-data-source`로 확인 후 적기 |
-| `KB_DATASOURCE_S3_PREFIX` | (강사 제공) | DataSource S3 prefix |
+| `KB_DATASOURCE_S3_BUCKET` | `kmuproj-02-vector` | DataSource가 가리키는 S3 버킷 |
+| `KB_DATASOURCE_S3_PREFIX` | `clinic-focus/prod/` | DataSource S3 prefix |
 | `AI_AWS_ACCESS_KEY_ID` / `AI_AWS_SECRET_ACCESS_KEY` | — | 개인 계정 Sonnet 호출용 (트랙 C 시연 시) |
+| `AI_AWS_SESSION_TOKEN` | — | STS·SSO 임시 자격증명일 때만 |
+| `AI_AWS_PROFILE` | — | 대안: `~/.aws/credentials` 의 named profile (예: `personal`) |
 | `MAX_VISION_IMAGES` | `10` | 한 번 분류 시 처리할 최대 이미지 수 |
 | `MAX_LLM_DEMO_HOSPITALS` | `10` | 트랙 B·C 시연 대상 병원 수 (지원 계정 한도) |
 | `CONFIDENCE_THRESHOLD_HIGH` | `95` | "확실" 등급 임계치 |
 | `CONFIDENCE_THRESHOLD_LOW` | `70` | "정보 부족" 등급 임계치 |
+| `DYNAMO_TABLE` | `kmuproj-10-clinic-Main` | recompute_confidence·aggregate_feedback_stats 가 조회하는 single-table 이름 |
 
 > Bedrock KB(Retrieve/StartIngestionJob) · Titan Embed · Haiku/Nova 는 **지원 계정**(us-east-1) 자원으로 EC2 인스턴스
 > 프로파일로 자동 인증된다. **Sonnet 4.6(Vision 시연)만 개인 계정** (서울 리전 `ap-northeast-2`) 자격증명으로 boto3
@@ -893,6 +993,7 @@ def classify_hospital(
     use_vision: bool = True,
     use_llm: bool = True,
     *,
+    vision_results: list[ImageAnalysisResult] | None = None,
     kakao_place=None, kakao_reviews=None, kakao_blog=None,
     naver_reviews=None, naver_blog=None, google_reviews=None,
 ) -> Classification:
@@ -900,31 +1001,36 @@ def classify_hospital(
     #    카카오 tags 가 있으면 자칭 키워드·focus 보강
     self_claim_result = extract_self_claim(crawl_data.pages, use_llm, kakao_place)
 
-    # 2. Vision 분석 (use_llm=True 이고 이미지가 있을 때만)
-    if use_llm and use_vision and crawl_data.images:
-        raw = analyze_images([img.url for img in crawl_data.images])
-        vision_result = build_vision_signal(raw)
-    else:
-        vision_result = None
+    # 2. Vision 분석 (use_llm=True 이고 use_vision 일 때만)
+    #    vision_results 가 주어지면 재사용, 없고 이미지가 있으면 analyze_images 호출
+    vision_signal = None
+    if use_llm and use_vision:
+        results = vision_results
+        if results is None and crawl_data.images:
+            results = analyze_images(
+                [img.url for img in crawl_data.images][:MAX_VISION_IMAGES]
+            )
+        if results:
+            vision_signal = _aggregate_vision_signal(results)  # 내부 인라인 집계
 
     # 3. 블로그 키워드 빈도 (자체 사이트 blog + 네이버 블로그)
-    blog_result = analyze_blog_topics(crawl_data, naver_blog, kakao_blog)
+    blog_result = analyze_blog_topics(crawl_data, naver_blog)  # kakao_blog 는 현재 블로그 분석에 미사용
 
     # 4. 후기 키워드 분석 (카카오+네이버+구글 합산, §56③ 본문 미저장)
     review_result = aggregate_review_keywords(kakao_reviews, naver_reviews, google_reviews)
 
     # 5. 4 시그널 교차 검증
     primary_focus, signal_scores = cross_validate_signals(
-        self_claim_result, vision_result, blog_result, review_result
+        self_claim_result, vision_signal, blog_result, review_result
     )
 
     # 6. 자칭 도배 페널티
     #    자칭 ↑ + 나머지 시그널 ↓ 시 confidence 강제 감점
-    if is_keyword_spamming(self_claim_result, vision_result, blog_result):
+    if is_keyword_spamming(self_claim_result, blog_result, review_result, vision_signal):
         signal_scores = apply_spamming_penalty(signal_scores)
 
     # 7. 신뢰도 점수 (룰 단독 use_llm=False 경로는 70 cap)
-    confidence = compute_confidence(signal_scores, vision_result)
+    confidence = compute_confidence(signal_scores, vision_signal)
 
     return Classification(
         hospital_id=crawl_data.hospital_id,
@@ -932,10 +1038,10 @@ def classify_hospital(
         primary_focus=primary_focus,
         confidence=confidence,
         detailed_signals=build_detailed_signals(
-            self_claim_result, vision_result, blog_result, review_result
+            self_claim_result, vision_signal, blog_result, review_result
         ),
-        classified_at=datetime.utcnow(),
-        classifier_version="v2.0",
+        classified_at=datetime.now(tz=timezone.utc),
+        classifier_version="v1.0",  # CLASSIFIER_VERSION 상수
     )
 ```
 
@@ -946,7 +1052,7 @@ def classify_hospital(
 ### 새 병원 등록 시 (배치)
 
 ```python
-# be/handlers/index_hospital.py — 실구현은 run_index_pipeline(hospital_id, *, demo, trigger_ingestion)
+# be/handlers/index_hospital.py — 실구현은 run_index_pipeline(hospital_id, *, demo=False, trigger_ingestion=True)
 from ai import (
     classify_hospital,
     generate_description,
@@ -968,17 +1074,32 @@ def run_index_pipeline(hospital_id: str, *, demo: bool = False, trigger_ingestio
     # 외부 시그널(카카오/네이버/구글)을 build_signal_chunks·classify 인자 dict 로.
     # 키는 두 함수의 키워드 인자명과 일치 → **external 로 전개. 적재 안 된 entity 는 None.
     external = db.load_external_signals(hospital_id)
-    #   external = {kakao_place, kakao_reviews, kakao_blog, naver_reviews, google_reviews}
+    #   external = {kakao_place, kakao_reviews, kakao_blog, naver_reviews, naver_blog, google_reviews}
+
+    # 1-a. Vision 결과 로드 — VISION#RESULTS 가 있으면(시연 10개) ImageAnalysisResult 로
+    #      정규화. 분류·extract·KB 청크가 공유해 analyze_images 중복 호출을 피한다.
+    vision_results_raw = db.get_entity(hospital_id, "VISION#RESULTS")
+    vision_results = (
+        [ImageAnalysisResult(**r) for r in (vision_results_raw.get("results") or [])]
+        if vision_results_raw else None
+    )
 
     # 2. AI 분류 (개별 외부 인자 전개 — 4 시그널 교차검증)
     #    demo=False → 룰 단독(Bedrock 0회), demo=True → LLM/Vision 시연 10개
-    classification = classify_hospital(crawl_data, use_llm=demo, **external)
+    #    vision_results 가 있으면 전달 → 재분석 없이 재사용
+    prev_classification = db.load_classification(hospital_id)
+    classification = classify_hospital(
+        crawl_data, use_llm=demo, vision_results=vision_results, **external
+    )
     db.save_classification(classification)
+    # primary_focus 가 이전과 다르면 HISTORY# 변경 이력 적재 (영역 ⑦)
+    _record_classification_change(db, prev_classification, classification)
 
     # 3~5. 시연 10개만 — 진료항목·설명·관련병원 (LLM/Vision)
     if demo:
         services_and_doctors = extract_services_and_doctors(
-            crawl_data=crawl_data, classification=classification, vision_results=[],
+            crawl_data=crawl_data, classification=classification,
+            vision_results=vision_results or [],
         )
         description = generate_description(
             classification=classification,
@@ -999,7 +1120,9 @@ def run_index_pipeline(hospital_id: str, *, demo: bool = False, trigger_ingestio
     #    DESCRIPTION 은 임베딩 본문에 미포함(상세페이지 표시용). 임베딩 = 시그널 원본 청크.
     #    metadata 는 검색 필터 키만(평탄 dict). signals_included·last_updated 같은
     #    표시용 값은 KB 가 아니라 DDB CLASSIFICATION/INGEST#STATE 에서 9영역이 직접 읽는다.
-    signal_chunks = build_signal_chunks(crawl_data=crawl_data, **external)
+    signal_chunks = build_signal_chunks(
+        crawl_data=crawl_data, vision_results=vision_results, **external
+    )
     metadata = build_ingest_metadata(hospital_meta, classification)
     ingest_hospital(hospital_id, signal_chunks, metadata, trigger_ingestion=trigger_ingestion)
 
@@ -1009,81 +1132,82 @@ def run_index_pipeline(hospital_id: str, *, demo: bool = False, trigger_ingestio
 ### 상세 페이지 조회 시
 
 ```python
-# be/handlers/get_hospital_detail.py
-from ai import aggregate_feedback_stats
+# be/api/hospital.py — FastAPI APIRouter(prefix="/api/hospitals")
+from be.core.feedback import compute_feedback_stats
 
-def handle_get_detail(hospital_id: str):
-    # 9개 영역에 해당하는 데이터를 DynamoDB에서 조회
-    classification = load_classification(hospital_id)
-    description = load_description(hospital_id)
-    services_and_doctors = load_services_and_doctors(hospital_id)
-    hospital_meta = load_hospital_meta(hospital_id)
-    related = load_related_hospitals(hospital_id)
-    recent_changes = load_recent_changes(hospital_id, limit=2)
+@router.get("/{hospital_id}")
+def get_hospital_detail(hospital_id: str):
+    meta = db.load_hospital_meta(hospital_id)
+    if not meta:
+        raise HTTPException(
+            status_code=404,
+            detail={"error": {"code": "NOT_FOUND", "message": "병원을 찾을 수 없습니다"}},
+        )
+    classification = db.load_classification(hospital_id)
+    description = db.load_description(hospital_id)
+    services_and_doctors = db.load_services_and_doctors(hospital_id)
+    related = db.load_related_hospitals(hospital_id)
+    recent_changes = db.load_recent_changes(hospital_id, limit=2)
 
-    # 영역 ⑥ 피드백 통계는 실시간 집계 (또는 캐싱)
-    feedback_stats = aggregate_feedback_stats(hospital_id)
+    # 영역 ⑥ 피드백 통계 — 실시간 집계
+    feedback_list = db.get_feedback_for_hospital(hospital_id)
+    feedback_stats = compute_feedback_stats(feedback_list)
 
-    # FE-BE API 응답 형태로 조립
-    return build_hospital_detail_response(
-        classification=classification,
-        description=description,
-        services_and_doctors=services_and_doctors,
-        hospital_meta=hospital_meta,
-        related_hospitals=related,
-        recent_changes=recent_changes,
-        feedback_stats=feedback_stats,
-    )
+    # FE-BE API 응답 형태로 직접 조립 → {"data": {...}} (9개 영역)
+    return {"data": { ... }}
 ```
 
 ### 검색 시
 
 ```python
-# be/handlers/search.py
+# be/api/search.py — FastAPI APIRouter(prefix="/api/search")
 from ai import retrieve_hospital
 from shared.models import SearchQuery
 
-def handle_search(query_params):
-    # 검색 경로 이원화:
-    #   - query_text 있으면 → AI 자연어 검색 (KB Retrieve)
-    #   - query_text 없고 메타 필터만 있으면 → BE DynamoDB GSI 직접 조회 (AI 미경유)
-    if not query_params.get("q"):
-        return handle_category_browse(query_params)  # be/handlers/category.py — DynamoDB GSI
+@router.get("")
+def search_hospitals(q=None, lat=None, lng=None, sigungu=None, specialty=None, ...):
+    # 검색 경로 이원화 (별도 핸들러 파일 없이 한 함수 안에서 분기):
+    #   - q 또는 lat/lng 있으면 → AI 자연어/위치 검색 (KB Retrieve)
+    #   - sigungu 단독이면 → BE DynamoDB GSI 직접 조회 (AI 미경유)
+    #   - q·lat/lng·sigungu 다 없으면 → 400 INVALID_PARAMETER
 
-    query = SearchQuery(
-        query_text=query_params["q"],
-        sido=query_params.get("sido"),
-        sigungu=query_params.get("sigungu"),
-        specialty=query_params.get("specialty"),
-        min_confidence=int(query_params.get("min_confidence", 70)),
-        limit=int(query_params.get("limit", 20)),
+    search_query = SearchQuery(
+        query_text=q, lat=lat, lng=lng, radius_km=radius_km,
+        sido=sido, sigungu=sigungu, specialty=specialty,
+        min_confidence=min_confidence, sort=sort, limit=limit,
     )
 
-    # 1. AI 모듈로 자연어 검색 (KB Retrieve 경유)
-    ai_results = retrieve_hospital(query)
+    # 1. AI 모듈로 자연어/위치 검색 (KB Retrieve 경유). 예외 매핑:
+    #    InvalidQueryError → 400 INVALID_PARAMETER, 그 외 → 502 AI_SERVICE_ERROR
+    from ai.core.exceptions import InvalidQueryError, KBRetrieveError
+    search_results = retrieve_hospital(search_query)
 
-    # 2. DynamoDB에서 상세 정보 조인
-    hospitals = batch_get_hospitals([r.hospital_id for r in ai_results])
+    # 2. 각 hospital_id 를 _hospital_card() 로 META+CLASSIFICATION+DESCRIPTION join
+    results = [c for sr in search_results if (c := _hospital_card(sr.hospital_id, ...))]
 
-    # 3. FE에 반환할 형태로 변환
-    return [build_response_hospital(h, r) for h, r in zip(hospitals, ai_results)]
+    # 3. FE 반환 형태
+    return {"data": results, "meta": {"total": len(results), "search_mode": ..., ...}}
 ```
 
 ### 피드백 처리 시
 
 ```python
-# be/handlers/feedback.py
+# be/api/feedback.py — FastAPI APIRouter(prefix="/api/feedback")
+from be.core.feedback import should_recompute
 from ai import recompute_confidence
 
-def handle_feedback(feedback: FeedbackEntry):
-    # 1. 피드백 저장
-    save_feedback(feedback)
-
-    # 2. 임계치 이상 누적되면 신뢰도 재계산 트리거
-    recent_feedback = get_recent_feedback(feedback.hospital_id)
-    if should_recompute(recent_feedback):
-        new_confidence = recompute_confidence(feedback.hospital_id, recent_feedback)
-        update_confidence(feedback.hospital_id, new_confidence)
+@router.post("", status_code=201)
+def submit_feedback(req: FeedbackRequest):  # FeedbackRequest: hospital_id·device_id·primary_focus·verdict
+    # 1. 중복 체크 → 409 DUPLICATE_FEEDBACK
+    if db.check_duplicate_feedback(req.hospital_id, req.device_id):
+        return JSONResponse(status_code=409, content={"error": {"code": "DUPLICATE_FEEDBACK", ...}})
+    # 2. 피드백 저장
+    db.save_feedback(FeedbackEntry(...))
+    # 3. 임계 도달 시 신뢰도 재계산 → CLASSIFICATION.confidence 만 교체 (분류는 유지)
+    all_feedback = db.get_feedback_for_hospital(req.hospital_id)
+    if should_recompute(all_feedback):
+        new_confidence = recompute_confidence(req.hospital_id, all_feedback)
+        # classification.confidence = new_confidence; db.save_classification(classification)
 ```
 
 ---
@@ -1119,8 +1243,9 @@ def test_classify_with_external_signals():
     result = classify_hospital(crawl_data, use_vision=False,
                                naver_blog=naver_blog, kakao_reviews=kakao_reviews)
     # blog·reviews 가 채워졌으므로 signals.blog·reviews 기여도가 잡혀야
-    assert result.confidence.signals.blog is not None
-    assert result.confidence.signals.reviews is not None
+    # (SignalContributions 필드는 int 필수라 None 비교가 아니라 > 0 으로 검증)
+    assert result.confidence.signals.blog > 0
+    assert result.confidence.signals.reviews > 0
 ```
 
 ### Bedrock 호출 모킹
@@ -1129,7 +1254,7 @@ def test_classify_with_external_signals():
 # 실제 Bedrock 호출 없이 테스트
 from unittest.mock import patch
 
-@patch("ai.bedrock_client.invoke_model")
+@patch("ai.core.bedrock_client.invoke_model")
 def test_classify_mocked(mock_invoke):
     mock_invoke.return_value = {"body": ...}
     ...

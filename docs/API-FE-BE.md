@@ -91,22 +91,23 @@
 ```typescript
 {
   address: string;                // 전체 주소
+  lat: number | null;
+  lng: number | null;
   sido: string;                   // 시도 (예: "서울특별시")
   sigungu: string;                // 시군구 (예: "마포구")
-  dong: string | null;            // 동
-  lat: number;
-  lng: number;
 }
 ```
 
 ### `ClassificationChange`
 ```typescript
 {
+  hospital_id: string;
   changed_at: string;             // ISO 8601
   from_focus: string[];
   to_focus: string[];
-  reason: "feedback_accumulated" | "human_review" | "vision_reanalysis" | "scheduled_recrawl" | "hash_diff_recrawl";
+  reason: "feedback_accumulated" | "human_review" | "vision_reanalysis" | "scheduled_recrawl";
   notes: string | null;
+  classifier_version: string;
 }
 ```
 
@@ -116,8 +117,8 @@
 ```typescript
 {
   name: string;                   // "아토피", "여드름", "사마귀 냉동치료"
-  category: "general" | "cosmetic" | "surgery" | "exam" | "other";
-  source_signals: string[];       // ["self_claim", "blog", "vision"]
+  category: string;               // 자유 문자열 ("general", "cosmetic" 등 강제 enum 아님)
+  source: "self_claim" | "vision" | "blog" | "reviews" | "public_data";  // 단일 출처
 }
 ```
 
@@ -125,8 +126,8 @@
 ```typescript
 {
   name: string;                   // "M자 탈모 처방"
-  reason: "no_equipment" | "no_mention" | "low_signal";
-  alternative_hospital_ids: string[];  // 동네 대안 병원 (⑧ 영역과 연결)
+  reason: string;                 // 자유 문자열 (강제 enum 아님)
+  alternative_hospital_ids: string[];  // 동네 대안 병원 (⑧ 영역과 연결). 기본 [] 
 }
 ```
 
@@ -145,9 +146,8 @@ FE 렌더링: 영역 ② "다루지 않는 분야" 카드에서 `alternative_hos
 ```typescript
 {
   name: string;                   // "사마귀 냉동치료기"
-  available: boolean;
-  source: "vision" | "public_registry" | "self_claim";
-  source_url: string | null;
+  source: "vision" | "public_data";
+  confidence: number;             // 0~1
 }
 ```
 
@@ -155,9 +155,7 @@ FE 렌더링: 영역 ② "다루지 않는 분야" 카드에서 `alternative_hos
 ```typescript
 {
   service_name: string;           // "라식"
-  price_range: string;            // "150만원~200만원"
-  source_url: string;             // 사이트에서 추출한 출처
-  last_seen: string;              // ISO 8601, 마지막 확인 시각
+  price_text: string;             // 원문 그대로 ("50,000원~")
 }
 ```
 
@@ -165,50 +163,29 @@ FE 렌더링: 영역 ② "다루지 않는 분야" 카드에서 `alternative_hos
 ```typescript
 {
   name: string;
-  position: string;               // "원장", "부원장", "전문의"
-  specialty_certifications: string[];  // 심평원 전문의 자격
+  specialty: string | null;       // 전문 진료과목
+  qualifications: string[];        // 자격 (심평원 전문의 등). 기본 []
   sub_specialty: string | null;   // 사이트에서 추출. "어깨 관절 세부전공"
-  career: string[];               // ["서울대 의대 졸업", "○○병원 정형외과 수련"]
-  primary_focus: string[] | null; // 의사별로 다른 경우만
-  source_url: string | null;
 }
 ```
-
-> ⚠️ 현 구현 상태 (2026-05-26): 상세 영역 타입 다수가 `shared/models.py`와 크게 어긋난다.
-> - `Service`: 명세 `source_signals: string[]` ↔ 모델 `source: Literal[...]` (단일값).
-> - `ExcludedService`: 명세 `{name, reason, alternative_hospital_ids[]}` ↔ 모델은 `{name, reason}`만. `alternative_hospital_ids` 없어서 ⑧ 영역 링크 연결 불가.
-> - `Equipment`: 명세 `{name, available, source, source_url}` ↔ 모델 `{name, source, confidence}`. `available`/`source_url`이 `confidence`로 치환됨.
-> - `PriceItem`: 명세 `{service_name, price_range, source_url, last_seen}` ↔ 모델 `{service_name, price_text}`만.
-> - `Doctor`: 명세 `{name, position, specialty_certifications, sub_specialty, career, primary_focus, source_url}` ↔ 모델 `{name, specialty, qualifications, sub_specialty}`. `position`/`career`/`primary_focus`/`source_url` 누락, `specialty_certifications`가 `qualifications`로 이름 다름.
-> - `Location`: 명세 `dong` 필드 ↔ 모델에 없음.
-> - `OperatingHours`: 명세는 구조화 객체(`weekday: {open,close,lunch_start,lunch_end}` + `night_clinic`/`holiday_clinic`) ↔ 모델은 `weekday: str` 단순 텍스트, `night/holiday_clinic` 없음.
-> - `Contact`: 명세 `{phone, homepage_url, parking_available, appointment_methods}` ↔ 모델 `{phone, website_url, reservation_url}`. `parking`은 별도로 `HospitalMeta.parking: bool | None`에 분리.
->
-> V2 sprint **Phase A → Phase D → Phase E** 순서로 `shared/models.py` 갱신 → BE 응답 매핑 갱신 → FE OpenAPI 타입 재생성으로 정렬 예정.
 
 #### `OperatingHours` — 운영시간
 ```typescript
 {
-  weekday: {                      // 월~금
-    open: string;                 // "09:00"
-    close: string;                // "18:00"
-    lunch_start: string | null;
-    lunch_end: string | null;
-  };
-  saturday: { open, close, lunch_start, lunch_end } | null;
-  sunday: { open, close, lunch_start, lunch_end } | null;
-  night_clinic: boolean;          // 야간 진료 여부
-  holiday_clinic: boolean;        // 공휴일 진료 여부
+  weekday: string | null;         // "09:00~18:00" 등 원문 텍스트 (월~금)
+  saturday: string | null;
+  sunday: string | null;
+  holiday: string | null;         // 공휴일 진료 텍스트
+  lunch_break: string | null;     // "13:00~14:00" 등
 }
 ```
 
 #### `Contact` — 연락처·접근성
 ```typescript
 {
-  phone: string;
-  homepage_url: string | null;
-  parking_available: boolean;
-  appointment_methods: ("walk_in" | "phone" | "online")[];
+  phone: string | null;
+  website_url: string | null;
+  reservation_url: string | null;
 }
 ```
 
@@ -232,7 +209,6 @@ FE 렌더링: 영역 ② "다루지 않는 분야" 카드에서 `alternative_hos
   similarity_score: number;       // 0~1
   recommendation_type: "same_focus" | "fills_gap";  // 같은 주력 / 빈자리 보완
   distance_km: number | null;
-  thumbnail_url: string | null;   // 카드 썸네일용. 미수집이면 null (FE 가 폴백 처리)
 }
 ```
 
@@ -283,7 +259,7 @@ GET /api/search
 | `sigungu` | string | × | 시군구 필터 |
 | `specialty` | string | × | 표준 진료과목 필터 |
 | `min_confidence` | number | × | 최소 신뢰도 (기본 70) |
-| `sort` | string | × | `distance` (기본, 위경도 있을 때) / `confidence` / `relevance` (자연어 검색 시) |
+| `sort` | string | × | `relevance` (기본) / `distance` (위경도 있을 때 권장) / `confidence` |
 | `limit` | number | × | 결과 개수 (기본 20, 최대 50) |
 | `offset` | number | × | 페이지네이션 (기본 0) |
 
@@ -308,13 +284,12 @@ GET /api/search
         "address": "서울특별시 마포구 ...",
         "sido": "서울특별시",
         "sigungu": "마포구",
-        "dong": "공덕동",
         "lat": 37.5443,
         "lng": 126.9510
       },
       "website_url": "https://...",
       "one_line_summary": "일반 피부 진료 중심, 미용 시술은 거의 안 하는 동네 의원",
-      "thumbnail_url": null
+      "matched_focus": ["탈모"]
     }
   ],
   "meta": {
@@ -323,8 +298,6 @@ GET /api/search
     "offset": 0,
     "search_mode": "natural+nearby",   // "natural" / "nearby" / "natural+nearby" / "category"
     "query_interpretation": "탈모 진료 / 의원급",
-    "center": { "lat": 37.5443, "lng": 126.9510 },
-    "radius_km": 3,
     "sort": "distance"
   }
 }
@@ -335,7 +308,7 @@ GET /api/search
 {
   "error": {
     "code": "INVALID_PARAMETER",
-    "message": "q 또는 lat/lng 중 최소 하나는 필수입니다"
+    "message": "q, lat/lng, sigungu 중 최소 하나는 필수입니다"
   }
 }
 ```
@@ -355,7 +328,7 @@ GET /api/search
 
 위 4 조건에 다 부합 안 하면 (예: `q` X, `lat/lng` X, `sigungu`/`specialty` 도 X) 400 `INVALID_PARAMETER`.
 
-> ⚠️ 현 구현 상태 (2026-05-26): `be/api/search.py`는 자연어 검색이 아직 AI 모듈에 연결되지 않았다. `q`만 있고 `sigungu`가 없으면 200으로 빈 배열 + `meta.note: "자연어 검색은 AI 모듈 연동 후 지원됩니다..."` 반환. 실 검색 경로는 `sigungu` 기반 DDB GSI 조회뿐이고, 그 응답도 `standard_specialty: ""`, `primary_focus: []`, `confidence: null`, `one_line_summary: ""` 같은 분류 전 placeholder로 채워진다 (`thumbnail_url`은 키 자체 누락). 또한 파라미터 검증 실패는 명세상 400이지만 코드는 422로 응답한다. V2 sprint **Phase D** 에서 `retrieve_hospital` 연동 + 분류·설명 join + 에러 status 정렬 예정.
+> ℹ️ 현 코드 동작: `be/api/search.py` 의 검색 결과 카드(`_hospital_card`)는 META + CLASSIFICATION + DESCRIPTION 을 join 하되, **아직 분류·설명이 없는 병원**은 분류 필드를 placeholder 로 채운다 — `standard_specialty: ""`, `primary_focus: []`, `confidence: null`, `one_line_summary: ""`. 또한 검색 결과 카드에는 `thumbnail_url` 키 자체가 없다(위 상세 응답에만 존재). 분류 전 병원(9990개)에서 이 placeholder 들이 그대로 나오는 점을 FE 렌더링에서 의식할 것.
 
 ---
 
@@ -391,6 +364,7 @@ GET /api/hospitals/{hospital_id}
     "thumbnail_url": null,
 
     "ai_description": {
+      "hospital_id": "h_abc123",
       "headline": "○○피부과는 일반 피부 진료 중심의 동네 의원입니다.",
       "paragraphs": [
         {
@@ -402,6 +376,7 @@ GET /api/hospitals/{hospital_id}
           "citations": ["reviews", "vision"]
         }
       ],
+      "one_line_summary": "일반 피부 진료 중심, 미용 시술은 거의 안 하는 동네 의원",
       "generated_at": "2026-04-12T08:00:00Z",
       "generator_model": "global.anthropic.claude-sonnet-4-6"
     },
@@ -409,9 +384,9 @@ GET /api/hospitals/{hospital_id}
     // FE는 null이면 헤드라이너 영역을 태그 카드로 차등 렌더링 (아래 "프론트 렌더링 가이드" 참조)
 
     "services": [
-      { "name": "아토피", "category": "general", "source_signals": ["self_claim", "blog", "reviews"] },
-      { "name": "여드름", "category": "general", "source_signals": ["self_claim", "blog", "reviews"] },
-      { "name": "습진", "category": "general", "source_signals": ["self_claim", "blog"] }
+      { "name": "아토피", "category": "general", "source": "self_claim" },
+      { "name": "여드름", "category": "general", "source": "self_claim" },
+      { "name": "습진", "category": "general", "source": "blog" }
     ],
 
     "excluded_services": [
@@ -428,71 +403,59 @@ GET /api/hospitals/{hospital_id}
     ],
 
     "equipment": [
-      { "name": "더모스코프", "available": true, "source": "vision", "source_url": "https://.../about" },
-      { "name": "사마귀 냉동치료기", "available": false, "source": "vision", "source_url": null },
-      { "name": "점 제거 레이저", "available": false, "source": "vision", "source_url": null }
+      { "name": "더모스코프", "source": "vision", "confidence": 0.92 },
+      { "name": "사마귀 냉동치료기", "source": "vision", "confidence": 0.81 },
+      { "name": "점 제거 레이저", "source": "vision", "confidence": 0.77 }
     ],
 
     "prices": [
-      { "service_name": "점 빼기", "price_range": "5만원~", "source_url": "https://.../price", "last_seen": "2026-04-12T08:00:00Z" }
+      { "service_name": "점 빼기", "price_text": "50,000원~" }
     ],
 
     "doctors": [
       {
         "name": "김○○",
-        "position": "원장",
-        "specialty_certifications": ["피부과 전문의"],
-        "sub_specialty": "아토피·습진",
-        "career": ["서울대 의대 졸업", "○○병원 피부과 수련"],
-        "primary_focus": null,
-        "source_url": "https://.../doctor/1"
+        "specialty": "피부과",
+        "qualifications": ["피부과 전문의"],
+        "sub_specialty": "아토피·습진"
       }
     ],
 
     "detailed_signals": {
       "self_claim": {
-        "extracted_keywords": ["아토피", "여드름", "습진"],
-        "source_text": "본원은 일반 피부 진료를 중심으로...",
-        "source_url": "https://.../about"
+        "keywords": ["아토피", "여드름", "습진"],
+        "primary_focus": ["일반 진료 (아토피·여드름)"],
+        "spam_score": 0.08
       },
       "vision": {
         "detected_devices": ["더모스코프"],
-        "image_distribution": { "일반_진료": 0.78, "미용_시술": 0.18, "기타": 0.04 },
-        "sample_image_urls": ["https://.../img1.jpg", "https://.../img2.jpg"]
+        "image_categories": { "일반 진료": 0.78, "미용 시술": 0.18, "기타": 0.04 },
+        "total_images_analyzed": 12
       },
       "blog": {
-        "top_topics": [
-          { "topic": "아토피", "frequency": 0.34 },
-          { "topic": "여드름", "frequency": 0.21 }
-        ],
         "total_posts": 50,
-        "sample_post_urls": ["https://blog.naver.com/...1", "https://blog.naver.com/...2"]
+        "keyword_frequency": { "아토피": 34, "여드름": 21 },
+        "primary_topics": ["아토피", "여드름"]
       },
       "reviews": {
-        "sources": ["naver_place", "kakao_map", "google_places"],
-        "total_count": 142,
-        "top_keywords": [
-          { "keyword": "친절", "frequency": 38 },
-          { "keyword": "아토피", "frequency": 22 },
-          { "keyword": "여드름", "frequency": 17 },
-          { "keyword": "꼼꼼", "frequency": 14 }
-        ]
+        "total_reviews": 142,
+        "keyword_frequency": { "친절": 38, "아토피": 22, "여드름": 17, "꼼꼼": 14 },
+        "primary_topics": ["친절", "아토피"]
       }
     },
 
     "operating_hours": {
-      "weekday": { "open": "09:00", "close": "18:00", "lunch_start": "13:00", "lunch_end": "14:00" },
-      "saturday": { "open": "09:00", "close": "13:00", "lunch_start": null, "lunch_end": null },
+      "weekday": "09:00~18:00",
+      "saturday": "09:00~13:00",
       "sunday": null,
-      "night_clinic": false,
-      "holiday_clinic": false
+      "holiday": null,
+      "lunch_break": "13:00~14:00"
     },
 
     "contact": {
       "phone": "02-1234-5678",
-      "homepage_url": "https://...",
-      "parking_available": true,
-      "appointment_methods": ["walk_in", "phone"]
+      "website_url": "https://...",
+      "reservation_url": null
     },
 
     "feedback_stats": {
@@ -505,11 +468,13 @@ GET /api/hospitals/{hospital_id}
 
     "recent_changes": [
       {
+        "hospital_id": "h_abc123",
         "changed_at": "2026-04-12T08:00:00Z",
         "from_focus": ["미용 시술"],
         "to_focus": ["일반 진료 (아토피·여드름)"],
         "reason": "feedback_accumulated",
-        "notes": "👎 피드백 18건 누적으로 재분류"
+        "notes": "👎 피드백 18건 누적으로 재분류",
+        "classifier_version": "rule-v1"
       }
     ],
 
@@ -520,8 +485,7 @@ GET /api/hospitals/{hospital_id}
         "primary_focus": ["일반 진료 (아토피·여드름)"],
         "similarity_score": 0.91,
         "recommendation_type": "same_focus",
-        "distance_km": 0.8,
-        "thumbnail_url": null
+        "distance_km": 0.8
       },
       {
         "hospital_id": "h_ghi789",
@@ -529,8 +493,7 @@ GET /api/hospitals/{hospital_id}
         "primary_focus": ["사마귀·점 제거"],
         "similarity_score": 0.42,
         "recommendation_type": "fills_gap",
-        "distance_km": 1.2,
-        "thumbnail_url": null
+        "distance_km": 1.2
       }
     ],
 
@@ -564,30 +527,26 @@ GET /api/hospitals/{hospital_id}
 
 ```typescript
 detailed_signals: {
-  self_claim: {
-    extracted_keywords: string[];      // 자체 사이트에서 룰 기반 추출한 자칭 키워드
-    source_text: string;               // 자칭 근거 원문 (사이트 메인·소개 단락)
-    source_url: string;                // 원문 URL (사용자 검증용)
-  } | null;
-  vision: {
+  self_claim: {                        // 필수 (null 아님)
+    keywords: string[];                // 룰 기반 추출 자칭 키워드
+    primary_focus: string[];           // 추론된 주력 분야
+    spam_score: number;                // 0~1, 높을수록 자칭 도배 의심
+  };
+  vision: {                            // 시연 미대상이면 null
     detected_devices: string[];        // Vision 이 식별한 의료기기 (예: "더모스코프")
-    image_distribution: {              // 시술 사진 분포 비율 (합=1.0)
-      "일반_진료": number;
-      "미용_시술": number;
-      "기타": number;
-    };
-    sample_image_urls: string[];       // 사용자에게 보여줄 샘플 이미지 (3~5장)
+    image_categories: { [category: string]: number };  // 카테고리 -> 비율 (합=1.0)
+    total_images_analyzed: number;     // 분석한 이미지 수
   } | null;
-  blog: {
-    top_topics: { topic: string; frequency: number }[];  // frequency 는 0~1 상대 빈도
-    total_posts: number;               // 수집된 네이버 블로그 포스트 총수
-    sample_post_urls: string[];        // 신규 — 사용자 검증용 (상위 포스트 URL 3~5건)
-  } | null;
-  reviews: {
-    sources: ("naver_place" | "kakao_map" | "google_places")[];  // 어느 출처에서 수집됐는지
-    total_count: number;               // 3개 소스 합산 리뷰 총수
-    top_keywords: { keyword: string; frequency: number }[];      // 키워드 + 절대 빈도
-  } | null;
+  blog: {                              // 필수 (null 아님)
+    total_posts: number;               // 수집된 블로그 포스트 총수
+    keyword_frequency: { [keyword: string]: number };  // 키워드 -> 등장 횟수
+    primary_topics: string[];          // 상위 토픽
+  };
+  reviews: {                           // 필수 (null 아님)
+    total_reviews: number;             // 합산 리뷰 총수
+    keyword_frequency: { [keyword: string]: number };  // 키워드 -> 등장 횟수
+    primary_topics: string[];          // 상위 토픽
+  };
 }
 ```
 
@@ -597,12 +556,12 @@ detailed_signals: {
 
 | 항목 | 허용 | 금지 |
 |---|---|---|
-| 응답 필드 | `top_keywords` (키워드 + 빈도) · `total_count` · `sources` | 개별 리뷰 본문 (`review_text`·`review_body` 같은 필드) ❌ |
+| 응답 필드 | `keyword_frequency` (키워드 -> 등장 횟수) · `total_reviews`/`total_posts` · `primary_topics` | 개별 리뷰 본문 (`review_text`·`review_body` 같은 필드) ❌ |
 | FE 렌더링 | "친절·아토피 키워드 N건" 같은 통계 카드 / 키워드 클라우드 / 빈도 막대 차트 | 후기 본문 그대로 카드 표시 ❌ "○○님이 친절하다고 평가" 같은 인용 ❌ |
 | 내부 저장 | DDB 에 raw 본문 보관 가능 (분석용) | API 응답에 raw 본문 통과 금지 |
 | AI 설명 인용 | "후기 키워드 빈도 ~%" + 출처 배지 `[후기]` | "후기에서 호평" 같은 평가형 어조 ❌ |
 
-블로그 sub-block 의 `sample_post_urls` 는 외부 블로그 사이트 URL 만 노출 — 본문을 우리 화면에 옮겨오면 안 됨. 사용자가 클릭해서 외부에서 직접 읽도록 유도.
+블로그 sub-block 의 키워드 통계(`keyword_frequency`·`primary_topics`)만 화면에 노출하고, 후기·블로그 본문은 우리 화면에 옮겨오면 안 됨 — 사용자가 외부 원문에서 직접 읽도록 유도.
 
 #### `ai_description` 필드 설명
 
@@ -646,14 +605,10 @@ detailed_signals: {
 }
 ```
 
-> ⚠️ 현 구현 상태 (2026-05-26): `be/api/hospital.py`의 응답은 명세 구조를 따르지만 다음이 어긋난다.
-> - `detailed_signals` 4 sub-block 필드명이 모델과 명세 사이에서 전부 다름. `shared/models.py`의 `SelfClaimSignal` = `{keywords, primary_focus, spam_score}` ↔ 명세 = `{extracted_keywords, source_text, source_url}`. `VisionSignal` = `{detected_devices, image_categories, total_images_analyzed}` ↔ 명세 = `{detected_devices, image_distribution, sample_image_urls}`. `BlogSignal`/`ReviewSignal`도 `keyword_frequency`/`primary_topics` ↔ `top_topics`/`top_keywords`로 키가 어긋남. FE가 OpenAPI 타입을 새로 뽑으면 위 4 sub-block은 모델 쪽 키로 떨어진다.
-> - `vision`은 `VisionSignal | None`이라 9990개 경우 None 가능 (명세 예시는 항상 객체 가정).
-> - `ai_description == null` 분기 자체는 코드(`description.model_dump() if description else None`)와 정합.
-> - `recent_changes` 항목은 모델 `ClassificationChange`에 `classifier_version`(필수) + `hospital_id`가 포함돼 응답에 같이 떨어지는데 명세 예시·타입에는 없음.
-> - `metadata.last_updated_at`은 `classification.classified_at`을 그대로 쓰며, classification 없으면 `null`. `data_sources`는 현재 `["public_registry"]` 하드코딩. `data_completeness`는 9개 영역 채움 비율을 단순 가중치로 계산 (`be/api/hospital.py:_calc_completeness`).
->
-> V2 sprint **Phase A/D** 에서 4 시그널 모델 필드명 정렬 + `ClassificationChange` 응답 trim + `metadata.data_sources` 동적 산출 예정.
+> ⚠️ 현 구현 상태 (`be/api/hospital.py`): `detailed_signals` 4 sub-block 필드명은 위 명세·예시가 `shared/models.py`(`SelfClaimSignal`·`VisionSignal`·`BlogSignal`·`ReviewSignal`)와 일치하며, `recent_changes` 항목도 모델 `ClassificationChange`(`hospital_id` + `classifier_version` 필수 포함)와 정합한다. 단 `metadata` 일부 필드는 아직 placeholder다.
+> - `metadata.last_updated_at`은 `classification.classified_at`을 그대로 쓰며, classification 없으면 `null`.
+> - `metadata.data_sources`는 현재 `["public_registry"]` 로 **하드코딩** — 위 예시처럼 실제 동원 소스를 동적 산출하는 건 미구현.
+> - `metadata.data_completeness`는 9개 영역 채움 비율을 단순 가중치로 계산 (`be/api/hospital.py:_calc_completeness`).
 
 ---
 
@@ -672,7 +627,6 @@ GET /api/hospitals/{hospital_id}/history
 - `feedback_accumulated` — `aggregate_feedback_stats` 가 임계 도달 + `recompute_confidence` 가 분류 변경
 - `vision_reanalysis` — Vision 결과 갱신으로 분류 변경
 - `scheduled_recrawl` — 정기 재크롤링으로 분류 변경 (초기 분류 포함)
-- `hash_diff_recrawl` — hash diff 기반 재크롤링 (자체 사이트·외부 소스 본문 hash 가 달라져 재처리됐고, 그 결과 분류가 변경된 경우)
 - `human_review` — 수동 재분류
 
 `recent_changes` (영역 ⑦) 는 본 엔드포인트와 동일 데이터의 최근 N건(기본 2) 으로 잘라낸 뷰. 전체 이력은 본 엔드포인트로만 조회.
@@ -688,24 +642,28 @@ GET /api/hospitals/{hospital_id}/history
 {
   "data": [
     {
+      "hospital_id": "h_abc123",
       "changed_at": "2026-04-12T08:00:00Z",
       "from_focus": ["미용 시술"],
       "to_focus": ["일반 진료 (아토피·여드름)"],
       "reason": "feedback_accumulated",
-      "notes": "👎 피드백 18건 누적으로 재분류"
+      "notes": "👎 피드백 18건 누적으로 재분류",
+      "classifier_version": "rule-v1"
     },
     {
+      "hospital_id": "h_abc123",
       "changed_at": "2026-01-15T03:30:00Z",
       "from_focus": [],
       "to_focus": ["미용 시술"],
       "reason": "scheduled_recrawl",
-      "notes": "초기 분류"
+      "notes": "초기 분류",
+      "classifier_version": "rule-v1"
     }
   ]
 }
 ```
 
-> ⚠️ 현 구현 상태 (2026-05-26): `be/api/history.py`는 `load_recent_changes` 결과를 `model_dump()` 그대로 반환하므로 응답 항목에 모델 필수 필드 `classifier_version`과 `hospital_id`가 같이 포함된다 (명세 예시엔 없음). DDB SK는 `HISTORY#{changed_at}` 포맷이라 ISO 8601 정렬은 정합. 본 문서 갱신으로 `limit` 쿼리 파라미터(기본 10, 최대 50)는 정식 스펙에 포함. V2 sprint **Phase D** 에서 응답 항목 내부 필드 trim 정렬 예정.
+> ⚠️ 현 구현 상태 (2026-05-26): `be/api/history.py`는 `load_recent_changes` 결과를 `model_dump()` 그대로 반환하므로 응답 항목에 모델 필수 필드 `classifier_version`과 `hospital_id`가 같이 포함된다 (위 예시 반영). DDB SK는 `HISTORY#{changed_at}` 포맷이라 ISO 8601 정렬은 정합. 본 문서 갱신으로 `limit` 쿼리 파라미터(기본 10, 최대 50)는 정식 스펙에 포함.
 
 ---
 
@@ -728,7 +686,7 @@ POST /api/feedback
 }
 ```
 
-`verdict` 타입은 `Literal["agree", "disagree"]` — 그 외 값은 400 (`INVALID_PARAMETER`). `comment` 는 선택, 평가 PoC 에서는 미수집.
+`verdict` 타입은 `Literal["agree", "disagree"]` — 그 외 값은 FastAPI 검증 실패로 422 (`VALIDATION_ERROR`) 응답. `comment` 는 요청 모델(`FeedbackRequest`)에 정의돼 있지 않아 현재 수집하지 않는다 (평가 PoC).
 
 #### 필드 설명
 
@@ -765,13 +723,13 @@ POST /api/feedback
 - **중복 체크 키**: `device_id + hospital_id` 조합. DDB single-table 에서 `PK=hospital_id, SK begins_with FEEDBACK#{device_id}` 쿼리로 동일 디바이스의 기존 피드백 1건이라도 발견되면 409. 같은 디바이스가 같은 병원에 두 번 평가하지 못한다 (다른 병원에는 각각 1회 가능).
 - **저장 entity**: `FEEDBACK#{device_id}#{timestamp}` (`docs/plans/task-queue.md` §3-2). `verdict`·`primary_focus` 평가 대상·`received_at` 박힘.
 - **임계 도달 시 재계산 inline 호출**:
-  - 트리거 조건 예: 해당 병원의 누적 피드백 ≥ 20건 **그리고** disagree 비율 ≥ 20%
-  - BE 가 같은 요청 컨텍스트에서 `ai.recompute_confidence(hospital_id, recent_feedback)` 를 동기 호출
-  - 결과 분류가 변경되면 AI 가 `HISTORY#{changed_at}` (reason=`feedback_accumulated`) 자동 INSERT (영역 ⑦)
+  - 트리거 조건: 해당 병원의 누적 피드백 ≥ `RECOMPUTE_THRESHOLD`(현재 10건). disagree 비율 조건은 없음 (`be/core/feedback.py:should_recompute`)
+  - BE 가 같은 요청 컨텍스트에서 `ai.recompute_confidence(hospital_id, all_feedback)` 를 동기 호출
+  - 결과는 기존 `CLASSIFICATION` 의 `confidence` 만 교체 (분류 `primary_focus`·`standard_specialty` 는 유지). 현 구현은 `HISTORY#{changed_at}` 자동 INSERT 는 하지 않는다 (영역 ⑦ 자동 기록은 미연동)
   - **응답 지연**: 재계산이 트리거된 요청은 일반 ~50ms 대신 ~1s 추가될 수 있음. FE 는 1.5s 타임아웃·로딩 인디케이터로 대응
 - 임계 미달 시는 `FEEDBACK#STATS` entity 만 증분 갱신, `recompute_confidence` 미호출 → 응답 빠름
 
-> ⚠️ 현 구현 상태 (2026-05-26): `be/api/feedback.py`는 명세와 가장 정합한 엔드포인트. `db.check_duplicate_feedback(hospital_id, device_id)` (`be/adapters/dynamo_adapter.py:197`)로 중복 방지 동작하고 409 응답도 명세 그대로. 단 `verdict`가 Pydantic 요청 모델에서 `Literal["agree","disagree"]`가 아닌 `str`로 받고 있어 (`FeedbackRequest`) 잘못된 값이 들어와도 422가 아닌 500에 가까운 경로로 빠질 수 있음. 또한 임계치 초과 시 `recompute_confidence` 호출은 코드 주석 처리(AI 모듈 연동 대기). V2 sprint **Phase C/D** 에서 요청 모델에 Literal 타입 + AI `recompute_confidence` 연결 예정.
+> ⚠️ 현 구현 상태 (2026-05-29): `be/api/feedback.py`는 명세와 가장 정합한 엔드포인트. `db.check_duplicate_feedback(hospital_id, device_id)` (`be/adapters/dynamo_adapter.py:375`)로 중복 방지 동작하고 409 응답도 명세 그대로. `verdict` 는 요청 모델(`FeedbackRequest`)에서 `Literal["agree","disagree"]`로 받으므로 잘못된 값은 FastAPI 가 422 로 거른다. 임계치 도달 시 `_maybe_recompute_confidence` 가 `ai.recompute_confidence(hospital_id, all_feedback)` 를 inline 동기 호출해 기존 `CLASSIFICATION` 의 `confidence` 만 갱신한다(분류 자체는 유지). 다만 `should_recompute` 임계는 누적 10건 단순 기준이고 disagree 비율 조건은 아직 없으며, 분류 변경 `HISTORY` 자동 INSERT 는 미연동.
 
 ---
 
@@ -827,17 +785,28 @@ npx openapi-typescript http://localhost:8000/openapi.json -o src/types/api.ts
 프론트(CloudFront)와 BE(API Gateway)가 다른 도메인이라 CORS 허용 필요.
 
 ```python
-# FastAPI 측
+# be/handlers/api.py
+import os
 from fastapi.middleware.cors import CORSMiddleware
+
+# 허용 오리진 — env CORS_ALLOW_ORIGINS(쉼표 구분) 우선, 기본은 FE 로컬 dev 서버.
+# CloudFront 도메인은 배포 시 env 로 주입.
+_default_origins = "http://localhost:5173"
+_allow_origins = [
+    o.strip()
+    for o in os.environ.get("CORS_ALLOW_ORIGINS", _default_origins).split(",")
+    if o.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://{cloudfront-domain}", "http://localhost:5173"],
+    allow_origins=_allow_origins,
     allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type"],
+    allow_headers=["*"],
 )
 ```
 
-> ⚠️ 현 구현 상태 (2026-05-26): `be/handlers/api.py`는 `allow_origins=["*"]`, `allow_methods=["*"]`, `allow_headers=["*"]`로 와일드카드 전개라 평가 PoC엔 OK지만 명세와는 어긋난다. V2 sprint **Phase D 마지막 작업** — CloudFront 도메인 확정 후 origin/method allowlist 를 `https://{cloudfront-domain}` + `http://localhost:5173` 화이트리스트로 좁히는 단계로 정렬 예정.
+> ⚠️ 현 구현 상태 (2026-05-26): `be/handlers/api.py`는 env CORS_ALLOW_ORIGINS allowlist(기본 localhost:5173) origins 와 GET/POST methods 로 제한돼 위 코드블록과 일치한다. 와일드카드는 allow_headers 만 적용 — 평가 PoC엔 OK.
 
 ---
 
