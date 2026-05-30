@@ -1,345 +1,106 @@
-# clinic-focus 작업 큐 — V2 완전 서비스
+# clinic-focus 작업 큐 — 남은 일만
 
-> 최종 업데이트: 2026-05-28 · 상위 컨텍스트: [`../overview.md`](../overview.md), [`../dev-roadmap.md`](../dev-roadmap.md)
+> 최종 업데이트: 2026-05-30 · 상위 컨텍스트: [`../overview.md`](../overview.md) · [`../dev-roadmap.md`](../dev-roadmap.md)
 >
-> 연관 문서: 분류 스키마 근거 → [`../../ai/CLAUDE.md`](../../ai/CLAUDE.md) "분류 스키마" 박스(결정 근거 흡수) · 완료 작업 = git PR 이력(§7) · 외부 크롤 실측 → [`../dev-roadmap.md` 김경재 트랙](../dev-roadmap.md#김경재-트랙--데이터--백엔드)
-
-이 문서는 clinic-focus 의 **남은 작업**을 모은 큐다. V2 정의·9 차별점 매트릭스·표본
-분할은 [`../overview.md` §10-5](../overview.md), 트랙·Phase 매핑은
-[`../dev-roadmap.md`](../dev-roadmap.md) 에 있고(중복 방지), 여기는 그 위에서 실제로
-손댈 항목만 둔다.
+> 이 문서는 **남은 작업 + 현재 데이터 상태 + 지켜야 할 제약**만 둔다.
+> 완료 작업 = git PR 이력. 설계·근거는 각 트랙 CLAUDE.md / PR / [`../CATALOG.md`](../CATALOG.md).
 
 ---
 
-## 0. 배경 — 설명 문서로 이전됨 (중복 제거)
+## 현재 상태 (2026-05-30)
 
-작업 큐 슬림화(2026-05-28)로 아래 "설명"은 설명 문서로 옮겼다. 여기는 남은 작업만:
+강남구 PoC. **네이버 플레이스 후기를 제외하고** 데이터 파이프라인을 끝까지 개발 중.
 
-- **V2 정의 · 9 차별점 현 상태 매트릭스 · 표본 분할(비용 통제)** → [`../overview.md` §10-5](../overview.md)
-- **외부 4 소스(자칭/Vision/블로그/후기) · 크롤 실측 · 합법/회색지대** → [`../dev-roadmap.md` 김경재 트랙](../dev-roadmap.md#김경재-트랙--데이터--백엔드)
-- **트랙별 Phase A~G 매핑 · 진척** → [`../dev-roadmap.md` Phase 1 단계 분해](../dev-roadmap.md#phase-1-m03--v2-완전-서비스-단계-분해)
+**적재됨:**
+- `META` 6117 (강남 3134 · 송파 1331 · 양천 705 · 중구 616 · 용산 331)
+- 자체사이트 크롤 **정제본 2133** (S3 `kmuproj-10-clinic-focus-crawl`) — denoise + 페이지 단위 노이즈
+  필터 적용(페이지 26,377→11,531 **56%↓**, blog RSS 79%↓). 재크롤 없이 기존 raw 재처리.
+- 카카오 **place앵커** 후기/블로그 `KAKAO#REVIEWS` 641 · `KAKAO#BLOG` 347 (DDB, 회색지대)
+- 분류 = 자칭(정제) + 카카오 후기 + 카카오 place앵커 블로그 교차검증 → 신뢰도. (효과는 CATALOG)
 
-한 줄 요약: PoC 시연(14개, PR [#25](https://github.com/BORB-CHOI/clinic-focus/pull/25)) 위에
-4 외부 소스 + DDB single-table + KB 임베딩 통합으로 9 차별점을 실가동시키는 게 V2.
-비용 통제 위해 **룰·외부 API 시그널은 1만 풀커버, LLM·Vision 은 시연 10개 한정**.
+**시그널 귀속 (저자 기준 — 확정):**
+- **자칭(self_claim)** = 병원이 쓴 것: 자체사이트(main/about/service) + 자체 blog 페이지 + 자체운영 블로그.
+- **블로그(20%)** = 외부 제3자 후기 블로그. **카카오 place앵커 blog 사용**(네이버 키워드 검색은
+  교차오염 16.78%로 폐기, 카카오는 0.75%).
+- **후기(25%)** = 플레이스 별점 후기(카카오맵 ✅ / 네이버지도 ⚠️미수집 / 구글 유료제외).
 
----
+### ⚠️ 네이버 플레이스 후기 — 미수집 (의도적 보류, 2026-05-30)
 
-## 3. DDB 스키마 — single-table
-
-single-table 전환 완료(PR [#28](https://github.com/BORB-CHOI/clinic-focus/pull/28)): `PK=hospital_id`+`SK=entity`. 4 시그널을 켜면 entity 종류가 폭증해 옛 7-table 로는 관리 불가라 통일. BE=`kmuproj-02-team3-backend`, AI=`kmuproj-10-clinic-Main`. 아래는 entity·GSI 규약 (be/CLAUDE.md 가 참조하는 단일 진실).
-
-### 3-1. 단일 테이블 스키마
-
-테이블 이름: `kmuproj-XX-clinic-{Hospitals|Main}` (이름은 마이그레이션 시 결정).
-PK = `hospital_id` (S)
-SK = `entity` (S)
-
-### 3-2. entity 종류
-
-| SK 값 | 내용 | 시그널 | 출처 |
-|---|---|---|---|
-| `META` | 이름·주소·위경도·시도·시군구·전화·표준 진료과목·website_url | — | HIRA + 카카오 |
-| `SITE#PAGES` | 자체 사이트 크롤링 결과 (`CrawlData.pages[*]`) | 자칭 | 자체 사이트 |
-| `SITE#IMAGES` | 자체 사이트 이미지 메타·URL | Vision | 자체 사이트 |
-| `NAVER#PLACE` | 네이버 플레이스 정보 (영업시간·전화·사진 URL·총 방문자 수 등) | 후기 보조 | 네이버 |
-| `NAVER#PLACE#REVIEWS` | 네이버 플레이스 방문자 리뷰 키워드 빈도 | 후기 | 네이버 |
-| `NAVER#BLOG` | 네이버 블로그 검색 결과 + 본문 추출 (상위 N개) | 블로그 | 네이버 |
-| `KAKAO#PLACE` | 카카오 로컬 API 장소 정보 | 후기 보조 | 카카오 |
-| `KAKAO#REVIEWS` | 카카오맵 리뷰 키워드 빈도 | 후기 | 카카오 |
-| `GOOGLE#PLACE` | Google Places `place_id` + 기본 정보 | 후기 보조 | 구글 |
-| `GOOGLE#REVIEWS` | Google Places 리뷰 키워드 빈도 | 후기 | 구글 |
-| `PUBLIC#DEVICES` | 심평원 의료기기 신고 목록 | 기기 | 심평원 |
-| `PUBLIC#DOCTORS` | 심평원 의료진 전문의 자격 | 의료진 | 심평원 |
-| `VISION#RESULTS` | Vision 이미지 분류 결과 (시술·기기 식별) | Vision | Bedrock |
-| `CLASSIFICATION` | `Classification` (standard_specialty·primary_focus·confidence·signals) | — | AI |
-| `DESCRIPTION` | `HospitalDescription` (headline·paragraphs·citations·generator_model) | — | AI |
-| `SERVICES` | `ServicesAndDoctors` (services·excluded_services·equipment·prices·doctors) | — | AI |
-| `RELATED` | `find_related_hospitals` 결과 (same_focus·gap_fill) | — | AI |
-| `INGEST#STATE` | `content_hash` · `last_ingested_at` · `kb_data_source_object_key` (hash diff 용) | — | AI |
-| `FEEDBACK#{device_id}#{timestamp}` | 1-tap 피드백 1건 (verdict·primary_focus 평가 대상) | — | FE |
-| `FEEDBACK#STATS` | 집계 (total/agree/disagree/agree_ratio/last_feedback_at) | — | AI 갱신 |
-| `HISTORY#{changed_at_iso}` | 분류 변경 이력 1건 (from_focus→to_focus·reason·signal_source) | — | AI 자동 |
-
-### 3-3. GSI
-
-| GSI | PK | SK | 용도 |
-|---|---|---|---|
-| `sigungu-specialty-index` | `sigungu#standard_specialty` (META 항목만) | `confidence_score` (Number, 내림차순) | 카테고리 탐색 (BE 직접 조회, AI 미경유) |
-| `geo-index` | `geohash_prefix` (META 항목만) | `lat#lng` | 지도 근처 검색 (필요 시) |
+지금은 **네이버 없이** 개발을 끝까지 진행한다. 안 한 이유와 재개 경로만 남겨둔다:
+- **사유**: 네이버 place 후기는 공식 API가 없고 `pcmap-api.place.naver.com` graphql(회색지대)뿐 →
+  Playwright + ncpt 토큰 필수라 **18~25초/건**(848개 ~5시간). EC2 데이터센터 IP는 네이버 차단
+  표적이고 RAM 4GB 제약 → **로컬 PC 크롤로 분리**하는 게 안전.
+- **준비됨(파일 다리)**: `be/scripts/crawl_naver_local.py`(로컬 PC, AWS 의존 0, 좌표앵커+이름확정
+  매칭, raw JSON 저장) → scp → `be/scripts/ingest_naver_local.py`(EC2, parse+PII제거→`NAVER#PLACE#REVIEWS`).
+  타깃: `be/data/naver_targets.json`(강남 3134, 카카오 미매칭 2608 우선).
+- **합법성 결론**: 별점·후기·place앵커 블로그는 카카오/네이버 공식 무료 API가 **구조적으로 미제공** →
+  회색지대 또는 유료(구글 5건 한도)뿐. 메타·위치·홈페이지URL은 공식 무료로 충분.
+- **재개 시**: 로컬 raw 도착 → `ingest_naver_local --confirm` → 후기 시그널이 카카오+네이버 2종으로
+  → 증분 재분류. (현재 분류는 카카오 단독 후기로도 성립)
 
 ---
 
-## 4. V2 sprint — 단계별 잔여 작업
+## 남은 작업
 
-### Phase A — 기반 재설계 ✅ 완료
+### A. 데이터 마무리 (강남구, 네이버 제외)
+- [ ] URL 발굴 재실행 `enrich_urls.py` — 카카오 1순위·`--sigungu`, 강남 website 보유율 ↑ → 재크롤·재분류
+- [ ] `discover_official_blogs.py --confirm` — 자체운영 블로그(blog.naver.com/ID) 발굴 → website_url 승격 → 자칭 흡수
+- [ ] Vision 활성화 — 개인계정 Sonnet Marketplace 구독 대기(사용자 트랙) → `analyze_images` → `classify_hospital` 연결
+- [ ] hash diff 부분 재처리 — entity `content_hash` 비교, 재크롤 동일 시 KB re-ingest 스킵
 
-shared/models 4 시그널+외부 소스 모델 / DDB single-table 마이그레이션(PR [#28](https://github.com/BORB-CHOI/clinic-focus/pull/28), 콘솔 생성·연결 확인) / 분류 스키마 22 후보군 확정(PR [#30](https://github.com/BORB-CHOI/clinic-focus/pull/30)) / 외부 API 키 발급(`.env` 실측) / BE 차단 이슈 [#23](https://github.com/BORB-CHOI/clinic-focus/issues/23)·[#24](https://github.com/BORB-CHOI/clinic-focus/issues/24). 강남 502 S3 mirror.
+### B. FE ↔ BE 연결 (다음 큰 단계 — Phase E)
+- [ ] `openapi-typescript` 로 TS 타입 자동 생성 (`fe/src/types/api.ts`) — 수동 동기화 금지
+- [ ] Mock 어댑터(`fe/src/mocks/`) 제거 또는 dev 전용 분리 → `SearchPage.tsx` 실 API 연결
+  (자연어+위치 토글+카카오맵, TanStack Query 캐싱, 결과 카드: 표준과목+주력+신뢰도+요약+거리)
+- [ ] `HospitalDetailPage.tsx` 9영역 컴포넌트 (`fe/src/components/hospital/`)
+  - Headline(ai_description+출처배지) / CoreServices / Doctors / **Confidence(4시그널 분해 + `null`=회색 "수집 안 됨" 배지, `0`%=엇갈림 구분)**
+  - Operating / Feedback(1-tap+localStorage device_id) / HistoryPreview / Related(same_focus + **gap_fill "안 다루는 분야"**) / Meta
+- [ ] `ai_description==null` 차등 렌더(태그 카드 fallback) / `data_completeness<0.6` 경고 배너
+- [ ] device_id 유틸(`fe/src/lib/device.ts`) / 변경 이력 전체 페이지 / 카카오맵 신뢰도 색 마커(확실=초록·추정=노랑·부족=회색)
 
-남은 것:
-- [ ] 검증: 1만 데이터 적재 후 자연어 검색 4쿼리 회귀 (데이터 적재 후)
-- [ ] BE PutObject 시점 양쪽 버킷 mirror 자동화 — BE 협조, 풀커버 진입 전 합의
-- [ ] **후속 정정**: `be/adapters/hira_adapter.py` `_get_specialists` — `getHospBasisList` 응답에 `dgsbjtCdNm` 없어 항상 빈 리스트 반환 / FE 검색 필터 22개 갱신 / BE GSI `sigungu_specialty` 검증
+### C. 표본 확장 + 통합 검증 (Phase F)
+- [ ] 5개구 풀커버 → 풀크롤(자체+외부) → 룰 분류 일괄(트랙 A, LLM 0)
+- [ ] LLM/Vision/`generate_description` 시연 10개(트랙 B·C) — 같은 10개로 룰 대비 차별 시연
+- [ ] 자연어 검색 e2e 10건 / FE→BE→AI→KB→DDB 통합 E2E 5건
+- [ ] 의료법 표현 전수 검수(`medical-language-reviewer`) / 비용 측정 → overview 보정
+- [ ] `shared/models.py` BE·AI 동시 갱신(drift 0)
 
-### Phase B — 외부 시그널 크롤러 4종 (BE) — 어댑터 완성, 크롤 실행 잔여
-
-> **크롤 실측·합법/회색지대 요약은 [`../dev-roadmap.md` 김경재 트랙](../dev-roadmap.md#김경재-트랙--데이터--백엔드)** 으로 이전.
-> 핵심: Vision 입력 = 자체 사이트 한정 / 네이버·카카오 후기는 회색지대(robots Disallow + 약관)라
-> 실제 크롤 실행은 운영자 결정 / 구글 Places·네이버 블로그 공식 API 는 합법 / 후기 본문 raw 는
-> §56③ 상 임베딩 입력만, 화면 노출은 키워드 빈도만.
-
-✅ 완료(어댑터·정제): `be/core/crawler.py` HTML 잡음 정제(`_denoise_pages`, 블랙리스트, 비급여 보존) /
-어댑터 4종 — `naver_place_adapter`(Playwright+ncpt graphql) · `naver_blog_adapter`(공식 `v1/search/blog`) ·
-`kakao_place_adapter`(httpx panel3) · `google_places_adapter`(Places API New). 모두 순수 파서 + PII 미보존,
-`classify`/`build_signal_chunks` 가 소비. 배치 골격 `crawl_external_all.py`(기본 dry-run + 회색지대 가드).
-
-**진행 상황 (2026-05-30) — 합의 제약: 강남구 PoC 스코프 / 무료 소스만(Google 제외) /
-"천천히"(차단방지) / EC2 RAM 4GB → Playwright 1개·순차·병원마다 닫기 / 웹사이트 비필수:**
-- ✅ **naver 블로그 크롤 848개**(자체사이트 크롤된 병원) → `NAVER#BLOG` 적재.
-- ✅ **다신호 효과 검증** — 자칭→자칭+블로그 재분류로 score≥70 노출 117→173(+48%, 확실 7→22).
-  기록: [`../CATALOG.md`](../CATALOG.md).
-- ✅ **웹사이트 비필수 분류** — `run_classification.py`(웹 없으면 빈 CrawlData + `--sigungu`) +
-  `classify_hospital` 가드 완화(자체사이트·외부 **둘 다** 없을 때만 거부). 외부 후기·블로그만으로도
-  분류, 시그널 0 은 카테고리 검색에 META 로 노출(후순위). [`be/scripts/run_classification.py`].
-- ✅ **검색 하드필터 제거** — `min_confidence` 기본 70→0, **관련도(KB 유사도) 우선 정렬**.
-  모든 병원 노출(의료법 차별노출 회피), 신뢰도는 거르는 기준 아니라 정렬·표시용. *(미커밋)*
-- ✅ `crawl_external_all.py` 에 `--sigungu`·`--only-crawled` 플래그 추가.
-
-> **저자 기준 시그널 귀속(정정, 2026-05-30)** — 시그널은 **누가 썼나**로 가른다:
-> - **자칭(self_claim)** = 병원이 직접 쓴 것: 자체사이트 소개(main/about/service) **+ 자체 blog 페이지
->   + 병원 자체운영 블로그(`blog.naver.com/병원ID`)**.
-> - **블로그(20%)** = **외부 제3자 후기 블로그**(네이버블로그·티스토리 검색결과 = 남이 쓴 방문 후기글).
-> - **후기(25%)** = 플레이스 별점 후기(네이버지도·카카오맵·구글).
-> ⚠️ **현재 코드 버그**: `_analyze_blog_rule` 이 자체 blog 페이지(병원 자기 글)를 블로그 시그널에 넣음
-> → **self_claim 으로 이동 필요**(저자가 병원이므로). naver_blog(제3자) 만 블로그 시그널로 남긴다.
-> 적재된 naver_blog 848(제3자 후기 블로그)은 재크롤 불필요 — 외부 블로그 시그널로 유효.
-
-남은 것 (위 제약 준수):
-- [ ] 카카오 크롤 → `KAKAO#PLACE`/`KAKAO#REVIEWS`/`KAKAO#BLOG` (회색지대, 천천히, ~25분/848)
-- [ ] 네이버 플레이스 후기 → `NAVER#PLACE#REVIEWS` (회색지대, Playwright 18~25초/건 → 848 ~5시간)
-- [ ] 위 크롤 후 `run_classification.py --sigungu 강남구` 재분류 → 자칭+블로그+후기 교차검증
-- [ ] **URL 발굴 개선** (`enrich_urls.py`): 강남구 하드코딩 → `--sigungu` / 소스 순서 **카카오 1순위** /
-  카카오 raw 폴백 / 네이버 매칭 완화. 강남구 3134중 700(22%)→35~50% 목표.
-- [ ] **저자 기준 시그널 재매핑** (`classify.py`): `_SELF_CLAIM_PAGE_TYPES` 에 `blog` 추가(자체 blog 페이지
-  → 자칭) + `_analyze_blog_rule` 은 naver_blog(제3자)만 사용. 그 후 `--sigungu 강남구` 재분류.
-- [ ] **자체운영 블로그 발굴**(신규 `discover_official_blogs.py`): 적재된 `KAKAO#BLOG.seeds`·`NAVER#BLOG.posts`
-  에서 같은 blog.naver.com ID 가 3개+ 반복 = 병원 공식 블로그 → **자칭(self_claim)으로 투입**(외부 블로그 아님), confidence(글 수) 동반.
-- [ ] **이미지 — 브라우저 풀페이지 캡쳐 + 노이즈 필터**(Vision 시연 10개 한정): `browser_manager.screenshot_page`
-  신규 + RAM args(`--disable-dev-shm-usage`·`--single-process`) + `crawler` 훅(병원마다 브라우저 닫기) +
-  `s3.save_image` ContentType 연결(**현재 어디서도 안 불리는 단절 버그**) + `<img>` 파일명/alt 정규식 노이즈 필터.
-- [ ] (구글 Places = 유료라 제외)
-- [ ] **hash diff 부분 재처리** — entity 에 `content_hash` 추가, 재크롤 동일 시 KB 재ingest 스킵.
-- [ ] 의료법 후기 처리 룰 — raw 는 DDB 저장 + 임베딩 입력만, 화면 노출은 키워드 빈도·태그만.
-
-### Phase C — AI 본체화 + 4 시그널 통합 ✅ 대부분 완료
-
-임베딩·분류·설명 분리 결정(검색 임베딩 = **시그널별 원본 청크**로 풀커버 / DESCRIPTION 은
-벡터 미포함·시연 10개 / CLASSIFICATION 은 청크 metadata 로만)은 `ai/search/kb_store.py` +
-[`../API-BE-AI.md` §4·§5](../API-BE-AI.md) 에 반영. §56③: 후기·블로그 raw 는 임베딩 입력 OK,
-검색 결과 화면엔 정제 필드만.
-
-완료: kb_store(`ingest_hospital`/`retrieve_hospital` + 청크 빌더, 옛 S3 Vectors 폐기) /
-`classify_hospital` 룰 경로 + 외부 시그널 통합(도배 페널티·후기 키워드) /
-`generate_description` 4시그널 + citations 강제 / `extract_services_and_doctors` /
-`find_related_hospitals` / `recompute_confidence` / `aggregate_feedback_stats` /
-분류 변경 자동 기록 / Bedrock mock 의무화 /
-**신뢰도 시그널 결손 처리 보정**(결손은 점수 제외·근거 종류 수로 등급 천장·
-`SignalContributions` `int|None` 으로 "수집 안 됨"=`null` 과 엇갈림=`0` 구분,
-2026-05-30 — 결정 파라미터 2종/근거수통일/베이스라인0/CAP70·LOW70·HIGH95).
-
-남은 것:
-- [ ] `ai/pipeline/vision.py` Vision **활성화** — 본체 완성(analyze_images·MAX_VISION_IMAGES), 개인계정 Sonnet Marketplace 구독만 남음(사용자 트랙)
-- [ ] `vision_results` 입력 통합 — Vision 활성화 후 `classify_hospital` 에 연결
-
-### Phase D — BE FastAPI 4개 엔드포인트 ✅ 대부분 완료
-
-4 엔드포인트 본체 완료: `GET /api/search`(자연어/위치 `retrieve_hospital` + 시군구 GSI, `_hospital_card` join) /
-`GET /api/hospitals/{id}`(9영역 join + 404 + completeness) / `GET /.../history` / `POST /api/feedback`
-(verdict 422→400, device_id+hospital_id 409, 임계 시 `recompute_confidence` inline graceful).
-응답 포맷·에러 코드·CORS(env) 정합. `run_index_pipeline`(demo 분기 + `**external` 전개 + 변경 자동 기록).
-
-남은 것:
-- [ ] OpenAPI 자동 생성 검증 — `/openapi.json` ↔ 명세 정합 (FE TS 타입 생성 시점)
-- [ ] (선택) `be/handlers/index_hospital.py` → `ingest_hospital.py` 파일명 정합 — 미적용
-
-### Phase E — FE 9영역 + 4 시그널 시각화
-
-- [ ] `openapi-typescript` 로 TS 타입 자동 생성 — `fe/src/types/api.ts`
-- [ ] Mock 어댑터 (`fe/src/mocks/`) 제거 또는 dev 전용으로 분리
-- [ ] `SearchPage.tsx` 실 API 연결
-  - 자연어 입력 + 위치 토글 + 카카오맵 결합
-  - TanStack Query `useSearch(q, filters)` 캐싱
-  - 결과 카드: 표준 진료과목 + 실제 주력 + 신뢰도 + `one_line_summary` + 거리
-  - 검색 결과 ↔ 지도 뷰 토글
-- [ ] `HospitalDetailPage.tsx` 9개 영역 컴포넌트 — `fe/src/components/hospital/` 아래 분리
-  - `HeadlineSection` — `ai_description` 자연어 단락 + 출처 배지 클릭→④ 스크롤
-  - `CoreServicesSection` — services / excluded_services / equipment / prices
-  - `DoctorsSection` — doctors 리스트 + 의사별 전공
-  - `ConfidenceSection` — 신뢰도 게이지 + **4 시그널 기여도 분해 차트** + 펼침 메뉴 (자칭 원문·Vision 분포·블로그 토픽·후기 키워드). `SignalContributions` 값이 `null` 인 시그널은 회색 **"수집 안 됨"** 배지로 렌더 — `0`%(수집됐으나 주력과 엇갈림)과 시각적으로 구분
-  - `OperatingSection` — 주소(지도) + 전화(탭 가능) + 운영시간 + 야간/주말 + 주차 + 예약
-  - `FeedbackSection` — 1-tap 👍/👎 (localStorage 디바이스ID) + 누적 통계 + 분류 오류 신고
-  - `HistoryPreviewSection` — 최근 변경 1~2건 + 전체 이력 페이지 링크
-  - `RelatedHospitalsSection` — same_focus 카드 + **"안 다루는 분야" gap_fill 카드 별도**
-  - `MetaSection` — last_updated + data_sources + completeness 미만 시 경고 배너
-- [ ] `ai_description == null` 차등 렌더링 — 태그 카드 fallback ([API-FE-BE §2](../API-FE-BE.md#2-병원-상세) 프론트 렌더링 가이드)
-- [ ] `excluded_services[].alternative_hospital_ids` → ⑧ 영역 링크 (안 다루는 분야 옆에 "동네 대안: △△의원")
-- [ ] `metadata.warning` 배너 / `data_completeness < 0.6` 시 빈 영역 "정보 부족" 표시
-- [ ] 디바이스 ID 유틸 (`fe/src/lib/device.ts`) — localStorage `app_device_id` 키, 최초 방문 시 `crypto.randomUUID()` 생성
-- [ ] **변경 이력 전체 페이지** (`/hospitals/{id}/history`) — `HistoryPreviewSection` 의 "전체 이력" 링크 도착지
-- [ ] 카카오맵 SDK 마커 색상 — 신뢰도 등급(확실=초록 / 추정=노랑 / 정보 부족=회색)
-
-### Phase F — 표본 확장 + 통합 검증
-
-- [ ] HIRA → 서울 5개구 풀커버 (이슈 [#18](https://github.com/BORB-CHOI/clinic-focus/issues/18) 의 "병원 목록 소스" 부분)
-  - 강남 4과목 88개 → 5개구(강남·서초·송파·성동·중구) 4과목 ~1000개 → 5개구 전체 진료과목 ~1만
-- [ ] **풀크롤링 (1만 전체)** — 자체 사이트 + 외부 4소스(네이버 플레이스·블로그·카카오·구글). LLM·Vision 미사용
-- [~] **룰 기반 분류 일괄 (트랙 A, 1만)** — 배치 스크립트 `be/scripts/run_classification.py` 준비 완료: DDB 순회 → `db.load_external_signals` 로 카카오/네이버/구글 entity 로드 → `classify_hospital(use_llm=False, **external)` → 분류 저장 + `build_signal_chunks(**external)` ingest, 마지막 1회 trigger. **실제 1만 실행은 외부 크롤 일괄 후** (외부 entity 적재돼 있으면 4 시그널 교차검증, 없으면 자체 사이트만 — graceful)
-- [ ] **LLM 시연 분류 (트랙 B, 10개)** — `MAX_LLM_DEMO_HOSPITALS=10` 환경변수 강제. 풀커버 결과 중 발표용 10개 선정 (강남, 진료과목 다양, 사이트 풍부)
-- [ ] **Vision 시연 (트랙 C, 같은 10개)** — `MAX_VISION_IMAGES=10` 환경변수 강제. Marketplace 구독 완료 전제. 같은 10개에 대해 트랙 B 결과와 비교 출력 (발표 자료용)
-- [ ] **`generate_description` 시연 (10개)** — 트랙 B·C 결과 합쳐 자연어 통합 설명 생성. 9990개는 `ai_description=null` 그대로 (FE 차등 렌더링)
-- [ ] `ingest_hospital` 일괄 — KB 에 1만개 본문 적재. 본문 합성 시 LLM 설명은 10개만 박히고, 나머지는 룰 기반 태그·외부 시그널 키워드 빈도로 본문 구성
-- [ ] 자연어 검색 e2e — 다양한 쿼리(시술명·증상·지역+시술 조합) 10건 검증
-- [ ] 의료법 표현 전수 검수 — `medical-language-reviewer` 서브에이전트 (특히 후기 키워드 노출 형태, AI 통합 설명, FE 카피)
-- [ ] `shared/models.py` 변경분 BE·AI 동시 갱신 확인 (스키마 drift 0)
-- [ ] FE→BE→AI→KB→DDB→9영역 응답 통합 E2E 시나리오 5건
-- [ ] 비용 측정 — 1만개 처리 LLM·Vision·임베딩 실비용 → `overview.md` 10-1 추정치 보정
-
-### Phase G — 인프라·운영 마무리
-
-- [ ] systemd `clinicfocus.service` 검증 (PR #8 이미 있음)
-- [ ] CloudFront + S3 정적 호스팅 — FE 빌드 → `aws s3 sync` → invalidation
-- [ ] EC2 모니터링 — CloudWatch 기본 로그 (별도 인프라 X)
-- [ ] `.env.example` 최종 정렬 — 누락 키 0
-- [ ] README.md 최종 검수
-- [ ] PR-단위 의료법·코드 리뷰 (`medical-language-reviewer`·`python-reviewer`·`typescript-reviewer`·`security-reviewer`)
+### D. 인프라·마무리 (Phase G)
+- [ ] systemd 검증 / CloudFront+S3 sync 배포 / `.env.example` 정렬 / README 검수 / PR 단위 4리뷰어
 
 ---
 
-## 5. 의존성 그래프
+## DDB 스키마 — single-table (be/CLAUDE.md 참조 단일 진실)
 
-```
-Phase A (기반 재설계)
-  ├─ DDB 단일 테이블
-  ├─ shared/models.py 확장
-  ├─ 외부 API 키 발급
-  └─ BE 차단 이슈 #23/#24
-        │
-        ▼
-Phase B (외부 시그널 크롤러 4종)
-  ├─ 자체 사이트 정제 (#13)
-  ├─ 네이버 플레이스 + 블로그
-  ├─ 카카오 (확장)
-  └─ 구글 Places
-        │
-        ▼
-Phase C (AI 본체화 + 4 시그널 통합)
-  ├─ ai/scratch → ai/ 본체
-  ├─ classify_hospital 재설계
-  ├─ generate_description 4 시그널 종합
-  ├─ Vision 활성화 (Marketplace 의존)
-  ├─ extract / related / recompute / aggregate / 변경이력 자동 기록
-        │
-        ▼
-Phase D (BE 4개 엔드포인트 본체)
-  ├─ /api/search (자연어 + 지도)
-  ├─ /api/hospitals/{id} (9영역)
-  ├─ /api/hospitals/{id}/history
-  └─ /api/feedback
-        │
-        ▼
-Phase E (FE 9영역 + 시그널 시각화)
-  ├─ 9개 컴포넌트 분리
-  ├─ ai_description 차등 렌더링
-  └─ 카카오맵 신뢰도 색 마커
-        │
-        ▼
-Phase F (표본 확장 + 통합 검증)
-  ├─ 88 → 1000 → 1만
-  ├─ 의료법 전수 검수
-  └─ 통합 E2E
-        │
-        ▼
-Phase G (인프라·운영 마무리)
-```
+`PK=hospital_id (S)` · `SK=entity (S)`. AI=`kmuproj-10-clinic-Main`, BE=`kmuproj-02-team3-backend`.
 
-병렬 진행 가능:
-- Phase A 내부 4 항목 병렬
-- Phase B 의 4 크롤러 병렬 (소스별 독립)
-- Phase C·D 의 인터페이스 합의 후 동시 진행
-- Phase E 는 Phase D `/api/*` skeleton 만 있어도 진입 (Mock 가능)
+**entity 분류 — raw(수집) ↔ 가공(산출) 구분** (현재 실적재 수치는 2026-05-30 강남 기준):
 
----
-
-## 6. AI 트랙 AWS 워크북 (개인 진행 기록)
-
-| Step | 내용 | 상태 |
+| 구분 | entity | 비고 / 현재 |
 |---|---|---|
-| 0 | VSCode Remote-SSH → EC2 | ✅ |
-| 1 | 지원 계정 자격증명·Bedrock 모델 가용성 | ✅ |
-| 2 | Titan v2 임베딩 hello-world | ✅ |
-| 3 | KB Retrieve 왕복 + S3 ingest 권한 | ✅ |
-| 4 | DataSource 파일·metadata 스키마 | ✅ |
-| 5 | 개인 계정 Sonnet 4.6 Vision (Marketplace 구독 대기) | △ |
-| 6 | DDB 7테이블 + 88개 적재 + 14개 분류·설명·KB ingest·자연어 검색 | ✅ PR [#25](https://github.com/BORB-CHOI/clinic-focus/pull/25) (V2 전환과 함께 옛 7-table·14개 폐기) |
-| 7 | single-table 재설계 — 어댑터 재작성 + 옛 7-table 폐기 + 콘솔 수동 V2 생성 | ✅ 2026-05-27 |
-| 8 | **외부 3소스 (네이버·카카오·구글) 적재** | ⏳ Phase B |
-| 9 | **4 시그널 본문 합쳐 재 ingest** | ⏳ Phase C |
+| **기준 데이터** | `META` | HIRA 종별·주소·좌표 + 카카오 보강. ✅ 6117 |
+| **raw · 자체사이트** | `SITE#PAGES` · `SITE#IMAGES` | ⚠️ **본문은 DDB 아님 — S3** `crawl/{id}/crawl_data.json`(정제본 2133). DDB엔 안 둠 |
+| **raw · 외부 수집** | `NAVER#PLACE` · `NAVER#PLACE#REVIEWS` · `NAVER#BLOG` · `KAKAO#PLACE` · `KAKAO#REVIEWS` · `KAKAO#BLOG` · `GOOGLE#PLACE` · `GOOGLE#REVIEWS` · `PUBLIC#DEVICES` · `PUBLIC#DOCTORS` | 플랫폼 수집 원본. ✅ KAKAO 641/641/514 · NAVER#BLOG 854 / 나머지 미수집 |
+| **가공 · 룰 (1만 풀커버)** | `CLASSIFICATION` | 4시그널 교차검증 → 과목·주력·신뢰도. LLM 0회. ✅ 진행 중 |
+| **가공 · LLM·Vision (시연 10개)** | `VISION#RESULTS` · `DESCRIPTION` · `SERVICES` · `RELATED` | Vision 분석·`generate_description`·시술/의사 추출·연관병원. 아직 미생성 |
+| **가공 · KB 적재** | `INGEST#STATE` | content_hash·last_ingested·KB object key(재적재 스킵용). ⚠️ KB **벡터·청크는 DDB 아님** — DataSource S3 `clinic-focus/prod/{id}/{signal}.txt` + KB 내부 인덱스 |
+| **사용자·시스템** | `FEEDBACK#{device}#{ts}` · `FEEDBACK#STATS` · `HISTORY#{iso}` | 1-tap 피드백·집계·분류 변경 이력 |
 
-상세 진행 기록은 [`../setup/aws-onboarding.md`](../setup/aws-onboarding.md) 참조 (Step 6 의 옛 7-table·14개 dev 검증은 PR [#25](https://github.com/BORB-CHOI/clinic-focus/pull/25), scratch 제거됨).
+> **헷갈림 정리**: ① 자체사이트 **본문**과 ② KB **벡터/청크**는 DDB가 아니라 **S3**에 있다(DDB는 메타·포인터만).
+> raw = 외부에서 긁어온 것(자체사이트·플레이스·블로그·공공). 가공 = 그걸 파이프라인이 만든 것
+> (룰=`CLASSIFICATION` 전수 / LLM·Vision=`DESCRIPTION`·`SERVICES`·`RELATED`·`VISION#RESULTS` 시연 10개 / KB=`INGEST#STATE`).
 
----
-
-## 7. 완료된 PR (최근순)
-
-| PR | 제목 |
-|---|---|
-| [#36](https://github.com/BORB-CHOI/clinic-focus/pull/36) | 네이버 어댑터 2종 + HTML 정제 + alt_ids — V2 미개발 해소 |
-| [#35](https://github.com/BORB-CHOI/clinic-focus/pull/35) | 외부 시그널 4종 통합 + Phase A/C/D 정합 (검색·피드백·분류 연동) |
-| [#34](https://github.com/BORB-CHOI/clinic-focus/pull/34) | 카카오 어댑터 + AI 룰 분류·KB 시그널 청크 본체 + 정합 정리 |
-| [#30](https://github.com/BORB-CHOI/clinic-focus/pull/30) | feat: 분류 스키마 22 후보군 확정 + 외부 API 키 변수 추가 |
-| [#28](https://github.com/BORB-CHOI/clinic-focus/pull/28) | refactor(be): DDB V2 single-table 어댑터 재작성 |
-| [#25](https://github.com/BORB-CHOI/clinic-focus/pull/25) | feat(ai): scratch/ 우회로 dev e2e 검증 — HIRA → 분류 → KB → 자연어 검색 |
-| [#22](https://github.com/BORB-CHOI/clinic-focus/pull/22) | docs: DDB 선택 근거 + 7-table ERD 박기 |
-| [#21](https://github.com/BORB-CHOI/clinic-focus/pull/21) | feat: URL 보강 크롤링 파이프라인 (Playwright + 쿼리 다변화) |
-| [#20](https://github.com/BORB-CHOI/clinic-focus/pull/20) | docs(env): `AI_AWS_SESSION_TOKEN`·`CRAWL_DATA_DIR` 코멘트 명확화 |
-| [#19](https://github.com/BORB-CHOI/clinic-focus/pull/19) | docs(ai): dev 계정 e2e Step 6 추가 + DDB 콘솔 수동 생성 절차 |
-| [#17](https://github.com/BORB-CHOI/clinic-focus/pull/17) | docs(be): BE AWS 연결 작업 큐 + 의존성 매트릭스 |
-| [#16](https://github.com/BORB-CHOI/clinic-focus/pull/16) | docs(ai): AWS 온보딩 Step 2·5 완료 + Vision Sonnet 4.6 전환 |
-| [#15](https://github.com/BORB-CHOI/clinic-focus/pull/15) | docs(ai): 벡터 검색 KB 경유 전환 + AWS 온보딩 가이드 |
-| [#14](https://github.com/BORB-CHOI/clinic-focus/pull/14) | feat(fe): FE 디자인 — 검색·상세·지도 화면 골격 |
-| [#12](https://github.com/BORB-CHOI/clinic-focus/pull/12) | docs(ai): AI 트랙 전략 재편 + EC2/VSCode Remote-SSH 개발환경 확정 |
-| #11 | feat(fe): 지도 검색 페이지 카카오맵 + 신뢰도 색 마커 |
-| #9 | feat: Kiro 컨텍스트 공유 (`.kiro/steering/`) + docs/ 위치 통일 |
-| #8 | feat(be): uvicorn EC2 진입점 (`be/main.py`) |
-| #6 | feat(be): EC2 셋업 — `S3Adapter` 로컬 FS, `kakao_adapter`, systemd, FastAPI 응답 포맷 |
+**GSI**: `sigungu-specialty-index`(PK=`sigungu#standard_specialty`, SK=`confidence_score`↓ — 카테고리 탐색 BE 직접) ·
+`geo-index`(PK=`geohash_prefix`, SK=`lat#lng` — 지도 근처 검색).
 
 ---
 
-## 8. 운영 메모
+## 제약 (절대 어기지 말 것)
 
-### 계정 분리 (2026-05-25)
-BE(`kmuproj-02`)·AI(`kmuproj-10`) 각자 자기 자원. 발표 정본은 BE 풀커버, AI 미니 표본은 개발용 — 단 single-table 재설계 후 이 분리도 재검토 필요 (양쪽이 같은 single-table 스키마면 데이터 이관 가능성).
-
-### KB 공유 운영 규약 (강사 정책)
-KB `kmuproj-team-03`(ID `GTBJ6HLFDK`) DataSource S3 `kmuproj-02-vector` 는 02·10·11팀 공유.
-
-- Prefix 분리: `clinic-focus/prod/` · `clinic-focus/probe/`
-- Delete 운영 코드 금지 (soft-delete: `metadata.status="closed"`)
-- `team_id="clinic-focus"` 메타 필수 (Retrieve 필터 격리)
-
-### Bedrock 모델 라우팅 (2026-05-26)
-- 텍스트 LLM (Haiku 4.5) → 개인 계정 `ap-northeast-2` (지원 계정 inference profile 라우팅 deny)
-- Vision (Sonnet 4.6) → 개인 계정 `ap-northeast-2` (Global cross-region inference profile)
-- Titan Embed v2 → 지원 계정 `us-east-1` (KB 자동 호출)
-
-### 의료법 §56 회피 — 후기 데이터 처리 (외부 시그널 시 절대 어기지 말 것)
-
-| 항목 | 허용 | 금지 |
-|---|---|---|
-| 후기 본문 저장 | DDB 에 raw 저장 (내부 분석용) | — |
-| 후기 본문 사용자 노출 | — | 개별 후기 본문 그대로 화면에 표시 ❌ |
-| 후기 키워드 노출 | "친절·아토피·여드름·꼼꼼 키워드 빈도 N건" | — |
-| AI 통합 설명에서 인용 | "후기 키워드 빈도 ~%" (출처 배지 `[후기]`) | "후기에서 호평" 같은 평가형 어조 ❌ |
-
-### main 브랜치 직접 수정 금지
-PreToolUse hook + pre-commit hook 양쪽 차단. 모든 작업은 feature 브랜치.
+- **main 직접 수정 금지** — PreToolUse + pre-commit hook 양쪽 차단. 모든 작업 feature 브랜치.
+- **KB 공유 운영** — DataSource S3 `kmuproj-02-vector` 는 02·10·11팀 공유. prefix `clinic-focus/prod/`,
+  `team_id="clinic-focus"` 메타 필수, **delete 금지**(soft-delete `metadata.status="closed"`).
+- **의료법 §56** — 후기 본문 raw 는 DDB 저장·임베딩 입력만, **화면 노출은 키워드 빈도만**. AI 설명 인용도
+  "후기 키워드 빈도 ~%"(출처 배지 `[후기]`), "호평" 같은 평가형 어조 금지.
+- **회색지대(카카오/네이버 place)** = 시연 표본 한정·천천히(차단방지). EC2 RAM 4GB → 크롤 순차, Playwright 1개·병원마다 닫기.
+- **Bedrock 라우팅** — Titan Embed v2 = 지원계정(KB 자동) / Haiku·Sonnet Vision = 개인계정 `ap-northeast-2`.
