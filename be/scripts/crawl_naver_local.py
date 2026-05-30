@@ -41,11 +41,20 @@ import os
 import re
 import sys
 import time
+import urllib.parse
+
+# Windows 콘솔(cp949)에서 한글·이모지 print 가 깨지거나 크래시하는 것 방지.
+# raw JSON 파일 쓰기는 open(..., encoding="utf-8") 로 따로 보장한다.
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except (AttributeError, ValueError):  # 리다이렉트 등 reconfigure 불가 환경
+    pass
 
 # ── 네이버 내부 endpoint·쿼리 (기존 검증된 어댑터에서 그대로) ──────────────
 _GRAPHQL_URL = "https://pcmap-api.place.naver.com/graphql"
 _DETAIL_URL = "https://pcmap.place.naver.com/hospital/{pid}/review/visitor"
-_SEARCH_API = "https://map.naver.com/p/api/search/allSearch"
+_SEARCH_API = "https://map.naver.com/p/api/search/allSearch"  # 페이지가 토큰 붙여 자동 호출 → 가로챔
+_MAP_SEARCH = "https://map.naver.com/p/search"  # 진입 URL: /p/search/{query}?c={lng},{lat},...
 _MAP_HOME = "https://map.naver.com/"
 _CID_LIST = ["223175", "223176", "223192", "228995"]  # 병원/의원 카테고리
 _UA = (
@@ -98,46 +107,57 @@ def _name_score(target: str, cand: str) -> float:
     return 1.0 if core and core in b else 0.0
 
 
+def _clean_query(name: str) -> str:
+    """검색어 정제: 법인 표기 제거. 네이버 place 는 통용명으로 등록돼 있어
+    '(의)○○의료재단 광동병원' 같은 법인 정식명으로 검색하면 0건이 나온다
+    ('광동병원' 으로는 잡힘). 정제 결과가 비면 원본을 그대로 쓴다. 점수 매칭은
+    원본 name 으로 하므로 정제는 검색어에만 적용한다."""
+    s = re.sub(r"\([^)]*\)", "", name or "")  # (의)·(재)·(의료법인) 등 괄호 표기
+    s = re.sub(r"[가-힣]*(의료재단|의료법인|재단법인|사단법인|사회복지법인)", "", s)
+    s = re.sub(r"\s+", " ", s).strip()
+    return s or (name or "").strip()
+
+
 async def _resolve_place_id(page, name: str, lat: float, lng: float) -> tuple[str | None, dict]:
-    """좌표 앵커 검색 → 후보 중 거리+이름 최적 place_id. (place_id, 진단dict) 반환."""
-    q = name
-    url = (
-        f"{_SEARCH_API}?query={q}&type=all"
-        f"&searchCoord={lng};{lat}&boundary="
-    )
+    """좌표 앵커 검색 → 후보 중 거리+이름 최적 place_id. (place_id, 진단dict) 반환.
+
+    네이버 allSearch 는 ncpt 보안 토큰(브라우저 JS 가 페이지에서 자동 생성)이 없으면
+    `ncaptcha-all-search-no-result`(place=null)만 돌려준다. 그래서 raw fetch 가 아니라
+    /p/search 페이지로 진입해, 페이지 자신이 토큰을 붙여 쏘는 allSearch 응답을 가로챈다.
+    지도 중심을 `c={lng},{lat}` 로 병원 좌표에 맞춰 searchCoord 바이어스를 건다.
+    (옛 ai/scratch probe_search.py 의 검증된 방식 — 본코드화 때 raw fetch 로 바뀌며 깨졌었음.)
+    """
+    q = _clean_query(name)
+    center = f"{lng},{lat},15,0,0,0,dh" if (lat and lng) else "126.9784,37.5666,12,0,0,0,dh"
+    search_url = f"{_MAP_SEARCH}/{urllib.parse.quote(q)}?c={center}"
     try:
-        res = await page.evaluate(
-            """async (u) => {
-                const r = await fetch(u, {headers: {"referer": "https://map.naver.com/"}});
-                return {status: r.status, text: await r.text()};
-            }""",
-            url,
-        )
+        async with page.expect_response(
+            lambda r: _SEARCH_API in r.url and r.status == 200, timeout=25000
+        ) as info:
+            await page.goto(search_url, wait_until="domcontentloaded", timeout=40000)
+        resp = await info.value
+        data = json.loads(await resp.text())
     except Exception as e:  # noqa: BLE001
-        return None, {"err": f"search fetch 실패: {e}"}
-    if res.get("status") != 200:
-        return None, {"err": f"search HTTP {res.get('status')}"}
-    try:
-        data = json.loads(res["text"])
-    except ValueError:
-        return None, {"err": "search 비JSON"}
+        return None, {"err": f"search 실패: {type(e).__name__}", "q": q}
+
+    result = data.get("result") or {}
+    page_id = (result.get("metaInfo") or {}).get("pageId") or ""
+    if result.get("ncaptcha") is not None or page_id.startswith("ncaptcha"):
+        return None, {"err": "ncaptcha (토큰 누락/봇 차단)"}
 
     # allSearch 응답에서 place 후보 리스트를 방어적으로 추출
     cands = []
-    try:
-        plist = (((data.get("result") or {}).get("place") or {}).get("list")) or []
-        for it in plist:
-            cands.append({
-                "id": str(it.get("id") or ""),
-                "name": it.get("name") or it.get("title") or "",
-                "lat": float(it["y"]) if it.get("y") else None,
-                "lng": float(it["x"]) if it.get("x") else None,
-            })
-    except Exception as e:  # noqa: BLE001
-        return None, {"err": f"파싱 실패: {e}", "keys": list(data.keys())}
+    plist = ((result.get("place") or {}).get("list")) or []
+    for it in plist:
+        cands.append({
+            "id": str(it.get("id") or ""),
+            "name": it.get("name") or it.get("title") or "",
+            "lat": float(it["y"]) if it.get("y") else None,
+            "lng": float(it["x"]) if it.get("x") else None,
+        })
 
     if not cands:
-        return None, {"err": "후보 0", "keys": list(data.keys())}
+        return None, {"err": "후보 0", "q": q, "keys": list(result.keys())}
 
     # 점수 = 이름일치(가중 0.6) + 거리근접(가중 0.4, 300m 이내 만점)
     best, best_score = None, -1.0
@@ -260,8 +280,8 @@ async def main(argv=None) -> None:
                 failed += 1
                 tag = f"매칭실패 ({diag.get('err','?')})"
 
-            json.dump(rec, open(os.path.join(args.out, f"{hid}.json"), "w"),
-                      ensure_ascii=False, indent=1)
+            with open(os.path.join(args.out, f"{hid}.json"), "w", encoding="utf-8") as fp:
+                json.dump(rec, fp, ensure_ascii=False, indent=1)
             ok += 1
             print(f"[{i}/{len(todo)}] {'✅' if pid else '❌'} {name[:20]} — {tag}")
 
