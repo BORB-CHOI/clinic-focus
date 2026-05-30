@@ -215,3 +215,45 @@ LOW = 70, HIGH = 95, CONFIDENCE_LEVEL1_CAP = 70, MIN_CERTAIN_SIGNALS = 2
 
 > 이미지 자체는 자체사이트 크롤 시 수집됨(`SITE#IMAGES`/S3, 평균 21장/병원) — **분석(Vision)** 만 미실행.
 > 즉 "이미지 미수집"이 아니라 "이미지 분석 미실행"이다.
+
+---
+
+## 7. BE·FE 데이터 파이프라인 (쓰기 경로 → 읽기 경로 → 소비)
+
+데이터가 **어떻게 채워지고(BE 배치)** **어떻게 나가는지(BE API → FE)**. BE 는 AI 모듈을 **Python import 로
+직접 호출**한다(HTTP 아님 — 같은 EC2 단일 프로세스). 검색·분류·설명 함수가 곧 호출 시그니처.
+
+### 7-1. 쓰기 경로 — 수집·가공 배치 (오프라인, BE 주도)
+```
+HIRA getHospBasisList ─→ save_hospital_meta ─────────────→ DDB: META
+자체사이트 ─ crawl_hospital.run_crawl ─ denoise+페이지필터 ─→ S3: crawl/{id}/crawl_data.json
+외부 ─ crawl_external_all (카카오 place·후기·블로그 / 네이버) ─→ DDB: KAKAO#*·NAVER#*
+                              │
+                              ▼  index_hospital.run_index_pipeline (병원당)
+   classify_hospital(crawl_data, **external) ──────────────→ DDB: CLASSIFICATION   ← 전수(룰)
+   [시연 10개만] extract_services_and_doctors / generate_description / find_related
+                                          ──────────────────→ DDB: SERVICES·DESCRIPTION·RELATED
+   build_signal_chunks(**external) + build_ingest_metadata ─→ ingest_hospital ─→ KB DataSource S3 → (StartIngestionJob) → KB 벡터
+```
+- `be/handlers/`: `crawl_trigger`(HIRA→META) · `crawl_hospital`(사이트→S3) · `index_hospital`(분류·청크·KB).
+- 분류 변경 시 `save_change_record` → `HISTORY#{iso}` 자동 기록. 외부 시그널은 `db.load_external_signals()`
+  결과를 `**external` 로 전개해 `classify_hospital`·`build_signal_chunks` 에 동일하게 전달.
+
+### 7-2. 읽기 경로 — 서빙 API (4 엔드포인트, `be/api/`)
+| 엔드포인트 | 데이터 흐름 |
+|---|---|
+| `GET /api/search` | **자연어(q)·위치** → AI `retrieve_hospital`(KB Retrieve, 내부 Titan 임베딩+벡터) → hospital_id → **DDB join** `_hospital_card`. **시군구 카테고리** → BE **DDB GSI 직접**(`sigungu#standard_specialty`, KB 미경유) |
+| `GET /api/hospitals/{id}` | DDB 1회 Query(PK=hospital_id)로 `META`+`CLASSIFICATION`+`DESCRIPTION`+`SERVICES`+`RELATED`+`FEEDBACK#STATS`+`HISTORY` 를 **9영역**으로 join. 404·`data_completeness` |
+| `GET /api/hospitals/{id}/history` | `HISTORY#{iso}` 분류 변경 이력 |
+| `POST /api/feedback` | `FEEDBACK#{device}#{ts}` 적재 + 임계 시 `recompute_confidence` inline → `CLASSIFICATION` 갱신 |
+
+→ **검색 경로 이원화**가 핵심: 자연어=의미검색(KB), 카테고리 완전일치=DDB GSI. 검색 시 LLM 0회(§5).
+
+### 7-3. FE 소비 (`fe/`, React+TS)
+- **타입 동기화**: BE FastAPI `/openapi.json` → `openapi-typescript` → `fe/src/types/api.ts` **자동 생성**(수동 금지).
+- **검색**: TanStack Query `useSearch(q, filters)` 캐싱 → 결과 카드(표준과목 + `primary_focus` 태그 + 신뢰도 + 요약 + 거리) ↔ 카카오맵(신뢰도 색 마커: 확실=초록·추정=노랑·부족=회색).
+- **상세 9영역**: Headline(`ai_description`)·CoreServices·Doctors·**Confidence(4시그널 분해 — `None`=회색 "수집 안 됨" 배지, `0`=엇갈림)**·Operating·Feedback·History·Related(주력+"안 다루는 분야")·Meta.
+- **차등 렌더**: 시연 10개 외 `ai_description=null` → 자연어 단락 대신 **룰 기반 태그 카드** fallback. `data_completeness<0.6` 경고 배너.
+
+> 즉 같은 4시그널·2축 분류가 **쓰기(배치)에서 채워지고 → DDB/S3/KB 에 갈라져 저장 → 읽기(API)에서 join·검색 →
+> FE 9영역**으로 흐른다. (FE↔BE 명세 [`API-FE-BE.md`](API-FE-BE.md), BE↔AI 명세 [`API-BE-AI.md`](API-BE-AI.md).)
