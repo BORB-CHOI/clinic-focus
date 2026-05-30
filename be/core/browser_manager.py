@@ -113,6 +113,92 @@ class BrowserManager:
                 if self._page_count >= self.MAX_PAGES_BEFORE_RESTART:
                     await self._restart_browser()
 
+    async def screenshot_page_scroll(
+        self, url: str, *, max_tiles: int = 8, capture_popup: bool = True
+    ) -> list[bytes]:
+        """페이지를 위→아래 **뷰포트 타일 여러 장**으로 전부 캡처 (Vision 시연용).
+
+        - full_page 한 장은 너무 길어 Sonnet 이 다운스케일→텍스트 깨짐. 그래서 1280×1600
+          뷰포트 단위로 스크롤하며 여러 장(가독성 유지).
+        - **팝업 처리**: 내용이 유용(시술 안내)할 수 있어 **닫기 전 1장 먼저 캡처** → 이후
+          Escape·닫기버튼·오버레이 JS 제거로 본문을 가리지 않게 한 뒤 스크롤 타일.
+        - lazy-load 대비 타일마다 짧게 대기 + scrollHeight 재측정.
+
+        Returns: PNG bytes 리스트(앞=팝업 포함 첫 화면, 이후=본문 타일). 실패 시 가능한 만큼.
+        """
+        async with self._semaphore:
+            await self._ensure_browser()
+            context: BrowserContext | None = None
+            shots: list[bytes] = []
+            vh = 1600
+            try:
+                context = await self._browser.new_context(  # type: ignore[union-attr]
+                    viewport={"width": 1280, "height": vh},
+                )
+                page: Page = await context.new_page()
+                await page.goto(url, wait_until="networkidle", timeout=self.PAGE_TIMEOUT_MS)
+                await page.wait_for_timeout(1500)  # 팝업 렌더 대기
+
+                # 1) 팝업 포함 첫 화면 1장 (팝업 안내문 내용 보존)
+                if capture_popup:
+                    s = await page.screenshot(type="png")
+                    if s:
+                        shots.append(s)
+
+                # 2) 팝업/오버레이 닫기 — 본문을 가리지 않게
+                try:
+                    await page.keyboard.press("Escape")
+                    await page.evaluate(
+                        """() => {
+                            const kill = el => { try { el.style.display='none'; } catch(e){} };
+                            document.querySelectorAll(
+                              '[class*=popup i],[class*=modal i],[class*=layer i],[id*=popup i],[id*=modal i],[class*=dimm i],[class*=overlay i]'
+                            ).forEach(kill);
+                            document.querySelectorAll('body *').forEach(el => {
+                              const cs = getComputedStyle(el);
+                              if ((cs.position==='fixed'||cs.position==='absolute')
+                                  && parseInt(cs.zIndex||0) >= 100 && el.offsetHeight > 200) kill(el);
+                            });
+                        }"""
+                    )
+                    for sel in ("text=오늘 하루", "text=닫기", ".close", "[aria-label*=close i]", ".btn-close"):
+                        try:
+                            await page.click(sel, timeout=400)
+                        except Exception:  # noqa: BLE001
+                            pass
+                except Exception:  # noqa: BLE001
+                    pass
+                await page.wait_for_timeout(300)
+
+                # 3) 위→아래 뷰포트 타일 (스크롤하며 전부)
+                y = 0
+                n = 0
+                total = await page.evaluate("() => document.body.scrollHeight")
+                while y < total and n < max_tiles:
+                    await page.evaluate(f"window.scrollTo(0, {y})")
+                    await page.wait_for_timeout(250)  # lazy-load
+                    s = await page.screenshot(type="png")
+                    if s:
+                        shots.append(s)
+                        n += 1
+                    y += vh
+                    total = await page.evaluate("() => document.body.scrollHeight")
+                return shots
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("screenshot_page_scroll failed for %s: %s", url, exc)
+                if self._browser and not self._browser.is_connected():
+                    await self._restart_browser()
+                return shots
+            finally:
+                if context:
+                    try:
+                        await context.close()
+                    except Exception:  # noqa: BLE001
+                        pass
+                self._page_count += 1
+                if self._page_count >= self.MAX_PAGES_BEFORE_RESTART:
+                    await self._restart_browser()
+
     async def extract_element_attr(self, url: str, selector: str, attr: str) -> str | None:
         """URL을 렌더링한 뒤 특정 셀렉터의 속성값 추출.
 
