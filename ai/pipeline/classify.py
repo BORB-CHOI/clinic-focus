@@ -149,6 +149,55 @@ _KEYWORD_TO_FOCUS: dict[str, list[str]] = {
     "백내장":       ["백내장"],
     "망막":         ["망막"],
     "황반":         ["망막"],
+    "노안교정":     ["노안수술"],
+    "노안수술":     ["노안수술"],
+    "드림렌즈":     ["드림렌즈·소아근시"],
+    "소아근시":     ["드림렌즈·소아근시"],
+    # ── 성형·미용 (피부과 미용 + 성형외과) — 시각 시그널이 특히 강한 영역 ──
+    # bare "교정"·"광대" 등 타과와 겹치는 토큰은 일부러 제외하고 합성어만 넣는다.
+    "쌍꺼풀":       ["눈성형"],
+    "쌍커풀":       ["눈성형"],
+    "눈매교정":     ["눈성형"],
+    "눈밑지방":     ["눈성형"],
+    "안면윤곽":     ["안면윤곽·양악"],
+    "사각턱":       ["안면윤곽·양악"],
+    "광대뼈":       ["안면윤곽·양악"],
+    "턱끝":         ["안면윤곽·양악"],
+    "양악":         ["안면윤곽·양악"],
+    "윤곽수술":     ["안면윤곽·양악"],
+    "코성형":       ["코성형"],
+    "융비술":       ["코성형"],
+    "가슴성형":     ["가슴성형"],
+    "지방흡입":     ["체형·지방"],
+    "지방이식":     ["체형·지방"],
+    "미백":         ["미백·피부톤"],
+    "화이트닝":     ["미백·피부톤"],
+    "물광":         ["미백·피부톤"],
+    # ── 치과 (강남 표본 41%) ──
+    "임플란트":     ["임플란트"],
+    "픽스처":       ["임플란트"],
+    "치아교정":     ["치아교정"],
+    "투명교정":     ["치아교정"],
+    "설측교정":     ["치아교정"],
+    "인비절라인":   ["치아교정"],
+    "라미네이트":   ["보철·크라운"],
+    "지르코니아":   ["보철·크라운"],
+    "심미보철":     ["보철·크라운"],
+    "충치":         ["충치·신경치료"],
+    "신경치료":     ["충치·신경치료"],
+    "잇몸":         ["잇몸·치주"],
+    "치주":         ["잇몸·치주"],
+    "스케일링":     ["잇몸·치주"],
+    # ── 한의원 (강남 표본 31%) ──
+    "추나":         ["추나·도수"],
+    "도수치료":     ["추나·도수"],
+    "한약":         ["한약·체질"],
+    "첩약":         ["한약·체질"],
+    "보약":         ["한약·체질"],
+    "공진단":       ["한약·체질"],
+    "사상체질":     ["한약·체질"],
+    "약침":         ["침구"],
+    "비만":         ["비만·다이어트"],
 }
 
 
@@ -721,13 +770,24 @@ def _topics_to_focus_votes(topics: list[str]) -> Counter:
     """주제 리스트를 focus 후보 투표 Counter 로 변환."""
     votes: Counter = Counter()
     for topic in topics:
+        matched = False
         # 스키마에 직접 포함된 항목이면 그대로 1표
         for schema_items in SPECIALTY_FOCUS_SCHEMA.values():
             if topic in schema_items:
                 votes[topic] += 1
-        # 키워드 매핑 경유
-        for focus in _KEYWORD_TO_FOCUS.get(topic, []):
-            votes[focus] += 1
+                matched = True
+        # 키워드 매핑 경유 (정확 일치)
+        if topic in _KEYWORD_TO_FOCUS:
+            for focus in _KEYWORD_TO_FOCUS[topic]:
+                votes[focus] += 1
+            matched = True
+        # 정확 일치 실패 시 부분일치 폴백 — LLM 이 "임플란트 식립"·"보톡스 시술"
+        # 처럼 변형해 반환해도 내부 키워드를 잡아 vision·blog·reviews 와 같은
+        # 어휘로 정렬되게 한다. (정확 일치된 topic 은 중복 방지로 건너뜀)
+        if not matched:
+            for kw, cnt in _count_medical_keywords(topic).items():
+                for focus in _KEYWORD_TO_FOCUS.get(kw, []):
+                    votes[focus] += cnt
     return votes
 
 
@@ -786,6 +846,12 @@ def _cross_validate_signals(
         for kw, cnt in device_kw_counter.items():
             for focus in _KEYWORD_TO_FOCUS.get(kw, []):
                 vision_votes[focus] += cnt * 0.5
+        # 장면 해석 키워드(scene·procedures·in_image_text 집계분) — 하이브리드의
+        # 핵심. 구 방식(category·devices만)으론 vision_votes 가 거의 비어 vision=0
+        # 이었다. 화면 해석에서 나온 키워드를 1표 가중으로 focus 투표에 반영.
+        for kw, cnt in (vision.keyword_frequency or {}).items():
+            for focus in _KEYWORD_TO_FOCUS.get(kw, []):
+                vision_votes[focus] += cnt
 
     # 전체 후보 수집
     all_focus_candidates: set[str] = (
@@ -1130,9 +1196,22 @@ def classify_hospital(
         if results:
             cat_counter: Counter = Counter()
             all_devices: list[str] = []
+            vision_kw: Counter = Counter()
             for r in results:
                 cat_counter[r.image_category] += 1
                 all_devices.extend(r.detected_devices)
+                # 장면 해석(scene·procedures·in_image_text)에서 의료 키워드 추출.
+                # 구 방식은 category·devices 만 봤지만, Vision 이 화면을 "해석"한
+                # 텍스트가 진짜 신호다 — 여기서 focus 투표용 키워드를 모은다.
+                scene_text = " ".join(
+                    [
+                        getattr(r, "scene", "") or "",
+                        " ".join(getattr(r, "detected_procedures", None) or []),
+                        getattr(r, "in_image_text", "") or "",
+                        " ".join(r.detected_devices or []),
+                    ]
+                )
+                vision_kw.update(_count_medical_keywords(scene_text))
 
             total = sum(cat_counter.values())
             image_categories = {
@@ -1142,6 +1221,7 @@ def classify_hospital(
                 detected_devices=list(set(all_devices)),
                 image_categories=image_categories,
                 total_images_analyzed=len(results),
+                keyword_frequency=dict(vision_kw),
             )
 
     # 4. 블로그 키워드 분석 — 카카오 place앵커 blog (네이버 키워드 검색은 노이즈로 폐기)

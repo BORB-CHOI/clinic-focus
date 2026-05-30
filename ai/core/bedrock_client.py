@@ -49,7 +49,9 @@ def invoke_model_with_image(prompt: str, image_b64: str, media_type: str = "imag
     )
     body = json.dumps({
         "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": 2048,
+        # scene·procedures·devices·in_image_text 까지 담으므로 2048 → 3072 (잘림 방지).
+        # 모델은 필요한 만큼만 생성하므로 상한 상향이 비용을 자동으로 늘리진 않는다.
+        "max_tokens": 3072,
         "messages": [{
             "role": "user",
             "content": [
