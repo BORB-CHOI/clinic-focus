@@ -27,6 +27,7 @@ from typing import TYPE_CHECKING, Any
 import importlib as _importlib
 
 from ai.core.exceptions import BedrockInvocationError, InsufficientDataError
+from ai.search.taxonomy import SPECIALTY_TAGS  # 진료과별 시술 taxonomy = 단일 의료 어휘 소스 (순수 데이터, boto3·순환 없음)
 from shared.models import (
     BlogSignal,
     Classification,
@@ -149,55 +150,6 @@ _KEYWORD_TO_FOCUS: dict[str, list[str]] = {
     "백내장":       ["백내장"],
     "망막":         ["망막"],
     "황반":         ["망막"],
-    "노안교정":     ["노안수술"],
-    "노안수술":     ["노안수술"],
-    "드림렌즈":     ["드림렌즈·소아근시"],
-    "소아근시":     ["드림렌즈·소아근시"],
-    # ── 성형·미용 (피부과 미용 + 성형외과) — 시각 시그널이 특히 강한 영역 ──
-    # bare "교정"·"광대" 등 타과와 겹치는 토큰은 일부러 제외하고 합성어만 넣는다.
-    "쌍꺼풀":       ["눈성형"],
-    "쌍커풀":       ["눈성형"],
-    "눈매교정":     ["눈성형"],
-    "눈밑지방":     ["눈성형"],
-    "안면윤곽":     ["안면윤곽·양악"],
-    "사각턱":       ["안면윤곽·양악"],
-    "광대뼈":       ["안면윤곽·양악"],
-    "턱끝":         ["안면윤곽·양악"],
-    "양악":         ["안면윤곽·양악"],
-    "윤곽수술":     ["안면윤곽·양악"],
-    "코성형":       ["코성형"],
-    "융비술":       ["코성형"],
-    "가슴성형":     ["가슴성형"],
-    "지방흡입":     ["체형·지방"],
-    "지방이식":     ["체형·지방"],
-    "미백":         ["미백·피부톤"],
-    "화이트닝":     ["미백·피부톤"],
-    "물광":         ["미백·피부톤"],
-    # ── 치과 (강남 표본 41%) ──
-    "임플란트":     ["임플란트"],
-    "픽스처":       ["임플란트"],
-    "치아교정":     ["치아교정"],
-    "투명교정":     ["치아교정"],
-    "설측교정":     ["치아교정"],
-    "인비절라인":   ["치아교정"],
-    "라미네이트":   ["보철·크라운"],
-    "지르코니아":   ["보철·크라운"],
-    "심미보철":     ["보철·크라운"],
-    "충치":         ["충치·신경치료"],
-    "신경치료":     ["충치·신경치료"],
-    "잇몸":         ["잇몸·치주"],
-    "치주":         ["잇몸·치주"],
-    "스케일링":     ["잇몸·치주"],
-    # ── 한의원 (강남 표본 31%) ──
-    "추나":         ["추나·도수"],
-    "도수치료":     ["추나·도수"],
-    "한약":         ["한약·체질"],
-    "첩약":         ["한약·체질"],
-    "보약":         ["한약·체질"],
-    "공진단":       ["한약·체질"],
-    "사상체질":     ["한약·체질"],
-    "약침":         ["침구"],
-    "비만":         ["비만·다이어트"],
 }
 
 
@@ -331,7 +283,15 @@ def _extract_self_claim(crawl_data: CrawlData) -> SelfClaimSignal:
 # 내부 헬퍼 — 블로그 분석
 # ---------------------------------------------------------------------------
 
-_MEDICAL_KEYWORDS: list[str] = list(_KEYWORD_TO_FOCUS.keys())
+# 키워드 검출 어휘 = 레거시 4과 맵 키 + taxonomy 전 과목 키워드 합집합.
+# 구 방식은 4과 키워드만 세서 치과·내과·비뇨 등의 시술어를 못 잡았다 → taxonomy 를
+# 단일 소스로 흡수해 blog·reviews·vision 의 keyword_frequency 가 전 과목을 본다.
+_TAXONOMY_KEYWORDS: list[str] = [
+    kw for tags in SPECIALTY_TAGS.values() for _label, kws in tags for kw in kws
+]
+_MEDICAL_KEYWORDS: list[str] = list(
+    dict.fromkeys(list(_KEYWORD_TO_FOCUS.keys()) + _TAXONOMY_KEYWORDS)
+)
 
 
 def _count_medical_keywords(text: str) -> Counter:
@@ -791,6 +751,25 @@ def _topics_to_focus_votes(topics: list[str]) -> Counter:
     return votes
 
 
+def _signal_taxonomy_votes(text: str, specialty: str) -> Counter:
+    """시그널 텍스트를 진료과 taxonomy(SPECIALTY_TAGS) 시술 태그로 매칭해 focus 투표 생성.
+
+    구 방식은 4과짜리 _KEYWORD_TO_FOCUS 로만 투표해 치과·내과·비뇨 등에선 일치를 못
+    잡았다 → Vision 이 발기부전·위내시경을 "봐도" 0 처리돼 신뢰도를 끌어내렸다(겉보기
+    회귀). 표시 primary_focus 가 쓰는 것과 **같은 taxonomy** 로 4 시그널을 모두 투표시켜
+    같은 어휘로 정렬되게 한다. 매칭 횟수를 가중치로(자주 등장할수록 강하게).
+    """
+    votes: Counter = Counter()
+    tags = SPECIALTY_TAGS.get(specialty)
+    if not tags or not text:
+        return votes
+    for label, keywords in tags:
+        hits = sum(text.count(kw) for kw in keywords)
+        if hits:
+            votes[label] += hits
+    return votes
+
+
 def _is_present(signal_type: str, sig: Any) -> bool:
     """시그널이 **수집됨(present)** 인지 판정. 결손(미수집)과 구분한다.
 
@@ -817,41 +796,59 @@ def _cross_validate_signals(
     blog: BlogSignal,
     reviews: ReviewSignal,
     vision: VisionSignal | None,
+    *,
+    standard_specialty: str | None = None,
 ) -> tuple[list[str], dict[str, float | None]]:
     """4 시그널의 방향성 정렬 정도를 계산해 primary_focus 와 기여도를 반환한다.
+
+    focus 어휘는 표시(primary_focus)와 동일한 **진료과 taxonomy(SPECIALTY_TAGS)** 를
+    쓴다 — standard_specialty 가 taxonomy 에 있으면 4 시그널 모두 그 과의 시술 태그로
+    투표(같은 어휘로 정렬 → Vision 이 전 과목에서 보강). taxonomy 미지원 종별이거나
+    standard_specialty 미지정이면 레거시 _KEYWORD_TO_FOCUS 경로로 폴백.
 
     반환:
       primary_focus: list[str]  — 상위 주력 분야 (최대 3개)
       contributions: dict[str, float | None] — 시그널별 기여도(페널티 적용 전).
         * present 시그널: ``재분배 가중치 × top_focus 일치도`` (0~1).
-          엇갈리면(일치도 0) 그대로 0 기여 — §1-1 의 0.5 베이스라인 제거.
         * 결손 시그널: ``None`` ("수집 안 됨"). 0(엇갈림)과 명시적으로 구분.
-        present 시그널끼리 가중치를 재분배(합 1.0)하므로 결손은 점수에서 빠진다
-        (반값도 0점도 아님 — §3 원칙 1).
     """
-    # 각 시그널의 focus 투표 (결손 시그널은 빈 투표라 focus 선정에 0 기여)
-    self_votes = _topics_to_focus_votes(self_claim.primary_focus)
-    blog_votes = _topics_to_focus_votes(blog.primary_topics)
-    review_votes = _topics_to_focus_votes(reviews.primary_topics)
-    vision_votes: Counter = Counter()
-    if vision is not None:
-        # image_categories 의 카테고리명을 focus 로 매핑
-        for cat, ratio in vision.image_categories.items():
-            for focus in _KEYWORD_TO_FOCUS.get(cat, []):
-                vision_votes[focus] += ratio
-        # detected_devices 키워드도 반영
-        device_kw_counter = _count_medical_keywords(
-            " ".join(vision.detected_devices)
+    use_tax = standard_specialty in SPECIALTY_TAGS
+
+    if use_tax:
+        # taxonomy 일원화 — 4 시그널을 같은 진료과 시술 태그 어휘로 투표시킨다.
+        self_votes = _signal_taxonomy_votes(
+            " ".join(list(self_claim.primary_focus) + list(self_claim.keywords)),
+            standard_specialty,  # type: ignore[arg-type]
         )
-        for kw, cnt in device_kw_counter.items():
-            for focus in _KEYWORD_TO_FOCUS.get(kw, []):
-                vision_votes[focus] += cnt * 0.5
-        # 장면 해석 키워드(scene·procedures·in_image_text 집계분) — 하이브리드의
-        # 핵심. 구 방식(category·devices만)으론 vision_votes 가 거의 비어 vision=0
-        # 이었다. 화면 해석에서 나온 키워드를 1표 가중으로 focus 투표에 반영.
-        for kw, cnt in (vision.keyword_frequency or {}).items():
-            for focus in _KEYWORD_TO_FOCUS.get(kw, []):
-                vision_votes[focus] += cnt
+        blog_votes = _signal_taxonomy_votes(
+            " ".join(list(blog.primary_topics) + list(blog.keyword_frequency.keys())),
+            standard_specialty,  # type: ignore[arg-type]
+        )
+        review_votes = _signal_taxonomy_votes(
+            " ".join(list(reviews.primary_topics) + list(reviews.keyword_frequency.keys())),
+            standard_specialty,  # type: ignore[arg-type]
+        )
+        vision_votes = (
+            _signal_taxonomy_votes(vision.scene_text, standard_specialty)  # type: ignore[arg-type]
+            if vision is not None else Counter()
+        )
+    else:
+        # 레거시 — taxonomy 미지원 종별(종합병원·요양병원 등) 또는 specialty 미지정 테스트.
+        self_votes = _topics_to_focus_votes(self_claim.primary_focus)
+        blog_votes = _topics_to_focus_votes(blog.primary_topics)
+        review_votes = _topics_to_focus_votes(reviews.primary_topics)
+        vision_votes = Counter()
+        if vision is not None:
+            for cat, ratio in vision.image_categories.items():
+                for focus in _KEYWORD_TO_FOCUS.get(cat, []):
+                    vision_votes[focus] += ratio
+            device_kw_counter = _count_medical_keywords(" ".join(vision.detected_devices))
+            for kw, cnt in device_kw_counter.items():
+                for focus in _KEYWORD_TO_FOCUS.get(kw, []):
+                    vision_votes[focus] += cnt * 0.5
+            for kw, cnt in (vision.keyword_frequency or {}).items():
+                for focus in _KEYWORD_TO_FOCUS.get(kw, []):
+                    vision_votes[focus] += cnt
 
     # 전체 후보 수집
     all_focus_candidates: set[str] = (
@@ -1197,21 +1194,24 @@ def classify_hospital(
             cat_counter: Counter = Counter()
             all_devices: list[str] = []
             vision_kw: Counter = Counter()
+            scene_texts: list[str] = []
             for r in results:
                 cat_counter[r.image_category] += 1
                 all_devices.extend(r.detected_devices)
-                # 장면 해석(scene·procedures·in_image_text)에서 의료 키워드 추출.
-                # 구 방식은 category·devices 만 봤지만, Vision 이 화면을 "해석"한
-                # 텍스트가 진짜 신호다 — 여기서 focus 투표용 키워드를 모은다.
-                scene_text = " ".join(
+                # 장면 해석(scene·procedures·in_image_text)을 원문으로 모은다 — 교차검증이
+                # 진료과 taxonomy 키워드로 매칭해 focus 투표에 쓴다. Vision 이 글자만 읽는
+                # 게 아니라 화면을 "해석"한 텍스트가 진짜 신호. keyword_frequency 는 표시용.
+                one_text = " ".join(
                     [
                         getattr(r, "scene", "") or "",
                         " ".join(getattr(r, "detected_procedures", None) or []),
                         getattr(r, "in_image_text", "") or "",
                         " ".join(r.detected_devices or []),
                     ]
-                )
-                vision_kw.update(_count_medical_keywords(scene_text))
+                ).strip()
+                if one_text:
+                    scene_texts.append(one_text)
+                    vision_kw.update(_count_medical_keywords(one_text))
 
             total = sum(cat_counter.values())
             image_categories = {
@@ -1222,6 +1222,7 @@ def classify_hospital(
                 image_categories=image_categories,
                 total_images_analyzed=len(results),
                 keyword_frequency=dict(vision_kw),
+                scene_text=" ".join(scene_texts),
             )
 
     # 4. 블로그 키워드 분석 — 카카오 place앵커 blog (네이버 키워드 검색은 노이즈로 폐기)
@@ -1240,12 +1241,18 @@ def classify_hospital(
     #    use_llm 분기와 무관하게 외부 후기 키워드는 룰·LLM 양 경로 모두 동일하게 적용
     review_signal = _analyze_reviews(kakao_reviews, naver_reviews, google_reviews)
 
-    # 6. 4 시그널 교차 검증 — 결손은 None, present 끼리 재분배된 일치 기여도
+    # 5-a. 표준 과목 확정 — 교차검증 투표 어휘(taxonomy)를 고르려면 먼저 필요.
+    #      HIRA 기준값(권위) 우선, 없으면 텍스트 추론 fallback.
+    final_specialty = standard_specialty or _infer_standard_specialty(crawl_data)
+
+    # 6. 4 시그널 교차 검증 — 진료과 taxonomy 어휘로 투표(표시 focus 와 동일).
+    #    결손은 None, present 끼리 재분배된 일치 기여도.
     primary_focus, contributions = _cross_validate_signals(
         self_claim=self_claim_signal,
         blog=blog_signal,
         reviews=review_signal,
         vision=vision_signal,
+        standard_specialty=final_specialty,
     )
     logger.info("교차 검증 — primary_focus=%s contrib=%s", primary_focus, contributions)
 
@@ -1270,10 +1277,7 @@ def classify_hospital(
         [k for k, v in contributions.items() if v is not None],
     )
 
-    # 9. 표준 과목 — HIRA 기준값(권위) 우선, 없으면 텍스트 추론 fallback
-    final_specialty = standard_specialty or _infer_standard_specialty(crawl_data)
-
-    # 9-a. 시술 태그(고정 taxonomy) — primary_focus 를 필터 가능한 통제 어휘로.
+    # 9. 시술 태그(고정 taxonomy) — primary_focus 를 필터 가능한 통제 어휘로.
     #      진료과 taxonomy 에 매칭 태그가 있으면 그것으로 대체(닥터나우식 필터칩).
     #      taxonomy 미지원 종별(종합병원·요양병원 등)이거나 매칭 0이면 기존 추출 유지.
     from ai.search.taxonomy import tag_hospital  # boto3 무관, 순환 없음

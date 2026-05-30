@@ -64,9 +64,11 @@ class VisionSignal(BaseModel):
     detected_devices: list[str]
     image_categories: dict[str, float]  # category -> 비율 (합계 1.0)
     total_images_analyzed: int
-    # 장면 해석(scene·procedures·in_image_text)에서 추출한 의료 키워드 빈도.
-    # 블로그·후기처럼 focus 투표에 쓰여 Vision 이 교차검증에 실제 기여하게 한다.
+    # 장면 해석(scene·procedures·in_image_text)에서 추출한 의료 키워드 빈도(레거시·표시용).
     keyword_frequency: dict[str, int] = {}
+    # 장면 해석 원문 합본(scene+procedures+in_image_text+devices). 교차검증이 진료과
+    # taxonomy 키워드로 매칭해 focus 투표에 쓴다 — Vision 이 전 과목에서 보강하게.
+    scene_text: str = ""
 
 
 class BlogSignal(BaseModel):
