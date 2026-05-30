@@ -19,7 +19,7 @@ import httpx
 from be.adapters.dynamo_adapter import DynamoAdapter
 from be.adapters.s3_adapter import S3Adapter
 from be.core.browser_manager import BrowserManager
-from be.core.crawler import crawl_one_hospital
+from be.core.crawler import crawl_one_hospital, site_mentions_hospital
 
 # 텍스트 100자 미만이면 JS 렌더링 필요로 판단
 MIN_TEXT_THRESHOLD = 100
@@ -68,6 +68,13 @@ async def main():
                     if not crawl_data.pages:
                         results["failed"] += 1
                         print(f"  [{i}/{len(targets)}] ❌ {name} — 크롤링 실패 (빈 결과)")
+                        continue
+
+                    # 잘못된 URL 매칭 방어: 본문에 병원명이 전혀 없으면 엉뚱한 사이트일 개연성 →
+                    # 저장 안 함(자칭 시그널 오염 차단). enrich_urls 의 place 오매칭 대비.
+                    if not site_mentions_hospital(name, crawl_data):
+                        results["name_mismatch"] = results.get("name_mismatch", 0) + 1
+                        print(f"  [{i}/{len(targets)}] ⚠️ {name} — 본문에 병원명 없음(URL 오매칭 의심), 폐기")
                         continue
 
                     main_page = next(

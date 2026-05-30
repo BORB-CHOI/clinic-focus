@@ -196,6 +196,30 @@ def _filter_noise_pages(pages: list[CrawledPage]) -> list[CrawledPage]:
     return kept or pages
 
 
+# 이름 교차검증용 종별 접미사 (kakao_adapter 와 동일 취지 — 핵심 토큰만 남김).
+_NAME_SUFFIX_RE = re.compile(
+    r"(의원|병원|클리닉|치과|한의원|한방병원|피부과|성형외과|정형외과|신경외과|내과|"
+    r"이비인후과|안과|산부인과|소아청소년과|소아과|가정의학과|재활의학과|마취통증의학과|"
+    r"신경과|비뇨의학과|정신건강의학과|외과|재단법인|의료법인|의료재단|의료원|메디컬)"
+)
+
+
+def site_mentions_hospital(name: str, crawl_data: CrawlData) -> bool:
+    """크롤한 사이트 본문에 병원명 핵심 토큰이 등장하는지 (잘못된 URL 매칭 검출).
+
+    enrich_urls 가 동명·다른 지점 place 를 잡아 **엉뚱한 홈페이지**를 저장했을 수 있다.
+    URLValidator 는 liveness 만 보므로, 크롤 후 본문에 병원명이 전혀 없으면 그 URL 은
+    이 병원 것이 아닐 개연성이 높다 → 자칭 시그널 오염 방지로 폐기 판단에 쓴다.
+
+    핵심 토큰이 2자 미만(흔한 이름)이면 검증 불가 → True 반환(보수적, 폐기 안 함).
+    """
+    core = re.sub(r"\s+", "", _NAME_SUFFIX_RE.sub("", re.sub(r"\(.*?\)", " ", name or "")))
+    if len(core) < 2:
+        return True
+    text = re.sub(r"\s+", "", " ".join((p.html_text or "") for p in crawl_data.pages))
+    return core in text
+
+
 async def crawl_one_hospital(
     hospital_id: str,
     website_url: str,
