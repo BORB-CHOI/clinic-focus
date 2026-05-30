@@ -14,13 +14,13 @@ logger = logging.getLogger(__name__)
 class BrowserManager:
     """Playwright Chromium headless 브라우저 생명주기 관리.
 
-    - 200페이지마다 브라우저 재시작 (메모리 누적 방지)
+    - 30페이지마다 브라우저 재시작 (RAM 4GB·메모리 상주 차단)
     - 30초 페이지 타임아웃
     - 동시 탭 3개 제한 (asyncio.Semaphore)
     - 크래시 복구: 브라우저 비정상 종료 시 새 인스턴스 생성
     """
 
-    MAX_PAGES_BEFORE_RESTART: int = 200
+    MAX_PAGES_BEFORE_RESTART: int = 30
     PAGE_TIMEOUT_MS: int = 30_000
     MAX_CONCURRENT_TABS: int = 3
 
@@ -62,6 +62,42 @@ class BrowserManager:
                 return content
             except Exception as exc:
                 logger.warning("render_page failed for %s: %s", url, exc)
+                # 브라우저 크래시 감지 후 복구
+                if self._browser and not self._browser.is_connected():
+                    logger.info("Browser disconnected, recovering...")
+                    await self._restart_browser()
+                return None
+            finally:
+                if context:
+                    try:
+                        await context.close()
+                    except Exception:
+                        pass
+                self._page_count += 1
+                if self._page_count >= self.MAX_PAGES_BEFORE_RESTART:
+                    await self._restart_browser()
+
+    async def screenshot_page(self, url: str, full_page: bool = True) -> bytes | None:
+        """URL을 렌더링해 풀페이지 스크린샷 PNG bytes 반환.
+
+        Vision 시연(10개 한정)용. 디스크 임시파일을 거치지 않고 bytes 로 직접 반환한다.
+        타임아웃·에러·브라우저 크래시 시 None 반환.
+
+        ⚠️ 메인 크롤 루프에 자동 연결하지 않는다 (비용·자격증명 이슈). 호출은 후속.
+        """
+        async with self._semaphore:
+            await self._ensure_browser()
+            context: BrowserContext | None = None
+            try:
+                context = await self._browser.new_context(  # type: ignore[union-attr]
+                    viewport={"width": 1280, "height": 2000},
+                )
+                page: Page = await context.new_page()
+                await page.goto(url, wait_until="networkidle", timeout=self.PAGE_TIMEOUT_MS)
+                shot = await page.screenshot(full_page=full_page, type="png")
+                return shot
+            except Exception as exc:
+                logger.warning("screenshot_page failed for %s: %s", url, exc)
                 # 브라우저 크래시 감지 후 복구
                 if self._browser and not self._browser.is_connected():
                     logger.info("Browser disconnected, recovering...")
@@ -123,10 +159,25 @@ class BrowserManager:
         self._page_count = 0
 
     async def _launch_browser(self) -> None:
-        """Chromium headless 브라우저 시작."""
+        """Chromium headless 브라우저 시작.
+
+        RAM 4GB·작은 /dev/shm 환경 대응 args:
+        - --no-sandbox: 컨테이너/제한 환경에서 sandbox 비활성 (EC2 단일 프로세스)
+        - --disable-dev-shm-usage: 작은 /dev/shm 대신 /tmp 사용 (크래시 방지)
+        - --disable-gpu: headless에서 불필요한 GPU 프로세스 차단
+        - --single-process: 별도 렌더러 프로세스 미생성 (메모리 절감)
+        """
         if self._playwright is None:
             raise RuntimeError("BrowserManager not entered as context manager")
-        self._browser = await self._playwright.chromium.launch(headless=True)
+        self._browser = await self._playwright.chromium.launch(
+            headless=True,
+            args=[
+                "--no-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu",
+                "--single-process",
+            ],
+        )
 
     async def _close_browser(self) -> None:
         """브라우저 안전 종료."""

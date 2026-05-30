@@ -1,23 +1,27 @@
-"""강남구 병원 홈페이지 URL 보강 — 네이버 + 카카오 2단계 (async).
+"""병원 홈페이지 URL 보강 — 카카오 + 네이버 2단계 (async).
 
-실행 순서:
-  1단계: 네이버 지역 검색 API → search_hospital_multi_query (쿼리 다변화)
-  2단계: 카카오 로컬 검색 API → place_id → panel3 상세 API → summary.homepages 추출
+실행 순서 (카카오 우선 — panel3 homepages 발견률이 높음):
+  1단계: 카카오 로컬 검색 API → place_id → panel3 상세 API → summary.homepages 추출
          (Playwright 제거 — panel3 httpx 단발이 homepages 를 직접 줌)
+  2단계: 네이버 지역 검색 API → search_hospital_multi_query (쿼리 다변화) — 카카오 잔여분만
 
 URL 발견 후 URLValidator로 검증 → 유효한 경우만 DynamoDB 저장.
 
+대상 시군구는 `--sigungu` 인자로 지정 (기본값 "강남구").
+
 실행 전 .env 확인:
-  NAVER_MAP_CLIENT_ID, NAVER_MAP_CLIENT_SECRET  (1단계 필수)
-  KAKAO_REST_API_KEY                            (2단계 필수)
+  KAKAO_REST_API_KEY                            (1단계 필수)
+  NAVER_MAP_CLIENT_ID, NAVER_MAP_CLIENT_SECRET  (2단계 필수)
 """
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import os
 import sys
 import time
+from urllib.parse import urlsplit
 
 # 터미널에 즉시 출력 (버퍼링 끄기)
 sys.stdout.reconfigure(line_buffering=True)
@@ -41,6 +45,17 @@ KAKAO_KEY = os.environ.get("KAKAO_REST_API_KEY", "")
 # 네이버 블로그는 병원의 공식 온라인 채널로 인정 — 자칭 컨셉 추출 소스로 유효
 NAVER_SKIP_DOMAINS = ("map.naver.com", "search.naver.com", "news.naver.com")
 
+# 카카오 raw 폴백에서 제외할 blog/SNS 호스트 (자체 홈페이지가 아님).
+# extract_homepage() 가 None 을 줄 때만 쓰는 2차 그물망이라 blog 도 함께 거른다.
+KAKAO_RAW_SKIP_HOSTS = (
+    "facebook.com",
+    "instagram.com",
+    "youtube.com",
+    "youtu.be",
+    "blog.naver.com",
+    "blog.me",
+)
+
 
 def _is_real_website(url: str) -> bool:
     """실제 병원 홈페이지 URL인지 판단.
@@ -49,6 +64,26 @@ def _is_real_website(url: str) -> bool:
     if not url or not url.startswith("http"):
         return False
     return not any(d in url for d in NAVER_SKIP_DOMAINS)
+
+
+def _kakao_homepage_from_raw(panel3: dict | None) -> str | None:
+    """extract_homepage() 가 None 일 때의 2차 시도.
+
+    panel3.summary.homepages raw 리스트에서 blog/SNS(facebook·instagram·
+    youtube·blog) 를 제외한 첫 http(s) URL 을 고른다.
+    """
+    if not panel3:
+        return None
+    homepages = ((panel3.get("summary") or {}).get("homepages")) or []
+    for url in homepages:
+        if not (isinstance(url, str) and url.startswith(("http://", "https://"))):
+            continue
+        host = urlsplit(url).netloc.lower()
+        host = host[4:] if host.startswith("www.") else host
+        if any(host == bad or host.endswith("." + bad) for bad in KAKAO_RAW_SKIP_HOSTS):
+            continue
+        return url
+    return None
 
 
 async def run_step1_naver(
@@ -116,23 +151,27 @@ async def run_step2_kakao(
     validator: URLValidator,
     *,
     dry_run: bool = False,
-) -> tuple[int, int]:
-    """2단계: 카카오 로컬 검색 → place_id → panel3 상세 → summary.homepages 보강.
+) -> tuple[int, int, list]:
+    """카카오 로컬 검색 → place_id → panel3 상세 → summary.homepages 보강.
 
     panel3 의 `summary.homepages` 가 홈페이지·SNS·블로그·카페 URL 을 직접 주므로
     `extract_homepage` 로 자체 도메인 1개를 골라 검증·저장한다 (Playwright 불필요).
+    `extract_homepage` 가 None 이면 `_kakao_homepage_from_raw` 로 raw 리스트에서
+    blog/SNS 제외 첫 URL 을 2차 시도한다.
 
     Returns:
-        (kakao_found, validation_rejected)
+        (kakao_found, validation_rejected, still_missing)
+        run_step1_naver 와 시그니처를 맞춰 카카오가 못 찾은 잔여를 다음 단계로 넘긴다.
     """
     if not KAKAO_KEY:
-        print("  ⚠️  KAKAO_REST_API_KEY 미설정 — 2단계 건너뜀")
-        return 0, 0
+        print("  ⚠️  KAKAO_REST_API_KEY 미설정 — 1단계 건너뜀")
+        return 0, 0, no_url
 
     kakao = KakaoAdapter()
     place_adapter = KakaoPlaceAdapter()
     found = 0
     rejected = 0
+    still_missing: list = []
     total = len(no_url)
     start_time = time.time()
 
@@ -142,11 +181,15 @@ async def run_step2_kakao(
             place_id = str((kakao_info or {}).get("id", ""))
 
             if not place_id:
+                still_missing.append(hospital)
                 await asyncio.sleep(0.15)
             else:
                 # panel3 상세 API → summary.homepages 에서 자체 홈페이지 추출
                 panel3 = place_adapter.fetch_panel3(place_id)
+                # 1차: 자체 도메인 우선 선별. None 이면 raw 리스트 2차 폴백.
                 homepage = extract_homepage(panel3) if panel3 else None
+                if not homepage:
+                    homepage = _kakao_homepage_from_raw(panel3)
 
                 if homepage:
                     validated_url = await validator.validate(homepage)
@@ -157,6 +200,9 @@ async def run_step2_kakao(
                         print(f"  [{i}/{total}] ✅ {hospital.name} → {validated_url}")
                     else:
                         rejected += 1
+                        still_missing.append(hospital)
+                else:
+                    still_missing.append(hospital)
 
                 # 회색지대 API — 요청 간격 유지 (rate-limit 미실측)
                 await asyncio.sleep(0.3)
@@ -178,20 +224,31 @@ async def run_step2_kakao(
     finally:
         place_adapter.close()
 
-    return found, rejected
+    return found, rejected, still_missing
 
 
-async def main() -> None:
+async def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(
+        description="병원 홈페이지 URL 보강 — 카카오 우선 + 네이버 폴백 (시군구별)",
+    )
+    parser.add_argument(
+        "--sigungu",
+        default="강남구",
+        help="보강 대상 시군구 (sigungu-index GSI 조회 키). 기본값: 강남구",
+    )
+    args = parser.parse_args(argv)
+    sigungu = args.sigungu
+
     db = DynamoAdapter()
     validator = URLValidator()
 
     print("=" * 60)
-    print("홈페이지 URL 보강 — 강남구")
+    print(f"홈페이지 URL 보강 — {sigungu}")
     print("=" * 60)
 
-    # 1. 강남구 전체 META 조회 (sigungu-index GSI)
-    print("\nDynamoDB에서 강남구 병원 조회 중...")
-    hospitals = db.list_hospitals_by_sigungu("강남구")
+    # 1. 대상 시군구 전체 META 조회 (sigungu-index GSI)
+    print(f"\nDynamoDB에서 {sigungu} 병원 조회 중...")
+    hospitals = db.list_hospitals_by_sigungu(sigungu)
 
     with_url = [h for h in hospitals if h.contact.website_url]
     no_url   = [h for h in hospitals if not h.contact.website_url]
@@ -200,21 +257,21 @@ async def main() -> None:
     print(f"  기존 URL 있음: {len(with_url)}개 (스킵)")
     print(f"  URL 없음 → 보강 대상: {len(no_url)}개")
 
-    # ── 1단계: 네이버 (쿼리 다변화) ──────────────────────────────
-    print(f"\n[ 1단계 ] 네이버 지역 검색 — 쿼리 다변화 ({len(no_url)}개 대상)")
+    # ── 1단계: 카카오 (panel3 상세 API) — 발견률 높아 먼저 ────────
+    print(f"\n[ 1단계 ] 카카오 panel3 상세 API → homepages 추출 ({len(no_url)}개 대상)")
     print("-" * 60)
-    naver_found, naver_rejected, still_missing = await run_step1_naver(
+    kakao_found, kakao_rejected, still_missing = await run_step2_kakao(
         db, no_url, validator
     )
-    print(f"  → 네이버 발견: {naver_found}개 / 검증 실패: {naver_rejected}개 / 잔여: {len(still_missing)}개")
+    print(f"  → 카카오 발견: {kakao_found}개 / 검증 실패: {kakao_rejected}개 / 잔여: {len(still_missing)}개")
 
-    # ── 2단계: 카카오 (panel3 상세 API) ────────────────────────
-    print(f"\n[ 2단계 ] 카카오 panel3 상세 API → homepages 추출 ({len(still_missing)}개 대상)")
+    # ── 2단계: 네이버 (쿼리 다변화) — 카카오 잔여분만 ────────────
+    print(f"\n[ 2단계 ] 네이버 지역 검색 — 쿼리 다변화 ({len(still_missing)}개 대상)")
     print("-" * 60)
-    kakao_found, kakao_rejected = await run_step2_kakao(
+    naver_found, naver_rejected, _naver_missing = await run_step1_naver(
         db, still_missing, validator
     )
-    print(f"  → 카카오 발견: {kakao_found}개 / 검증 실패: {kakao_rejected}개")
+    print(f"  → 네이버 발견: {naver_found}개 / 검증 실패: {naver_rejected}개 / 잔여: {len(_naver_missing)}개")
 
     # ── 최종 리포트 ────────────────────────────────────────────
     total_found = naver_found + kakao_found
@@ -231,12 +288,12 @@ async def main() -> None:
     print(f"  │ 소스별 발견 수                          │")
     print(f"  ├─────────────────────────────────────────┤")
     print(f"  │ 기존 URL (심평원 등):  {len(with_url):>5}개           │")
-    print(f"  │ 네이버 보강:          +{naver_found:>4}개           │")
     print(f"  │ 카카오 보강:          +{kakao_found:>4}개           │")
+    print(f"  │ 네이버 보강:          +{naver_found:>4}개           │")
     print(f"  ├─────────────────────────────────────────┤")
     print(f"  │ 검증 거부 (총):        {total_rejected:>5}개           │")
-    print(f"  │   - 네이버 검증 실패:  {naver_rejected:>5}개           │")
     print(f"  │   - 카카오 검증 실패:  {kakao_rejected:>5}개           │")
+    print(f"  │   - 네이버 검증 실패:  {naver_rejected:>5}개           │")
     print(f"  ├─────────────────────────────────────────┤")
     print(f"  │ 히트율 (보강 대상 중): {hit_rate:>6.1f}%          │")
     print(f"  │ 크롤링 가능 (총):     {total_with_url:>5}개 / {total}개  │")
