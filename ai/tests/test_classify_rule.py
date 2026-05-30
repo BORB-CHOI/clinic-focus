@@ -274,14 +274,15 @@ class TestConfidence:
 
 
 class TestEmptyFocusConfidence:
-    """주력 분야를 하나도 식별하지 못하면(focus 후보 0) 기여도가 0 이어야 한다.
+    """주력 분야를 하나도 식별하지 못하면(전 시그널 결손) 신뢰도가 바닥이어야 한다.
 
     회귀 가드 — 옛 버그: focus 후보가 없을 때 _cross_validate_signals 가 전체
     가중치(합≈1.0)를 반환해 confidence.score=100 '확실' 이 나왔음
-    (docs/API-BE-AI.md '현 구현 약점' 사례). 이제 0 → score≈0 '정보 부족'.
+    (docs/API-BE-AI.md '현 구현 약점' 사례). 이제 전 시그널 결손이면
+    contributions 가 전부 None → score 0 '정보 부족'.
     """
 
-    def test_no_focus_candidates_yields_zero_contributions(self) -> None:
+    def test_no_focus_candidates_all_signals_none(self) -> None:
         from ai.pipeline.classify import _cross_validate_signals
         from shared.models import BlogSignal, ReviewSignal, SelfClaimSignal
 
@@ -293,7 +294,8 @@ class TestEmptyFocusConfidence:
             self_claim=self_claim, blog=blog, reviews=reviews, vision=None,
         )
         assert primary_focus == []
-        assert sum(contributions.values()) == 0.0
+        # 전 시그널 결손(미수집) → None("수집 안 됨"), 0(엇갈림)과 구분
+        assert all(v is None for v in contributions.values())
 
     def test_no_focus_candidates_compute_confidence_is_low(self) -> None:
         from ai.pipeline.classify import _compute_confidence, _cross_validate_signals
@@ -305,122 +307,202 @@ class TestEmptyFocusConfidence:
             reviews=ReviewSignal(total_reviews=0, keyword_frequency={}, primary_topics=[]),
             vision=None,
         )
-        confidence = _compute_confidence(contributions, vision=None)
-        assert confidence.score < 70
+        confidence = _compute_confidence(contributions)
+        assert confidence.score == 0
         assert confidence.level == "정보 부족"
 
 
 # ---------------------------------------------------------------------------
-# 테스트 (d-2) 룰 단독 신뢰도 상한 보정 — 핵심 설계 검증
+# 테스트 (d-2) 결손 시그널 처리 — confidence-missing-signals §7 검증 6케이스
 # ---------------------------------------------------------------------------
 
-class TestRuleOnlyConfidenceCap:
-    """use_llm=False 룰 단독 경로는 LLM·Vision 교차검증이 없으므로
-    confidence.score <= 70, level != '확실' 이어야 한다."""
+class TestMissingSignalsConfidence:
+    """confidence-missing-signals 결정 §7 검증 케이스 (2026-05-30 구현, 결정노트 git 이력).
 
-    @patch("ai.core.bedrock_client.invoke_model")
-    def test_score_capped_at_70_strong_single_focus(
-        self, _mock: MagicMock, ortho_crawl_data: CrawlData
-    ) -> None:
-        """단일 주력이 강한 정형외과 픽스처 — score 가 70 이하로 cap 돼야 한다."""
-        from ai.pipeline.classify import classify_hospital
+    3원칙: 결손은 점수 계산에서 제외(반값·0점 아님) / 근거 종류 수로 등급 천장 /
+    화면 비율은 결손=None('수집 안 됨')·엇갈림=0 으로 구분.
+    """
 
-        result = classify_hospital(ortho_crawl_data, use_llm=False)
-        assert result.confidence.score <= 70, (
-            f"룰 단독인데 score={result.confidence.score} > 70 — 상한 cap 미적용"
+    def _redistribute(self, present_keys: list[str]) -> dict[str, float]:
+        """present 시그널끼리 _WEIGHTS 를 합 1.0 으로 재분배 (일치 가정)."""
+        from ai.pipeline.classify import _WEIGHTS
+
+        ns = sum(_WEIGHTS[k] for k in present_keys)
+        return {k: _WEIGHTS[k] / ns for k in present_keys}
+
+    def test_case1_self_only_aligned_capped_추정(self) -> None:
+        """① 자칭만 present 일치 → ≤70 '추정'(1종 cap), self 100 / 나머지 None."""
+        from ai.pipeline.classify import CONFIDENCE_LEVEL1_CAP, _compute_confidence
+
+        conf = _compute_confidence(
+            {"self_claim": 1.0, "vision": None, "blog": None, "reviews": None}
         )
+        assert conf.score == CONFIDENCE_LEVEL1_CAP   # 100 → 70 cap
+        assert conf.level == "추정"
+        assert conf.signals.self_claim == 100
+        assert conf.signals.vision is None
+        assert conf.signals.blog is None
+        assert conf.signals.reviews is None
+
+    def test_case2_three_signals_aligned_확실(self) -> None:
+        """② 자칭+블로그+후기 모두 일치 → 높음 '확실', 3종 비율 (vision 결손 None)."""
+        from ai.pipeline.classify import _compute_confidence
+
+        w = self._redistribute(["self_claim", "blog", "reviews"])
+        conf = _compute_confidence(
+            {"self_claim": w["self_claim"], "vision": None,
+             "blog": w["blog"], "reviews": w["reviews"]}
+        )
+        assert conf.score >= 95
+        assert conf.level == "확실"
+        assert conf.signals.self_claim and conf.signals.blog and conf.signals.reviews
+        assert conf.signals.vision is None
+
+    def test_case3_conflicting_signals_낮음(self) -> None:
+        """③ 자칭 엇갈림 / 블로그·후기 일치 → 낮음(수집됐으나 불일치), present 끼리 비율."""
+        from ai.pipeline.classify import CONFIDENCE_THRESHOLD_LOW, _compute_confidence
+
+        w = self._redistribute(["self_claim", "blog", "reviews"])
+        conf = _compute_confidence(
+            {"self_claim": 0.0, "vision": None,   # 자칭 엇갈림 → 0 기여
+             "blog": w["blog"], "reviews": w["reviews"]}
+        )
+        assert conf.score < CONFIDENCE_THRESHOLD_LOW   # 일치 안 해 낮음
+        assert conf.level != "확실"
+        assert conf.signals.self_claim == 0    # present 지만 엇갈림 → 0 (None 아님)
+        assert conf.signals.vision is None     # 결손 → None
+        assert conf.signals.blog > 0 and conf.signals.reviews > 0
+
+    def test_case4_vision_missing_not_flipped_to_확실(self) -> None:
+        """④ Vision 결손 + 자칭만 일치 → 케이스①과 동일(100 '확실' 로 뒤집히면 안 됨).
+
+        §1-2 회귀 가드: 옛 Vision-None 재정규화가 비-Vision 합을 1.0 으로 끌어올려
+        62 '정보 부족' 이던 게 빠지면 100 '확실' 로 뒤집히던 버그.
+        """
+        from ai.pipeline.classify import _compute_confidence, _cross_validate_signals
+        from shared.models import BlogSignal, ReviewSignal, SelfClaimSignal
+
+        sc = SelfClaimSignal(keywords=["척추"], primary_focus=["척추"], spam_score=0.0)
+        blog = BlogSignal(total_posts=0, keyword_frequency={}, primary_topics=[])
+        rev = ReviewSignal(total_reviews=0, keyword_frequency={}, primary_topics=[])
+        _, contrib = _cross_validate_signals(sc, blog, rev, vision=None)
+        conf = _compute_confidence(contrib)
+
+        assert not (conf.score == 100 and conf.level == "확실")
+        assert conf.score <= 70 and conf.level == "추정"
+        assert contrib["vision"] is None
+        assert conf.signals.vision is None
+
+    def test_case5_all_missing_정보부족(self) -> None:
+        """⑤ 전 시그널 결손 → score 0 '정보 부족', 전부 None."""
+        from ai.pipeline.classify import _compute_confidence
+
+        conf = _compute_confidence(
+            {"self_claim": None, "vision": None, "blog": None, "reviews": None}
+        )
+        assert conf.score == 0
+        assert conf.level == "정보 부족"
+        assert conf.signals.self_claim is None
+        assert conf.signals.vision is None
+        assert conf.signals.blog is None
+        assert conf.signals.reviews is None
+
+    def test_case6_two_signals_rule_path_can_be_확실(self) -> None:
+        """⑥ 자칭+후기 2종 일치 → '확실' 가능 (결정 5-2(b): use_llm cap 폐지).
+
+        근거 종류 수가 '확실' 가부를 결정 — 룰 경로라도 2종 교차 일치면 확실.
+        """
+        from ai.pipeline.classify import _compute_confidence
+
+        w = self._redistribute(["self_claim", "reviews"])
+        conf = _compute_confidence(
+            {"self_claim": w["self_claim"], "vision": None,
+             "blog": None, "reviews": w["reviews"]}
+        )
+        assert conf.level == "확실"
+        assert conf.score >= 95
+        assert conf.signals.blog is None and conf.signals.vision is None
+
+
+# ---------------------------------------------------------------------------
+# 테스트 (d-3) present/결손 구분 — _cross_validate_signals 기여공식
+# ---------------------------------------------------------------------------
+
+class TestCrossValidatePresence:
+    """결손은 None, present-엇갈림은 0 — §1-1 의 0.5 베이스라인 제거 검증."""
+
+    def test_absent_signals_are_none(self) -> None:
+        from ai.pipeline.classify import _cross_validate_signals
+        from shared.models import BlogSignal, ReviewSignal, SelfClaimSignal
+
+        sc = SelfClaimSignal(keywords=["보톡스"], primary_focus=["미용 시술"], spam_score=0.0)
+        blog = BlogSignal(total_posts=0, keyword_frequency={}, primary_topics=[])
+        rev = ReviewSignal(total_reviews=0, keyword_frequency={}, primary_topics=[])
+        _, contrib = _cross_validate_signals(sc, blog, rev, vision=None)
+
+        assert contrib["self_claim"] is not None   # present
+        assert contrib["blog"] is None             # 결손
+        assert contrib["reviews"] is None          # 결손
+        assert contrib["vision"] is None           # 결손
+
+    def test_present_but_misaligned_is_zero_not_none(self) -> None:
+        from ai.pipeline.classify import _cross_validate_signals
+        from shared.models import BlogSignal, ReviewSignal, SelfClaimSignal
+
+        # 자칭 미용(가중치 큼) → top_focus=미용 시술. 블로그 탈모 → 엇갈림.
+        sc = SelfClaimSignal(keywords=["보톡스"], primary_focus=["미용 시술"], spam_score=0.0)
+        blog = BlogSignal(total_posts=5, keyword_frequency={"탈모": 3}, primary_topics=["탈모"])
+        rev = ReviewSignal(total_reviews=0, keyword_frequency={}, primary_topics=[])
+        _, contrib = _cross_validate_signals(sc, blog, rev, vision=None)
+
+        assert contrib["blog"] == 0.0       # present 지만 엇갈림 → 0, None 아님
+        assert contrib["reviews"] is None   # 결손
+
+
+# ---------------------------------------------------------------------------
+# 테스트 (d-4) 근거 종류 수 기반 등급 천장 (coverage cap)
+# ---------------------------------------------------------------------------
+
+class TestCoverageCap:
+    """근거 종류 수(coverage)로 등급 천장 — 옛 use_llm 분기 cap 을 일반화한 설계.
+
+    present 시그널이 MIN_CERTAIN_SIGNALS 미만이면 '확실' 불가(LEVEL1_CAP 상한).
+    2종 이상 교차 일치면 룰 경로라도 '확실' 가능(결정 5-2(b)).
+    """
+
+    def test_single_signal_capped_at_level1(self) -> None:
+        """present 1종이면 일치도 100 이어도 LEVEL1_CAP 으로 막혀 '확실' 불가."""
+        from ai.pipeline.classify import CONFIDENCE_LEVEL1_CAP, _compute_confidence
+
+        conf = _compute_confidence(
+            {"self_claim": 1.0, "vision": None, "blog": None, "reviews": None}
+        )
+        assert conf.score == CONFIDENCE_LEVEL1_CAP
+        assert conf.level != "확실"
+
+    def test_two_signals_can_exceed_cap(self) -> None:
+        """present 2종 일치면 LEVEL1_CAP 을 넘어 '확실' 도달 가능 (cap 미적용)."""
+        from ai.pipeline.classify import CONFIDENCE_LEVEL1_CAP, _compute_confidence
+
+        conf = _compute_confidence(
+            {"self_claim": 0.5, "vision": 0.5, "blog": None, "reviews": None}
+        )
+        assert conf.score > CONFIDENCE_LEVEL1_CAP
+        assert conf.level == "확실"
 
     @patch("ai.core.bedrock_client.invoke_model")
-    def test_level_not_확실_strong_single_focus(
+    def test_rule_ortho_fixture_below_high(
         self, _mock: MagicMock, ortho_crawl_data: CrawlData
     ) -> None:
-        """단일 주력이 강한 픽스처라도 룰 단독에서 '확실' 이 나와선 안 된다."""
+        """룰 경로 정형외과 픽스처 — 자칭·자체블로그가 여러 focus(척추·어깨·무릎)로
+        흩어져 일치도가 희석돼 score 가 HIGH 미만, '확실' 이 아니어야 한다."""
         from ai.pipeline.classify import classify_hospital
 
         result = classify_hospital(ortho_crawl_data, use_llm=False)
         assert result.confidence.level != "확실", (
-            f"룰 단독인데 level='{result.confidence.level}' — '확실' 판정 불가"
+            f"룰 ortho 픽스처 level='{result.confidence.level}' — 흩어진 focus 인데 확실"
         )
-
-    @patch("ai.core.bedrock_client.invoke_model")
-    def test_level_in_추정_or_정보부족(
-        self, _mock: MagicMock, ortho_crawl_data: CrawlData
-    ) -> None:
-        """룰 단독 level 은 '추정' 또는 '정보 부족' 중 하나여야 한다."""
-        from ai.pipeline.classify import classify_hospital
-
-        result = classify_hospital(ortho_crawl_data, use_llm=False)
-        assert result.confidence.level in {"추정", "정보 부족"}, (
-            f"룰 단독 level='{result.confidence.level}' — 예상 외 값"
-        )
-
-    @patch("ai.core.bedrock_client.invoke_model")
-    def test_cap_helper_directly(self, _mock: MagicMock) -> None:
-        """_cap_rule_only_confidence 헬퍼 직접 단위 테스트.
-
-        score=100/'확실' 입력 → score=70/'추정' 출력이어야 한다.
-        signals 구성은 그대로 유지돼야 한다.
-        """
-        from ai.pipeline.classify import _cap_rule_only_confidence
-        from shared.models import Confidence, SignalContributions
-
-        original = Confidence(
-            score=100,
-            level="확실",
-            signals=SignalContributions(
-                self_claim=40, vision=0, blog=30, reviews=30
-            ),
-        )
-        capped = _cap_rule_only_confidence(original)
-
-        assert capped.score == 70, f"score={capped.score} (expected 70)"
-        assert capped.level == "추정", f"level='{capped.level}' (expected '추정')"
-        # signals 비율 구성은 변경 없음
-        assert capped.signals.self_claim == original.signals.self_claim
-        assert capped.signals.blog == original.signals.blog
-        assert capped.signals.reviews == original.signals.reviews
-
-    @patch("ai.core.bedrock_client.invoke_model")
-    def test_cap_helper_정보부족_preserved(self, _mock: MagicMock) -> None:
-        """score 가 이미 70 미만이면 cap 후에도 '정보 부족' 유지."""
-        from ai.pipeline.classify import _cap_rule_only_confidence
-        from shared.models import Confidence, SignalContributions
-
-        original = Confidence(
-            score=50,
-            level="정보 부족",
-            signals=SignalContributions(
-                self_claim=50, vision=0, blog=30, reviews=20
-            ),
-        )
-        capped = _cap_rule_only_confidence(original)
-
-        assert capped.score == 50
-        assert capped.level == "정보 부족"
-
-    @patch("ai.core.bedrock_client.invoke_model")
-    def test_llm_path_not_capped(self, mock_invoke: MagicMock) -> None:
-        """use_llm=True 경로는 cap 적용 안 됨 — 100 반환 가능."""
-        from ai.pipeline.classify import _compute_confidence
-        from shared.models import SignalContributions
-
-        # _compute_confidence 에 완전 정렬 기여도를 넣어 score=100 을 만든다
-        # (raw_contributions 합계를 1.0 으로 맞춤)
-        raw = {"self_claim": 0.25, "vision": 0.30, "blog": 0.20, "reviews": 0.25}
-        # vision 시그널 있는 것처럼 더미 VisionSignal 전달
-        from shared.models import VisionSignal
-
-        vision_dummy = VisionSignal(
-            detected_devices=[],
-            image_categories={},
-            total_images_analyzed=0,
-        )
-        conf = _compute_confidence(raw, vision_dummy)
-        # LLM 경로(cap 미적용)에서는 score > 70 이 가능해야 함
-        # (이 테스트는 classify_hospital 을 거치지 않으므로 cap 미적용)
-        assert conf.score > 70, (
-            f"_compute_confidence 자체는 100 스케일 전체를 사용해야 함, score={conf.score}"
-        )
+        assert result.confidence.level in {"추정", "정보 부족"}
 
 
 # ---------------------------------------------------------------------------
@@ -474,18 +556,18 @@ class TestSpamPenalty:
         )
 
     @patch("ai.core.bedrock_client.invoke_model")
-    def test_classify_with_spam_completes_and_penalty_shifts_weights(
+    def test_classify_with_spam_completes_and_lowers_confidence(
         self, _mock: MagicMock
     ) -> None:
         """도배 텍스트로도 classify_hospital 이 예외 없이 완료돼야 하고,
-        blog 가 자칭과 어긋날 때 페널티 경로가 진입해야 한다.
+        blog 가 자칭과 어긋날 때 페널티 경로가 진입해 신뢰도가 낮아져야 한다.
 
-        페널티 설계: 자칭 기여도를 깎아 나머지로 재배분 → 자칭 signals.self_claim 이
-        비페널티 대비 낮아야 한다. confidence.signals.self_claim < 50 이어야 함.
-
-        (페널티는 confidence 총합을 낮추지 않고 자칭 과의존도를 낮추는 역할)
+        새 페널티 설계(confidence-missing-signals): 자칭 기여도만 감점하고
+        **재배분하지 않는다** → 전체 score 가 내려가 '정보 부족' 으로 떨어진다.
+        엇갈리는 블로그는 가짜 비율(예전 재배분)을 받지 않고 0 기여에 머문다
+        (§3 원칙 3 — 가짜 비율 금지).
         """
-        from ai.pipeline.classify import classify_hospital
+        from ai.pipeline.classify import CONFIDENCE_THRESHOLD_LOW, classify_hospital
 
         spam_pages = [
             _make_page("main", SPAM_TEXT),
@@ -497,9 +579,14 @@ class TestSpamPenalty:
 
         result = classify_hospital(spam_with_blog, use_llm=False)
         assert result.hospital_id == "spam-hospital-001"
-        # 페널티 적용 후 자칭 기여도 비율이 50% 미만으로 억제돼야 함
-        assert result.confidence.signals.self_claim < 50, (
-            f"자칭 기여도={result.confidence.signals.self_claim}% 가 여전히 높음 — 페널티 미적용 의심"
+        # 자칭 도배 + 블로그 어긋남 → 페널티로 score 가 LOW 미만 '정보 부족'
+        assert result.confidence.score < CONFIDENCE_THRESHOLD_LOW, (
+            f"도배+불일치인데 score={result.confidence.score} — 페널티 미적용 의심"
+        )
+        assert result.confidence.level == "정보 부족"
+        # 엇갈리는 블로그는 가짜 비율을 받지 않는다 (present-misaligned → 0)
+        assert result.confidence.signals.blog == 0, (
+            f"엇갈린 블로그 기여={result.confidence.signals.blog} — 옛 재배분 잔재(가짜 비율)"
         )
 
 
