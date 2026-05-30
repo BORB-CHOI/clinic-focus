@@ -29,8 +29,14 @@ def _get_ai_session() -> boto3.Session:
     if _ai_session is None:
         access_key = os.environ.get("AI_AWS_ACCESS_KEY_ID")
         secret_key = os.environ.get("AI_AWS_SECRET_ACCESS_KEY")
-        session_token = os.environ.get("AI_AWS_SESSION_TOKEN")  # optional
+        session_token = os.environ.get("AI_AWS_SESSION_TOKEN") or None  # optional
         profile = os.environ.get("AI_AWS_PROFILE")
+
+        # 장기 자격증명(AKIA)엔 세션 토큰이 불필요하고, .env 에 남은 **stale 토큰**을 그대로
+        # 넘기면 InvalidSignatureException 으로 호출이 깨진다. AKIA 면 토큰을 무시한다.
+        # (임시 자격증명 ASIA 는 토큰 필수 — 그땐 그대로 전달)
+        if access_key and access_key.startswith("AKIA"):
+            session_token = None
 
         if access_key and secret_key:
             _ai_session = boto3.Session(
