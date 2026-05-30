@@ -46,6 +46,12 @@ data/cache/
 data/crawl/
 data/images/
 be/data/logs/
+# 크롤 산출물·KB 청크·네이버 로컬 다리 — 본문은 S3/DDB 가 원본, git 추적 금지(대용량)
+be/data/crawl/
+be/data/clinic-focus/
+be/data/naver_raw/
+be/data/naver_targets.json
+data/clinic-focus/
 
 # --- Claude Code 개인 설정 ---
 .claude/
