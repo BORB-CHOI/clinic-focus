@@ -74,10 +74,21 @@
 
 `PK=hospital_id (S)` · `SK=entity (S)`. AI=`kmuproj-10-clinic-Main`, BE=`kmuproj-02-team3-backend`.
 
-**entity 종류**: `META` · `SITE#PAGES`/`SITE#IMAGES`(자칭/Vision) · `NAVER#PLACE`/`NAVER#PLACE#REVIEWS`/`NAVER#BLOG` ·
-`KAKAO#PLACE`/`KAKAO#REVIEWS`/`KAKAO#BLOG` · `GOOGLE#PLACE`/`GOOGLE#REVIEWS` · `PUBLIC#DEVICES`/`PUBLIC#DOCTORS` ·
-`VISION#RESULTS` · `CLASSIFICATION` · `DESCRIPTION` · `SERVICES` · `RELATED` · `INGEST#STATE` ·
-`FEEDBACK#{device}#{ts}` / `FEEDBACK#STATS` · `HISTORY#{iso}`.
+**entity 분류 — raw(수집) ↔ 가공(산출) 구분** (현재 실적재 수치는 2026-05-30 강남 기준):
+
+| 구분 | entity | 비고 / 현재 |
+|---|---|---|
+| **기준 데이터** | `META` | HIRA 종별·주소·좌표 + 카카오 보강. ✅ 6117 |
+| **raw · 자체사이트** | `SITE#PAGES` · `SITE#IMAGES` | ⚠️ **본문은 DDB 아님 — S3** `crawl/{id}/crawl_data.json`(정제본 2133). DDB엔 안 둠 |
+| **raw · 외부 수집** | `NAVER#PLACE` · `NAVER#PLACE#REVIEWS` · `NAVER#BLOG` · `KAKAO#PLACE` · `KAKAO#REVIEWS` · `KAKAO#BLOG` · `GOOGLE#PLACE` · `GOOGLE#REVIEWS` · `PUBLIC#DEVICES` · `PUBLIC#DOCTORS` | 플랫폼 수집 원본. ✅ KAKAO 641/641/514 · NAVER#BLOG 854 / 나머지 미수집 |
+| **가공 · 룰 (1만 풀커버)** | `CLASSIFICATION` | 4시그널 교차검증 → 과목·주력·신뢰도. LLM 0회. ✅ 진행 중 |
+| **가공 · LLM·Vision (시연 10개)** | `VISION#RESULTS` · `DESCRIPTION` · `SERVICES` · `RELATED` | Vision 분석·`generate_description`·시술/의사 추출·연관병원. 아직 미생성 |
+| **가공 · KB 적재** | `INGEST#STATE` | content_hash·last_ingested·KB object key(재적재 스킵용). ⚠️ KB **벡터·청크는 DDB 아님** — DataSource S3 `clinic-focus/prod/{id}/{signal}.txt` + KB 내부 인덱스 |
+| **사용자·시스템** | `FEEDBACK#{device}#{ts}` · `FEEDBACK#STATS` · `HISTORY#{iso}` | 1-tap 피드백·집계·분류 변경 이력 |
+
+> **헷갈림 정리**: ① 자체사이트 **본문**과 ② KB **벡터/청크**는 DDB가 아니라 **S3**에 있다(DDB는 메타·포인터만).
+> raw = 외부에서 긁어온 것(자체사이트·플레이스·블로그·공공). 가공 = 그걸 파이프라인이 만든 것
+> (룰=`CLASSIFICATION` 전수 / LLM·Vision=`DESCRIPTION`·`SERVICES`·`RELATED`·`VISION#RESULTS` 시연 10개 / KB=`INGEST#STATE`).
 
 **GSI**: `sigungu-specialty-index`(PK=`sigungu#standard_specialty`, SK=`confidence_score`↓ — 카테고리 탐색 BE 직접) ·
 `geo-index`(PK=`geohash_prefix`, SK=`lat#lng` — 지도 근처 검색).
