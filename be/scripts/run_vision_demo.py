@@ -75,8 +75,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger("run_vision_demo")
 
-_DEFAULT_MAX_TILES = 7        # 스크린샷 최대 타일 수 (위→아래)
-_DEFAULT_IMG_SUPPLEMENT = 3   # <img> 보조 최대 장수 (슬라이더/갤러리 보완)
+_DEFAULT_MAX_TILES = 5        # 스크린샷 최대 타일 수 (위→아래). 7→5: 속도·브라우저부하↓
+_DEFAULT_IMG_SUPPLEMENT = 2   # <img> 보조 최대 장수 (슬라이더/갤러리 보완)
 
 
 # ---------------------------------------------------------------------------
@@ -141,10 +141,11 @@ def _select_random(sigungu: str, n: int, seed: int) -> list[str]:
 def _split_budget(n_shots: int, n_imgs: int, max_total: int, img_supplement: int) -> tuple[int, int]:
     """예산(max_total) 안에서 스크린샷 우선·img 보조로 장수 분배.
 
-    스크린샷이 0장(URL 실패 등)이면 예산 전부를 img 에 준다.
+    스크린샷이 0장(URL 실패 등)이어도 img 는 보조 상한(img_supplement)까지만 —
+    스크린샷 실패한 사이트에 10장씩 Vision 호출하는 낭비를 막는다(구 버그).
     """
     if n_shots == 0:
-        return 0, min(n_imgs, max_total)
+        return 0, min(n_imgs, img_supplement)
     img_take = min(n_imgs, img_supplement, max(0, max_total - 1))  # 최소 스크린샷 1칸 확보
     shot_take = min(n_shots, max_total - img_take)
     return shot_take, img_take
@@ -152,10 +153,14 @@ def _split_budget(n_shots: int, n_imgs: int, max_total: int, img_supplement: int
 
 async def _process_one(bm, db, s3, hospital_id: str, *, force: bool,
                        max_tiles: int, img_supplement: int) -> str:
-    """병원 1개 처리 → 상태 문자열("ok"/"skip"/"fail") 반환."""
+    """병원 1개 처리 → 상태 문자열("ok"/"skip"/"fail") 반환.
+
+    스크린샷 타일 + 필터된 `<img>` 를 **한 번의 Vision 호출(analyze_batch)** 로 종합 →
+    이미지당 1콜(순차 ~8초×N) 대비 병원당 수십 초 절감.
+    """
     from ai.pipeline.vision import (
-        analyze_images,
-        analyze_screenshots,
+        analyze_batch,
+        download_content_images,
         filter_content_image_urls,
     )
 
@@ -184,32 +189,32 @@ async def _process_one(bm, db, s3, hospital_id: str, *, force: bool,
     img_urls = filter_content_image_urls(raw_img_urls)
 
     shot_take, img_take = _split_budget(len(shots), len(img_urls), max_total, img_supplement)
-    if shot_take == 0 and img_take == 0:
+
+    # 3) 이미지 bytes 한 묶음으로 모으기: 스크린샷(png) + img 다운로드(핫링크/HTML 스킵)
+    images: list[tuple[bytes, str]] = [(b, "image/png") for b in shots[:shot_take] if b]
+    if img_take:
+        images += download_content_images(img_urls[:img_take])
+
+    if not images:
         logger.info("[%s] 분석할 이미지 없음 — 빈 결과 적재", hospital_id[:12])
         db.put_entity(hospital_id, "VISION#RESULTS", {"results": []})
         return "skip"
 
-    # 3) Vision 분석 (장면 해석) — 스크린샷 + img
+    # 4) Vision 분석 (장면 해석) — 한 번의 멀티이미지 호출로 종합
     try:
-        results = []
-        if shot_take:
-            results += analyze_screenshots(shots[:shot_take], source_prefix=f"screenshot:{hospital_id[:8]}")
-        if img_take:
-            results += analyze_images(img_urls[:img_take])
+        result = analyze_batch(images, label=hospital_id[:8])
     except Exception as exc:  # noqa: BLE001
         logger.error("[%s] Vision 분석 실패: %s", hospital_id[:12], exc)
         return "fail"
+    if result is None:
+        db.put_entity(hospital_id, "VISION#RESULTS", {"results": []})
+        return "skip"
 
-    # 4) 적재
-    serialized = [r.model_dump() if hasattr(r, "model_dump") else r for r in results]
-    db.put_entity(hospital_id, "VISION#RESULTS", {"results": serialized})
-
-    # 요약 로그 — 장면에서 무엇을 봤는지 한 눈에
-    procs = sorted({p for r in results for p in (getattr(r, "detected_procedures", None) or [])})
-    devs = sorted({d for r in results for d in (r.detected_devices or [])})
-    logger.info("[%s] 적재 — 스크린샷%d+img%d=%d장 | 시술=%s 기기=%s",
-                hospital_id[:12], shot_take, img_take, len(serialized),
-                procs[:6], devs[:6])
+    # 5) 적재 (배치 결과 1건)
+    db.put_entity(hospital_id, "VISION#RESULTS", {"results": [result.model_dump()]})
+    logger.info("[%s] 적재 — 스크린샷%d+img%d=%d장 1콜 | 시술=%s 기기=%s",
+                hospital_id[:12], shot_take, len(images) - shot_take, len(images),
+                (result.detected_procedures or [])[:6], (result.detected_devices or [])[:6])
     return "ok"
 
 

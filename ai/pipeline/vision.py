@@ -444,3 +444,73 @@ def analyze_screenshots(
         )
     logger.info("analyze_screenshots 완료: 입력 %d장 → 성공 %d장", total, len(results))
     return results
+
+
+# ---------------------------------------------------------------------------
+# 멀티이미지 배칭 — 한 병원의 타일+사진을 1회 호출로 (속도)
+# ---------------------------------------------------------------------------
+
+_VISION_BATCH_PROMPT = """\
+아래 이미지들은 **한 병원·의원 사이트에서 모은 것**입니다 — 웹페이지를 위→아래로
+스크롤하며 찍은 화면 캡처 타일들 + 사이트에 올라온 개별 사진이 섞여 있을 수 있습니다.
+
+**글자만 읽지 말고(OCR 아님), 화면에 무엇이 보이는지 시각적으로 해석**하세요 —
+시술 장면, 전후 비교, 장비 클로즈업, 진료실·대기실 같은 공간, 인포그래픽·3D 그림 등.
+**여러 장을 종합해서 이 병원 사이트 전체가 시각적으로 무엇을 강조하는지** 한 개의
+JSON 으로만 답하세요(다른 텍스트 없이).
+
+{
+  "scene": "이미지들을 종합해 이 사이트가 시각적으로 보여주는 것을 2~4문장으로 묘사",
+  "detected_procedures": ["전체에서 시각적으로 드러나는 시술·진료 항목 (한국어, 합집합, 없으면 빈 배열)"],
+  "detected_devices": ["보이는 의료기기·시술 장비 이름 (한국어, 합집합, 없으면 빈 배열)"],
+  "in_image_text": "이미지·배너·간판에 박혀 보이는 핵심 텍스트(병원명·시술명·강조 문구) 위주로 짧게 (없으면 빈 문자열)",
+  "image_category": "일반 진료 | 미용 시술 | 장비 사진 | 건물·내부 | 기타 중 가장 지배적인 하나",
+  "confidence": 0.0~1.0 사이 숫자
+}
+
+주의: 환자 개인 식별 정보·의료진 얼굴 매칭은 하지 마세요. 추측·평가 없이 보이는 그대로.\
+"""
+
+
+def download_content_images(urls: list[str]) -> list[tuple[bytes, str]]:
+    """필터된 `<img>` URL 들을 (bytes, media_type) 로 다운로드. 핫링크 차단 HTML·실패는 스킵.
+
+    배칭 호출에 넣을 이미지 바이트를 모은다 (스크린샷 bytes 와 합쳐 1회 호출).
+    """
+    out: list[tuple[bytes, str]] = []
+    for url in urls:
+        try:
+            data = _download_image(url)
+        except ImageNotFoundError as exc:
+            logger.info("img 다운로드 스킵: %s", exc)
+            continue
+        out.append((data, _detect_media_type(data, url)))
+    return out
+
+
+def analyze_batch(
+    images: list[tuple[bytes, str]], *, label: str = "batch"
+) -> ImageAnalysisResult | None:
+    """한 병원의 이미지 여러 장(스크린샷 타일 + 개별 사진)을 **1회 Vision 호출**로 종합 분석.
+
+    이미지당 1콜(순차) 대신 한 메시지에 모아 호출 → 라운드트립 1회로 병원당 수십 초 절감.
+    결과는 종합된 ImageAnalysisResult 1건. 입력이 없으면 None.
+
+    Raises:
+        BedrockInvocationError: Bedrock 호출 자체 실패.
+    """
+    images = [(b, mt) for b, mt in images if b][: _get_max_vision_images()]
+    if not images:
+        return None
+    payload = [(base64.b64encode(b).decode("utf-8"), mt) for b, mt in images]
+    try:
+        response = bedrock_client.invoke_model_with_images(_VISION_BATCH_PROMPT, payload)
+    except Exception as exc:
+        raise BedrockInvocationError(f"Bedrock Vision 배치 호출 실패 (src={label}): {exc}") from exc
+    result = _parse_vision_response(response, label)
+    logger.info(
+        "배치 분석 완료 [%s] 이미지%d장 → cat=%s proc=%s dev=%s conf=%.2f",
+        label, len(images), result.image_category, result.detected_procedures,
+        result.detected_devices, result.confidence,
+    )
+    return result

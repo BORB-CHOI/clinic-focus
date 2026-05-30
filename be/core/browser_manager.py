@@ -20,7 +20,7 @@ class BrowserManager:
     - 크래시 복구: 브라우저 비정상 종료 시 새 인스턴스 생성
     """
 
-    MAX_PAGES_BEFORE_RESTART: int = 30
+    MAX_PAGES_BEFORE_RESTART: int = 8   # 4GB EC2 single-process 크롬 크래시 누적 방지 (구 30→8)
     PAGE_TIMEOUT_MS: int = 30_000
     MAX_CONCURRENT_TABS: int = 3
 
@@ -136,8 +136,14 @@ class BrowserManager:
                     viewport={"width": 1280, "height": vh},
                 )
                 page: Page = await context.new_page()
-                await page.goto(url, wait_until="networkidle", timeout=self.PAGE_TIMEOUT_MS)
-                await page.wait_for_timeout(1500)  # 팝업 렌더 대기
+                # networkidle 은 광고·트래킹으로 계속 통신하는 사이트에서 30초 풀타임아웃을
+                # 먹어 병원당 ~2분으로 느려진다 → "load" + 짧은 타임아웃. 타임아웃이 나도
+                # 부분 렌더라도 캡처를 진행한다(throw 로 전체 캡처를 버리지 않게).
+                try:
+                    await page.goto(url, wait_until="load", timeout=15_000)
+                except Exception as exc:  # noqa: BLE001
+                    logger.info("goto 부분 로드/타임아웃(%s) — 현재 상태로 캡처 진행: %s", url, exc)
+                await page.wait_for_timeout(1500)  # 팝업·지연 렌더 대기
 
                 # 1) 팝업 포함 첫 화면 1장 (팝업 안내문 내용 보존)
                 if capture_popup:
