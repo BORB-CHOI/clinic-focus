@@ -464,6 +464,8 @@ class HospitalMeta(BaseModel):
     contact: Contact
     operating_hours: OperatingHours | None = None
     parking: bool | None = None
+    # HIRA 종별/병원명 기반 표준 진료과목 (22 후보 중 하나). 분류기가 추론 대신 이 값을 권위로 사용.
+    standard_specialty: str | None = None
 
 
 class ServicesAndDoctors(BaseModel):
