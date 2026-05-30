@@ -257,7 +257,10 @@ class BrowserManager:
         - --no-sandbox: 컨테이너/제한 환경에서 sandbox 비활성 (EC2 단일 프로세스)
         - --disable-dev-shm-usage: 작은 /dev/shm 대신 /tmp 사용 (크래시 방지)
         - --disable-gpu: headless에서 불필요한 GPU 프로세스 차단
-        - --single-process: 별도 렌더러 프로세스 미생성 (메모리 절감)
+
+        ⚠️ --single-process 는 **제거**했다. 그 플래그가 "Target page/context/browser
+        has been closed" 크래시의 주범(헤드리스 크롬 단일프로세스 불안정)이었고, 스왑
+        4GB 확보로 멀티프로세스 메모리 여유도 생겼다. 멀티프로세스가 훨씬 안정적.
         """
         if self._playwright is None:
             raise RuntimeError("BrowserManager not entered as context manager")
@@ -267,7 +270,6 @@ class BrowserManager:
                 "--no-sandbox",
                 "--disable-dev-shm-usage",
                 "--disable-gpu",
-                "--single-process",
             ],
         )
 
