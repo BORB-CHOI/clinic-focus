@@ -18,7 +18,7 @@ from be.adapters.dynamo_adapter import DynamoAdapter
 from be.adapters.s3_adapter import S3Adapter
 
 if TYPE_CHECKING:
-    from shared.models import Classification
+    from shared.models import Classification, ImageAnalysisResult
 
 from ai import (
     classify_hospital,
@@ -87,11 +87,31 @@ def run_index_pipeline(
     # 외부 시그널 로드 (적재된 것만 — 없으면 None, 자체 사이트만 분류)
     external = db.load_external_signals(hospital_id)
 
+    # Vision 결과 로드 — DDB VISION#RESULTS 가 있으면(=시연 10개 demo) 합류.
+    # 없으면 None (1만 베이스라인에서는 Vision 미실행). run_vision_demo 가 1회 적재한
+    # 결과를 분류·extract·KB 청크가 공유해 analyze_images 중복 호출을 피한다.
+    # DDB 에는 dict 로 저장되므로 ImageAnalysisResult 로 정규화해 AI 함수에 전달한다.
+    vision_results_raw = db.get_entity(hospital_id, "VISION#RESULTS")
+    vision_results: "list[ImageAnalysisResult] | None" = None
+    if vision_results_raw:
+        from shared.models import ImageAnalysisResult
+
+        vision_results = [
+            ImageAnalysisResult(**r) for r in (vision_results_raw.get("results") or [])
+        ]
+
     # 재분류 비교용 — 이전 CLASSIFICATION 을 분류 저장 전에 로드
     prev_classification = db.load_classification(hospital_id)
 
     # 분류 — demo 면 LLM, 아니면 룰 단독(Bedrock 0회). 외부 후기·카카오 tags 까지 교차검증.
-    classification = classify_hospital(crawl_data, use_llm=demo, **external)
+    # Vision 결과가 있으면 전달 → 분류기가 재분석하지 않고 재사용 (시연 10개).
+    classification = classify_hospital(
+        crawl_data,
+        use_llm=demo,
+        standard_specialty=hospital_meta.standard_specialty,
+        vision_results=vision_results,
+        **external,
+    )
     db.save_classification(classification)
 
     # 분류 변경 자동 기록 — primary_focus 가 이전과 다르면 HISTORY# 적재 (영역 ⑦)
@@ -99,10 +119,11 @@ def run_index_pipeline(
 
     # 시연 10개만 — 진료항목·설명·관련병원 (LLM/Vision)
     if demo:
+        # vision_results 가 있으면 extract_services_and_doctors 에도 전달
         services_and_doctors = extract_services_and_doctors(
             crawl_data=crawl_data,
             classification=classification,
-            vision_results=[],
+            vision_results=vision_results or [],
         )
         description = generate_description(
             classification=classification,
@@ -120,8 +141,12 @@ def run_index_pipeline(
         db.save_related_hospitals(hospital_id, related)
 
     # KB 시그널 청크 ingest — 검색 임베딩 (DESCRIPTION 미포함)
-    # 외부 시그널(카카오/네이버/구글)도 적재돼 있으면 함께 청크에 합류
-    signal_chunks = build_signal_chunks(crawl_data=crawl_data, **external)
+    # 외부 시그널(카카오/네이버/구글) + Vision 결과(있으면) 함께 청크에 합류
+    signal_chunks = build_signal_chunks(
+        crawl_data=crawl_data,
+        vision_results=vision_results,
+        **external,
+    )
     metadata = build_ingest_metadata(hospital_meta, classification)
     ingest_hospital(
         hospital_id,

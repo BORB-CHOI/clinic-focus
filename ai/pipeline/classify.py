@@ -33,6 +33,7 @@ from shared.models import (
     Confidence,
     CrawlData,
     DetailedSignals,
+    ImageAnalysisResult,
     ReviewSignal,
     SelfClaimSignal,
     SignalContributions,
@@ -1017,6 +1018,8 @@ def classify_hospital(
     use_vision: bool = True,  # noqa: FBT001 — 명세에서 bool 파라미터로 정의됨
     use_llm: bool = True,     # noqa: FBT001 — False 이면 LLM/Vision 0회 호출 (트랙 A)
     *,
+    standard_specialty: str | None = None,
+    vision_results: list[ImageAnalysisResult] | None = None,
     kakao_place=None,
     kakao_reviews=None,
     kakao_blog=None,
@@ -1032,6 +1035,15 @@ def classify_hospital(
             use_llm=False 일 때는 이 값과 무관하게 Vision 을 건너뛴다.
         use_llm: True 이면 자칭·블로그 추출에 Bedrock LLM 사용 (트랙 B/C).
             False 이면 키워드 룰만 사용하고 Bedrock 미호출 (트랙 A, 1만 풀커버).
+        standard_specialty: HIRA 종별/병원명 기반 표준 진료과목(권위 값). 주어지면
+            텍스트 키워드 추론(_infer_standard_specialty) 대신 이 값을 사용하고,
+            해당 진료과의 시술 taxonomy 로 primary_focus 를 통제 어휘로 채운다.
+            None 이면 기존처럼 크롤 텍스트로 추론(fallback).
+        vision_results: 사전 계산된 Vision 분석 결과(ImageAnalysisResult 리스트).
+            주어지면 이 값을 재사용하고 analyze_images 를 호출하지 않는다 — 시연 10개는
+            run_vision_demo 가 DDB VISION#RESULTS 에 1회 적재하므로 분류기가 중복
+            호출(비용 2배·결과 불일치)하지 않도록 호출자가 전달한다. None 이고
+            use_llm·use_vision·이미지가 모두 있으면 analyze_images 로 직접 분석한다.
         kakao_place: KakaoPlace 모델 또는 parse_place() dict. tags 가 자칭 시그널 보강에 사용됨.
         kakao_reviews: KakaoReviews 모델 또는 parse_reviews() dict. strength 라벨 빈도 포함.
         kakao_blog: KakaoBlog 모델 또는 parse_blog() dict. (현재 미사용 — 향후 블로그 시그널 확장용)
@@ -1074,39 +1086,41 @@ def classify_hospital(
     )
 
     # 3. Vision 분석 — use_llm=False 이면 무조건 건너뜀 (개인계정 Sonnet, 10개 한정)
-    #                   use_vision=False 이거나 이미지 없어도 건너뜀
+    #                   use_vision=False 이면 건너뜀.
+    #    vision_results 가 외부에서 주어지면(사전 계산된 VISION#RESULTS) 재사용해
+    #    analyze_images 중복 호출(비용 2배·결과 불일치)을 피한다. 없을 때만 직접 분석.
     vision_signal: VisionSignal | None = None
-    if use_llm and use_vision and crawl_data.images:
-        try:
-            from ai.pipeline.vision import analyze_images  # type: ignore[import]
+    if use_llm and use_vision:
+        results = vision_results
+        if results is None and crawl_data.images:
+            try:
+                from ai.pipeline.vision import analyze_images  # type: ignore[import]
 
-            image_urls = [img.url for img in crawl_data.images]
-            max_images = int(os.getenv("MAX_VISION_IMAGES", "10"))
-            vision_results = analyze_images(image_urls[:max_images])
+                image_urls = [img.url for img in crawl_data.images]
+                max_images = int(os.getenv("MAX_VISION_IMAGES", "10"))
+                results = analyze_images(image_urls[:max_images])
+            except ImportError:
+                logger.warning("ai.vision 모듈 없음 — Vision 시그널 건너뜀")
+            except Exception as exc:
+                logger.warning("Vision 분석 실패, 계속 진행: %s", exc)
 
-            # ImageAnalysisResult 리스트를 VisionSignal 로 집계
-            if vision_results:
-                from collections import Counter as _Counter
+        # ImageAnalysisResult 리스트를 VisionSignal 로 집계
+        if results:
+            cat_counter: Counter = Counter()
+            all_devices: list[str] = []
+            for r in results:
+                cat_counter[r.image_category] += 1
+                all_devices.extend(r.detected_devices)
 
-                cat_counter: _Counter = _Counter()
-                all_devices: list[str] = []
-                for r in vision_results:
-                    cat_counter[r.image_category] += 1
-                    all_devices.extend(r.detected_devices)
-
-                total = sum(cat_counter.values())
-                image_categories = {
-                    cat: count / total for cat, count in cat_counter.items()
-                }
-                vision_signal = VisionSignal(
-                    detected_devices=list(set(all_devices)),
-                    image_categories=image_categories,
-                    total_images_analyzed=len(vision_results),
-                )
-        except ImportError:
-            logger.warning("ai.vision 모듈 없음 — Vision 시그널 건너뜀")
-        except Exception as exc:
-            logger.warning("Vision 분석 실패, 계속 진행: %s", exc)
+            total = sum(cat_counter.values())
+            image_categories = {
+                cat: count / total for cat, count in cat_counter.items()
+            }
+            vision_signal = VisionSignal(
+                detected_devices=list(set(all_devices)),
+                image_categories=image_categories,
+                total_images_analyzed=len(results),
+            )
 
     # 4. 블로그 키워드 분석 — 자체 사이트 + 네이버 블로그 발췌 본문
     if use_llm:
@@ -1153,8 +1167,18 @@ def classify_hospital(
         confidence.level,
     )
 
-    # 9. 표준 과목 추론
-    standard_specialty = _infer_standard_specialty(crawl_data)
+    # 9. 표준 과목 — HIRA 기준값(권위) 우선, 없으면 텍스트 추론 fallback
+    final_specialty = standard_specialty or _infer_standard_specialty(crawl_data)
+
+    # 9-a. 시술 태그(고정 taxonomy) — primary_focus 를 필터 가능한 통제 어휘로.
+    #      진료과 taxonomy 에 매칭 태그가 있으면 그것으로 대체(닥터나우식 필터칩).
+    #      taxonomy 미지원 종별(종합병원·요양병원 등)이거나 매칭 0이면 기존 추출 유지.
+    from ai.search.taxonomy import tag_hospital  # boto3 무관, 순환 없음
+
+    all_text = " ".join(p.html_text for p in crawl_data.pages if p.html_text)
+    service_tags = tag_hospital(all_text, final_specialty)
+    if service_tags:
+        primary_focus = service_tags
 
     # 10. 최종 Classification 조립
     detailed_signals = DetailedSignals(
@@ -1166,7 +1190,7 @@ def classify_hospital(
 
     return Classification(
         hospital_id=crawl_data.hospital_id,
-        standard_specialty=standard_specialty,
+        standard_specialty=final_specialty,
         primary_focus=primary_focus,
         confidence=confidence,
         detailed_signals=detailed_signals,

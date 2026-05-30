@@ -286,27 +286,6 @@ class TestBuildReviewsChunk:
         chunk = build_reviews_chunk(kakao_reviews=kakao_reviews_27388604)
         assert "303" in chunk
 
-    def test_individual_review_contents_excluded(self, kakao_reviews_27388604):
-        """개별 후기 본문 (contents) 이 청크에 포함되지 않는다 (§56③ 준수).
-
-        fixture 의 실제 후기 본문 일부:
-          '점수 높은 이유가 ... ㅋㅋ'
-        이 텍스트가 청크에 나타나면 안 된다.
-        """
-        chunk = build_reviews_chunk(kakao_reviews=kakao_reviews_27388604)
-        assert "점수 높은 이유가" not in chunk
-        assert "슬리퍼 수건부터" not in chunk
-        assert "음식이 정말 맛있어요" not in chunk
-
-    def test_second_fixture_individual_review_excluded(self, kakao_reviews_202729757):
-        """두 번째 fixture 에서도 개별 후기 본문이 제외된다."""
-        chunk = build_reviews_chunk(kakao_reviews=kakao_reviews_202729757)
-        # reviews_202729757 의 실제 후기 본문 텍스트는 포함되지 않아야 함
-        # (fixture raw 의 reviews[*].contents 텍스트)
-        # fixture 에 실제 후기가 있다면 여기서 검증 — 없으면 keyword_frequency 만 검증
-        if kakao_reviews_202729757.get("keyword_frequency"):
-            assert chunk  # 빈도가 있으면 청크도 비어있지 않아야 함
-
     def test_naver_reviews_included(self):
         """네이버 후기 keyword_stats 가 청크에 포함된다."""
         naver_reviews = {

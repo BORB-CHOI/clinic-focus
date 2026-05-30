@@ -45,6 +45,7 @@ data/raw/
 data/cache/
 data/crawl/
 data/images/
+be/data/logs/
 
 # --- Claude Code 개인 설정 ---
 .claude/

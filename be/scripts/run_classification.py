@@ -59,8 +59,13 @@ def main():
             # 외부 시그널 로드 (적재된 것만 — 없으면 None, 자체 사이트만 분류)
             external = db.load_external_signals(hospital_id)
 
-            # 룰 분류 (LLM 0회) → DDB 저장. 외부 후기·카카오 tags 까지 4 시그널 교차검증.
-            classification = classify_hospital(crawl_data, use_llm=False, **external)
+            # 룰 분류 (LLM 0회) → DDB 저장. HIRA 진료과(META) 권위 사용 + taxonomy 태깅.
+            classification = classify_hospital(
+                crawl_data,
+                use_llm=False,
+                standard_specialty=hospital_meta.standard_specialty,
+                **external,
+            )
             db.save_classification(classification)
 
             # 시그널 청크 KB ingest — 배치라 트리거는 마지막 1회만

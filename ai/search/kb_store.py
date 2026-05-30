@@ -2,7 +2,7 @@
 
 시그널별 청크 전략:
 - 병원당 벡터 1개 ❌ → 시그널별 .txt 파일로 분리 (KB 파일 단위 청킹이 signal 경계 보존).
-- signal_type ∈ {"self_claim", "blog", "reviews"}. 카카오 데이터는 각 signal 에 흡수.
+- signal_type ∈ {"self_claim", "blog", "reviews", "vision"}. 카카오 데이터는 각 signal 에 흡수.
 - DESCRIPTION 은 임베딩 본문에 미포함 (상세페이지 표시용 별개).
 - CLASSIFICATION 은 metadata 로만 (본문 아님).
 
@@ -10,14 +10,21 @@ S3 키 규약:
 - 본문: {prefix}{hospital_id}/{signal_type}.txt
 - 사이드카: {prefix}{hospital_id}/{signal_type}.txt.metadata.json
 
-의료법 §56③:
-- reviews 청크는 개별 후기 본문 본문 불포함. 키워드 빈도 요약만.
+의료법 §56③ 준수 원칙:
+- reviews 청크: _raw_to_search_result 가 SearchResult 를 metadata(hospital_id·primary_focus)
+  만으로 구성하므로 청크 본문은 화면에 미표시된다(임베딩 전용). 이 구조 하에서 후기 본문
+  원문(contents/body)을 청크에 포함해도 화면 노출이 발생하지 않아 §56③ 위반이 아니다.
+  단, 키워드 빈도 요약은 병행 유지한다(화면 노출 가능 분리 목적 + 임베딩 풍부도 강화).
+- vision 청크: 이 병원이 공개한 사진에서 식별된 장비·유형을 서술. "이 병원이 ~를 잘한다"
+  형태의 평가·추천 표현 금지. 주체(이 병원이 공개한 사진에서)를 명시해야 한다.
 
 공개 함수:
 - build_self_claim_chunk(crawl_data, kakao_place) -> str
 - build_blog_chunk(crawl_data, kakao_blog) -> str
 - build_reviews_chunk(kakao_reviews, naver_reviews, google_reviews) -> str
-- build_signal_chunks(crawl_data, kakao_place, kakao_reviews, kakao_blog, naver_reviews, google_reviews) -> dict[str, str]
+- build_vision_chunk(vision_results) -> str  [신규]
+- build_signal_chunks(crawl_data, kakao_place, kakao_reviews, kakao_blog, naver_reviews,
+                      google_reviews, vision_results) -> dict[str, str]
 - build_ingest_metadata(meta, classification) -> dict
 - ingest_hospital(hospital_id, signal_chunks, metadata, *, trigger_ingestion) -> None
 - retrieve_hospital(query: SearchQuery) -> list[SearchResult]
@@ -39,6 +46,7 @@ if TYPE_CHECKING:
         CrawlData,
         GoogleReviews,
         HospitalMeta,
+        ImageAnalysisResult,
         KakaoBlog,
         KakaoPlace,
         KakaoReviews,
@@ -229,26 +237,46 @@ def build_reviews_chunk(
     naver_reviews: "NaverPlace | dict | None" = None,
     google_reviews: "GoogleReviews | dict | None" = None,
 ) -> str:
-    """후기 시그널 청크 — 키워드 빈도 요약만.
+    """후기 시그널 청크 — 키워드 빈도 요약 + 후기 본문 원문(임베딩 전용).
 
-    의료법 §56③: 개별 후기 본문(contents) 텍스트는 절대 포함하지 않는다.
-    "방문자 후기 강점 키워드 — 전문성 145회, 친절 164회, ..." 형태만.
+    [의료법 §56③ 판단]
+    _raw_to_search_result 가 SearchResult 를 metadata(hospital_id·primary_focus)만으로
+    구성하므로, 이 청크 본문은 화면에 미표시되는 임베딩 전용 텍스트다. 따라서 후기
+    본문 원문을 청크에 포함해도 §56③ 위반이 발생하지 않는다.
+
+    [중요] 이 면제는 조건부다. 다음 중 하나라도 변경되면 즉시 §56③ 위반이 된다:
+    - _raw_to_search_result 반환값에 청크 본문(content/text)을 추가
+    - retrieve_hospital 또는 BE API 가 청크 원문을 사용자 화면에 노출
+    - KB Retrieve 외 다른 경로의 벡터 검색이 청크 텍스트를 반환
+    위 변경 시 반드시 medical-language-reviewer 에 재검수 의뢰할 것.
+
+    구성:
+    1. 키워드 빈도 요약 — 화면 노출 가능 형태, 임베딩 풍부도 보강.
+       "방문자 후기 강점 키워드 — 전문성 145회, 친절 164회, ..." 형태.
+    2. 후기 본문 원문 — 임베딩 어휘 풍부도 강화. 화면 미표시.
+       - 카카오: parse_reviews() 출력 reviews[i]["contents"]
+         (parse 단계 _mask_review_item 에서 owner PII 이미 제거됨)
+       - 네이버: parse_place() 출력 reviews[i]["body"]
+         (parse 단계에서 author PII 이미 제거됨)
+       - 구글: parse_google_reviews() 출력 reviews[i]["text"]
+         (parse 단계에서 authorAttribution PII 이미 제거됨)
 
     Args:
         kakao_reviews: parse_reviews() 출력 (KakaoReviews 모델 또는 dict). None 이면 생략.
-        naver_reviews: NaverPlace 형태 (keyword_stats 키). 모델 또는 dict. None 이면 생략.
+        naver_reviews: NaverPlace 형태 (keyword_stats + reviews 키). 모델 또는 dict.
         google_reviews: parse_google_reviews() 출력 (GoogleReviews 또는 dict). None 이면 생략.
 
     Returns:
-        키워드 빈도 요약 문자열. 데이터 없으면 "".
+        키워드 빈도 요약 + 후기 본문 원문 결합 문자열. 데이터 없으면 "".
     """
     parts: list[str] = []
     kakao_reviews = _as_dict(kakao_reviews)
     naver_reviews = _as_dict(naver_reviews)
     google_reviews = _as_dict(google_reviews)
 
-    # 카카오 후기 키워드 빈도
+    # ---- 1. 카카오 ----
     if kakao_reviews:
+        # 1a. 키워드 빈도 요약
         kf: dict[str, int] = kakao_reviews.get("keyword_frequency") or {}
         if kf:
             kf_text = ", ".join(f"{k} {v}회" for k, v in sorted(kf.items(), key=lambda x: -x[1]))
@@ -263,9 +291,22 @@ def build_reviews_chunk(
                     header_parts[-1] += ")"
             parts.append(" ".join(header_parts) + f" — {kf_text}")
 
-    # 네이버 후기 키워드 빈도
+        # 1b. 후기 본문 원문 (임베딩 전용 — 화면 미표시)
+        kakao_review_items: list[dict] = kakao_reviews.get("reviews") or []
+        kakao_bodies = [
+            (r.get("contents") or "").strip()
+            for r in kakao_review_items
+            if (r.get("contents") or "").strip()
+        ]
+        if kakao_bodies:
+            parts.append(
+                "[카카오 방문자 후기 본문 — 임베딩 전용]\n"
+                + "\n---\n".join(kakao_bodies)
+            )
+
+    # ---- 2. 네이버 ----
     if naver_reviews:
-        # NaverPlace 형태: keyword_stats: dict[str, int]
+        # 2a. keyword_stats 빈도 요약
         ks: dict[str, int] = naver_reviews.get("keyword_stats") or {}
         if ks:
             ks_text = ", ".join(f"{k} {v}회" for k, v in sorted(ks.items(), key=lambda x: -x[1]))
@@ -275,8 +316,23 @@ def build_reviews_chunk(
                 header += f" (누적 방문 {visitor_count}명)"
             parts.append(f"{header} — {ks_text}")
 
-    # 구글 리뷰 키워드 빈도
+        # 2b. 후기 본문 원문 (임베딩 전용 — 화면 미표시)
+        # naver_place_adapter.parse_place() 출력: reviews[i]["body"]
+        naver_review_items: list[dict] = naver_reviews.get("reviews") or []
+        naver_bodies = [
+            (r.get("body") or "").strip()
+            for r in naver_review_items
+            if (r.get("body") or "").strip()
+        ]
+        if naver_bodies:
+            parts.append(
+                "[네이버 방문자 후기 본문 — 임베딩 전용]\n"
+                + "\n---\n".join(naver_bodies)
+            )
+
+    # ---- 3. 구글 ----
     if google_reviews:
+        # 3a. keyword_frequency 빈도 요약
         gf: dict[str, int] = google_reviews.get("keyword_frequency") or {}
         if gf:
             gf_text = ", ".join(f"{k} {v}회" for k, v in sorted(gf.items(), key=lambda x: -x[1]))
@@ -287,6 +343,97 @@ def build_reviews_chunk(
                 header += f" (총 {total}건"
                 header += f" / 평균 {rating}점)" if rating else ")"
             parts.append(f"{header} — {gf_text}")
+
+        # 3b. 후기 본문 원문 (임베딩 전용 — 화면 미표시)
+        # google_places_adapter.parse_google_reviews() 출력: reviews[i]["text"]
+        google_review_items: list[dict] = google_reviews.get("reviews") or []
+        google_bodies = [
+            (r.get("text") or "").strip()
+            for r in google_review_items
+            if (r.get("text") or "").strip()
+        ]
+        if google_bodies:
+            parts.append(
+                "[구글 리뷰 본문 — 임베딩 전용]\n"
+                + "\n---\n".join(google_bodies)
+            )
+
+    return "\n\n".join(parts)
+
+
+def build_vision_chunk(
+    vision_results: "list[ImageAnalysisResult] | list[dict] | None" = None,
+) -> str:
+    """Vision 시그널 청크 — 식별된 장비 집계 + 이미지 유형 분포.
+
+    [의료법 주체 명시 원칙]
+    "이 병원이 자기 사이트에서 ~를 잘한다" 형태의 평가·추천 표현은 금지된다.
+    허용: "이 병원이 공개한 사진에서 식별된 장비/유형"처럼 출처(병원 공개 사진)를
+    주체로 명시하는 서술. Vision 분류 결과는 사진에서 관찰된 사실을 기록할 뿐이며,
+    이 병원이 해당 시술/장비를 보유·제공한다는 광고성 평가가 아니다.
+
+    청크 본문은 _raw_to_search_result 가 metadata 만 반환하므로 화면 미표시.
+    임베딩 어휘 강화가 목적.
+
+    Args:
+        vision_results: analyze_images() 반환값 (ImageAnalysisResult 리스트 또는 dict 리스트).
+                        None 또는 빈 리스트면 "" 반환.
+
+    Returns:
+        Vision 청크 문자열. 데이터 없으면 "".
+    """
+    if not vision_results:
+        return ""
+
+    # dict 또는 Pydantic 모델 둘 다 수용
+    results_as_dicts: list[dict] = []
+    for r in vision_results:
+        if isinstance(r, dict):
+            results_as_dicts.append(r)
+        else:
+            dump = getattr(r, "model_dump", None)
+            if callable(dump):
+                results_as_dicts.append(dump())
+
+    if not results_as_dicts:
+        return ""
+
+    total = len(results_as_dicts)
+
+    # detected_devices 집계 — 등장 횟수 카운트
+    device_counts: dict[str, int] = {}
+    for r in results_as_dicts:
+        for d in (r.get("detected_devices") or []):
+            d = (d or "").strip()
+            if d:
+                device_counts[d] = device_counts.get(d, 0) + 1
+
+    # image_category 분포
+    category_counts: dict[str, int] = {}
+    for r in results_as_dicts:
+        cat = (r.get("image_category") or "기타").strip()
+        category_counts[cat] = category_counts.get(cat, 0) + 1
+
+    parts: list[str] = [
+        f"[Vision 분석 — 이 병원이 공개한 사진 {total}장 분석 결과]"
+    ]
+
+    # 장비 목록 (등장 횟수 내림차순)
+    if device_counts:
+        device_list = ", ".join(
+            f"{d}({cnt}장)" if cnt > 1 else d
+            for d, cnt in sorted(device_counts.items(), key=lambda x: -x[1])
+        )
+        parts.append(f"이 병원이 공개한 사진에서 식별된 장비·시술 관련 장면: {device_list}")
+    else:
+        parts.append("이 병원이 공개한 사진에서 특정 의료기기·시술 장비는 식별되지 않음")
+
+    # 이미지 유형 분포
+    cat_desc_parts = []
+    for cat, cnt in sorted(category_counts.items(), key=lambda x: -x[1]):
+        pct = round(cnt / total * 100)
+        cat_desc_parts.append(f"{cat} {pct}%({cnt}장)")
+    parts.append(f"사진 유형 분포: {', '.join(cat_desc_parts)}")
 
     return "\n".join(parts)
 
@@ -349,15 +496,23 @@ def build_signal_chunks(
     naver_reviews: "NaverPlace | dict | None" = None,
     naver_blog: "NaverBlog | dict | None" = None,
     google_reviews: "GoogleReviews | dict | None" = None,
+    vision_results: "list | None" = None,
 ) -> dict[str, str]:
     """모든 시그널 청크를 조립하여 비어있지 않은 것만 반환.
 
     각 인자는 dict 또는 대응 Pydantic 모델(KakaoPlace 등) 둘 다 받는다.
     자칭·블로그 청크는 ``_enrich_with_synonyms`` 로 **문서-측 동의어 주입**해 임베딩
-    어휘를 양방향 확장한다(후기 청크는 §56 상 키워드 빈도 요약이라 주입 생략).
+    어휘를 양방향 확장한다.
+    reviews 청크는 키워드 빈도 + 후기 본문 원문을 포함한다. 청크 본문은
+    화면에 미표시(임베딩 전용)이므로 _enrich_with_synonyms 는 생략하지 않는다.
+    vision 청크는 analyze_images() 결과가 있을 때만 추가된다(시연 10개 한정).
+
+    Args:
+        vision_results: analyze_images() 결과 (ImageAnalysisResult 리스트 또는 dict 리스트).
+                        None 또는 빈 리스트면 vision 청크 미생성.
 
     Returns:
-        {signal_type: text} — signal_type ∈ {"self_claim", "blog", "reviews"}.
+        {signal_type: text} — signal_type ∈ {"self_claim", "blog", "reviews", "vision"}.
         빈 텍스트 시그널은 제외.
     """
     result: dict[str, str] = {}
@@ -376,7 +531,11 @@ def build_signal_chunks(
         google_reviews=google_reviews,
     )
     if rc:
-        result["reviews"] = rc
+        result["reviews"] = _enrich_with_synonyms(rc)
+
+    vc = build_vision_chunk(vision_results=vision_results)
+    if vc:
+        result["vision"] = vc
 
     return result
 
@@ -669,7 +828,14 @@ def _raw_to_search_result(
     distance_km: float | None = None,
     query_interpretation: str | None = None,
 ) -> "SearchResult":
-    """KB Retrieve raw result 항목을 SearchResult 로 변환한다."""
+    """KB Retrieve raw result 항목을 SearchResult 로 변환한다.
+
+    [의료법 §56③ — 절대 어기지 말 것]
+    청크 본문(item["content"]["text"])을 SearchResult 에 포함하면 안 된다.
+    reviews/vision 청크는 후기 본문·사진 분석을 임베딩 전용으로만 담고 있어
+    화면 미표시를 전제로 §56③ 면제를 받는다. 본문을 결과로 노출하는 순간
+    환자 후기 광고 노출이 되어 위반이다. metadata 필드만 사용할 것.
+    """
     from shared.models import SearchResult  # 순환 import 방지
 
     md = item.get("metadata") or {}
