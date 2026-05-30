@@ -559,25 +559,30 @@ class TestSpamPenalty:
     def test_classify_with_spam_completes_and_lowers_confidence(
         self, _mock: MagicMock
     ) -> None:
-        """도배 텍스트로도 classify_hospital 이 예외 없이 완료돼야 하고,
-        blog 가 자칭과 어긋날 때 페널티 경로가 진입해 신뢰도가 낮아져야 한다.
+        """도배 자칭 + **외부 시그널** 어긋남 → 페널티 경로 진입, 신뢰도 하락.
 
-        새 페널티 설계(confidence-missing-signals): 자칭 기여도만 감점하고
-        **재배분하지 않는다** → 전체 score 가 내려가 '정보 부족' 으로 떨어진다.
-        엇갈리는 블로그는 가짜 비율(예전 재배분)을 받지 않고 0 기여에 머문다
-        (§3 원칙 3 — 가짜 비율 금지).
+        authorship 정정(2026-05-30): '어긋남'은 외부 시그널(제3자 후기 블로그·플레이스
+        후기)이 자칭과 다를 때다. 자기 블로그로는 자기를 모순시킬 수 없다(같은 저자) —
+        외부 독립 시그널로만 교차 검증한다.
+
+        새 페널티 설계: 자칭 기여도만 감점(재배분 없음) → score 가 LOW 미만으로 내려간다.
+        엇갈리는 블로그는 가짜 비율을 받지 않고 0 기여에 머문다(§3 원칙 3).
         """
         from ai.pipeline.classify import CONFIDENCE_THRESHOLD_LOW, classify_hospital
 
+        # 자칭: 탈모 도배 (main/service). 자체 blog 페이지는 넣지 않는다 — 같은 저자라 모순 불가.
         spam_pages = [
             _make_page("main", SPAM_TEXT),
             _make_page("service", SPAM_TEXT),
-            # 블로그는 정형외과 내용 — 자칭(탈모) 과 어긋남 → blog_mismatch=True
-            _make_page("blog", ORTHO_BLOG_TEXT),
         ]
-        spam_with_blog = _make_crawl_data(spam_pages, hospital_id="spam-hospital-001")
+        spam_data = _make_crawl_data(spam_pages, hospital_id="spam-hospital-001")
+        # 외부 제3자 후기 블로그는 정형외과 내용 → 자칭(탈모)과 어긋남 → blog_mismatch=True
+        naver_blog = {"posts": [
+            {"title": "척추 디스크 후기",
+             "description": "허리 디스크 어깨 회전근개 무릎 관절 정형외과"},
+        ]}
 
-        result = classify_hospital(spam_with_blog, use_llm=False)
+        result = classify_hospital(spam_data, use_llm=False, naver_blog=naver_blog)
         assert result.hospital_id == "spam-hospital-001"
         # 자칭 도배 + 블로그 어긋남 → 페널티로 score 가 LOW 미만 '정보 부족'
         assert result.confidence.score < CONFIDENCE_THRESHOLD_LOW, (
@@ -685,20 +690,27 @@ class TestAnalyzeBlogRule:
     def test_blog_posts_counted(self) -> None:
         from ai.pipeline.classify import _analyze_blog_rule
 
+        # 블로그 시그널 = 외부 제3자 후기 블로그(naver)만. 자체 blog 페이지는 self_claim 으로 빠진다.
+        naver_blog = {"posts": [
+            {"title": "척추 디스크 후기", "description": "허리 디스크 치료"},
+            {"title": "어깨 무릎 후기", "description": "관절 회복"},
+        ]}
+        # 자체 blog 페이지가 있어도 블로그 시그널엔 안 들어감 (저자=병원 → self_claim)
         crawl_data = _make_crawl_data([
-            _make_page("blog", "척추 디스크 포스팅1", url="https://h.com/blog/1"),
-            _make_page("blog", "어깨 무릎 포스팅2", url="https://h.com/blog/2"),
+            _make_page("blog", "자체 블로그 글", url="https://h.com/blog/1"),
         ])
-        signal = _analyze_blog_rule(crawl_data)
-        assert signal.total_posts == 2
+        signal = _analyze_blog_rule(crawl_data, naver_blog=naver_blog)
+        assert signal.total_posts == 2  # naver 2건만, 자체 blog 페이지 미포함
 
     def test_primary_topics_extracted(self) -> None:
         from ai.pipeline.classify import _analyze_blog_rule
 
-        crawl_data = _make_crawl_data([
-            _make_page("blog", ORTHO_BLOG_TEXT),
-        ])
-        signal = _analyze_blog_rule(crawl_data)
+        # 외부 네이버 블로그 후기 본문에서 토픽 추출 (자체 blog 아님)
+        naver_blog = {"posts": [
+            {"title": "척추 디스크 후기",
+             "description": "허리 디스크 어깨 회전근개 무릎 관절"},
+        ]}
+        signal = _analyze_blog_rule(_make_crawl_data([]), naver_blog=naver_blog)
         # 척추/어깨/무릎 중 하나 이상이 primary_topics 에 매핑돼야 함
         ortho_topics = {"척추", "어깨·견관절", "무릎·관절"}
         assert ortho_topics & set(signal.primary_topics), (

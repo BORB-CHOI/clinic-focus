@@ -76,7 +76,10 @@ _SPAM_THRESHOLD: float = 0.7
 _SPAM_PENALTY_FACTOR: float = 0.35  # 자칭 기여도를 35% 수준으로 강하게 감점
 
 # 자칭 페이지 타입
-_SELF_CLAIM_PAGE_TYPES = {"main", "about", "service"}
+# 자칭(self_claim) = 병원이 직접 쓴 것: 소개·진료안내 + 자체 blog 페이지(자체운영 블로그).
+# 외부 제3자 후기 블로그(naver_blog 검색결과)는 별도 '블로그 시그널' 이라 여기 포함 안 함
+# (저자 기준 분리 — 2026-05-30: 병원 자기 글 vs 남이 쓴 후기 블로그를 섞지 않는다).
+_SELF_CLAIM_PAGE_TYPES = {"main", "about", "service", "blog"}
 
 # (옛 _WEIGHTS_NO_VISION 제거: Vision 전용 재배분 대신 _cross_validate_signals 가
 #  present 시그널 일반으로 가중치를 재분배한다. confidence-missing-signals 결정.)
@@ -340,21 +343,14 @@ def _naver_blog_text(naver_blog) -> str:
 def _analyze_blog(crawl_data: CrawlData, naver_blog=None) -> BlogSignal:
     """블로그 키워드 분석.
 
-    LLM 호출로 주제를 추출하고, 단순 키워드 카운팅도 병행한다.
-    블로그 페이지가 없으면 빈 BlogSignal(total_posts=0) 반환.
+    외부 제3자 후기 블로그(naver_blog)만 본다 — 자체 blog 페이지는 자칭(self_claim)으로
+    귀속(저자 기준 분리). LLM 으로 주제 추출 + 키워드 카운팅 병행.
     """
-    blog_pages = [
-        p for p in crawl_data.pages
-        if p.page_type == "blog" and p.html_text.strip()
-    ]
     naver_text = _naver_blog_text(naver_blog)
-    if not blog_pages and not naver_text:
+    if not naver_text:
         return BlogSignal(total_posts=0, keyword_frequency={}, primary_topics=[])
 
-    # 자체 사이트 blog + 네이버 블로그 발췌 본문 합산
-    combined_text = "\n\n".join(p.html_text for p in blog_pages)
-    if naver_text:
-        combined_text = f"{combined_text}\n\n{naver_text}" if combined_text else naver_text
+    combined_text = naver_text
     keyword_counter = _count_medical_keywords(combined_text)
 
     # LLM 호출로 주제 추출 (실패 시 카운팅 결과만 사용)
@@ -389,7 +385,7 @@ def _analyze_blog(crawl_data: CrawlData, naver_blog=None) -> BlogSignal:
     naver_post_count = len(nb.get("posts") or []) if nb else 0
 
     return BlogSignal(
-        total_posts=len(blog_pages) + naver_post_count,
+        total_posts=naver_post_count,
         keyword_frequency=dict(keyword_counter.most_common(20)),
         primary_topics=primary_topics,
     )
@@ -978,21 +974,15 @@ def _extract_self_claim_rule(crawl_data: CrawlData) -> SelfClaimSignal:
 def _analyze_blog_rule(crawl_data: CrawlData, naver_blog=None) -> BlogSignal:
     """블로그 키워드 분석 — 룰 기반 (Bedrock 미호출).
 
-    자체 사이트 blog 페이지 + 네이버 블로그 발췌 본문에서 _count_medical_keywords 로
-    빈도를 카운트하고 _KEYWORD_TO_FOCUS 로 primary_topics 를 매핑한다.
+    **외부 제3자 후기 블로그**(네이버 블로그 검색 발췌)만 본다. 병원 자체 blog 페이지는
+    자기가 쓴 것이라 자칭(self_claim)으로 귀속하므로 여기서 제외한다(저자 기준 분리).
+    crawl_data 인자는 시그니처 호환용(자체 blog 는 이제 self_claim 으로 빠짐).
     """
-    blog_pages = [
-        p for p in crawl_data.pages
-        if p.page_type == "blog" and p.html_text.strip()
-    ]
     naver_text = _naver_blog_text(naver_blog)
-    if not blog_pages and not naver_text:
+    if not naver_text:
         return BlogSignal(total_posts=0, keyword_frequency={}, primary_topics=[])
 
-    combined_text = "\n\n".join(p.html_text for p in blog_pages)
-    if naver_text:
-        combined_text = f"{combined_text}\n\n{naver_text}" if combined_text else naver_text
-    keyword_counter = _count_medical_keywords(combined_text)
+    keyword_counter = _count_medical_keywords(naver_text)
 
     # primary_topics: 상위 5개 키워드를 focus 로 매핑 (중복 제거, 투표 순)
     focus_votes: Counter = Counter()
@@ -1005,7 +995,7 @@ def _analyze_blog_rule(crawl_data: CrawlData, naver_blog=None) -> BlogSignal:
     naver_post_count = len(nb.get("posts") or []) if nb else 0
 
     return BlogSignal(
-        total_posts=len(blog_pages) + naver_post_count,
+        total_posts=naver_post_count,
         keyword_frequency=dict(keyword_counter.most_common(20)),
         primary_topics=primary_topics,
     )
@@ -1060,14 +1050,19 @@ def classify_hospital(
         InsufficientDataError: 페이지가 0개이거나 모든 html_text 가 빈 문자열.
         BedrockInvocationError: Bedrock API 호출 실패 (use_llm=True 일 때만).
     """
-    # 1. 데이터 유효성 검사
-    if not crawl_data.pages:
+    # 1. 데이터 유효성 검사 — 자체사이트가 비어도 외부 시그널이 있으면 분류한다.
+    #    (병원 웹사이트는 필수 아님: 후기·블로그만으로도 주력을 추정. 둘 다 없을 때만 거부.)
+    _has_site_text = bool(crawl_data.pages) and any(
+        p.html_text.strip() for p in crawl_data.pages
+    )
+    _has_external = any(
+        x is not None
+        for x in (kakao_place, kakao_reviews, kakao_blog,
+                  naver_reviews, naver_blog, google_reviews)
+    )
+    if not _has_site_text and not _has_external:
         raise InsufficientDataError(
-            f"병원 {crawl_data.hospital_id}: 크롤링된 페이지가 없습니다."
-        )
-    if all(not p.html_text.strip() for p in crawl_data.pages):
-        raise InsufficientDataError(
-            f"병원 {crawl_data.hospital_id}: 모든 페이지의 html_text 가 비어 있습니다."
+            f"병원 {crawl_data.hospital_id}: 자체사이트·외부 시그널이 모두 없습니다."
         )
 
     # 2. 자칭 컨셉 추출
