@@ -1,25 +1,23 @@
-import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { EmptyState } from "@/components/common/EmptyState";
 import { HospitalCard } from "@/components/search/HospitalCard";
+import { HospitalCardSkeleton } from "@/components/search/HospitalCardSkeleton";
 import { SearchFilters } from "@/components/search/SearchFilters";
-import { mockSearchResponse } from "@/mocks/searchResults";
-import type { SearchResultItem, SortOption } from "@/types/domain";
+import { useSearch } from "@/hooks/useSearch";
+import type { SortOption } from "@/types/domain";
 
-// 검색 결과 페이지 — Mock 데이터로 카드 리스트 구성
+// 검색 결과 페이지 — BE /api/search 연동 (useSearch hook)
 //
-// 검색어 q 와 필터(min_confidence, sort) 모두 URL 쿼리스트링에 묶었다.
-//   - q                : 글로벌 셸의 StickySearchBar 가 디바운스로 갱신
-//   - min_confidence   : SearchFilters 토글이 갱신
-//   - sort             : 동
-// 새로고침·뒤로가기·공유에서 상태 보존, 5단계 BE 연동 시 useQuery 키도
-// 그대로 URL 파라미터로 매핑하면 된다.
+// q·min_confidence·sort 를 URL 쿼리스트링에 묶어 새로고침·뒤로가기·공유에서 상태 보존.
+// 검색/필터/정렬은 모두 BE 가 서버사이드 처리 (q 있으면 KB 자연어, 없으면 강남 카테고리).
+// 기본 신뢰도 필터는 0(전체) — BE 기본값(차별노출 회피)과 일치, 신호 적은 병원도 노출.
 
 const SEARCH_MODE_LABEL: Record<string, string> = {
   natural: "자연어",
   nearby: "근처",
   "natural+nearby": "자연어+근처",
+  category: "카테고리",
 };
 
 const SORT_LABEL: Record<SortOption, string> = {
@@ -30,81 +28,46 @@ const SORT_LABEL: Record<SortOption, string> = {
 
 const VALID_SORTS: SortOption[] = ["distance", "confidence", "relevance"];
 
-function matchesQuery(item: SearchResultItem, q: string): boolean {
-  if (!q) return true;
-  const needle = q.toLowerCase();
-  const haystack = [
-    item.name,
-    item.one_line_summary,
-    item.standard_specialty,
-    ...item.primary_focus,
-    item.location.sigungu,
-    item.location.dong ?? "",
-  ]
-    .join(" ")
-    .toLowerCase();
-  return haystack.includes(needle);
-}
-
-function applySort(
-  items: SearchResultItem[],
-  sort: SortOption,
-): SearchResultItem[] {
-  const copy = [...items];
-  switch (sort) {
-    case "distance":
-      return copy.sort((a, b) => {
-        const da = a.distance_km ?? Number.POSITIVE_INFINITY;
-        const db = b.distance_km ?? Number.POSITIVE_INFINITY;
-        return da - db;
-      });
-    case "confidence":
-      return copy.sort((a, b) => b.confidence.score - a.confidence.score);
-    case "relevance":
-      return copy;
-  }
-}
-
 export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const query = searchParams.get("q") ?? "";
 
   const minConfidenceParam = Number.parseInt(
-    searchParams.get("min_confidence") ?? "70",
+    searchParams.get("min_confidence") ?? "0",
     10,
   );
   const minConfidence = Number.isFinite(minConfidenceParam)
     ? minConfidenceParam
-    : 70;
+    : 0;
 
   const sortParam = searchParams.get("sort") as SortOption | null;
   const sort: SortOption = VALID_SORTS.includes(sortParam ?? ("" as SortOption))
     ? (sortParam as SortOption)
-    : "distance";
+    : "relevance";
 
   const setMinConfidence = (value: number) => {
     const next = new URLSearchParams(searchParams);
-    if (value === 70) next.delete("min_confidence");
+    if (value === 0) next.delete("min_confidence");
     else next.set("min_confidence", String(value));
     setSearchParams(next, { replace: true });
   };
   const setSort = (value: SortOption) => {
     const next = new URLSearchParams(searchParams);
-    if (value === "distance") next.delete("sort");
+    if (value === "relevance") next.delete("sort");
     else next.set("sort", value);
     setSearchParams(next, { replace: true });
   };
 
-  const filtered = useMemo(() => {
-    const matched = mockSearchResponse.data.filter(
-      (item) =>
-        item.confidence.score >= minConfidence && matchesQuery(item, query),
-    );
-    return applySort(matched, sort);
-  }, [query, minConfidence, sort]);
+  const { data, isLoading, isError, error } = useSearch({
+    q: query,
+    minConfidence,
+    sort,
+  });
 
-  const baseMeta = mockSearchResponse.meta;
+  const items = data?.data ?? [];
+  const meta = data?.meta;
+  const total = meta?.total ?? items.length;
 
   return (
     <section className="space-y-5">
@@ -126,7 +89,7 @@ export default function SearchPage() {
       <div className="flex flex-wrap items-baseline justify-between gap-2 border-b pb-2 text-xs text-muted-foreground">
         <p>
           <span className="text-base font-semibold text-foreground">
-            {filtered.length}
+            {total}
           </span>
           <span className="ml-1">건</span>
           {query ? (
@@ -136,25 +99,35 @@ export default function SearchPage() {
           ) : null}
         </p>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span>{SEARCH_MODE_LABEL[baseMeta.search_mode] ?? baseMeta.search_mode}</span>
+          {meta?.search_mode ? (
+            <span>{SEARCH_MODE_LABEL[meta.search_mode] ?? meta.search_mode}</span>
+          ) : null}
           <span aria-hidden>·</span>
           <span>{SORT_LABEL[sort]}</span>
-          {baseMeta.query_interpretation ? (
+          {meta?.query_interpretation ? (
             <>
               <span aria-hidden>·</span>
-              <span>해석: {baseMeta.query_interpretation}</span>
-            </>
-          ) : null}
-          {baseMeta.radius_km !== null ? (
-            <>
-              <span aria-hidden>·</span>
-              <span>반경 {baseMeta.radius_km}km</span>
+              <span>해석: {meta.query_interpretation}</span>
             </>
           ) : null}
         </div>
       </div>
 
-      {filtered.length === 0 ? (
+      {isError ? (
+        <EmptyState
+          message={`검색 중 오류가 발생했습니다 — ${
+            (error as Error)?.message ?? "알 수 없는 오류"
+          }`}
+        />
+      ) : isLoading ? (
+        <ul className="grid gap-3">
+          {[0, 1, 2, 3].map((i) => (
+            <li key={i}>
+              <HospitalCardSkeleton />
+            </li>
+          ))}
+        </ul>
+      ) : items.length === 0 ? (
         <EmptyState
           message={
             query
@@ -164,7 +137,7 @@ export default function SearchPage() {
         />
       ) : (
         <ul className="grid gap-3">
-          {filtered.map((item) => (
+          {items.map((item) => (
             <li key={item.hospital_id}>
               <HospitalCard item={item} />
             </li>
