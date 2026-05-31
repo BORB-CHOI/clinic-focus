@@ -44,7 +44,7 @@ a, an, are, around, best, good, how, is, near, nearby, the, top, was, were, what
 | 봉와직염 | 연조직염, cellulitis, 피부 연부조직 감염, 단독, erysipelas, 발적, 종창 | 세균성 피부질환 |
 | 모낭염 | folliculitis, 모낭 염증, 농포, pustule, 세균성 모낭염, 말라세지아 모낭염 | 염증성 피부질환 |
 | 지루성 피부염 | seborrheic dermatitis, 지루피부염, 두피 지루, 비듬, dandruff, 피지선 활성, 항진균 외용 | 염증·알레르기 피부질환 |
-| 주사 | rosacea, 주사비, 안면홍조, facial flushing, 구진농포성 주사, papulopustular rosacea, 혈관 레이저, vascular laser | 혈관·홍조질환 |
+| 주사비 | rosacea, 안면홍조, facial flushing, 구진농포성 주사비, papulopustular rosacea, 주사성 피부염, 혈관 레이저, vascular laser | 혈관·홍조질환 |
 | 홍조 | facial erythema, 안면홍조, facial flushing, 모세혈관 확장증, telangiectasia, 혈관 레이저, IPL, 585nm 색소혈관 레이저 | 혈관·홍조질환 |
 | 한관종 | syringoma, 눈밑 한관종, 에크린 한관종, 양성 부속기 종양, CO2 레이저, 탄산가스 레이저 | 양성 피부종양 |
 | 비립종 | milium, milia, 좁쌀 각질낭, 각질 낭종, 눈가 비립종, 면포 압출 | 양성 피부종양 |
