@@ -31,27 +31,32 @@ def find_related_hospitals(
     results: list[RelatedHospital] = []
 
     # --- same_focus 추천 ---
-    if location.lat and location.lng:
-        query = SearchQuery(
-            query_text=" ".join(primary_focus),
-            lat=location.lat,
-            lng=location.lng,
-            radius_km=3.0,
-            min_confidence=70,
-            sort="relevance",
-            limit=limit * 2,
-        )
-    else:
-        query = SearchQuery(
-            query_text=" ".join(primary_focus),
-            sido=location.sido,
-            sigungu=location.sigungu,
-            min_confidence=70,
-            sort="relevance",
-            limit=limit * 2,
-        )
-
-    same_focus_raw: list[SearchResult] = retrieve_hospital(query)
+    # primary_focus 가 비면 query_text 가 빈 문자열이 돼 KB Retrieve 가 InvalidQueryError
+    # 를 던진다(빈 쿼리 불가). 그러면 병원 전체 파이프라인이 실패하므로, 주력 분야가
+    # 없는 병원(=신호 부족)은 같은-주력 추천을 **건너뛰고** 빈 결과로 진행한다.
+    focus_query = " ".join(primary_focus).strip()
+    same_focus_raw: list[SearchResult] = []
+    if focus_query:
+        if location.lat and location.lng:
+            query = SearchQuery(
+                query_text=focus_query,
+                lat=location.lat,
+                lng=location.lng,
+                radius_km=3.0,
+                min_confidence=70,
+                sort="relevance",
+                limit=limit * 2,
+            )
+        else:
+            query = SearchQuery(
+                query_text=focus_query,
+                sido=location.sido,
+                sigungu=location.sigungu,
+                min_confidence=70,
+                sort="relevance",
+                limit=limit * 2,
+            )
+        same_focus_raw = retrieve_hospital(query)
     for r in same_focus_raw:
         if r.hospital_id == hospital_id:
             continue
@@ -72,6 +77,8 @@ def find_related_hospitals(
     # --- fills_gap 추천 ---
     gap_limit = limit - len(results)
     for excluded in excluded_services[:gap_limit]:
+        if not (excluded.name or "").strip():
+            continue  # 빈 분야명은 KB Retrieve 빈 쿼리 에러를 유발하므로 건너뜀
         if location.lat and location.lng:
             gap_query = SearchQuery(
                 query_text=excluded.name,
