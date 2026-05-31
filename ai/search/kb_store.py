@@ -568,14 +568,19 @@ def build_signal_chunks(
     """
     result: dict[str, str] = {}
 
-    # 광고·과장 표현 스크럽(임베딩 전용) → 동의어 주입 순. 자칭=강하게, 후기·블로그=광고어만.
+    # 광고·과장 표현만 스크럽(임베딩 전용). **doc-side 동의어 주입(_enrich_with_synonyms)은
+    # 제거** — 트리거 단어 1회(예: 19000자 치과 사이트의 "탈모" 1회)만 있어도 동의어 클러스터
+    # 전체를 청크에 박아, 쿼리(같은 클러스터로 확장)와 "덩어리끼리" 매칭되며 임베딩 변별력을
+    # 파괴했다(치과가 "M자 탈모" 검색 0.708 1위·진짜 모발병원은 후순위 — 2026-05-31 실측).
+    # 한국어 의학 동의어 갭은 **쿼리-side 확장(process_query)** 으로만 메운다(쿼리만 확장,
+    # 문서는 진짜 내용 그대로 임베딩 → 변별력 보존).
     sc = build_self_claim_chunk(crawl_data=crawl_data, kakao_place=kakao_place)
     if sc:
-        result["self_claim"] = _enrich_with_synonyms(_scrub_ad_phrases(sc, aggressive=True))
+        result["self_claim"] = _scrub_ad_phrases(sc, aggressive=True)
 
     bc = build_blog_chunk(crawl_data=crawl_data, kakao_blog=kakao_blog, naver_blog=naver_blog)
     if bc:
-        result["blog"] = _enrich_with_synonyms(_scrub_ad_phrases(bc, aggressive=False))
+        result["blog"] = _scrub_ad_phrases(bc, aggressive=False)
 
     rc = build_reviews_chunk(
         kakao_reviews=kakao_reviews,
@@ -583,7 +588,7 @@ def build_signal_chunks(
         google_reviews=google_reviews,
     )
     if rc:
-        result["reviews"] = _enrich_with_synonyms(_scrub_ad_phrases(rc, aggressive=False))
+        result["reviews"] = _scrub_ad_phrases(rc, aggressive=False)
 
     vc = build_vision_chunk(vision_results=vision_results)
     if vc:
@@ -961,6 +966,10 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
 
     client = boto3.client("bedrock-agent-runtime", region_name=region)
 
+    # min-sim 임계 — 유사도가 너무 낮은(관련 없는) 결과 컷. 동의어 도배 제거 후 점수 분포가
+    # 낮아지므로 보수적 기본값 + env 튜닝(KB_MIN_SCORE). 0 이면 비활성.
+    min_score = float(os.environ.get("KB_MIN_SCORE", "0.3"))
+
     has_location = query.lat is not None and query.lng is not None
 
     # --- bounding box 계산 (위치 있을 때) ---
@@ -1015,7 +1024,7 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
                 # 좌표 없는 병원은 위치 검색에서 제외
                 continue
             dist = _haversine_km(user_lat, user_lng, float(item_lat), float(item_lng))
-            if dist <= query.radius_km:
+            if dist <= query.radius_km and score >= min_score:
                 candidates.append((dist, score, item))
 
         # 정렬
@@ -1041,16 +1050,13 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
             )
         return results
 
-    # --- 자연어 단독 검색: score 내림차순 정렬 ---
-    sorted_items = sorted(
-        by_hospital.values(),
-        key=lambda x: float(x.get("score") or 0.0),
-        reverse=True,
-    )
+    # --- 자연어 단독 검색: min-sim 컷 후 정렬 ---
+    kept = [it for it in by_hospital.values() if float(it.get("score") or 0.0) >= min_score]
+    sorted_items = sorted(kept, key=lambda x: float(x.get("score") or 0.0), reverse=True)
 
     if query.sort == "confidence":
         sorted_items = sorted(
-            by_hospital.values(),
+            kept,
             key=lambda x: float((x.get("metadata") or {}).get("confidence_score") or 0),
             reverse=True,
         )

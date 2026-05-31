@@ -390,8 +390,13 @@ class TestSynonymEnrichment:
         assert "사마귀" not in added_terms
         assert "심상성 우췌" not in added_terms
 
-    def test_build_signal_chunks_enriches_self_claim(self):
-        """build_signal_chunks 의 self_claim 청크가 동의어 주입을 거친다."""
+    def test_build_signal_chunks_no_doc_side_injection(self):
+        """build_signal_chunks 는 doc-side 동의어 주입을 하지 않는다 — 청크=진짜 내용.
+
+        회귀 가드: 트리거 단어 1회만 있어도 동의어 클러스터 전체를 청크에 박던 doc-side
+        주입(_enrich_with_synonyms)을 제거했다. 그게 임베딩 변별력을 파괴해(19000자 치과
+        사이트의 "탈모" 1회→"M자 탈모" 검색 0.708 1위) 진짜 전문병원이 밀렸다. 동의어 갭은
+        쿼리-side 확장(process_query)으로만 메운다 — 문서는 원문 그대로 임베딩(2026-05-31)."""
         from datetime import datetime, timezone
         from shared.models import CrawlData, CrawledPage
 
@@ -408,7 +413,9 @@ class TestSynonymEnrichment:
         )
         chunks = build_signal_chunks(crawl_data=crawl)
         assert "self_claim" in chunks
-        assert "사마귀" in chunks["self_claim"]  # 문서-측 주입으로 일반어 추가됨
+        assert "심상성" in chunks["self_claim"]            # 진짜 내용은 유지
+        assert "[관련 의학 용어]" not in chunks["self_claim"]  # 주입 블록 없음
+        assert "사마귀" not in chunks["self_claim"]         # doc-side 주입 안 함
 
 
 # ===========================================================================

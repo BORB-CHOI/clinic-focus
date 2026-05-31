@@ -794,8 +794,9 @@ def _signal_taxonomy_votes(text: str, specialty: str | None) -> Counter:
     if not text:
         return votes
     tags = SPECIALTY_TAGS.get(specialty) if specialty else None
-    if tags is None:
-        # 미지원 종별·specialty 미지정 → 전 과목 스캔 (taxonomy 키워드는 구체적이라 안전).
+    all_scan = tags is None
+    if all_scan:
+        # 미지원 종별·specialty 미지정 → 전 과목 스캔.
         tag_iter = [
             (label, kws) for sp_tags in SPECIALTY_TAGS.values() for label, kws in sp_tags
         ]
@@ -805,6 +806,13 @@ def _signal_taxonomy_votes(text: str, specialty: str | None) -> Counter:
         hits = sum(text.count(kw) for kw in keywords)
         if hits:
             votes[label] += hits
+    if all_scan and votes:
+        # 전과목 스캔은 우연한 소수 매칭이 focus 로 새기 쉽다(모더함: 19000자 치과 사이트의
+        # "교정" 1회→치아교정, 후기의 "스트레스/불안"→우울·불안). 지배 태그 대비 빈도 임계
+        # (15% 또는 최소 2회) 미만은 버려, 진짜 주력만 남긴다. 진료과 제약 스캔엔 미적용.
+        top = max(votes.values())
+        floor = max(2, int(top * 0.15))
+        votes = Counter({label: v for label, v in votes.items() if v >= floor})
     return votes
 
 
