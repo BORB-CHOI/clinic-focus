@@ -990,8 +990,11 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
         lng_range=lng_range,
     )
 
-    # 같은 병원에서 여러 청크가 나올 수 있으므로 limit * 3 배로 넉넉히 요청
-    n_request = min(query.limit * 3, _KB_MAX_RESULTS)
+    # 한 병원이 self_claim/blog/reviews/vision 최대 4청크를 가지므로, limit*3 만 받으면
+    # dedup 후 병원 수가 limit 에 한참 못 미친다(실측: limit10→30청크→dedup 10병원, min-sim
+    # 컷 후 6병원). KB Retrieve 는 numberOfResults 가 30이든 100이든 단일 호출·동일 비용이라,
+    # 항상 KB 최대(100)를 받아 dedup 풀을 키운다. 최종 출력은 어차피 query.limit 로 캡(아래).
+    n_request = _KB_MAX_RESULTS
     raw = _kb_retrieve(client, kb_id, retrieve_text, kb_filter, n_request)
 
     # --- fallback: 빈 결과 시 지역/specialty/confidence 완화 (team_id 는 유지) ---
