@@ -3,6 +3,14 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+# .env 로드 — uvicorn · `python -m uvicorn` 등 어떤 진입점으로 떠도 KB_ID·AWS_REGION 등
+# 환경변수를 확보한다(자연어 검색 retrieve_hospital 이 KB_ID 필요). 스크립트는 각자 load 하지만
+# API 서버는 진입점이 외부(uvicorn)라 앱 모듈에서 직접 로드해야 self-sufficient.
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
