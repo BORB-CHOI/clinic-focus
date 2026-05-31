@@ -124,29 +124,37 @@ export function ConfidenceSection({
       <Separator className="my-6" />
 
       <DetailBlock signal="vision" title="이미지 분포">
-        <ul className="space-y-1.5 text-sm">
-          {Object.entries(detailed_signals.vision.image_distribution).map(
-            ([key, ratio]) => (
-              <li key={key} className="flex items-center gap-3">
-                <span className="w-20 text-muted-foreground">{key}</span>
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-signal-vision-50">
-                  <div
-                    className="h-full rounded-full bg-signal-vision-500"
-                    style={{ width: `${Math.round(ratio * 100)}%` }}
-                  />
-                </div>
-                <span className="w-10 text-right font-mono text-xs">
-                  {Math.round(ratio * 100)}%
-                </span>
-              </li>
-            ),
-          )}
-        </ul>
-        {detailed_signals.vision.detected_devices.length > 0 ? (
-          <p className="mt-2 text-xs text-muted-foreground">
-            감지된 장비: {detailed_signals.vision.detected_devices.join(", ")}
+        {detailed_signals.vision ? (
+          <>
+            <ul className="space-y-1.5 text-sm">
+              {Object.entries(detailed_signals.vision.image_distribution).map(
+                ([key, ratio]) => (
+                  <li key={key} className="flex items-center gap-3">
+                    <span className="w-20 text-muted-foreground">{key}</span>
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-signal-vision-50">
+                      <div
+                        className="h-full rounded-full bg-signal-vision-500"
+                        style={{ width: `${Math.round(ratio * 100)}%` }}
+                      />
+                    </div>
+                    <span className="w-10 text-right font-mono text-xs">
+                      {Math.round(ratio * 100)}%
+                    </span>
+                  </li>
+                ),
+              )}
+            </ul>
+            {detailed_signals.vision.detected_devices.length > 0 ? (
+              <p className="mt-2 text-xs text-muted-foreground">
+                감지된 장비: {detailed_signals.vision.detected_devices.join(", ")}
+              </p>
+            ) : null}
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            이미지 분석 없음 — Vision 은 시연 대상 병원에만 적용됩니다.
           </p>
-        ) : null}
+        )}
       </DetailBlock>
 
       <Separator className="my-6" />

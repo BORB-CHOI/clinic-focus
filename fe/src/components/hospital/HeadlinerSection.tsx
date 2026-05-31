@@ -5,7 +5,8 @@ import { HospitalThumbnail } from "@/components/common/HospitalThumbnail";
 import type { AiDescription, Confidence } from "@/types/domain";
 
 interface HeadlinerSectionProps {
-  ai_description: AiDescription;
+  /** 비-시연 병원은 null — AI 단락 대신 요약·안내로 차등 렌더 */
+  ai_description: AiDescription | null;
   confidence: Confidence;
   one_line_summary: string;
   /** 병원명 — 히어로 폴백 이니셜용 */
@@ -45,31 +46,43 @@ export function HeadlinerSection({
 
         <div className="min-w-0 flex-1">
           <p className="text-[1.2rem] font-semibold leading-snug tracking-tight">
-            {ai_description.headline}
+            {ai_description?.headline || one_line_summary || `${name} 분류 요약`}
           </p>
-          <p className="mt-2 text-sm text-muted-foreground">{one_line_summary}</p>
+          {ai_description && one_line_summary ? (
+            <p className="mt-2 text-sm text-muted-foreground">{one_line_summary}</p>
+          ) : null}
         </div>
       </div>
 
-      <div className="mt-6 space-y-5">
-        {ai_description.paragraphs.map((p, idx) => (
-          <div key={idx} className="space-y-2">
-            <p className="text-[15px] leading-relaxed">{p.text}</p>
-            <div className="flex flex-wrap items-center gap-1">
-              <span className="mr-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                출처
-              </span>
-              {p.citations.map((c) => (
-                <SignalChip key={c} signal={c} />
-              ))}
-            </div>
+      {ai_description ? (
+        <>
+          <div className="mt-6 space-y-5">
+            {ai_description.paragraphs.map((p, idx) => (
+              <div key={idx} className="space-y-2">
+                <p className="text-[15px] leading-relaxed">{p.text}</p>
+                <div className="flex flex-wrap items-center gap-1">
+                  <span className="mr-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                    출처
+                  </span>
+                  {p.citations.map((c) => (
+                    <SignalChip key={c} signal={c} />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      <p className="mt-6 text-xs text-muted-foreground">
-        AI 생성 · {new Date(ai_description.generated_at).toLocaleString("ko-KR")}
-      </p>
+          <p className="mt-6 text-xs text-muted-foreground">
+            AI 생성 · {new Date(ai_description.generated_at).toLocaleString("ko-KR")}
+          </p>
+        </>
+      ) : (
+        <p className="mt-6 rounded-md bg-muted/50 p-3 text-xs leading-relaxed text-muted-foreground">
+          AI 통합 설명은 시연 대상 병원에만 생성됩니다. 아래{" "}
+          <span className="font-medium text-foreground">진료 정보</span> 탭에서
+          신호별 근거(자칭·후기·블로그·Vision)를 확인하세요.
+        </p>
+      )}
     </Section>
   );
 }

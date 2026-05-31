@@ -173,7 +173,7 @@ export interface DetailedSignals {
     detected_devices: string[];
     image_distribution: Record<string, number>;
     sample_image_urls: string[];
-  };
+  } | null;
   blog: {
     top_topics: { topic: string; frequency: number }[];
     total_posts: number;
@@ -200,14 +200,14 @@ export interface HospitalDetail {
    */
   thumbnail_url: string | null;
 
-  ai_description: AiDescription;
+  ai_description: AiDescription | null;
   services: Service[];
   excluded_services: ExcludedService[];
   equipment: Equipment[];
   prices: PriceItem[];
   doctors: Doctor[];
   detailed_signals: DetailedSignals;
-  operating_hours: OperatingHours;
+  operating_hours: OperatingHours | null;
   contact: Contact;
   feedback_stats: FeedbackStats;
   recent_changes: ClassificationChange[];
