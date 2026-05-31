@@ -234,12 +234,17 @@ def _parse_llm_json(response: dict[str, Any]) -> dict[str, Any] | None:
         return None
 
 
-def _extract_self_claim(crawl_data: CrawlData) -> SelfClaimSignal:
+def _extract_self_claim(crawl_data: CrawlData, specialty: str | None = None) -> SelfClaimSignal:
     """자칭 컨셉 추출 — Bedrock Claude 호출.
 
     main / about / service 페이지 텍스트를 합쳐 LLM에 전달한다.
     Bedrock 호출 실패는 BedrockInvocationError 로 re-raise.
     JSON 파싱 실패 시 빈 SelfClaimSignal 로 안전 fallback.
+
+    LLM 의 value-add 는 **keywords·spam_score**(미묘한 도배 판단)다. primary_focus 라벨은
+    specialty 가 주어지면 **진료과 taxonomy** 로 산출해 룰 경로·표시 focus 와 같은 어휘로
+    통일한다 — LLM 프롬프트가 옛 4과 스키마("손·발(수부외과)" 등)를 제시해 demo self_claim
+    라벨이 시스템 나머지와 어긋나던 것을 해소(라벨 일원화, 노이즈 vocabulary 제거).
     """
     target_pages = [
         p for p in crawl_data.pages
@@ -268,9 +273,17 @@ def _extract_self_claim(crawl_data: CrawlData) -> SelfClaimSignal:
         return SelfClaimSignal(keywords=[], primary_focus=[], spam_score=0.0)
 
     keywords: list[str] = parsed.get("keywords") or []
-    primary_focus: list[str] = parsed.get("primary_focus") or []
     spam_score: float = float(parsed.get("spam_score", 0.0))
     spam_score = max(0.0, min(1.0, spam_score))
+
+    if specialty is not None:
+        # 진료과 taxonomy 로 라벨 통일 (LLM 옛스키마 라벨 대신). 본문 + LLM 키워드를 함께 스캔.
+        primary_focus = _taxonomy_focus_from_text(
+            combined_text + " " + " ".join(keywords), specialty
+        )
+    else:
+        # specialty 미지정(직접 호출 단위테스트) → LLM 이 준 focus 그대로(하위호환)
+        primary_focus = parsed.get("primary_focus") or []
 
     return SelfClaimSignal(
         keywords=keywords,
@@ -1216,9 +1229,9 @@ def classify_hospital(
     #       bare "손"→손·발 오염·잡탕 제거). LLM 자칭 추출은 LLM 이 focus 를 직접 주므로 미사용.
     final_specialty = standard_specialty or _infer_standard_specialty(crawl_data)
 
-    # 2. 자칭 컨셉 추출
+    # 2. 자칭 컨셉 추출 — 두 경로 모두 final_specialty 주입 → primary_focus 라벨을 taxonomy 로 통일.
     if use_llm:
-        self_claim_signal = _extract_self_claim(crawl_data)
+        self_claim_signal = _extract_self_claim(crawl_data, final_specialty)
     else:
         self_claim_signal = _extract_self_claim_rule(crawl_data, final_specialty)
 
