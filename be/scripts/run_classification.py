@@ -35,6 +35,10 @@ def main(argv: list[str] | None = None):
         "--sigungu", default=None,
         help="특정 시군구만 분류 (예: 강남구). 미지정 시 전체 META.",
     )
+    parser.add_argument(
+        "--name-contains", default=None, dest="name_contains",
+        help="병원명에 이 문자열이 포함된 곳만 재분류 (예: 여성). 타깃 재분류·재인제스트용.",
+    )
     args = parser.parse_args(argv)
 
     db = DynamoAdapter()
@@ -52,13 +56,21 @@ def main(argv: list[str] | None = None):
         print(f"❌ AI 모듈 import 실패: {e}")
         return
 
-    # 대상 결정 — 시군구 지정 시 그 구만, 아니면 전체 META.
+    # 대상 결정 — 시군구 지정 시 그 구만, 아니면 전체 META. --name-contains 로 이름 필터.
     if args.sigungu:
-        hospital_ids = [m.hospital_id for m in db.list_hospitals_by_sigungu(args.sigungu)]
-        print(f"  대상: {args.sigungu} {len(hospital_ids)}개\n")
+        metas = db.list_hospitals_by_sigungu(args.sigungu)
+        if args.name_contains:
+            metas = [m for m in metas if args.name_contains in (m.name or "")]
+        hospital_ids = [m.hospital_id for m in metas]
     else:
         hospital_ids = list(db.iter_all_hospital_ids())
-        print(f"  전체 병원: {len(hospital_ids)}개\n")
+        if args.name_contains:
+            hospital_ids = [
+                hid for hid in hospital_ids
+                if (m := db.load_hospital_meta(hid)) and args.name_contains in (m.name or "")
+            ]
+    scope = (args.sigungu or "전체") + (f" / 이름~'{args.name_contains}'" if args.name_contains else "")
+    print(f"  대상: {scope} {len(hospital_ids)}개\n")
 
     success = 0
     skipped = 0
