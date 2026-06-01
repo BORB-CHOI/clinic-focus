@@ -20,7 +20,7 @@ class BrowserManager:
     - 크래시 복구: 브라우저 비정상 종료 시 새 인스턴스 생성
     """
 
-    MAX_PAGES_BEFORE_RESTART: int = 30
+    MAX_PAGES_BEFORE_RESTART: int = 8   # 4GB EC2 single-process 크롬 크래시 누적 방지 (구 30→8)
     PAGE_TIMEOUT_MS: int = 30_000
     MAX_CONCURRENT_TABS: int = 3
 
@@ -113,6 +113,98 @@ class BrowserManager:
                 if self._page_count >= self.MAX_PAGES_BEFORE_RESTART:
                     await self._restart_browser()
 
+    async def screenshot_page_scroll(
+        self, url: str, *, max_tiles: int = 8, capture_popup: bool = True
+    ) -> list[bytes]:
+        """페이지를 위→아래 **뷰포트 타일 여러 장**으로 전부 캡처 (Vision 시연용).
+
+        - full_page 한 장은 너무 길어 Sonnet 이 다운스케일→텍스트 깨짐. 그래서 1280×1600
+          뷰포트 단위로 스크롤하며 여러 장(가독성 유지).
+        - **팝업 처리**: 내용이 유용(시술 안내)할 수 있어 **닫기 전 1장 먼저 캡처** → 이후
+          Escape·닫기버튼·오버레이 JS 제거로 본문을 가리지 않게 한 뒤 스크롤 타일.
+        - lazy-load 대비 타일마다 짧게 대기 + scrollHeight 재측정.
+
+        Returns: PNG bytes 리스트(앞=팝업 포함 첫 화면, 이후=본문 타일). 실패 시 가능한 만큼.
+        """
+        async with self._semaphore:
+            await self._ensure_browser()
+            context: BrowserContext | None = None
+            shots: list[bytes] = []
+            vh = 1600
+            try:
+                context = await self._browser.new_context(  # type: ignore[union-attr]
+                    viewport={"width": 1280, "height": vh},
+                )
+                page: Page = await context.new_page()
+                # networkidle 은 광고·트래킹으로 계속 통신하는 사이트에서 30초 풀타임아웃을
+                # 먹어 병원당 ~2분으로 느려진다 → "load" + 짧은 타임아웃. 타임아웃이 나도
+                # 부분 렌더라도 캡처를 진행한다(throw 로 전체 캡처를 버리지 않게).
+                try:
+                    await page.goto(url, wait_until="load", timeout=15_000)
+                except Exception as exc:  # noqa: BLE001
+                    logger.info("goto 부분 로드/타임아웃(%s) — 현재 상태로 캡처 진행: %s", url, exc)
+                await page.wait_for_timeout(1500)  # 팝업·지연 렌더 대기
+
+                # 1) 팝업 포함 첫 화면 1장 (팝업 안내문 내용 보존)
+                if capture_popup:
+                    s = await page.screenshot(type="png")
+                    if s:
+                        shots.append(s)
+
+                # 2) 팝업/오버레이 닫기 — 본문을 가리지 않게
+                try:
+                    await page.keyboard.press("Escape")
+                    await page.evaluate(
+                        """() => {
+                            const kill = el => { try { el.style.display='none'; } catch(e){} };
+                            document.querySelectorAll(
+                              '[class*=popup i],[class*=modal i],[class*=layer i],[id*=popup i],[id*=modal i],[class*=dimm i],[class*=overlay i]'
+                            ).forEach(kill);
+                            document.querySelectorAll('body *').forEach(el => {
+                              const cs = getComputedStyle(el);
+                              if ((cs.position==='fixed'||cs.position==='absolute')
+                                  && parseInt(cs.zIndex||0) >= 100 && el.offsetHeight > 200) kill(el);
+                            });
+                        }"""
+                    )
+                    for sel in ("text=오늘 하루", "text=닫기", ".close", "[aria-label*=close i]", ".btn-close"):
+                        try:
+                            await page.click(sel, timeout=400)
+                        except Exception:  # noqa: BLE001
+                            pass
+                except Exception:  # noqa: BLE001
+                    pass
+                await page.wait_for_timeout(300)
+
+                # 3) 위→아래 뷰포트 타일 (스크롤하며 전부)
+                y = 0
+                n = 0
+                total = await page.evaluate("() => document.body.scrollHeight")
+                while y < total and n < max_tiles:
+                    await page.evaluate(f"window.scrollTo(0, {y})")
+                    await page.wait_for_timeout(250)  # lazy-load
+                    s = await page.screenshot(type="png")
+                    if s:
+                        shots.append(s)
+                        n += 1
+                    y += vh
+                    total = await page.evaluate("() => document.body.scrollHeight")
+                return shots
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("screenshot_page_scroll failed for %s: %s", url, exc)
+                if self._browser and not self._browser.is_connected():
+                    await self._restart_browser()
+                return shots
+            finally:
+                if context:
+                    try:
+                        await context.close()
+                    except Exception:  # noqa: BLE001
+                        pass
+                self._page_count += 1
+                if self._page_count >= self.MAX_PAGES_BEFORE_RESTART:
+                    await self._restart_browser()
+
     async def extract_element_attr(self, url: str, selector: str, attr: str) -> str | None:
         """URL을 렌더링한 뒤 특정 셀렉터의 속성값 추출.
 
@@ -165,7 +257,10 @@ class BrowserManager:
         - --no-sandbox: 컨테이너/제한 환경에서 sandbox 비활성 (EC2 단일 프로세스)
         - --disable-dev-shm-usage: 작은 /dev/shm 대신 /tmp 사용 (크래시 방지)
         - --disable-gpu: headless에서 불필요한 GPU 프로세스 차단
-        - --single-process: 별도 렌더러 프로세스 미생성 (메모리 절감)
+
+        ⚠️ --single-process 는 **제거**했다. 그 플래그가 "Target page/context/browser
+        has been closed" 크래시의 주범(헤드리스 크롬 단일프로세스 불안정)이었고, 스왑
+        4GB 확보로 멀티프로세스 메모리 여유도 생겼다. 멀티프로세스가 훨씬 안정적.
         """
         if self._playwright is None:
             raise RuntimeError("BrowserManager not entered as context manager")
@@ -175,7 +270,6 @@ class BrowserManager:
                 "--no-sandbox",
                 "--disable-dev-shm-usage",
                 "--disable-gpu",
-                "--single-process",
             ],
         )
 

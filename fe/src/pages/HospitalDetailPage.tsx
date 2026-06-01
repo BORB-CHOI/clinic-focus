@@ -1,5 +1,6 @@
 import { useParams } from "react-router-dom";
 
+import { EmptyState } from "@/components/common/EmptyState";
 import { WarningBanner } from "@/components/common/WarningBanner";
 import { Tabs } from "@/components/common/Tabs";
 import { HeadlinerSection } from "@/components/hospital/HeadlinerSection";
@@ -11,20 +12,12 @@ import { FeedbackSection } from "@/components/hospital/FeedbackSection";
 import { RecentChangesSection } from "@/components/hospital/RecentChangesSection";
 import { RelatedHospitalsSection } from "@/components/hospital/RelatedHospitalsSection";
 import { MetadataSection } from "@/components/hospital/MetadataSection";
-import { mockHospital } from "@/mocks/hospital";
+import { useHospitalDetail } from "@/hooks/useHospitalDetail";
 
-// 병원 상세 페이지 — 3탭 재구성
+// 병원 상세 페이지 — BE /api/hospitals/{id} 연동 (useHospitalDetail)
 //
-// 9영역을 의미 단위로 묶어 스크롤 길이를 줄이고 시연 흐름을 구분한다:
-//   - 기본 정보  : ① 요약 + ⑤ 운영 + ⑨ 메타
-//                  → "이 병원이 누구인지" 한 화면 도입부
-//   - 진료 정보  : ② 핵심 진료 + ③ 의료진 + ④ 신뢰도 근거 + ⑦ 분류 변경 이력
-//                  → 본 서비스 차별점이 응축. 데모 핵심 탭
-//   - 운영·후기  : ⑥ 피드백 + ⑧ 관련 병원
-//                  → 행동 유도 (피드백 1-tap, 대안 병원 진입)
-//
-// 활성 탭은 URL 쿼리(?tab=core / ?tab=ops)에 동기화 — 새로고침·공유 보존.
-// 헤드라이너 citation 배지 → ④ 스크롤은 진료 정보 탭 안에서 자연스럽게 작동.
+// 9영역을 3탭(기본/진료/운영·후기)으로 묶는다. 비-데모 병원은 ai_description·vision·
+// operating_hours 가 null 일 수 있어 각 섹션이 null-safe 하게 렌더(차등 표시).
 const TAB_ITEMS = [
   { value: "info", label: "기본 정보" },
   { value: "core", label: "진료 정보" },
@@ -35,7 +28,25 @@ type TabValue = (typeof TAB_ITEMS)[number]["value"];
 
 export default function HospitalDetailPage() {
   const { hospitalId } = useParams();
-  const hospital = mockHospital;
+  const { data: hospital, isLoading, isError, error } = useHospitalDetail(hospitalId);
+
+  if (isLoading) {
+    return (
+      <div className="py-24 text-center text-sm text-muted-foreground">
+        병원 정보를 불러오는 중…
+      </div>
+    );
+  }
+
+  if (isError || !hospital) {
+    return (
+      <EmptyState
+        message={`병원 정보를 불러오지 못했습니다 — ${
+          (error as Error)?.message ?? "알 수 없는 오류"
+        }`}
+      />
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -47,7 +58,7 @@ export default function HospitalDetailPage() {
           </p>
         </div>
         <span className="text-xs text-muted-foreground">
-          ID: <code>{hospitalId ?? hospital.hospital_id}</code>
+          ID: <code>{hospital.hospital_id}</code>
         </span>
       </header>
 
@@ -63,10 +74,7 @@ export default function HospitalDetailPage() {
         />
       ) : null}
 
-      <Tabs<TabValue>
-        defaultValue="info"
-        items={TAB_ITEMS}
-      >
+      <Tabs<TabValue> defaultValue="info" items={TAB_ITEMS}>
         {{
           info: (
             <div className="space-y-4">
@@ -96,7 +104,7 @@ export default function HospitalDetailPage() {
                 prices={hospital.prices}
                 related_hospitals={hospital.related_hospitals}
                 sample_image_urls={
-                  hospital.detailed_signals.vision.sample_image_urls
+                  hospital.detailed_signals.vision?.sample_image_urls ?? []
                 }
                 hospital_name={hospital.name}
               />

@@ -21,11 +21,15 @@ def get_bedrock_client(use_vision: bool = False) -> Any:
 
 
 def invoke_model(prompt: str, model_id: str | None = None) -> dict:
-    """텍스트 프롬프트를 Bedrock Claude 텍스트 모델에 전송 (지원 계정 Haiku/Nova)."""
+    """텍스트 프롬프트를 Bedrock Claude 텍스트 모델에 전송 (개인 계정 Haiku, 서울).
+
+    ⚠️ 반드시 **global. inference profile** 형태여야 한다 — 직접 모델 ID
+    (`anthropic.claude-haiku-4-5-...`)는 on-demand 호출 미지원(ValidationException).
+    """
     client = get_bedrock_client(use_vision=False)
     model = model_id or os.getenv(
         "BEDROCK_LLM_MODEL_ID",
-        "anthropic.claude-haiku-4-5-20251001-v1:0",
+        "global.anthropic.claude-haiku-4-5-20251001-v1:0",
     )
     body = json.dumps({
         "anthropic_version": "bedrock-2023-05-31",
@@ -37,22 +41,33 @@ def invoke_model(prompt: str, model_id: str | None = None) -> dict:
 
 
 def invoke_model_with_image(prompt: str, image_b64: str, media_type: str = "image/jpeg") -> dict:
-    """이미지 + 텍스트를 Bedrock Vision 모델에 전송 (개인 계정 Sonnet 4.6)."""
+    """이미지 1장 + 텍스트를 Bedrock Vision 모델에 전송 (개인 계정 Sonnet 4.6)."""
+    return invoke_model_with_images(prompt, [(image_b64, media_type)])
+
+
+def invoke_model_with_images(prompt: str, images: list[tuple[str, str]]) -> dict:
+    """여러 이미지 + 텍스트를 **한 번의** Bedrock Vision 호출로 전송 (멀티이미지 배칭).
+
+    한 병원 페이지의 스크롤 타일들 + 개별 사진을 한 메시지에 모아 1회 호출 →
+    이미지당 1콜(순차 ~8초×N) 대비 라운드트립이 1회로 줄어 병원당 수십 초 절감.
+    입력 토큰은 이미지 합산이라 비용은 비슷하고 지연만 크게 준다.
+
+    Args:
+        prompt: 텍스트 프롬프트(맨 뒤에 배치).
+        images: (base64, media_type) 튜플 리스트. 순서대로 content 에 들어간다.
+    """
     client = get_bedrock_client(use_vision=True)
-    model = os.getenv(
-        "BEDROCK_VISION_MODEL_ID",
-        "global.anthropic.claude-sonnet-4-6",
-    )
+    model = os.getenv("BEDROCK_VISION_MODEL_ID", "global.anthropic.claude-sonnet-4-6")
+    content: list[dict] = [
+        {"type": "image", "source": {"type": "base64", "media_type": mt, "data": b64}}
+        for b64, mt in images
+    ]
+    content.append({"type": "text", "text": prompt})
     body = json.dumps({
         "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": 2048,
-        "messages": [{
-            "role": "user",
-            "content": [
-                {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": image_b64}},
-                {"type": "text", "text": prompt},
-            ],
-        }],
+        # 여러 이미지를 종합 서술하므로 넉넉히. 모델은 필요한 만큼만 생성한다.
+        "max_tokens": 3072,
+        "messages": [{"role": "user", "content": content}],
     })
     response = client.invoke_model(modelId=model, body=body)
     return json.loads(response["body"].read())

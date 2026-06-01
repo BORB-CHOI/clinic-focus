@@ -25,6 +25,7 @@ import boto3
 
 from be.adapters.dynamo_adapter import DynamoAdapter
 from be.adapters.s3_adapter import S3Adapter
+from be.core.crawler import site_mentions_hospital
 from shared.models import CrawlData
 
 
@@ -62,6 +63,7 @@ def main(argv: list[str] | None = None):
     success = 0
     skipped = 0
     failed = 0
+    name_mismatch = 0  # URL 오매칭 의심으로 자칭 시그널 제외한 수
 
     for i, hospital_id in enumerate(hospital_ids, 1):
         try:
@@ -74,14 +76,20 @@ def main(argv: list[str] | None = None):
             # 외부 시그널만으로도 분류하고, 그마저 없으면 score 0 '정보 부족'(후순위)로
             # 저장해 검색에 '뜨긴 뜨게' 한다 (사라지면 의료법상 차별 노출 소지).
             crawl_data = s3.load_crawl_data(hospital_id)
+            _empty_site = CrawlData(
+                hospital_id=hospital_id,
+                website_url=(hospital_meta.contact.website_url or "")
+                if hospital_meta.contact else "",
+                pages=[],
+                images=[],
+            )
             if crawl_data is None or not crawl_data.pages:
-                crawl_data = CrawlData(
-                    hospital_id=hospital_id,
-                    website_url=(hospital_meta.contact.website_url or "")
-                    if hospital_meta.contact else "",
-                    pages=[],
-                    images=[],
-                )
+                crawl_data = _empty_site
+            elif not site_mentions_hospital(hospital_meta.name, crawl_data):
+                # URL 오매칭 방어: 본문에 병원명이 전혀 없으면 엉뚱한 사이트일 개연성 →
+                # 자칭 시그널 제외(빈 사이트로). 외부 시그널만으로 분류(틀린 자칭 < 빈 자칭).
+                name_mismatch += 1
+                crawl_data = _empty_site
 
             # 외부 시그널 로드 (적재된 것만 — 없으면 None)
             external = db.load_external_signals(hospital_id)
@@ -100,7 +108,13 @@ def main(argv: list[str] | None = None):
             signal_chunks = build_signal_chunks(crawl_data=crawl_data, **external)
             if signal_chunks:
                 metadata = build_ingest_metadata(hospital_meta, classification)
-                ingest_hospital(hospital_id, signal_chunks, metadata, trigger_ingestion=False)
+                # prune_absent: 자칭이 URL 오매칭으로 비워졌을 때 옛 self_claim 청크(stale 메타)가
+                # S3 에 잔존해 검색을 오염시키지 않도록, 이번에 안 만든 시그널의 옛 파일을 삭제.
+                # build_signal_chunks 가 전체 시그널을 한 번에 채워 넘기므로 안전.
+                ingest_hospital(
+                    hospital_id, signal_chunks, metadata,
+                    trigger_ingestion=False, prune_absent=True,
+                )
 
             success += 1
             print(f"  [{i}/{len(hospital_ids)}] ✅ {hospital_meta.name} — {classification.primary_focus} "
@@ -124,6 +138,7 @@ def main(argv: list[str] | None = None):
 
     print("\n" + "=" * 60)
     print(f"룰 분류 배치 완료 — ✅ {success}  ⏭️ {skipped}  ❌ {failed}")
+    print(f"  (URL 오매칭 의심으로 자칭 제외: {name_mismatch}개)")
     print("=" * 60)
 
 

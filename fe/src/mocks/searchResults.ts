@@ -162,6 +162,7 @@ export const mockSearchResponse: SearchResponse = {
     total: mockSearchItems.length,
     limit: 20,
     offset: 0,
+    has_more: false,
     search_mode: "natural+nearby",
     query_interpretation: "피부 진료 / 의원급",
     center: { lat: 37.5443, lng: 126.951 },

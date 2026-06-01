@@ -568,14 +568,19 @@ def build_signal_chunks(
     """
     result: dict[str, str] = {}
 
-    # 광고·과장 표현 스크럽(임베딩 전용) → 동의어 주입 순. 자칭=강하게, 후기·블로그=광고어만.
+    # 광고·과장 표현만 스크럽(임베딩 전용). **doc-side 동의어 주입(_enrich_with_synonyms)은
+    # 제거** — 트리거 단어 1회(예: 19000자 치과 사이트의 "탈모" 1회)만 있어도 동의어 클러스터
+    # 전체를 청크에 박아, 쿼리(같은 클러스터로 확장)와 "덩어리끼리" 매칭되며 임베딩 변별력을
+    # 파괴했다(치과가 "M자 탈모" 검색 0.708 1위·진짜 모발병원은 후순위 — 2026-05-31 실측).
+    # 한국어 의학 동의어 갭은 **쿼리-side 확장(process_query)** 으로만 메운다(쿼리만 확장,
+    # 문서는 진짜 내용 그대로 임베딩 → 변별력 보존).
     sc = build_self_claim_chunk(crawl_data=crawl_data, kakao_place=kakao_place)
     if sc:
-        result["self_claim"] = _enrich_with_synonyms(_scrub_ad_phrases(sc, aggressive=True))
+        result["self_claim"] = _scrub_ad_phrases(sc, aggressive=True)
 
     bc = build_blog_chunk(crawl_data=crawl_data, kakao_blog=kakao_blog, naver_blog=naver_blog)
     if bc:
-        result["blog"] = _enrich_with_synonyms(_scrub_ad_phrases(bc, aggressive=False))
+        result["blog"] = _scrub_ad_phrases(bc, aggressive=False)
 
     rc = build_reviews_chunk(
         kakao_reviews=kakao_reviews,
@@ -583,7 +588,7 @@ def build_signal_chunks(
         google_reviews=google_reviews,
     )
     if rc:
-        result["reviews"] = _enrich_with_synonyms(_scrub_ad_phrases(rc, aggressive=False))
+        result["reviews"] = _scrub_ad_phrases(rc, aggressive=False)
 
     vc = build_vision_chunk(vision_results=vision_results)
     if vc:
@@ -638,12 +643,18 @@ def build_ingest_metadata(
 # C. ingest
 # ---------------------------------------------------------------------------
 
+# build_signal_chunks 가 만들 수 있는 전체 시그널 타입 — prune_absent 가 "없는 시그널"을
+# 판정할 때 기준. build_signal_chunks 의 result 키와 일치해야 한다.
+_ALL_SIGNAL_TYPES = ("self_claim", "blog", "reviews", "vision")
+
+
 def ingest_hospital(
     hospital_id: str,
     signal_chunks: dict[str, str],
     metadata: dict,
     *,
     trigger_ingestion: bool = False,
+    prune_absent: bool = False,
 ) -> None:
     """시그널 청크를 KB DataSource S3 에 업로드하고 선택적으로 ingestion job 트리거.
 
@@ -658,6 +669,11 @@ def ingest_hospital(
         metadata: build_ingest_metadata() 반환 평탄 dict (metadataAttributes 안쪽).
         trigger_ingestion: True 면 업로드 완료 후 StartIngestionJob 1회 호출.
                            배치 시 False 로 다 올린 뒤 마지막 병원에서만 True 사용.
+        prune_absent: True 면, 이번 signal_chunks 에 없는(또는 빈) 시그널 타입의 기존 S3
+                      파일(.txt + .metadata.json)을 삭제한다. 재분류가 어떤 시그널을 비웠을 때
+                      (예: URL 오매칭으로 자칭 제외) 옛 청크가 stale 메타로 잔존해 검색을 오염
+                      시키는 것을 막는다. **호출자가 signal_chunks 를 *전체* 신호로 채워 넘길
+                      때만** 사용할 것(부분 ingest 에서 켜면 멀쩡한 다른 시그널을 지운다).
 
     Raises:
         KBIngestError: S3 업로드 또는 ingestion job 트리거 실패 시.
@@ -715,6 +731,22 @@ def ingest_hospital(
             hospital_id, signal_type, text_key,
         )
 
+    # prune: 이번에 안 올라간 시그널 타입의 옛 S3 파일을 지운다(stale 청크/메타 잔존 방지).
+    if prune_absent:
+        present = {st for st, t in signal_chunks.items() if t}
+        for signal_type in _ALL_SIGNAL_TYPES:
+            if signal_type in present:
+                continue
+            text_key = f"{prefix}{hospital_id}/{signal_type}.txt"
+            for key in (text_key, f"{text_key}.metadata.json"):
+                try:
+                    s3_client.delete_object(Bucket=bucket, Key=key)
+                except Exception as exc:  # 삭제 실패는 치명적 아님 — 로깅만
+                    logger.warning(
+                        "ingest_hospital prune 삭제 실패 (hospital_id=%s, key=%s): %s",
+                        hospital_id, key, exc,
+                    )
+
     if not trigger_ingestion:
         return
 
@@ -764,7 +796,7 @@ def _haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
 def _build_kb_filter(
     sido: str | None = None,
     sigungu: str | None = None,
-    specialty: str | None = None,
+    specialty: "str | list[str] | None" = None,
     min_confidence: int | None = None,
     lat_range: tuple[float, float] | None = None,
     lng_range: tuple[float, float] | None = None,
@@ -788,7 +820,16 @@ def _build_kb_filter(
     if sigungu:
         conditions.append({"equals": {"key": "sigungu", "value": sigungu}})
     if specialty:
-        conditions.append({"equals": {"key": "standard_specialty", "value": specialty}})
+        # specialty 가 리스트면 그 중 하나라도 일치(in) — 추론 specialty 에 '기타'를 함께
+        # 허용해 분류 못 한 특화 부티크를 하드 배제하지 않으려는 용도. 단일 문자열이면 equals.
+        if isinstance(specialty, (list, tuple, set)):
+            vals = [s for s in specialty if s]
+            if len(vals) == 1:
+                conditions.append({"equals": {"key": "standard_specialty", "value": vals[0]}})
+            elif vals:
+                conditions.append({"in": {"key": "standard_specialty", "value": vals}})
+        else:
+            conditions.append({"equals": {"key": "standard_specialty", "value": specialty}})
     if min_confidence:
         # min_confidence=0(또는 None)이면 신뢰도 하드필터 없음 — 모든 병원 노출.
         # 의료법: 특정 병원만 보이고 일부가 검색에서 사라지면 차별 노출 소지가 있어,
@@ -946,8 +987,34 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
     # 사용자가 specialty 를 명시 안 했을 때만 메타필터로 보강(명시값 우선).
     processed = process_query(q_text)
     retrieve_text = processed.embedding_text or q_text
-    effective_specialty = query.specialty or processed.inferred_specialty
     interpretation = _build_interpretation(processed)  # FE "이렇게 이해했어요" 박스용
+
+    # specialty 메타필터 값 결정.
+    # - 사용자가 명시 선택한 specialty(query.specialty)는 의도가 분명하므로 그대로 하드 일치.
+    # - 쿼리에서 *추론*한 specialty 는 하드 배제 대신 '기타'를 함께 허용한다([추론, 기타]).
+    #   본 제품의 정체성이 "표준 진료과목 *너머* 실제 주력"이라, HIRA 종별/이름파싱이 분류 못 해
+    #   '기타'로 떨어진 모발이식·미용 부티크(=정작 그 쿼리의 핵심 병원)를 specialty 하드필터로
+    #   배제하면 안 된다. 실측: "M자 탈모"→피부과 하드필터가 기타로 분류된 모엠·모우다·뉴셀
+    #   (진짜 모발의원)을 통째 배제했고, '기타' 허용 시 정밀도 손실 없이 이들이 복귀.
+    # specialty 메타필터 결정.
+    # - 사용자 *명시* specialty 는 의도가 분명하므로 그대로 하드 일치.
+    # - 쿼리에서 *추론*한 specialty 는 [추론, 기타] 로 — 분류 못 한 특화 부티크(기타)를 배제 안 함.
+    # - ★일반의(generalist) 진료과(가정의학과·기타)로 추론되면 하드필터 안 함. 가정의학과는
+    #   "증상 평가"성 일반 키워드(요통·관절통·불면·우울·알레르기·당뇨…)가 anchor 돼 있어, 이걸로
+    #   하드필터하면 정작 그 증상의 전문의(정형·정신·내과)를 통째 배제한다. 일반의는 specialist 를
+    #   가리지 않는 게 맞다 → 비-필터(임베딩+min-sim 에 위임). 단어별 사전 패치가 아니라 이 클래스 전체 차단.
+    # - SPECIALTY_FILTER_MODE=off 면 추론 specialty 로 아예 하드필터 안 함(실험/대안용).
+    _filter_mode = os.environ.get("SPECIALTY_FILTER_MODE", "plus_etc")
+    _GENERALIST = {"기타", "가정의학과"}
+    inferred_sp = processed.inferred_specialty
+    if query.specialty:
+        specialty_filter: "str | list[str] | None" = query.specialty
+    elif _filter_mode == "off":
+        specialty_filter = None
+    elif inferred_sp and inferred_sp not in _GENERALIST:
+        specialty_filter = [inferred_sp, "기타"]
+    else:
+        specialty_filter = None  # None·기타·가정의학과 → 하드필터 없음(전문의 배제 금지)
     if processed.was_expanded or processed.inferred_specialty:
         logger.info(
             "retrieve_hospital: 쿼리 전처리 — terms=%s specialty=%s expanded=%s",
@@ -961,6 +1028,12 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
 
     client = boto3.client("bedrock-agent-runtime", region_name=region)
 
+    # min-sim 임계 — 유사도가 너무 낮은(관련 없는) 결과를 컷해 "검색 결과 없음"이 구조적으로
+    # 가능하게 한다(무관한 쿼리에 억지 매칭 금지). 0.42 = 92쿼리 eval 실측 sweet spot:
+    # 임상 쿼리 거의 유지(P@5 0.857→0.848), 무관 쿼리(자동차/우주여행)는 0건(빈 결과).
+    # 0.45 이상은 임상 쿼리(탈모 등)까지 깎여 과다. env(KB_MIN_SCORE)로 튜닝, 0 이면 비활성.
+    min_score = float(os.environ.get("KB_MIN_SCORE", "0.42"))
+
     has_location = query.lat is not None and query.lng is not None
 
     # --- bounding box 계산 (위치 있을 때) ---
@@ -971,22 +1044,25 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
         lat_range = (query.lat - deg_offset, query.lat + deg_offset)  # type: ignore[operator]
         lng_range = (query.lng - deg_offset, query.lng + deg_offset)  # type: ignore[operator]
 
-    # --- 1차 호출: 전체 필터 적용 (specialty 는 추론값 보강) ---
+    # --- 1차 호출: 전체 필터 적용 (specialty 는 추론값+기타 보강) ---
     kb_filter = _build_kb_filter(
         sido=query.sido,
         sigungu=query.sigungu,
-        specialty=effective_specialty,
+        specialty=specialty_filter,
         min_confidence=query.min_confidence,
         lat_range=lat_range,
         lng_range=lng_range,
     )
 
-    # 같은 병원에서 여러 청크가 나올 수 있으므로 limit * 3 배로 넉넉히 요청
-    n_request = min(query.limit * 3, _KB_MAX_RESULTS)
+    # 한 병원이 self_claim/blog/reviews/vision 최대 4청크를 가지므로, limit*3 만 받으면
+    # dedup 후 병원 수가 limit 에 한참 못 미친다(실측: limit10→30청크→dedup 10병원, min-sim
+    # 컷 후 6병원). KB Retrieve 는 numberOfResults 가 30이든 100이든 단일 호출·동일 비용이라,
+    # 항상 KB 최대(100)를 받아 dedup 풀을 키운다. 최종 출력은 어차피 query.limit 로 캡(아래).
+    n_request = _KB_MAX_RESULTS
     raw = _kb_retrieve(client, kb_id, retrieve_text, kb_filter, n_request)
 
     # --- fallback: 빈 결과 시 지역/specialty/confidence 완화 (team_id 는 유지) ---
-    if not raw and (query.sido or query.sigungu or effective_specialty or has_location):
+    if not raw and (query.sido or query.sigungu or specialty_filter or has_location):
         logger.info(
             "retrieve_hospital: 결과 0건 → 지역/specialty/min_confidence 필터 완화 fallback (query=%r)",
             q_text,
@@ -1015,7 +1091,7 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
                 # 좌표 없는 병원은 위치 검색에서 제외
                 continue
             dist = _haversine_km(user_lat, user_lng, float(item_lat), float(item_lng))
-            if dist <= query.radius_km:
+            if dist <= query.radius_km and score >= min_score:
                 candidates.append((dist, score, item))
 
         # 정렬
@@ -1041,16 +1117,13 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
             )
         return results
 
-    # --- 자연어 단독 검색: score 내림차순 정렬 ---
-    sorted_items = sorted(
-        by_hospital.values(),
-        key=lambda x: float(x.get("score") or 0.0),
-        reverse=True,
-    )
+    # --- 자연어 단독 검색: min-sim 컷 후 정렬 ---
+    kept = [it for it in by_hospital.values() if float(it.get("score") or 0.0) >= min_score]
+    sorted_items = sorted(kept, key=lambda x: float(x.get("score") or 0.0), reverse=True)
 
     if query.sort == "confidence":
         sorted_items = sorted(
-            by_hospital.values(),
+            kept,
             key=lambda x: float((x.get("metadata") or {}).get("confidence_score") or 0),
             reverse=True,
         )

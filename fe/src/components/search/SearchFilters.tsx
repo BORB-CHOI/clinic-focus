@@ -1,23 +1,21 @@
 import { cn } from "@/lib/utils";
 import type { SortOption } from "@/types/domain";
 
-// API-FE-BE.md 검색 쿼리: min_confidence (기본 70), sort (distance/confidence/relevance)
-// PoC 단계라 슬라이더 대신 의미 단위 토글 3개로 단순화
-//
-//   95+  → 확실만
-//   70+  → 추정 이상 (기본)
-//   0+   → 전체
-
+// 검색 보조 컨트롤.
+// "신뢰도"는 병원 평가가 아니라 *우리 분류를 몇 개 독립 출처가 뒷받침하나*(근거 강도)다.
+// → 라벨을 '근거'로 리브랜딩. 그리고 기본은 '전체'(거르지 않음) — 근거로 검색을 하드
+//   필터하면 관련 병원(출처 적은 곳)이 빠져 결과가 오히려 나빠지기 때문(신뢰도 ≠ 관련성).
+//   좁히기는 사용자가 명시적으로 택할 때만.
 export const MIN_CONFIDENCE_OPTIONS = [
-  { value: 95, label: "확실만 (95+)" },
-  { value: 70, label: "추정 이상 (70+)" },
   { value: 0, label: "전체" },
+  { value: 70, label: "일부 출처 이상" },
+  { value: 95, label: "여러 출처 일치만" },
 ] as const;
 
 export const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: "distance", label: "거리순" },
-  { value: "confidence", label: "신뢰도순" },
   { value: "relevance", label: "관련도순" },
+  { value: "distance", label: "거리순" },
+  { value: "confidence", label: "근거 많은 순" },
 ];
 
 interface SearchFiltersProps {
@@ -45,7 +43,7 @@ export function SearchFilters({
       )}
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-2">
-        <FilterGroup label="신뢰도">
+        <FilterGroup label="근거">
           {MIN_CONFIDENCE_OPTIONS.map((option) => (
             <ToggleChip
               key={option.value}
@@ -69,6 +67,12 @@ export function SearchFilters({
           ))}
         </FilterGroup>
       </div>
+      {minConfidence > 0 ? (
+        <p className="mt-2 text-[0.8em] leading-relaxed text-muted-foreground">
+          ⓘ 출처가 적은 병원이 빠져 결과가 줄어듭니다. ‘근거’는 병원 평가가 아니라 우리 분류를
+          뒷받침하는 독립 출처(자칭·Vision·블로그·후기) 수예요.
+        </p>
+      ) : null}
     </div>
   );
 }

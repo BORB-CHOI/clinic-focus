@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { Search } from "lucide-react";
 
@@ -21,7 +21,7 @@ interface StickySearchBarProps {
 // SearchPage.tsx 의 useSearchParams("q") 가 이 셸과 짝을 이뤄 결과 리스트를
 // 갱신한다. (이번 라운드에 SearchPage 도 같이 적응시킨다)
 export function StickySearchBar({
-  debounceMs = 300,
+  debounceMs = 350,
   className,
 }: StickySearchBarProps) {
   const navigate = useNavigate();
@@ -32,10 +32,17 @@ export function StickySearchBar({
   // 입력 컨트롤은 로컬 상태로 두고, /search 에서는 디바운스로 URL 에 반영
   // (다른 페이지에서는 Enter/버튼 클릭 시점에 /search 로 navigate)
   const [value, setValue] = useState(searchParams.get("q") ?? "");
+  // 디바운스가 *우리가* URL 에 푸시한 마지막 q. 이걸로 "외부 변경(뒤로가기·링크)"과
+  // "내 타이핑이 만든 URL 변경"을 구분 — 후자를 입력에 되돌려쓰면 한글 IME 조합이 깨진다.
+  const lastPushed = useRef<string | null>(null);
 
-  // URL 변경(뒤로가기·외부 링크)을 입력에 동기화
+  // URL→입력 동기화는 *외부* 변경(뒤로가기·외부 링크)일 때만. 내가 방금 푸시한 q 는 skip
+  // (안 그러면 타이핑 중 setValue 재실행 → 한글 조합 리셋 → 입력이 지워짐).
   useEffect(() => {
-    setValue(searchParams.get("q") ?? "");
+    const urlQ = searchParams.get("q") ?? "";
+    if (urlQ !== lastPushed.current) {
+      setValue(urlQ);
+    }
   }, [searchParams]);
 
   // /search 에서만 디바운스로 URL q 업데이트 (다른 페이지는 navigate 시점에 처리)
@@ -45,6 +52,7 @@ export function StickySearchBar({
       const trimmed = value.trim();
       const current = searchParams.get("q") ?? "";
       if (trimmed === current) return;
+      lastPushed.current = trimmed; // 내 푸시로 표시 → 위 동기화 effect 가 입력을 안 건드림
       const next = new URLSearchParams(searchParams);
       if (trimmed) next.set("q", trimmed);
       else next.delete("q");

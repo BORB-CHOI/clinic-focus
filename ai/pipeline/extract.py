@@ -1,5 +1,8 @@
 import json
+import logging
 import os
+
+from pydantic import BaseModel, ValidationError
 
 from ai.core import bedrock_client
 from ai.core.exceptions import BedrockInvocationError, InsufficientDataError
@@ -14,6 +17,31 @@ from shared.models import (
     Service,
     ServicesAndDoctors,
 )
+
+logger = logging.getLogger(__name__)
+
+
+def _safe_build(model_cls: type[BaseModel], items: object) -> list:
+    """LLM JSON 리스트를 Pydantic 모델로 변환하되 **검증 실패 항목은 개별 스킵**한다.
+
+    추출 모델들은 전부 extra='forbid' 라, LLM 이 여분 키·잘못된 Literal·타입을 하나라도
+    내면 종전엔 ValidationError 가 병원 전체 추출을 실패시켰다(실측: 508 데모 중 45건이
+    "Equipment" 검증 실패로 SERVICES 통째 누락). → ① 모델 필드만 남겨 extra 위반 선제 차단
+    ② 그래도 실패하는 항목(필수 누락·Literal 위반)은 그 항목만 버리고 나머지는 살린다.
+    """
+    if not isinstance(items, list):
+        return []
+    valid_keys = set(model_cls.model_fields.keys())
+    out: list = []
+    for it in items:
+        if not isinstance(it, dict):
+            continue
+        try:
+            out.append(model_cls(**{k: v for k, v in it.items() if k in valid_keys}))
+        except ValidationError as exc:
+            logger.info("%s 항목 검증 실패 — 스킵: %s", model_cls.__name__, exc)
+    return out
+
 
 _SPECIALTY_DEFAULT_SERVICES: dict[str, list[str]] = {
     "피부과": ["미용 시술", "일반 진료(아토피·여드름)", "피부암·종양", "모발·탈모"],
@@ -121,16 +149,20 @@ def extract_services_and_doctors(
         if eq.name not in device_map or eq.confidence > device_map[eq.name].confidence:
             device_map[eq.name] = eq
 
-    llm_equipment: list[Equipment] = [
-        Equipment(**e) for e in data.get("equipment", [])
-        if e.get("name") and e.get("name") not in device_map
+    # LLM 텍스트 추출 기기 — 권위 출처(vision/public_data)만 인정한다. 텍스트에서 본 기기는
+    # 자칭이라 Equipment.source Literal 에 안 맞고(=검증 실패 주범), 의료법상으로도 "공식
+    # 신고/Vision 확인" 기기만 객관 시그널로 올린다. 그 외 source(자칭)는 _safe_build 가 스킵.
+    llm_equipment_raw = [
+        e for e in (data.get("equipment") or [])
+        if isinstance(e, dict) and e.get("name") and e.get("name") not in device_map
+        and e.get("source") in ("vision", "public_data")
     ]
-    all_equipment = list(device_map.values()) + llm_equipment
+    all_equipment = list(device_map.values()) + _safe_build(Equipment, llm_equipment_raw)
 
     return ServicesAndDoctors(
-        services=[Service(**s) for s in data.get("services", [])],
-        excluded_services=[ExcludedService(**e) for e in data.get("excluded_services", [])],
+        services=_safe_build(Service, data.get("services", [])),
+        excluded_services=_safe_build(ExcludedService, data.get("excluded_services", [])),
         equipment=all_equipment,
-        prices=[PriceItem(**p) for p in data.get("prices", [])],
-        doctors=[Doctor(**d) for d in data.get("doctors", [])],
+        prices=_safe_build(PriceItem, data.get("prices", [])),
+        doctors=_safe_build(Doctor, data.get("doctors", [])),
     )

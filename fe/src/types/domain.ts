@@ -173,7 +173,7 @@ export interface DetailedSignals {
     detected_devices: string[];
     image_distribution: Record<string, number>;
     sample_image_urls: string[];
-  };
+  } | null;
   blog: {
     top_topics: { topic: string; frequency: number }[];
     total_posts: number;
@@ -188,6 +188,9 @@ export interface HospitalDetail {
   hospital_id: string;
   name: string;
   standard_specialty: string;
+  /** 표시용 파생 카테고리 — standard_specialty='기타'면 primary_focus 로 도출한 하위
+   * 카테고리(미용/모발·탈모/통증·근골격/수면 등). 그 외엔 standard_specialty 와 동일. */
+  etc_subcategory?: string;
   primary_focus: string[];
   confidence: Confidence;
   location: Location;
@@ -200,14 +203,14 @@ export interface HospitalDetail {
    */
   thumbnail_url: string | null;
 
-  ai_description: AiDescription;
+  ai_description: AiDescription | null;
   services: Service[];
   excluded_services: ExcludedService[];
   equipment: Equipment[];
   prices: PriceItem[];
   doctors: Doctor[];
   detailed_signals: DetailedSignals;
-  operating_hours: OperatingHours;
+  operating_hours: OperatingHours | null;
   contact: Contact;
   feedback_stats: FeedbackStats;
   recent_changes: ClassificationChange[];
@@ -220,13 +223,30 @@ export interface HospitalDetail {
 // 카드용 항목은 HospitalDetail의 헤더 필드 + distance_km 만 추려서 정의
 // (상세 페이지 응답과 다른 엔드포인트라 별도 타입으로 분리)
 
-export type SearchMode = "natural" | "nearby" | "natural+nearby";
+export type SearchMode = "natural" | "nearby" | "natural+nearby" | "category";
 export type SortOption = "distance" | "confidence" | "relevance";
+
+// ── 진료과목 (GET /api/specialties) ─────────────────────────────────────
+export interface Specialty {
+  specialty: string;
+  count: number;
+}
+
+export interface SpecialtiesResponse {
+  data: Specialty[];
+  meta: {
+    sigungu: string;
+    total_hospitals: number;
+    total_specialties: number;
+  };
+}
 
 export interface SearchResultItem {
   hospital_id: string;
   name: string;
   standard_specialty: string;
+  /** 표시용 파생 카테고리 — '기타'면 primary_focus 로 도출(미용/모발·탈모/통증·근골격…). */
+  etc_subcategory?: string;
   primary_focus: string[];
   confidence: Confidence;
   /** 위경도 검색일 때만 채워짐 */
@@ -242,6 +262,8 @@ export interface SearchMeta {
   total: number;
   limit: number;
   offset: number;
+  /** 다음 페이지 존재 여부 (offset+limit < total) */
+  has_more: boolean;
   search_mode: SearchMode;
   /** 자연어 쿼리 해석 결과 (자연어 검색일 때만) */
   query_interpretation: string | null;

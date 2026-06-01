@@ -49,6 +49,43 @@
   }
 }
 
+/* ── 모션 ─────────────────────────────────────────────────────────────
+   스켈레톤 shimmer(잔잔히 흐르는 하이라이트) + 접근성 가드. 카드·타일 진입
+   애니메이션은 tailwindcss-animate(animate-in fade-in slide-in-*) 유틸로 처리. */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@layer utilities {
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      hsl(0 0% 100% / 0.55),
+      transparent
+    );
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
+}
+
+/* 모션 최소화 선호 사용자 — 모든 진입/shimmer 애니메이션 정지 */
+@media (prefers-reduced-motion: reduce) {
+  .shimmer::after,
+  .animate-in {
+    animation: none !important;
+  }
+}
+
 @layer base {
   * {
     @apply border-border;

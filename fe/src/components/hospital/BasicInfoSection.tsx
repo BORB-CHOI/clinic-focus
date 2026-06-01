@@ -20,7 +20,7 @@ const APPT_LABEL: Record<AppointmentMethod, string> = {
 
 interface BasicInfoSectionProps {
   location: Location;
-  operating_hours: OperatingHours;
+  operating_hours: OperatingHours | null;
   contact: Contact;
 }
 
@@ -59,7 +59,7 @@ export function BasicInfoSection({
   operating_hours,
   contact,
 }: BasicInfoSectionProps) {
-  const openNow = isOpenNow(operating_hours);
+  const openNow = operating_hours ? isOpenNow(operating_hours) : false;
 
   return (
     <Section
@@ -132,25 +132,31 @@ export function BasicInfoSection({
 
       {/* 운영시간 */}
       <InfoRow icon={<Clock className="h-4 w-4" />} label="운영시간">
-        <ul className="space-y-1">
-          <HoursRow label="평일" hours={operating_hours.weekday} />
-          <HoursRow label="토요일" hours={operating_hours.saturday} />
-          <HoursRow label="일요일" hours={operating_hours.sunday} />
-        </ul>
-        {(operating_hours.night_clinic || operating_hours.holiday_clinic) ? (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {operating_hours.night_clinic ? (
-              <Badge variant="secondary" className="font-normal">
-                야간 진료
-              </Badge>
+        {operating_hours ? (
+          <>
+            <ul className="space-y-1">
+              <HoursRow label="평일" hours={operating_hours.weekday} />
+              <HoursRow label="토요일" hours={operating_hours.saturday} />
+              <HoursRow label="일요일" hours={operating_hours.sunday} />
+            </ul>
+            {(operating_hours.night_clinic || operating_hours.holiday_clinic) ? (
+              <div className="mt-2 flex flex-wrap gap-1">
+                {operating_hours.night_clinic ? (
+                  <Badge variant="secondary" className="font-normal">
+                    야간 진료
+                  </Badge>
+                ) : null}
+                {operating_hours.holiday_clinic ? (
+                  <Badge variant="secondary" className="font-normal">
+                    공휴일 진료
+                  </Badge>
+                ) : null}
+              </div>
             ) : null}
-            {operating_hours.holiday_clinic ? (
-              <Badge variant="secondary" className="font-normal">
-                공휴일 진료
-              </Badge>
-            ) : null}
-          </div>
-        ) : null}
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">운영시간 정보 없음</p>
+        )}
       </InfoRow>
 
       <Separator className="my-5" />

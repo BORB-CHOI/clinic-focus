@@ -27,6 +27,7 @@ from typing import TYPE_CHECKING, Any
 import importlib as _importlib
 
 from ai.core.exceptions import BedrockInvocationError, InsufficientDataError
+from ai.search.taxonomy import SPECIALTY_TAGS  # 진료과별 시술 taxonomy = 단일 의료 어휘 소스 (순수 데이터, boto3·순환 없음)
 from shared.models import (
     BlogSignal,
     Classification,
@@ -233,12 +234,17 @@ def _parse_llm_json(response: dict[str, Any]) -> dict[str, Any] | None:
         return None
 
 
-def _extract_self_claim(crawl_data: CrawlData) -> SelfClaimSignal:
+def _extract_self_claim(crawl_data: CrawlData, specialty: str | None = None) -> SelfClaimSignal:
     """자칭 컨셉 추출 — Bedrock Claude 호출.
 
     main / about / service 페이지 텍스트를 합쳐 LLM에 전달한다.
     Bedrock 호출 실패는 BedrockInvocationError 로 re-raise.
     JSON 파싱 실패 시 빈 SelfClaimSignal 로 안전 fallback.
+
+    LLM 의 value-add 는 **keywords·spam_score**(미묘한 도배 판단)다. primary_focus 라벨은
+    specialty 가 주어지면 **진료과 taxonomy** 로 산출해 룰 경로·표시 focus 와 같은 어휘로
+    통일한다 — LLM 프롬프트가 옛 4과 스키마("손·발(수부외과)" 등)를 제시해 demo self_claim
+    라벨이 시스템 나머지와 어긋나던 것을 해소(라벨 일원화, 노이즈 vocabulary 제거).
     """
     target_pages = [
         p for p in crawl_data.pages
@@ -267,9 +273,17 @@ def _extract_self_claim(crawl_data: CrawlData) -> SelfClaimSignal:
         return SelfClaimSignal(keywords=[], primary_focus=[], spam_score=0.0)
 
     keywords: list[str] = parsed.get("keywords") or []
-    primary_focus: list[str] = parsed.get("primary_focus") or []
     spam_score: float = float(parsed.get("spam_score", 0.0))
     spam_score = max(0.0, min(1.0, spam_score))
+
+    if specialty is not None:
+        # 진료과 taxonomy 로 라벨 통일 (LLM 옛스키마 라벨 대신). 본문 + LLM 키워드를 함께 스캔.
+        primary_focus = _taxonomy_focus_from_text(
+            combined_text + " " + " ".join(keywords), specialty
+        )
+    else:
+        # specialty 미지정(직접 호출 단위테스트) → LLM 이 준 focus 그대로(하위호환)
+        primary_focus = parsed.get("primary_focus") or []
 
     return SelfClaimSignal(
         keywords=keywords,
@@ -282,7 +296,16 @@ def _extract_self_claim(crawl_data: CrawlData) -> SelfClaimSignal:
 # 내부 헬퍼 — 블로그 분석
 # ---------------------------------------------------------------------------
 
-_MEDICAL_KEYWORDS: list[str] = list(_KEYWORD_TO_FOCUS.keys())
+# 키워드 검출 어휘 = **taxonomy(SPECIALTY_TAGS) 전 과목 키워드 전용**.
+# ⚠️ 구 방식은 여기에 레거시 _KEYWORD_TO_FOCUS.keys() 도 합쳤는데, 그 맵엔 bare "손"·
+#    "미용"·"수면" 같은 **한 글자/흔한 토큰**이 있어 substring `.count()` 가 "손님"·"손상"·
+#    "미용실"·"수면시간" 에 오매칭했다(전 병원이 손·발(수부외과) 로 오염되던 주범 — 2026-05-30
+#    네이버 하락 9건 분석에서 확정). taxonomy 키워드는 길이 2+·구체적(지방흡입·코성형·임플란트)
+#    이라 오매칭이 없다(taxonomy.py 의 "길이 2 미만·일반 단어 지양" 원칙). → taxonomy 단일 소스.
+_TAXONOMY_KEYWORDS: list[str] = [
+    kw for tags in SPECIALTY_TAGS.values() for _label, kws in tags for kw in kws
+]
+_MEDICAL_KEYWORDS: list[str] = list(dict.fromkeys(_TAXONOMY_KEYWORDS))
 
 
 def _count_medical_keywords(text: str) -> Counter:
@@ -362,7 +385,9 @@ def _kakao_blog_text(kakao_blog) -> str:
     return "\n".join(parts)
 
 
-def _analyze_blog(crawl_data: CrawlData, kakao_blog=None, naver_blog=None) -> BlogSignal:
+def _analyze_blog(
+    crawl_data: CrawlData, kakao_blog=None, naver_blog=None, specialty: str | None = None
+) -> BlogSignal:
     """블로그 키워드 분석 (LLM).
 
     **카카오 place앵커 blog(kakao_blog)** 를 권위 소스로 본다 — 네이버 키워드 검색
@@ -398,12 +423,15 @@ def _analyze_blog(crawl_data: CrawlData, kakao_blog=None, naver_blog=None) -> Bl
 
     # primary_topics 가 없으면 빈도 기반으로 추론
     if not primary_topics and keyword_counter:
-        top_keywords = [kw for kw, _ in keyword_counter.most_common(5)]
-        focus_votes: Counter = Counter()
-        for kw in top_keywords:
-            for focus in _KEYWORD_TO_FOCUS.get(kw, []):
-                focus_votes[focus] += 1
-        primary_topics = [f for f, _ in focus_votes.most_common(3)]
+        if specialty is not None:
+            primary_topics = _taxonomy_focus_from_text(combined_text, specialty, top_n=3)
+        else:
+            top_keywords = [kw for kw, _ in keyword_counter.most_common(5)]
+            focus_votes: Counter = Counter()
+            for kw in top_keywords:
+                for focus in _KEYWORD_TO_FOCUS.get(kw, []):
+                    focus_votes[focus] += 1
+            primary_topics = [f for f, _ in focus_votes.most_common(3)]
 
     kb = _as_dict(kakao_blog)
     post_count = len(kb.get("seeds") or []) if kb else 0
@@ -423,6 +451,8 @@ def _analyze_reviews(
     kakao_reviews: "KakaoReviews | dict | None" = None,
     naver_reviews: "NaverPlace | dict | None" = None,
     google_reviews: "GoogleReviews | dict | None" = None,
+    *,
+    specialty: str | None = None,
 ) -> ReviewSignal:
     """외부 후기 시그널을 합산해 ReviewSignal 을 반환한다.
 
@@ -538,12 +568,17 @@ def _analyze_reviews(
     primary_topics: list[str] = []
     if review_text_parts:
         combined_review_text = " ".join(review_text_parts)
-        kw_counter = _count_medical_keywords(combined_review_text)
-        focus_votes: Counter = Counter()
-        for kw in [kw for kw, _ in kw_counter.most_common(5)]:
-            for focus in _KEYWORD_TO_FOCUS.get(kw, []):
-                focus_votes[focus] += 1
-        primary_topics = [f for f, _ in focus_votes.most_common(3)]
+        if specialty is not None:
+            # 진료과 taxonomy 빈도순 (제약·구체 키워드 → bare "손" 후기 오염 제거)
+            primary_topics = _taxonomy_focus_from_text(combined_review_text, specialty, top_n=3)
+        else:
+            # 레거시 폴백 (specialty 미지정 직접 호출 단위테스트)
+            kw_counter = _count_medical_keywords(combined_review_text)
+            focus_votes: Counter = Counter()
+            for kw in [kw for kw, _ in kw_counter.most_common(5)]:
+                for focus in _KEYWORD_TO_FOCUS.get(kw, []):
+                    focus_votes[focus] += 1
+            primary_topics = [f for f, _ in focus_votes.most_common(3)]
 
     return ReviewSignal(
         total_reviews=total_reviews,
@@ -721,14 +756,76 @@ def _topics_to_focus_votes(topics: list[str]) -> Counter:
     """주제 리스트를 focus 후보 투표 Counter 로 변환."""
     votes: Counter = Counter()
     for topic in topics:
+        matched = False
         # 스키마에 직접 포함된 항목이면 그대로 1표
         for schema_items in SPECIALTY_FOCUS_SCHEMA.values():
             if topic in schema_items:
                 votes[topic] += 1
-        # 키워드 매핑 경유
-        for focus in _KEYWORD_TO_FOCUS.get(topic, []):
-            votes[focus] += 1
+                matched = True
+        # 키워드 매핑 경유 (정확 일치)
+        if topic in _KEYWORD_TO_FOCUS:
+            for focus in _KEYWORD_TO_FOCUS[topic]:
+                votes[focus] += 1
+            matched = True
+        # 정확 일치 실패 시 부분일치 폴백 — LLM 이 "임플란트 식립"·"보톡스 시술"
+        # 처럼 변형해 반환해도 내부 키워드를 잡아 vision·blog·reviews 와 같은
+        # 어휘로 정렬되게 한다. (정확 일치된 topic 은 중복 방지로 건너뜀)
+        if not matched:
+            for kw, cnt in _count_medical_keywords(topic).items():
+                for focus in _KEYWORD_TO_FOCUS.get(kw, []):
+                    votes[focus] += cnt
     return votes
+
+
+def _signal_taxonomy_votes(text: str, specialty: str | None) -> Counter:
+    """시그널 텍스트를 진료과 taxonomy(SPECIALTY_TAGS) 시술 태그로 매칭해 focus 투표 생성.
+
+    구 방식은 4과짜리 _KEYWORD_TO_FOCUS 로만 투표해 치과·내과·비뇨 등에선 일치를 못
+    잡았다 → Vision 이 발기부전·위내시경을 "봐도" 0 처리돼 신뢰도를 끌어내렸다(겉보기
+    회귀). 표시 primary_focus 가 쓰는 것과 **같은 taxonomy** 로 4 시그널을 모두 투표시켜
+    같은 어휘로 정렬되게 한다. 매칭 횟수를 가중치로(자주 등장할수록 강하게).
+
+    specialty 가 SPECIALTY_TAGS 에 있으면 그 과 태그로 **제약**(성형외과가 무릎·관절로
+    새지 않게). 미지원 종별("기타"·종합병원 등)이면 **전 과목 taxonomy 를 스캔**한다 —
+    HIRA 가 "기타" 로 둔 미용/통증 클리닉(전앤후의원 등)도 taxonomy 의 구체 키워드로
+    제대로 태깅하기 위함. 레거시 평탄맵(_KEYWORD_TO_FOCUS, bare "손" 오염)으로 빠지지 않는다.
+    """
+    votes: Counter = Counter()
+    if not text:
+        return votes
+    tags = SPECIALTY_TAGS.get(specialty) if specialty else None
+    all_scan = tags is None
+    if all_scan:
+        # 미지원 종별·specialty 미지정 → 전 과목 스캔.
+        tag_iter = [
+            (label, kws) for sp_tags in SPECIALTY_TAGS.values() for label, kws in sp_tags
+        ]
+    else:
+        tag_iter = tags
+    for label, keywords in tag_iter:
+        hits = sum(text.count(kw) for kw in keywords)
+        if hits:
+            votes[label] += hits
+    if all_scan and votes:
+        # 전과목 스캔은 우연한 소수 매칭이 focus 로 새기 쉽다(모더함: 19000자 치과 사이트의
+        # "교정" 1회→치아교정, 후기의 "스트레스/불안"→우울·불안). 지배 태그 대비 빈도 임계
+        # (15% 또는 최소 2회) 미만은 버려, 진짜 주력만 남긴다. 진료과 제약 스캔엔 미적용.
+        top = max(votes.values())
+        floor = max(2, int(top * 0.15))
+        votes = Counter({label: v for label, v in votes.items() if v >= floor})
+    return votes
+
+
+def _taxonomy_focus_from_text(
+    text: str, specialty: str | None, *, top_n: int = 4
+) -> list[str]:
+    """텍스트에서 진료과 taxonomy 시술 태그를 **빈도순 상위 N**으로 추출한다.
+
+    룰 기반 자칭·블로그·후기 추출이 focus/topics 를 만들 때 공통으로 쓴다. 레거시
+    _KEYWORD_TO_FOCUS(평탄 4과·bare 토큰) 대신 이걸 쓰면 진료과 제약 + 구체 키워드라
+    잡탕·오매칭이 사라진다. specialty=None 이면 _signal_taxonomy_votes 가 전 과목 스캔.
+    """
+    return [label for label, _ in _signal_taxonomy_votes(text, specialty).most_common(top_n)]
 
 
 def _is_present(signal_type: str, sig: Any) -> bool:
@@ -757,35 +854,62 @@ def _cross_validate_signals(
     blog: BlogSignal,
     reviews: ReviewSignal,
     vision: VisionSignal | None,
+    *,
+    standard_specialty: str | None = None,
 ) -> tuple[list[str], dict[str, float | None]]:
     """4 시그널의 방향성 정렬 정도를 계산해 primary_focus 와 기여도를 반환한다.
+
+    focus 어휘는 표시(primary_focus)와 동일한 **진료과 taxonomy(SPECIALTY_TAGS)** 를
+    쓴다 — standard_specialty 가 taxonomy 에 있으면 4 시그널 모두 그 과의 시술 태그로
+    투표(같은 어휘로 정렬 → Vision 이 전 과목에서 보강). taxonomy 미지원 종별이거나
+    standard_specialty 미지정이면 레거시 _KEYWORD_TO_FOCUS 경로로 폴백.
 
     반환:
       primary_focus: list[str]  — 상위 주력 분야 (최대 3개)
       contributions: dict[str, float | None] — 시그널별 기여도(페널티 적용 전).
         * present 시그널: ``재분배 가중치 × top_focus 일치도`` (0~1).
-          엇갈리면(일치도 0) 그대로 0 기여 — §1-1 의 0.5 베이스라인 제거.
         * 결손 시그널: ``None`` ("수집 안 됨"). 0(엇갈림)과 명시적으로 구분.
-        present 시그널끼리 가중치를 재분배(합 1.0)하므로 결손은 점수에서 빠진다
-        (반값도 0점도 아님 — §3 원칙 1).
     """
-    # 각 시그널의 focus 투표 (결손 시그널은 빈 투표라 focus 선정에 0 기여)
-    self_votes = _topics_to_focus_votes(self_claim.primary_focus)
-    blog_votes = _topics_to_focus_votes(blog.primary_topics)
-    review_votes = _topics_to_focus_votes(reviews.primary_topics)
-    vision_votes: Counter = Counter()
-    if vision is not None:
-        # image_categories 의 카테고리명을 focus 로 매핑
-        for cat, ratio in vision.image_categories.items():
-            for focus in _KEYWORD_TO_FOCUS.get(cat, []):
-                vision_votes[focus] += ratio
-        # detected_devices 키워드도 반영
-        device_kw_counter = _count_medical_keywords(
-            " ".join(vision.detected_devices)
+    # specialty 가 있으면(미지원 "기타" 포함) taxonomy 경로 — _signal_taxonomy_votes 가
+    # 미지원 종별은 전 과목 스캔으로 처리한다. standard_specialty=None(직접 호출 단위테스트
+    # 등)일 때만 레거시 _KEYWORD_TO_FOCUS 폴백.
+    use_tax = standard_specialty is not None
+
+    if use_tax:
+        # taxonomy 일원화 — 4 시그널을 같은 진료과 시술 태그 어휘로 투표시킨다.
+        self_votes = _signal_taxonomy_votes(
+            " ".join(list(self_claim.primary_focus) + list(self_claim.keywords)),
+            standard_specialty,  # type: ignore[arg-type]
         )
-        for kw, cnt in device_kw_counter.items():
-            for focus in _KEYWORD_TO_FOCUS.get(kw, []):
-                vision_votes[focus] += cnt * 0.5
+        blog_votes = _signal_taxonomy_votes(
+            " ".join(list(blog.primary_topics) + list(blog.keyword_frequency.keys())),
+            standard_specialty,  # type: ignore[arg-type]
+        )
+        review_votes = _signal_taxonomy_votes(
+            " ".join(list(reviews.primary_topics) + list(reviews.keyword_frequency.keys())),
+            standard_specialty,  # type: ignore[arg-type]
+        )
+        vision_votes = (
+            _signal_taxonomy_votes(vision.scene_text, standard_specialty)  # type: ignore[arg-type]
+            if vision is not None else Counter()
+        )
+    else:
+        # 레거시 — taxonomy 미지원 종별(종합병원·요양병원 등) 또는 specialty 미지정 테스트.
+        self_votes = _topics_to_focus_votes(self_claim.primary_focus)
+        blog_votes = _topics_to_focus_votes(blog.primary_topics)
+        review_votes = _topics_to_focus_votes(reviews.primary_topics)
+        vision_votes = Counter()
+        if vision is not None:
+            for cat, ratio in vision.image_categories.items():
+                for focus in _KEYWORD_TO_FOCUS.get(cat, []):
+                    vision_votes[focus] += ratio
+            device_kw_counter = _count_medical_keywords(" ".join(vision.detected_devices))
+            for kw, cnt in device_kw_counter.items():
+                for focus in _KEYWORD_TO_FOCUS.get(kw, []):
+                    vision_votes[focus] += cnt * 0.5
+            for kw, cnt in (vision.keyword_frequency or {}).items():
+                for focus in _KEYWORD_TO_FOCUS.get(kw, []):
+                    vision_votes[focus] += cnt
 
     # 전체 후보 수집
     all_focus_candidates: set[str] = (
@@ -936,12 +1060,18 @@ _PROMO_WORDS: list[str] = [
 ]
 
 
-def _extract_self_claim_rule(crawl_data: CrawlData) -> SelfClaimSignal:
+def _extract_self_claim_rule(
+    crawl_data: CrawlData, specialty: str | None = None
+) -> SelfClaimSignal:
     """자칭 컨셉 추출 — 룰 기반 (Bedrock 미호출).
 
-    main / about / service 페이지의 html_text 합본에서
-    _count_medical_keywords 로 키워드를 카운트하고,
-    _KEYWORD_TO_FOCUS 로 primary_focus 를 매핑한다.
+    main / about / service 페이지의 html_text 합본에서 _count_medical_keywords 로
+    키워드를 카운트하고 primary_focus 를 매핑한다.
+
+    primary_focus 매핑:
+    - specialty 주어지면(실 분류) **진료과 taxonomy** 로 빈도순 태깅 — 진료과 제약이라
+      성형외과가 무릎·관절로 새지 않고, 미지원 "기타" 도 전 과목 taxonomy 로 정밀 태깅.
+    - specialty=None(직접 호출 단위테스트)이면 레거시 _KEYWORD_TO_FOCUS 폴백(하위호환).
 
     spam_score 는 홍보성 어휘 밀도와 단일 키워드 과반복 비율로 산출한다.
     """
@@ -955,17 +1085,20 @@ def _extract_self_claim_rule(crawl_data: CrawlData) -> SelfClaimSignal:
 
     combined_text = "\n\n".join(p.html_text for p in target_pages)
     keyword_counter = _count_medical_keywords(combined_text)
+    keywords: list[str] = [kw for kw, _ in keyword_counter.most_common()]
 
-    # primary_focus: 빈도 상위 키워드를 _KEYWORD_TO_FOCUS 로 매핑 (중복 제거, 순서 유지)
-    focus_seen: set[str] = set()
-    primary_focus: list[str] = []
-    keywords: list[str] = []
-    for kw, _ in keyword_counter.most_common():
-        keywords.append(kw)
-        for focus in _KEYWORD_TO_FOCUS.get(kw, []):
-            if focus not in focus_seen:
-                focus_seen.add(focus)
-                primary_focus.append(focus)
+    if specialty is not None:
+        # 진료과 taxonomy 빈도순 태깅 (제약·구체 키워드 → 잡탕·bare토큰 오염 제거)
+        primary_focus = _taxonomy_focus_from_text(combined_text, specialty)
+    else:
+        # 레거시 폴백 — 빈도 상위 키워드를 _KEYWORD_TO_FOCUS 로 매핑 (중복 제거, 순서 유지)
+        focus_seen: set[str] = set()
+        primary_focus = []
+        for kw in keywords:
+            for focus in _KEYWORD_TO_FOCUS.get(kw, []):
+                if focus not in focus_seen:
+                    focus_seen.add(focus)
+                    primary_focus.append(focus)
 
     # spam_score 계산
     # (1) 홍보성 어휘 밀도: 전체 글자 수 대비 홍보 어휘 등장 횟수
@@ -995,12 +1128,17 @@ def _extract_self_claim_rule(crawl_data: CrawlData) -> SelfClaimSignal:
 # ---------------------------------------------------------------------------
 
 
-def _analyze_blog_rule(crawl_data: CrawlData, kakao_blog=None, naver_blog=None) -> BlogSignal:
+def _analyze_blog_rule(
+    crawl_data: CrawlData, kakao_blog=None, naver_blog=None, specialty: str | None = None
+) -> BlogSignal:
     """블로그 키워드 분석 — 룰 기반 (Bedrock 미호출).
 
     **카카오 place앵커 blog(kakao_blog)** 만 본다 — 네이버 키워드 검색은 호스트 앵커가
     느슨해(교차오염 16.78%) 폐기. 병원 자체 blog 페이지는 자칭(self_claim)으로 귀속(저자 기준
     분리). crawl_data·naver_blog 인자는 시그니처 호환용(미사용).
+
+    specialty 주어지면 primary_topics 를 진료과 taxonomy 로 산출(제약·bare토큰 오염 제거),
+    미지정이면 레거시 _KEYWORD_TO_FOCUS 폴백(직접 호출 단위테스트 하위호환).
     """
     blog_text = _kakao_blog_text(kakao_blog)
     if not blog_text:
@@ -1008,12 +1146,15 @@ def _analyze_blog_rule(crawl_data: CrawlData, kakao_blog=None, naver_blog=None) 
 
     keyword_counter = _count_medical_keywords(blog_text)
 
-    # primary_topics: 상위 5개 키워드를 focus 로 매핑 (중복 제거, 투표 순)
-    focus_votes: Counter = Counter()
-    for kw in [kw for kw, _ in keyword_counter.most_common(5)]:
-        for focus in _KEYWORD_TO_FOCUS.get(kw, []):
-            focus_votes[focus] += 1
-    primary_topics = [f for f, _ in focus_votes.most_common(3)]
+    if specialty is not None:
+        primary_topics = _taxonomy_focus_from_text(blog_text, specialty, top_n=3)
+    else:
+        # 레거시 폴백 — 상위 5개 키워드를 focus 로 매핑 (중복 제거, 투표 순)
+        focus_votes: Counter = Counter()
+        for kw in [kw for kw, _ in keyword_counter.most_common(5)]:
+            for focus in _KEYWORD_TO_FOCUS.get(kw, []):
+                focus_votes[focus] += 1
+        primary_topics = [f for f, _ in focus_votes.most_common(3)]
 
     kb = _as_dict(kakao_blog)
     post_count = len(kb.get("seeds") or []) if kb else 0
@@ -1090,11 +1231,17 @@ def classify_hospital(
             f"병원 {crawl_data.hospital_id}: 자체사이트·외부 시그널이 모두 없습니다."
         )
 
-    # 2. 자칭 컨셉 추출
+    # 1-a. 표준 과목 확정 — 룰 추출기·교차검증이 쓸 taxonomy 어휘를 고르려면 먼저 필요.
+    #       HIRA 기준값(권위) 우선, 없으면 텍스트 추론 fallback("기타"). 이 값을 자칭·블로그·
+    #       후기 룰 추출에 넘겨 **진료과 제약 taxonomy** 로 focus 를 뽑는다(레거시 평탄맵의
+    #       bare "손"→손·발 오염·잡탕 제거). LLM 자칭 추출은 LLM 이 focus 를 직접 주므로 미사용.
+    final_specialty = standard_specialty or _infer_standard_specialty(crawl_data)
+
+    # 2. 자칭 컨셉 추출 — 두 경로 모두 final_specialty 주입 → primary_focus 라벨을 taxonomy 로 통일.
     if use_llm:
-        self_claim_signal = _extract_self_claim(crawl_data)
+        self_claim_signal = _extract_self_claim(crawl_data, final_specialty)
     else:
-        self_claim_signal = _extract_self_claim_rule(crawl_data)
+        self_claim_signal = _extract_self_claim_rule(crawl_data, final_specialty)
 
     # 2-a. 카카오 tags 합류 — 정제된 자칭 키워드로 keywords·primary_focus 보강
     #       spam_score 는 사이트 텍스트 기준 그대로 유지 (과도한 페널티 방지)
@@ -1130,9 +1277,25 @@ def classify_hospital(
         if results:
             cat_counter: Counter = Counter()
             all_devices: list[str] = []
+            vision_kw: Counter = Counter()
+            scene_texts: list[str] = []
             for r in results:
                 cat_counter[r.image_category] += 1
                 all_devices.extend(r.detected_devices)
+                # 장면 해석(scene·procedures·in_image_text)을 원문으로 모은다 — 교차검증이
+                # 진료과 taxonomy 키워드로 매칭해 focus 투표에 쓴다. Vision 이 글자만 읽는
+                # 게 아니라 화면을 "해석"한 텍스트가 진짜 신호. keyword_frequency 는 표시용.
+                one_text = " ".join(
+                    [
+                        getattr(r, "scene", "") or "",
+                        " ".join(getattr(r, "detected_procedures", None) or []),
+                        getattr(r, "in_image_text", "") or "",
+                        " ".join(r.detected_devices or []),
+                    ]
+                ).strip()
+                if one_text:
+                    scene_texts.append(one_text)
+                    vision_kw.update(_count_medical_keywords(one_text))
 
             total = sum(cat_counter.values())
             image_categories = {
@@ -1142,13 +1305,15 @@ def classify_hospital(
                 detected_devices=list(set(all_devices)),
                 image_categories=image_categories,
                 total_images_analyzed=len(results),
+                keyword_frequency=dict(vision_kw),
+                scene_text=" ".join(scene_texts),
             )
 
     # 4. 블로그 키워드 분석 — 카카오 place앵커 blog (네이버 키워드 검색은 노이즈로 폐기)
     if use_llm:
-        blog_signal = _analyze_blog(crawl_data, kakao_blog, naver_blog)
+        blog_signal = _analyze_blog(crawl_data, kakao_blog, naver_blog, final_specialty)
     else:
-        blog_signal = _analyze_blog_rule(crawl_data, kakao_blog, naver_blog)
+        blog_signal = _analyze_blog_rule(crawl_data, kakao_blog, naver_blog, final_specialty)
     logger.info(
         "블로그 분석 완료 (%s) — posts=%d topics=%s",
         "LLM" if use_llm else "룰",
@@ -1157,15 +1322,21 @@ def classify_hospital(
     )
 
     # 5. 후기 분석 — 외부 플랫폼 시그널(카카오·네이버·구글) 통합
-    #    use_llm 분기와 무관하게 외부 후기 키워드는 룰·LLM 양 경로 모두 동일하게 적용
-    review_signal = _analyze_reviews(kakao_reviews, naver_reviews, google_reviews)
+    #    use_llm 분기와 무관하게 외부 후기 키워드는 룰·LLM 양 경로 모두 동일하게 적용.
+    #    primary_topics 는 진료과 taxonomy 로(final_specialty 주입 — bare "손" 후기 오염 제거).
+    review_signal = _analyze_reviews(
+        kakao_reviews, naver_reviews, google_reviews, specialty=final_specialty
+    )
 
-    # 6. 4 시그널 교차 검증 — 결손은 None, present 끼리 재분배된 일치 기여도
+    # 6. 4 시그널 교차 검증 — 진료과 taxonomy 어휘로 투표(표시 focus 와 동일).
+    #    (final_specialty 는 1-a 에서 이미 확정 — 룰 추출기에 먼저 넘기기 위해 위로 올렸다.)
+    #    결손은 None, present 끼리 재분배된 일치 기여도.
     primary_focus, contributions = _cross_validate_signals(
         self_claim=self_claim_signal,
         blog=blog_signal,
         reviews=review_signal,
         vision=vision_signal,
+        standard_specialty=final_specialty,
     )
     logger.info("교차 검증 — primary_focus=%s contrib=%s", primary_focus, contributions)
 
@@ -1190,10 +1361,7 @@ def classify_hospital(
         [k for k, v in contributions.items() if v is not None],
     )
 
-    # 9. 표준 과목 — HIRA 기준값(권위) 우선, 없으면 텍스트 추론 fallback
-    final_specialty = standard_specialty or _infer_standard_specialty(crawl_data)
-
-    # 9-a. 시술 태그(고정 taxonomy) — primary_focus 를 필터 가능한 통제 어휘로.
+    # 9. 시술 태그(고정 taxonomy) — primary_focus 를 필터 가능한 통제 어휘로.
     #      진료과 taxonomy 에 매칭 태그가 있으면 그것으로 대체(닥터나우식 필터칩).
     #      taxonomy 미지원 종별(종합병원·요양병원 등)이거나 매칭 0이면 기존 추출 유지.
     from ai.search.taxonomy import tag_hospital  # boto3 무관, 순환 없음

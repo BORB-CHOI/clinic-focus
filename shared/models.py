@@ -64,6 +64,11 @@ class VisionSignal(BaseModel):
     detected_devices: list[str]
     image_categories: dict[str, float]  # category -> 비율 (합계 1.0)
     total_images_analyzed: int
+    # 장면 해석(scene·procedures·in_image_text)에서 추출한 의료 키워드 빈도(레거시·표시용).
+    keyword_frequency: dict[str, int] = {}
+    # 장면 해석 원문 합본(scene+procedures+in_image_text+devices). 교차검증이 진료과
+    # taxonomy 키워드로 매칭해 focus 투표에 쓴다 — Vision 이 전 과목에서 보강하게.
+    scene_text: str = ""
 
 
 class BlogSignal(BaseModel):
@@ -357,10 +362,16 @@ class SearchResult(BaseModel):
 class ImageAnalysisResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    image_url: str
+    image_url: str  # http/https/s3 URL 또는 스크린샷 합성 라벨("screenshot:tile-N")
     detected_devices: list[str]
     image_category: Literal["일반 진료", "미용 시술", "장비 사진", "건물·내부", "기타"]
     confidence: float  # 0~1
+    # ── 장면 해석(OCR 아님) — 이미지가 시각적으로 무엇을 보여주는지 ──────────
+    # Vision 이 글자만 읽는 게 아니라 화면 자체를 해석한 결과. 기본값으로 둬서
+    # 구 VISION#RESULTS(이 필드들 없음) 도 그대로 로드된다.
+    scene: str = ""                              # 보이는 장면 1~3문장 묘사
+    detected_procedures: list[str] = []          # 시각적으로 드러나는 시술·진료 항목
+    in_image_text: str = ""                       # 이미지·배너·간판에 박힌 텍스트(보이는 그대로)
 
 
 # ---------------------------------------------------------------------------

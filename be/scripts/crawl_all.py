@@ -4,6 +4,7 @@
 BrowserManager를 통합하여 JS 렌더링 필요 사이트를 자동으로 Playwright 폴백 처리.
 """
 
+import argparse
 import asyncio
 import os
 import sys
@@ -26,17 +27,33 @@ MIN_TEXT_THRESHOLD = 100
 
 
 async def main():
+    ap = argparse.ArgumentParser(description="홈페이지 URL 있는 병원 크롤 (이미 크롤된 건 스킵)")
+    ap.add_argument("--sigungu", default=None, help="특정 시군구만 (예: 강남구). 생략 시 전체.")
+    ap.add_argument("--limit", type=int, default=None, help="최대 N개만 (테스트용)")
+    args = ap.parse_args()
+
     s3 = S3Adapter()
-
-    print("=" * 60)
-    print("전체 크롤링 — 홈페이지 URL 있는 병원")
-    print("=" * 60)
-
-    # DynamoDB(V2 single-table)에서 URL 있는 병원 조회 — DynamoAdapter 경유
     db = DynamoAdapter()
-    targets = list(db.iter_hospitals_with_url())
 
-    print(f"  크롤링 대상 (URL 있음): {len(targets)}개")
+    print("=" * 60)
+    print(f"전체 크롤링 — 홈페이지 URL 있는 병원 ({args.sigungu or '전체 시군구'})")
+    print("=" * 60)
+
+    # 대상 선별: sigungu 지정 시 그 구만(PoC=강남), 아니면 전체. 둘 다 URL(http) 보유 + 미크롤만.
+    if args.sigungu:
+        targets = [
+            {"hospital_id": h.hospital_id, "name": h.name, "url": h.contact.website_url}
+            for h in db.list_hospitals_by_sigungu(args.sigungu)
+            if h.contact
+            and h.contact.website_url
+            and h.contact.website_url.startswith(("http://", "https://"))
+        ]
+    else:
+        targets = list(db.iter_hospitals_with_url())
+    if args.limit:
+        targets = targets[: args.limit]
+
+    print(f"  크롤링 대상 (URL 있음): {len(targets)}개 (이미 크롤된 건 자동 스킵)")
     print("-" * 60)
 
     results = {"static_success": 0, "js_render_success": 0, "failed": 0}

@@ -49,6 +49,8 @@ _SAFE_CHARS = re.compile(r"[^\w\s가-힣·\-]+", re.UNICODE)
 _MULTI_SPACE = re.compile(r"\s+")
 # 영문 소문자 변환 대상
 _ASCII_UPPER = re.compile(r"[A-Z]+")
+# 한글 포함 여부 — 동의어 확장에서 순수 영어 의학용어를 걸러낼 때 사용
+_HANGUL = re.compile(r"[가-힣]")
 
 
 # ---------------------------------------------------------------------------
@@ -169,11 +171,20 @@ def extract_medical_terms(normalized: str) -> list[str]:
     # 매칭 대상 키워드 합집합 — module-level 캐시
     keywords = _all_medical_keywords()
 
+    # 1글자 키(점·열·틱·혹·침·뜸 등)는 substring 으로 잡으면 더 긴 한글 단어에 오매칭한다
+    # (예: "눈이 침침하고"의 '침' → 한의원 오추론). 문서-side(_enrich_with_synonyms)엔 이미
+    # len>=2 가드가 있는데 쿼리-side 에만 빠져 있던 비대칭 버그 → 1글자 키는 **독립 토큰으로
+    # 등장할 때만** 매칭(어절경계). (예: "침 맞고 싶어"의 '침'은 잡고, "침침"의 '침'은 거름.)
+    _tokens = set(normalized.split())
+
     found: list[tuple[int, str]] = []  # (position, keyword)
     for kw in keywords:
         idx = normalized.find(kw)
-        if idx >= 0:
-            found.append((idx, kw))
+        if idx < 0:
+            continue
+        if len(kw) == 1 and kw not in _tokens:
+            continue
+        found.append((idx, kw))
 
     # 위치 기준 정렬 후 중복 제거 (긴 키워드가 짧은 부분문자열을 덮을 수 있음)
     found.sort(key=lambda x: (x[0], -len(x[1])))
@@ -305,6 +316,13 @@ def infer_focus(medical_terms: list[str]) -> list[str]:
 def expand_with_synonyms(base_text: str, medical_terms: list[str]) -> tuple[str, bool]:
     """매칭된 의료 키워드의 동의어를 임베딩 입력에 부착한다.
 
+    **순수 영어(한글 없는) 동의어는 제외한다.** 임베딩 코퍼스(병원 자체 사이트·후기·
+    블로그)는 거의 전부 한국어라, ``alopecia``·``telogen effluvium`` 같은 영어 의학용어는
+    어느 문서와도 직접 매칭되지 않고 쿼리 임베딩의 중심만 "일반 의학" 쪽으로 끌어당겨
+    특화 의원(예: M자 탈모 → 모발이식 전문)을 순위에서 밀어낸다(실측: 영어 포함 시
+    로코코성형 0.600 이 1위, 영어 제거 시 모엠·모아트 등 모발 전문의원이 상위로 복귀).
+    ``M자 탈모``·``B형 간염`` 처럼 한글이 섞인 표기는 유효하므로 유지한다.
+
     Args:
         base_text: 정규화된 쿼리 (불용어 제거 전 — 의미 맥락 유지).
         medical_terms: ``extract_medical_terms`` 결과.
@@ -321,6 +339,9 @@ def expand_with_synonyms(base_text: str, medical_terms: list[str]) -> tuple[str,
         synonyms = SYNONYMS.get(term, [])
         for syn in synonyms:
             if syn in seen or syn in base_text:
+                continue
+            # 한글이 한 글자도 없는 동의어(순수 영어/라틴 의학용어)는 임베딩 노이즈 → 제외
+            if not _HANGUL.search(syn):
                 continue
             seen.add(syn)
             expansions.append(syn)

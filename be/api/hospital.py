@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException
 
 from be.adapters.dynamo_adapter import DynamoAdapter
 from be.core.feedback import compute_feedback_stats
+from shared.etc_category import display_specialty
 
 router = APIRouter(prefix="/api/hospitals", tags=["hospitals"])
 db = DynamoAdapter()
@@ -53,6 +54,10 @@ def get_hospital_detail(hospital_id: str):
             "hospital_id": meta.hospital_id,
             "name": meta.name,
             "standard_specialty": classification.standard_specialty if classification else "",
+            "etc_subcategory": (
+                display_specialty(classification.standard_specialty, classification.primary_focus)
+                if classification else ""
+            ),
             "primary_focus": classification.primary_focus if classification else [],
             "confidence": classification.confidence.model_dump() if classification else None,
             "location": meta.location.model_dump() if meta.location else None,
@@ -62,21 +67,21 @@ def get_hospital_detail(hospital_id: str):
             # ① AI 통합 설명
             "ai_description": description.model_dump() if description else None,
 
-            # ② 핵심 진료 정보
+            # ② 핵심 진료 정보 (스펙 형태로 어댑팅)
             "services": [s.model_dump() for s in services_and_doctors.services] if services_and_doctors else [],
             "excluded_services": [s.model_dump() for s in services_and_doctors.excluded_services] if services_and_doctors else [],
-            "equipment": [e.model_dump() for e in services_and_doctors.equipment] if services_and_doctors else [],
-            "prices": [p.model_dump() for p in services_and_doctors.prices] if services_and_doctors else [],
+            "equipment": [_adapt_equipment(e) for e in services_and_doctors.equipment] if services_and_doctors else [],
+            "prices": [_adapt_price(p) for p in services_and_doctors.prices] if services_and_doctors else [],
 
             # ③ 의료진 정보
-            "doctors": [d.model_dump() for d in services_and_doctors.doctors] if services_and_doctors else [],
+            "doctors": [_adapt_doctor(d) for d in services_and_doctors.doctors] if services_and_doctors else [],
 
             # ④ 신뢰도·근거
-            "detailed_signals": classification.detailed_signals.model_dump() if classification else None,
+            "detailed_signals": _adapt_detailed_signals(classification, meta.contact.website_url if meta.contact else None),
 
-            # ⑤ 기본 운영 정보
-            "operating_hours": meta.operating_hours.model_dump() if meta.operating_hours else None,
-            "contact": meta.contact.model_dump() if meta.contact else None,
+            # ⑤ 기본 운영 정보 — operating_hours 는 구조화 미보유라 null(FE 가 "정보 없음")
+            "operating_hours": None,
+            "contact": _adapt_contact(meta.contact),
 
             # ⑥ 사용자 피드백
             "feedback_stats": feedback_stats.model_dump(),
@@ -85,7 +90,7 @@ def get_hospital_detail(hospital_id: str):
             "recent_changes": [c.model_dump() for c in recent_changes],
 
             # ⑧ 관련 병원 추천
-            "related_hospitals": [r.model_dump() for r in related],
+            "related_hospitals": [_adapt_related(r) for r in related],
 
             # ⑨ 메타 정보
             "metadata": {
@@ -96,6 +101,99 @@ def get_hospital_detail(hospital_id: str):
             },
         }
     }
+
+
+# ---------------------------------------------------------------------------
+# 응답 어댑터 — raw Pydantic 모델 → API-FE-BE.md 스펙 형태 (FE 가 기대하는 shape).
+# BE 모델이 안 가진 필드(source_text·sample_image_urls·career·주차 등)는 null/[]/false
+# 로 채운다(미수집 = graceful 공란). 스펙이 합의된 계약이므로 BE 가 거기 맞춘다.
+# ---------------------------------------------------------------------------
+
+def _adapt_detailed_signals(classification, website_url: str | None) -> dict | None:
+    if not classification:
+        return None
+    ds = classification.detailed_signals
+    sc, v, blog, rev = ds.self_claim, ds.vision, ds.blog, ds.reviews
+    return {
+        "self_claim": {
+            # 정제된 주력(primary_focus)을 자칭 컨셉으로 노출. raw sc.keywords 는 자기 사이트의
+            # 블로그/FAQ 문맥어(예: 탈모약 부작용 FAQ의 '당뇨·기형아·분만')까지 섞여 오인 소지 →
+            # 빈도·교차검증 거친 primary_focus 로 대체(분류 노이즈가 상세 화면에 그대로 노출되는 것 방지).
+            "extracted_keywords": list(classification.primary_focus or []),
+            "source_text": "",  # 자칭 원문은 임베딩 전용·미저장
+            "source_url": website_url or "",
+        },
+        "vision": (
+            {
+                "detected_devices": list(v.detected_devices or []),
+                "image_distribution": dict(v.image_categories or {}),
+                "sample_image_urls": [],  # 샘플 이미지 URL 미수집
+            }
+            if v
+            else None
+        ),
+        "blog": {
+            "top_topics": [
+                {"topic": t, "frequency": int(f)}
+                for t, f in list((blog.keyword_frequency or {}).items())[:10]
+            ],
+            "total_posts": blog.total_posts,
+        },
+        "reviews": {
+            "review_count": rev.total_reviews,
+            "top_keywords": list((rev.keyword_frequency or {}).keys())[:15],
+        },
+    }
+
+
+_EQUIP_SOURCE_MAP = {"public_data": "public_registry", "vision": "vision"}
+
+
+def _adapt_equipment(e) -> dict:
+    return {
+        "name": e.name,
+        "available": True,
+        "source": _EQUIP_SOURCE_MAP.get(e.source, "self_claim"),
+        "source_url": None,
+    }
+
+
+def _adapt_price(p) -> dict:
+    return {"service_name": p.service_name, "price_range": p.price_text, "source_url": "", "last_seen": ""}
+
+
+def _adapt_doctor(d) -> dict:
+    return {
+        "name": d.name,
+        "position": d.specialty or "",
+        "specialty_certifications": list(d.qualifications or []),
+        "sub_specialty": d.sub_specialty,
+        "career": [],
+        "primary_focus": None,
+        "source_url": None,
+    }
+
+
+def _adapt_contact(c) -> dict | None:
+    if not c:
+        return None
+    methods: list[str] = []
+    if c.reservation_url:
+        methods.append("online")
+    if c.phone:
+        methods.append("phone")
+    return {
+        "phone": c.phone or "",
+        "homepage_url": c.website_url,
+        "parking_available": False,
+        "appointment_methods": methods,
+    }
+
+
+def _adapt_related(r) -> dict:
+    d = r.model_dump()
+    d["thumbnail_url"] = None
+    return d
 
 
 def _calc_completeness(classification, description, services_and_doctors) -> float:

@@ -390,8 +390,13 @@ class TestSynonymEnrichment:
         assert "사마귀" not in added_terms
         assert "심상성 우췌" not in added_terms
 
-    def test_build_signal_chunks_enriches_self_claim(self):
-        """build_signal_chunks 의 self_claim 청크가 동의어 주입을 거친다."""
+    def test_build_signal_chunks_no_doc_side_injection(self):
+        """build_signal_chunks 는 doc-side 동의어 주입을 하지 않는다 — 청크=진짜 내용.
+
+        회귀 가드: 트리거 단어 1회만 있어도 동의어 클러스터 전체를 청크에 박던 doc-side
+        주입(_enrich_with_synonyms)을 제거했다. 그게 임베딩 변별력을 파괴해(19000자 치과
+        사이트의 "탈모" 1회→"M자 탈모" 검색 0.708 1위) 진짜 전문병원이 밀렸다. 동의어 갭은
+        쿼리-side 확장(process_query)으로만 메운다 — 문서는 원문 그대로 임베딩(2026-05-31)."""
         from datetime import datetime, timezone
         from shared.models import CrawlData, CrawledPage
 
@@ -408,7 +413,9 @@ class TestSynonymEnrichment:
         )
         chunks = build_signal_chunks(crawl_data=crawl)
         assert "self_claim" in chunks
-        assert "사마귀" in chunks["self_claim"]  # 문서-측 주입으로 일반어 추가됨
+        assert "심상성" in chunks["self_claim"]            # 진짜 내용은 유지
+        assert "[관련 의학 용어]" not in chunks["self_claim"]  # 주입 블록 없음
+        assert "사마귀" not in chunks["self_claim"]         # doc-side 주입 안 함
 
 
 # ===========================================================================
@@ -576,6 +583,45 @@ class TestIngestHospital:
         ]
         assert not any("blog.txt" in k for k in uploaded_keys), "빈 blog 시그널이 업로드됨"
         assert any("self_claim.txt" in k for k in uploaded_keys)
+
+    @patch("boto3.client")
+    @patch.dict(os.environ, _ENV)
+    def test_prune_absent_deletes_stale_signals(self, mock_boto3):
+        """prune_absent=True 면, 이번 청크에 없는 시그널 타입의 옛 S3 파일을 삭제한다.
+
+        URL 오매칭으로 self_claim 이 비워졌을 때 옛 self_claim 청크(stale 메타)가
+        잔존해 검색을 오염시키는 버그(docs/issues/stale-kb-self-claim-metadata.md) 방지.
+        """
+        mock_s3 = MagicMock()
+        mock_agent = MagicMock()
+        mock_boto3.side_effect = lambda service, region_name=None: (
+            mock_s3 if service == "s3" else mock_agent
+        )
+        # reviews 만 있고 self_claim/blog/vision 은 없음 → 그 셋의 옛 파일이 삭제돼야 함
+        ingest_hospital(
+            hospital_id="h_prune",
+            signal_chunks={"reviews": "방문자 후기 키워드 요약"},
+            metadata={"team_id": "clinic-focus", "hospital_id": "h_prune",
+                      "standard_specialty": "기타", "sido": "서울",
+                      "sigungu": "강남구", "confidence_score": 60},
+            trigger_ingestion=False,
+            prune_absent=True,
+        )
+        deleted = {c.kwargs["Key"] for c in mock_s3.delete_object.call_args_list}
+        # 없는 시그널(self_claim/blog/vision)의 .txt + 사이드카가 삭제 대상
+        assert "clinic-focus/prod/h_prune/self_claim.txt" in deleted
+        assert "clinic-focus/prod/h_prune/self_claim.txt.metadata.json" in deleted
+        assert "clinic-focus/prod/h_prune/blog.txt" in deleted
+        assert "clinic-focus/prod/h_prune/vision.txt" in deleted
+        # 존재하는 시그널(reviews)은 절대 삭제 안 됨
+        assert not any("reviews.txt" in k for k in deleted), "있는 시그널이 삭제됨"
+
+    @patch("boto3.client")
+    @patch.dict(os.environ, _ENV)
+    def test_prune_absent_false_no_delete(self, mock_boto3):
+        """prune_absent 기본값(False)에서는 어떤 삭제도 일어나지 않는다(부분 ingest 안전)."""
+        mock_s3, _ = self._run_ingest(mock_boto3)  # 기본 prune_absent=False
+        mock_s3.delete_object.assert_not_called()
 
     @patch("boto3.client")
     @patch.dict(os.environ, _ENV)
@@ -754,11 +800,17 @@ class TestRetrieveHospital:
         retrieve_text = call_kwargs["retrievalQuery"]["text"]
 
         def _specialty_in_filter(f: dict, value: str) -> bool:
+            # 추론 specialty 는 equals 가 아니라 in [추론, 기타] 형태로 들어간다
+            # (기타=분류 못 한 특화 부티크를 하드 배제하지 않으려는 의도).
             if f.get("equals", {}).get("key") == "standard_specialty":
                 return f["equals"]["value"] == value
+            if f.get("in", {}).get("key") == "standard_specialty":
+                return value in f["in"]["value"]
             return any(_specialty_in_filter(c, value) for c in f.get("andAll", []))
 
         assert _specialty_in_filter(kb_filter, "피부과"), f"추론 진료과 필터 없음: {kb_filter}"
+        # 추론 specialty 에는 '기타'가 함께 허용돼야 한다(특화 부티크 배제 방지)
+        assert _specialty_in_filter(kb_filter, "기타"), f"추론 필터에 '기타' 미포함: {kb_filter}"
         assert retrieve_text != "사마귀 어디가 좋을까", "동의어 확장이 적용되지 않음"
         assert "사마귀" in retrieve_text
         # query_interpretation("이렇게 이해했어요") 가 결과에 채워져야 한다

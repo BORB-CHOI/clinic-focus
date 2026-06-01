@@ -63,7 +63,7 @@ export function HospitalCard({
           {/* 1) 분류 태그 — 표준 진료과목 + 주력 분야 */}
           <div className="flex flex-wrap items-center gap-1">
             <Badge variant="outline" className="font-normal">
-              {item.standard_specialty}
+              {item.etc_subcategory || item.standard_specialty}
             </Badge>
             {item.primary_focus.length > 0 ? (
               item.primary_focus
@@ -83,7 +83,7 @@ export function HospitalCard({
                 variant="outline"
                 className="border-dashed font-normal text-muted-foreground"
               >
-                주력 분야 정보 부족
+                주력 미확정
               </Badge>
             )}
           </div>
