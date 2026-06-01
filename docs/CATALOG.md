@@ -118,3 +118,31 @@ stale 정리 후 **P@5 = 0.86 / MRR = 0.91**. 헤드라인·상용 쿼리(임플
 
 > **얼마나 더?** — 일화적 미스 추적에서 **정답지 채점 루프**(92쿼리)로 넘어와 숫자로 확인: 헤드라인은
 > 데모-solid, 갭은 롱테일 청크 커버리지. 쿼리-side 수정은 즉시·doc-side는 재인제스트(~30분)라 추후도 이 루프로.
+
+---
+
+## 8. 검색 랭킹 — 코사인 1개 → *주력 강도*(focus intensity)
+
+relevance 랭킹을 "병원당 최고 청크 코사인 1개"에서 **주력 강도**로 교체. 코사인 단독의 한계 3겹:
+①임베딩 길이정규화가 빈도/양을 씻어냄(1회 언급 vs 31회가 비슷) ②병원당 최고 청크 1개만 dedup해
+반복 주장을 버림 ③"언급했나"는 알아도 "이게 메인이냐"(시술 30개 중 1개 vs 전문)는 모름.
+실측: "레이저 제모"에 제모 31회+주력 병원이 코사인으론 2위, 5회+비주력이 1위였음.
+
+```
+relevance(병원) = max_chunk_cosine
+                + W_PF   · [쿼리 토픽 ∈ 그 병원 primary_focus]   (주력으로 주장하나)
+                + W_FREQ · log1p(쿼리어 언급 횟수)               (얼마나 많이)
+                + W_CHUNK· log1p(매칭 청크 수 − 1)               (시그널·사례 폭)
+```
+
+가중치는 env(`FOCUS_RANK_WPF`=0.06·`WFREQ`=0.010·`WCHUNK`=0.010), `RANK_MODE=cosine`으로 옛 동작 A/B.
+코드는 `ai/search/kb_store.py`의 `_aggregate_by_hospital`·`_focus_intensity`. BE `be/api/search.py`는 relevance
+정렬에서 `retrieve_hospital`이 준 순서를 보존(여기서 similarity 재정렬하면 주력 랭킹을 덮어쓰므로 금지).
+
+**검증**: 강남 주력 토픽 84개 전수 A/B(`be/scripts/focus_rank_eval.py`) — P@1 **0.571→0.655**, P@5 0.562→0.617,
+MRR 0.675→0.734. 독립 92쿼리 retrieval eval(§7, `be/scripts/_retrieval_eval.py`) **P@5 0.859→0.891 / MRR 0.906→0.921**
+(무회귀·개선).
+
+**남은 한계**(랭킹 아닌 retrieval recall): 호흡기·감기/예방접종/알레르기 등 내과·소아 thin-signal 토픽은
+텍스트 빈약→임베딩 약함(코사인 ~0.41)→min-sim 컷(0.42)에서 top5 미진입. 주력강도로도 안 고쳐짐(컷라인을
+못 넘어서) → §7 결론과 동일, 청크/데이터 커버리지 과제.
