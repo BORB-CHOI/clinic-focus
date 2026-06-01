@@ -18,12 +18,9 @@ from shared.models import (
     CrawledImage,
     CrawledPage,
     CrawlData,
-    GoogleReviewItem,
     GoogleReviews,
     KakaoPlace,
-    KakaoReviewItem,
     KakaoReviews,
-    NaverPlace,
     PublicData,
 )
 

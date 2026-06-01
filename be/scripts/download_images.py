@@ -7,7 +7,6 @@ Vision 분석(비성님 파트)에 필요한 이미지 원본 수집.
 import asyncio
 import os
 import sys
-from pathlib import Path
 from urllib.parse import urlparse
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))

@@ -3,23 +3,15 @@
 DynamoDB 없이 mock으로 테스트.
 """
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
 
 from shared.models import (
-    Classification,
-    Confidence,
     Contact,
-    DetailedSignals,
     HospitalMeta,
     Location,
-    OperatingHours,
-    SelfClaimSignal,
-    BlogSignal,
-    ReviewSignal,
-    SignalContributions,
 )
 
 
@@ -170,7 +162,6 @@ class TestSearchEndpoint:
 
     def test_nl_search_fetch_cap_is_100(self, client):
         """자연어 검색은 FETCH_CAP=100 으로 retrieve_hospital 호출."""
-        from shared.models import SearchQuery, SearchResult
 
         with patch("be.api.search.db") as mock_db, \
              patch("ai.retrieve_hospital") as mock_retrieve:

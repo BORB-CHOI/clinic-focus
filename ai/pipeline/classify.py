@@ -19,7 +19,7 @@ import re
 from collections import Counter
 from datetime import datetime, timezone
 from decimal import InvalidOperation
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 # bedrock_client 는 boto3 에 의존하므로 함수 호출 시점까지 import 를 지연한다.
 # 이렇게 하면 boto3 없는 환경에서도 모듈 자체는 import 가능하고,
