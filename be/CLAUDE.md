@@ -72,7 +72,7 @@ RDS도 가용했지만 우리 access pattern과 워크로드가 DDB에 맞음:
 - **스키마 자유** — `shared/models.py` 자주 바뀜. 마이그레이션 없는 게 큼
 - **SQL 강점 무의미** — 자연어 검색 = Bedrock KB, 카테고리 필터 = GSI 1개. 복합 WHERE·JOIN 쓸 일 없음
 
-자세한 비교·솔직한 한계는 `../docs/dev-roadmap.md` "왜 DynamoDB인가 (RDS 대신)" 섹션 참조.
+자세한 비교·솔직한 한계는 `../docs/architecture.md` §1 "왜 DynamoDB인가 (RDS 대신)" 참조.
 
 ### 스키마 — V2 single-table
 

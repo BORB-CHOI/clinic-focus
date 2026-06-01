@@ -4,7 +4,7 @@ inclusion: always
 
 # clinic-focus 프로젝트 컨텍스트
 
-> 원본 상세 문서: `docs/overview.md`, `docs/dev-roadmap.md`
+> 원본 상세 문서: `docs/overview.md`, `docs/architecture.md`
 
 ## 한 줄 정의
 
@@ -26,7 +26,7 @@ clinic-focus/
 ├── be/         FastAPI + uvicorn + Pydantic + boto3 + httpx + BS4 (EC2 운영)
 ├── ai/         Bedrock (Haiku/Nova 지원·Sonnet 4.6 Vision 개인) + Titan Embed v2 + Bedrock Knowledge Base (강사 제공 `kmuproj-team-03`)
 ├── shared/     공유 Pydantic 모델 (BE·AI 양쪽 import, FE는 OpenAPI→TS 자동 생성)
-└── docs/       4대 문서 (overview, dev-roadmap, API-FE-BE, API-BE-AI)
+└── docs/       핵심 문서 (overview, architecture, API-FE-BE, API-BE-AI, plans/task-queue)
 ```
 
 ## BE ↔ AI 호출 방식

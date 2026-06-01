@@ -50,6 +50,13 @@
 **GSI**: `sigungu-specialty-index`(PK=`sigungu#standard_specialty`, SK=`confidence_score`↓ — 카테고리 탐색
 BE 직접) · `geo-index`(PK=`geohash_prefix`, SK=`lat#lng` — 지도 근처).
 
+**왜 DynamoDB인가 (RDS 대신)** — 워크로드가 RDB 강점과 어긋나서다: ① 본문(1MB+)은 S3, 인덱싱 메타만
+DDB가 정석(RDS면 BLOB 비대) ② `PK=hospital_id` single-table로 한 병원 전 entity를 Query 1회(RDS면
+4~5테이블 JOIN+N+1) ③ 간헐 트래픽 — on-demand idle $0(RDS `t4g.micro` ~$13/월) ④ `shared/models.py`
+잦은 변경에 마이그레이션 불필요 ⑤ 자연어=KB·카테고리=GSI 1개라 복합 WHERE·JOIN access pattern 자체가 없음.
+**약점**: GSI 미설계 필드로는 못 찾음 — 단순 access pattern이라 안 걸림. (초기엔 "매니지드 풀스택+idle $0"
+약한 근거였고 ①②③은 BE single-table 운영을 본 뒤 사후 정리 — 결과적으로 워크로드와 맞아 유지.)
+
 ### 1-2. S3 `kmuproj-10-clinic-focus-crawl` — 자체사이트 본문(raw)
 ```
 crawl/{hospital_id}/

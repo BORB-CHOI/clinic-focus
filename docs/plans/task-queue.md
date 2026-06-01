@@ -1,6 +1,6 @@
 # clinic-focus 작업 큐 — 남은 일만
 
-> 최종 업데이트: 2026-06-01 · 상위 컨텍스트: [`../overview.md`](../overview.md) · [`../dev-roadmap.md`](../dev-roadmap.md)
+> 최종 업데이트: 2026-06-01 · 상위 컨텍스트: [`../overview.md`](../overview.md) · [`../architecture.md`](../architecture.md)
 >
 > 이 문서는 **남은 작업 + 현재 데이터 상태 + 지켜야 할 제약**만 둔다.
 > 완료 작업·아키텍처 = `../architecture.md` / overview / API 명세 / git PR 이력. 설계·근거는 각 트랙 CLAUDE.md / PR / [`../CATALOG.md`](../CATALOG.md).

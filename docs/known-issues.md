@@ -4,7 +4,7 @@
 > 버그 픽스 이력(=git PR)과 다르다. 여기는 "알면서 미룬 것"을 잊지 않으려는 백로그.
 > 형식: 각 이슈에 상태·근거 코드(path:line)·현재 안전장치·해결 방향·결정 필요 사항을 적는다.
 >
-> 상위 컨텍스트: [`overview.md`](overview.md) · [`dev-roadmap.md`](dev-roadmap.md) · 신호 실험 로그는 [`CATALOG.md`](CATALOG.md)
+> 상위 컨텍스트: [`overview.md`](overview.md) · [`architecture.md`](architecture.md) · 신호 실험 로그는 [`CATALOG.md`](CATALOG.md)
 
 ---
 
