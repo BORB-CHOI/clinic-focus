@@ -99,8 +99,10 @@ def _sort_nl_results(
     elif sort == "distance":
         items.sort(key=lambda c: (_dist(c), -_confidence(c), _name(c)))
     else:
-        # relevance(기본): 유사도 desc → confidence desc → name asc
-        items.sort(key=lambda c: (-_sim(c), -_confidence(c), _name(c)))
+        # relevance(기본): retrieve_hospital 이 이미 '주력 강도'(언급 빈도 + primary_focus
+        # 일치 + 코사인)로 정렬해 돌려준다. 여기서 similarity(코사인) 로 재정렬하면 그 주력
+        # 랭킹을 덮어써 버리므로(코사인만으론 주력이 안 잡힘), 들어온 순서를 그대로 보존한다.
+        pass
 
     return items
 
