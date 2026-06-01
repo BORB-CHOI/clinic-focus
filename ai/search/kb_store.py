@@ -901,6 +901,80 @@ def _dedup_by_hospital(raw_results: list[dict]) -> dict[str, dict]:
     return by_hospital
 
 
+def _parse_focus(md: dict) -> list[str]:
+    """metadata 의 primary_focus 를 list[str] 로 방어 파싱(따옴표/JSON 문자열 포함)."""
+    raw_focus = md.get("primary_focus") or []
+    if isinstance(raw_focus, str):
+        try:
+            raw_focus = json.loads(raw_focus)
+        except (json.JSONDecodeError, TypeError):
+            raw_focus = []
+    return raw_focus if isinstance(raw_focus, list) else []
+
+
+def _aggregate_by_hospital(raw_results: list[dict], query_terms: list[str]) -> dict[str, dict]:
+    """raw 청크를 hospital_id 로 묶어 랭킹용 집계를 만든다.
+
+    코사인 1개로는 '이 병원이 이 토픽을 얼마나 주력/주장하나'가 안 잡힌다(유사도는 의미
+    근접도이지 빈도·주력이 아님). 그래서 병원당:
+      - max_score: 최고 청크 코사인 (의미 관련성 게이트/기본점)
+      - mentions:  쿼리 추출어(query_terms)가 이 병원 청크들에 등장한 총 횟수 (많이 언급)
+      - n_chunks:  매칭된 청크 수 (여러 시그널·문단에서 반복 = 사례·주장 폭)
+      - pf_match:  쿼리어가 primary_focus(룰 분류 '주력')에 들어가나 (주장)
+    을 모아 _focus_intensity 로 재랭킹한다.
+    """
+    terms = [t for t in (query_terms or []) if t]
+    groups: dict[str, dict] = {}
+    for r in raw_results:
+        md = r.get("metadata") or {}
+        hid = md.get("hospital_id")
+        if not hid:
+            continue
+        score = float(r.get("score") or 0.0)
+        content = r.get("content")
+        text = content.get("text", "") if isinstance(content, dict) else str(content or "")
+        g = groups.get(hid)
+        if g is None:
+            pf = _parse_focus(md)
+            g = {
+                "best": r,
+                "max_score": score,
+                "mentions": 0,
+                "n_chunks": 0,
+                "pf_match": any(t in str(p) for t in terms for p in pf),
+                "confidence": float(md.get("confidence_score") or 0.0),
+            }
+            groups[hid] = g
+        elif score > g["max_score"]:
+            g["max_score"] = score
+            g["best"] = r
+        g["n_chunks"] += 1
+        if terms and text:
+            g["mentions"] += sum(text.count(t) for t in terms)
+    return groups
+
+
+def _focus_intensity(g: dict) -> float:
+    """주력 강도 점수 = 코사인 + primary_focus 일치 보너스 + log(언급/청크 빈도).
+
+    가중치는 env(FOCUS_RANK_*)로 튜닝 가능(대규모 eval 스윕용). 기본값은 강남 focus
+    전수 eval 로 보정. 코사인 스프레드가 좁아(top10 ~0.03) 작은 가중치로도 재정렬된다.
+    """
+    wpf = float(os.environ.get("FOCUS_RANK_WPF", "0.06"))
+    wfreq = float(os.environ.get("FOCUS_RANK_WFREQ", "0.010"))
+    wchunk = float(os.environ.get("FOCUS_RANK_WCHUNK", "0.010"))
+    return (
+        g["max_score"]
+        + (wpf if g["pf_match"] else 0.0)
+        + wfreq * math.log1p(g["mentions"])
+        + wchunk * math.log1p(max(0, g["n_chunks"] - 1))
+    )
+
+
+def _agg_name(g: dict) -> str:
+    return ((g["best"].get("metadata") or {}).get("name") or "")
+
+
 def _build_interpretation(processed) -> str | None:
     """ProcessedQuery 로부터 사용자 표시용 "이렇게 이해했어요" 문자열을 만든다.
 
@@ -1073,68 +1147,66 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
     if not raw:
         return []
 
-    # --- hospital_id 기준 dedup (최고 score 1개) ---
-    by_hospital = _dedup_by_hospital(raw)
+    # --- hospital_id 기준 집계 (최고 코사인 + 언급/청크 빈도 + primary_focus 일치) ---
+    # 랭킹 기본(relevance)은 최고 청크 코사인 1개가 아니라 '주력 강도'(_focus_intensity).
+    # 코사인은 의미 근접도일 뿐 '이 병원이 이 토픽을 얼마나 주력/주장하나'를 못 보여줘서다.
+    # RANK_MODE=cosine 이면 옛 코사인-only 동작(대규모 A/B eval 비교용).
+    rank_mode = os.environ.get("RANK_MODE", "intensity")
+    groups = _aggregate_by_hospital(raw, processed.medical_terms)
+
+    def _relevance_key(g: dict) -> float:
+        return g["max_score"] if rank_mode == "cosine" else _focus_intensity(g)
 
     # --- haversine 재필터링 (위치 있을 때) ---
     if has_location:
         user_lat: float = query.lat  # type: ignore[assignment]
         user_lng: float = query.lng  # type: ignore[assignment]
 
-        candidates: list[tuple[float, float, dict]] = []
-        for item in by_hospital.values():
-            md = item.get("metadata") or {}
+        cands: list[dict] = []
+        for g in groups.values():
+            md = g["best"].get("metadata") or {}
             item_lat = md.get("lat")
             item_lng = md.get("lng")
-            score = float(item.get("score") or 0.0)
-            if item_lat is None or item_lng is None:
-                # 좌표 없는 병원은 위치 검색에서 제외
-                continue
+            if g["max_score"] < min_score or item_lat is None or item_lng is None:
+                continue  # 좌표 없는 병원은 위치 검색에서 제외
             dist = _haversine_km(user_lat, user_lng, float(item_lat), float(item_lng))
-            if dist <= query.radius_km and score >= min_score:
-                candidates.append((dist, score, item))
+            if dist <= query.radius_km:
+                g["dist"] = dist
+                cands.append(g)
 
-        # 정렬
+        # 정렬 (결정적 보조키: 동점 → 근거(confidence) → 이름)
         if query.sort == "distance":
-            candidates.sort(key=lambda x: x[0])
+            cands.sort(key=lambda g: (g["dist"], -g["confidence"], _agg_name(g)))
         elif query.sort == "confidence":
-            candidates.sort(
-                key=lambda x: float((x[2].get("metadata") or {}).get("confidence_score") or 0),
-                reverse=True,
-            )
-        else:  # relevance (기본)
-            candidates.sort(key=lambda x: x[1], reverse=True)
+            cands.sort(key=lambda g: (-g["confidence"], -_focus_intensity(g), _agg_name(g)))
+        else:  # relevance (기본) — 주력 강도
+            cands.sort(key=lambda g: (-_relevance_key(g), -g["confidence"], _agg_name(g)))
 
         results: list["SearchResult"] = []
-        for dist_km, score, item in candidates[: query.limit]:
+        for g in cands[: query.limit]:
             results.append(
                 _raw_to_search_result(
-                    item,
-                    similarity_score=round(score, 4),
-                    distance_km=round(dist_km, 3),
+                    g["best"],
+                    similarity_score=round(g["max_score"], 4),
+                    distance_km=round(g["dist"], 3),
                     query_interpretation=interpretation,
                 )
             )
         return results
 
-    # --- 자연어 단독 검색: min-sim 컷 후 정렬 ---
-    kept = [it for it in by_hospital.values() if float(it.get("score") or 0.0) >= min_score]
-    sorted_items = sorted(kept, key=lambda x: float(x.get("score") or 0.0), reverse=True)
-
+    # --- 자연어 단독 검색: min-sim 컷 후 주력 강도 정렬 ---
+    kept = [g for g in groups.values() if g["max_score"] >= min_score]
     if query.sort == "confidence":
-        sorted_items = sorted(
-            kept,
-            key=lambda x: float((x.get("metadata") or {}).get("confidence_score") or 0),
-            reverse=True,
-        )
+        kept.sort(key=lambda g: (-g["confidence"], -_focus_intensity(g), _agg_name(g)))
+    else:  # relevance (기본) — 주력 강도 (동점 → 코사인 → 이름)
+        kept.sort(key=lambda g: (-_relevance_key(g), -g["max_score"], _agg_name(g)))
 
     results = []
-    for item in sorted_items[: query.limit]:
-        score = float(item.get("score") or 0.0)
+    for g in kept[: query.limit]:
         results.append(
             _raw_to_search_result(
-                item,
-                similarity_score=round(score, 4),
+                g["best"],
+                similarity_score=round(g["max_score"], 4),
                 query_interpretation=interpretation,
             )
         )
