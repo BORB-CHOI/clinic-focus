@@ -204,8 +204,9 @@ class DynamoAdapter:
         """sigungu-only 경량 목록. 카테고리 검색 페이지네이션 전처리용.
 
         풀 HospitalMeta 파싱 없이 hospital_id·name·confidence_score·
-        standard_specialty·location 만 포함한 dict 목록을 반환한다.
+        standard_specialty·lat·lng 만 포함한 dict 목록을 반환한다.
         슬라이스 후 해당 구간만 _hospital_card 로 하이드레이트할 것.
+        (lat/lng 는 위치 단독 지오 검색의 haversine 필터·거리 정렬에 쓴다.)
         sigungu_specialty GSI 에 없는 분류 전 병원도 포함한다.
         """
         results: list[dict] = []
@@ -220,12 +221,15 @@ class DynamoAdapter:
         while True:
             resp = self._table.scan(**kwargs)
             for item in resp.get("Items", []):
+                loc = item.get("location") or {}
                 results.append({
                     "hospital_id": item.get("hospital_id", ""),
                     "name": item.get("name", ""),
                     "confidence_score": float(item["confidence_score"])
                     if "confidence_score" in item else 0.0,
                     "standard_specialty": item.get("standard_specialty", ""),
+                    "lat": float(loc["lat"]) if loc.get("lat") is not None else None,
+                    "lng": float(loc["lng"]) if loc.get("lng") is not None else None,
                 })
             if "LastEvaluatedKey" not in resp:
                 break

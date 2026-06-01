@@ -154,8 +154,9 @@ def search_hospitals(
     all_cards: list[dict] = []
     query_interpretation = None
 
-    # --- 자연어/위치 경로: AI retrieve_hospital (KB Retrieve) ---
-    if q or has_location:
+    # --- 자연어 경로(+선택적 위치 bbox): AI retrieve_hospital (KB Retrieve) ---
+    # ★ q 가 있을 때만 KB. KB Retrieve 는 빈 쿼리를 못 받으므로 위치 '단독'은 아래 DDB 지오로.
+    if q:
         from shared.models import SearchQuery
 
         # FETCH_CAP 으로 호출 — retrieve_hospital 이 이미 min-sim/정렬 처리된 전체를 돌려줌.
@@ -208,6 +209,48 @@ def search_hospitals(
 
         # 보조정렬 적용 (retrieve_hospital 이 1순위 정렬 해왔지만 2·3순위 보강)
         all_cards = _sort_nl_results(all_cards, sort, score_map=score_map)
+
+    # --- 위치 단독 경로: DDB 지오 (KB 미경유) ---
+    # 쿼리 없는 '반경 내 병원'은 의미검색이 아니라 좌표 쿼리다. KB Retrieve 는 빈 쿼리를 못 받으므로
+    # 여기서 haversine 으로 직접 거른다(지도 검색이 이 경로). 슬라이스 구간만 풀 하이드레이트.
+    elif has_location:
+        from be.core.geo import haversine
+
+        # 강남 PoC: 분류·좌표 보유는 강남뿐. 지도는 sigungu=강남구를 함께 보낸다(없으면 강남 기본).
+        light_items = db.list_hospitals_by_sigungu_light(sigungu or "강남구")
+
+        near: list[tuple[float, dict]] = []
+        for it in light_items:
+            ilat, ilng = it.get("lat"), it.get("lng")
+            if ilat is None or ilng is None:
+                continue
+            if min_confidence > 0 and float(it.get("confidence_score") or 0) < min_confidence:
+                continue
+            dist = haversine(lat, lng, ilat, ilng)  # type: ignore[arg-type]
+            if dist <= radius_km:
+                near.append((round(dist, 3), it))
+
+        near.sort(key=lambda x: (x[0], x[1].get("name", "")))  # 거리 asc → 이름 asc
+        total = len(near)
+        for dist, it in near[offset: offset + limit]:
+            card = _hospital_card(it["hospital_id"], distance_km=dist)
+            if card:
+                all_cards.append(card)
+
+        return {
+            "data": all_cards,
+            "meta": {
+                "total": total,
+                "limit": limit,
+                "offset": offset,
+                "has_more": offset + limit < total,
+                "search_mode": search_mode,
+                "query_interpretation": None,
+                "center": center_meta,
+                "radius_km": radius_meta,
+                "sort": sort,
+            },
+        }
 
     # --- 시군구 단독(카테고리) 경로: DDB GSI 직접 (경량 처리) ---
     elif sigungu:

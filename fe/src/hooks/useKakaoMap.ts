@@ -4,6 +4,7 @@ import {
   buildMarkerImage,
   loadKakaoMaps,
   type KakaoCircle,
+  type KakaoLatLng,
   type KakaoMap,
   type KakaoMapsApi,
   type KakaoMarker,
@@ -21,6 +22,8 @@ interface UseKakaoMapOptions {
   radiusKm?: number;
   /** 마커 클릭 시 해당 hospital_id 전달 */
   onMarkerClick?: (hospitalId: string) => void;
+  /** 지도 빈 곳 클릭 시 그 좌표 전달 — 탐색 위치 핀 찍기 */
+  onMapClick?: (lat: number, lng: number) => void;
 }
 
 interface UseKakaoMapResult {
@@ -44,12 +47,14 @@ export function useKakaoMap({
   items,
   radiusKm,
   onMarkerClick,
+  onMapClick,
 }: UseKakaoMapOptions): UseKakaoMapResult {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapsApiRef = useRef<KakaoMapsApi | null>(null);
   const mapInstanceRef = useRef<KakaoMap | null>(null);
   const markersRef = useRef<KakaoMarker[]>([]);
   const circleRef = useRef<KakaoCircle | null>(null);
+  const centerMarkerRef = useRef<KakaoMarker | null>(null);
 
   const [status, setStatus] = useState<UseKakaoMapResult["status"]>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +64,10 @@ export function useKakaoMap({
   useEffect(() => {
     onMarkerClickRef.current = onMarkerClick;
   }, [onMarkerClick]);
+  const onMapClickRef = useRef(onMapClick);
+  useEffect(() => {
+    onMapClickRef.current = onMapClick;
+  }, [onMapClick]);
 
   // ─ SDK 로드 + 맵 생성 (마운트 시 1회) ─────────────────────────────
   useEffect(() => {
@@ -70,9 +79,15 @@ export function useKakaoMap({
       .then((maps) => {
         if (cancelled || !mapRef.current) return;
         mapsApiRef.current = maps;
-        mapInstanceRef.current = new maps.Map(mapRef.current, {
+        const map = new maps.Map(mapRef.current, {
           center: new maps.LatLng(center.lat, center.lng),
           level,
+        });
+        mapInstanceRef.current = map;
+        // 지도 빈 곳 클릭 → 그 좌표를 탐색 위치로 (핀 찍기)
+        maps.event.addListener(map, "click", (ev?: { latLng: KakaoLatLng }) => {
+          if (!ev?.latLng) return;
+          onMapClickRef.current?.(ev.latLng.getLat(), ev.latLng.getLng());
         });
         setStatus("ready");
       })
@@ -96,6 +111,21 @@ export function useKakaoMap({
     const maps = mapsApiRef.current;
     if (!map || !maps || status !== "ready") return;
     map.setCenter(new maps.LatLng(center.lat, center.lng));
+  }, [center.lat, center.lng, status]);
+
+  // ─ 중심(탐색 위치) 핀 동기화 — 병원 마커(색 원)와 구분되는 기본 핀 ──
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const maps = mapsApiRef.current;
+    if (!map || !maps || status !== "ready") return;
+    const position = new maps.LatLng(center.lat, center.lng);
+    if (centerMarkerRef.current) {
+      centerMarkerRef.current.setPosition(position);
+    } else {
+      // 이미지 미지정 = 카카오 기본 핀(병원 마커는 색 원이라 시각적으로 구분됨)
+      const marker = new maps.Marker({ position, map, title: "탐색 위치" });
+      centerMarkerRef.current = marker;
+    }
   }, [center.lat, center.lng, status]);
 
   // ─ 마커 동기화 ───────────────────────────────────────────────────
