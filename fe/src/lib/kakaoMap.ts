@@ -16,9 +16,10 @@ export interface KakaoLatLng {
   getLng(): number;
 }
 
-/** 지도 클릭 등 마우스 이벤트 — 클릭 좌표를 latLng 로 전달 */
-export interface KakaoMouseEvent {
-  latLng: KakaoLatLng;
+/** 지도 영역 경계 — getBounds() 반환. 보이는 구역 계산에 사용 */
+export interface KakaoLatLngBounds {
+  getSouthWest(): KakaoLatLng;
+  getNorthEast(): KakaoLatLng;
 }
 
 export interface KakaoMap {
@@ -26,12 +27,13 @@ export interface KakaoMap {
   setLevel(level: number): void;
   getLevel(): number;
   panTo(latlng: KakaoLatLng): void;
+  getCenter(): KakaoLatLng;
+  getBounds(): KakaoLatLngBounds;
 }
 
 export interface KakaoMarker {
   setMap(map: KakaoMap | null): void;
   getPosition(): KakaoLatLng;
-  setPosition(latlng: KakaoLatLng): void;
 }
 
 export interface KakaoCircle {
@@ -79,7 +81,7 @@ export interface KakaoMapsApi {
     addListener(
       target: KakaoMap | KakaoMarker,
       type: string,
-      handler: (event?: KakaoMouseEvent) => void,
+      handler: () => void,
     ): void;
   };
   load(callback: () => void): void;

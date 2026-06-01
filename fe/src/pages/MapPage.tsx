@@ -3,10 +3,6 @@ import { Locate } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ConfidenceLegend } from "@/components/map/ConfidenceLegend";
-import {
-  RadiusSelector,
-  type RadiusKm,
-} from "@/components/map/RadiusSelector";
 import { HospitalCard } from "@/components/search/HospitalCard";
 import { EmptyState } from "@/components/common/EmptyState";
 import { WarningBanner } from "@/components/common/WarningBanner";
@@ -15,41 +11,42 @@ import { useSearch } from "@/hooks/useSearch";
 import { HAS_KAKAO_MAP_KEY } from "@/lib/env";
 import { cn } from "@/lib/utils";
 
-// 지도 검색 페이지 — 실 /api/search 위치 검색 연동 (목업 제거)
+// 지도 검색 페이지 — 뷰포트(보이는 구역) 기반 검색.
 //
-// 좌측 풀 높이 지도 + 우측 사이드(컨트롤·선택 카드·반경 내 리스트) 2단 구성.
-// 기본 중심 = 강남역 (데이터가 강남구 기준). GPS 거부 시 강남 유지.
-// center/radiusKm 변경 시 /api/search?lat&lng&radius_km&sigungu=강남구&limit=100 refetch.
+// 지도를 드래그·줌하면(idle) 그때 보이는 영역을 덮는 중심·반경으로 /api/search 위치검색을
+// 다시 호출해, "지금 화면에 보이는 구역의 병원"을 마커로 깐다. 반경 선택·핀 찍기는 없다.
+// ★검색영역(searchArea)은 지도 center prop 과 분리한다 — idle 값을 center 로 되먹이면
+//   map.setCenter ↔ idle 무한 루프(흰 화면)가 난다.
 
-// 강남역 좌표 (데이터 = 강남구)
+// 강남역 좌표 (데이터 = 강남구). GPS '내 위치' 또는 초기 중심.
 const FALLBACK_CENTER = { lat: 37.4979, lng: 127.0276 };
-const DEFAULT_RADIUS: RadiusKm = 3;
+const MAX_RADIUS_KM = 30; // BE /api/search radius_km le=30 — 너무 줌아웃해도 캡
 
 export default function MapPage() {
+  // 지도 중심(초기·GPS recenter 전용). idle 로부터 되먹이지 않는다.
   const [center, setCenter] = useState(FALLBACK_CENTER);
-  const [radiusKm, setRadiusKm] = useState<RadiusKm>(DEFAULT_RADIUS);
+  // 실제 검색에 쓰는 영역 — 지도 idle 이 채운다. 초기값은 강남역 3km.
+  const [searchArea, setSearchArea] = useState({
+    lat: FALLBACK_CENTER.lat,
+    lng: FALLBACK_CENTER.lng,
+    radiusKm: 3,
+  });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [geoMessage, setGeoMessage] = useState<string | null>(null);
   const selectedCardRef = useRef<HTMLDivElement>(null);
 
-  // 마운트 시 GPS 시도하지 않음 — 강남 데이터 기준 PoC라 강남 밖이면 결과 없음이 정상.
-  // "내 위치" 버튼으로 수동 GPS 점프는 유지.
-
-  // 실 API — center/radiusKm 변경 시 자동 refetch. 지도는 페이지네이션 없이
-  // 반경 내 병원을 한 번에 마커로 깔아야 하므로 limit=100 (BE 상한 le=100).
+  // 보이는 구역 위치검색. 한 화면에 마커를 한 번에 깔아야 하므로 limit=100(BE 상한).
   const { data, isLoading } = useSearch({
-    q: "",           // 카테고리(위치) 경로
+    q: "",
     minConfidence: 0,
     sort: "distance",
-    lat: center.lat,
-    lng: center.lng,
-    radius_km: radiusKm,
+    lat: searchArea.lat,
+    lng: searchArea.lng,
+    radius_km: searchArea.radiusKm,
     limit: 100,
   });
 
   const items = useMemo(() => data?.data ?? [], [data]);
-
-  // 마커 데이터: BE 응답의 distance_km 사용 (프론트 haversine 재계산 불필요)
   const visibleItems = useMemo(
     () => [...items].sort((a, b) => (a.distance_km ?? 0) - (b.distance_km ?? 0)),
     [items],
@@ -60,23 +57,23 @@ export default function MapPage() {
     [selectedId, visibleItems],
   );
 
-  // 마커 클릭 시 사이드 카드로 스크롤
   useEffect(() => {
     if (selectedItem) {
-      selectedCardRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-      });
+      selectedCardRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
   }, [selectedItem]);
 
   const { mapRef, status, error } = useKakaoMap({
     center,
     items: visibleItems,
-    radiusKm,
     onMarkerClick: setSelectedId,
-    // 지도 빈 곳 클릭 → 그 좌표를 탐색 중심으로(핀 이동) → useSearch 가 재검색
-    onMapClick: (lat, lng) => setCenter({ lat, lng }),
+    // 지도 이동·줌 멈추면 보이는 구역으로 재검색 (center prop 에는 되먹이지 않음 = 루프 차단)
+    onIdle: (c, radiusKm) =>
+      setSearchArea({
+        lat: c.lat,
+        lng: c.lng,
+        radiusKm: Math.min(Math.max(radiusKm, 0.3), MAX_RADIUS_KM),
+      }),
   });
 
   function handleRecenter() {
@@ -86,6 +83,7 @@ export default function MapPage() {
     }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        // center 만 바꾼다 → 지도가 그 위치로 이동 → idle → searchArea 자동 갱신
         setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setGeoMessage(null);
       },
@@ -101,18 +99,15 @@ export default function MapPage() {
       <header>
         <h1 className="text-2xl font-bold tracking-tight">지도 검색</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          강남 중심으로 반경 내 병원을 근거 등급 색 마커로 표시합니다. <strong>지도를 클릭</strong>하면 그 위치를 탐색 중심으로 다시 검색합니다.
+          <strong>지도를 움직이거나 확대</strong>하면 그때 보이는 구역의 병원을 근거 등급 색
+          마커로 다시 표시합니다.
         </p>
       </header>
 
       {geoMessage ? <WarningBanner message={geoMessage} /> : null}
 
-      {/* 컨트롤 바 — 반경·범례·내위치·결과 카운트 */}
+      {/* 컨트롤 바 — 범례·결과 카운트·내위치 */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border bg-card p-3">
-        <RadiusSelector value={radiusKm} onChange={setRadiusKm} />
-
-        <div className="hidden h-5 w-px bg-border sm:block" aria-hidden />
-
         <ConfidenceLegend />
 
         <div className="ml-auto flex items-center gap-3">
@@ -137,7 +132,6 @@ export default function MapPage() {
 
       {/* 메인: 지도 + 사이드 */}
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_420px]">
-        {/* 지도 */}
         <div className="space-y-2">
           {HAS_KAKAO_MAP_KEY ? (
             <>
@@ -178,22 +172,19 @@ export default function MapPage() {
             {selectedItem ? (
               <HospitalCard item={selectedItem} compact />
             ) : visibleItems.length === 0 && !isLoading ? (
-              <EmptyState message="반경 내 병원이 없습니다 — 반경을 넓혀보세요" />
+              <EmptyState message="이 구역에 병원이 없습니다 — 지도를 옮기거나 확대해보세요" />
             ) : (
               <EmptyState message="지도에서 마커를 클릭하면 카드가 여기에 표시됩니다" />
             )}
           </div>
 
-          {/* 반경 내 리스트 — 항상 노출. 키 유무와 무관하게 시연 가능하도록 */}
+          {/* 보이는 구역 리스트 — 거리순. 키 유무와 무관하게 시연 가능하도록 항상 노출 */}
           {visibleItems.length > 0 ? (
             <div className="space-y-2">
-              <h3 className="flex items-baseline justify-between gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                <span>
-                  반경 내 (거리순)
-                  <span className="ml-1 normal-case tracking-normal text-muted-foreground/70">
-                    {radiusKm < 1 ? `${radiusKm * 1000}m` : `${radiusKm}km`} ·{" "}
-                    {visibleItems.length}건
-                  </span>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                보이는 구역 (거리순)
+                <span className="ml-1 normal-case tracking-normal text-muted-foreground/70">
+                  {visibleItems.length}건
                 </span>
               </h3>
               <ul className="grid max-h-[480px] gap-2 overflow-y-auto pr-1">
@@ -232,7 +223,7 @@ function KeyMissingFallback() {
         <code>VITE_KAKAO_MAP_KEY=&lt;발급받은_JS_키&gt;</code> 를 넣은 뒤 dev
         서버를 재시작하면 지도가 표시됩니다.
         <br />
-        지금은 우측 리스트에서 반경 내 병원을 거리순으로 확인할 수 있습니다.
+        지금은 우측 리스트에서 강남 중심 병원을 거리순으로 확인할 수 있습니다.
       </p>
     </div>
   );
