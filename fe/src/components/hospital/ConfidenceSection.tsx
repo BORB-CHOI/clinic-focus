@@ -91,11 +91,17 @@ export function ConfidenceSection({
   return (
     <Section
       id="section-confidence"
-      title="신뢰도와 근거"
+      title="분류 근거"
       badge="④"
-      subtitle="이 분류가 어떤 시그널의 어떤 근거로 만들어졌는지"
+      subtitle="이 분류가 어떤 출처의 어떤 근거로 만들어졌는지"
       action={<ConfidenceBadge confidence={confidence} />}
     >
+      {/* §56 면책 — 점수는 병원 평가가 아니라 우리 분류의 근거 강도. 의료법 검수 통과 카피. */}
+      <p className="mb-4 rounded-md bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-500">
+        이 점수는 병원의 진료 수준이 아니라, 우리 분류 판단의 근거가 여러 독립 출처에서
+        얼마나 겹치는지를 나타냅니다. 우리는 병원을 평가하지 않고, 병원이 자기를 어떻게
+        표현했고 외부 출처가 그와 얼마나 일치하는지만 보여줍니다.
+      </p>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {SIGNAL_KEYS.map((k) => (
           <SignalBar key={k} signal={k} value={confidence.signals[k]} />

@@ -1,8 +1,8 @@
 import { cn } from "@/lib/utils";
 import type { Confidence, ConfidenceLevel } from "@/types/domain";
 
-// 신뢰도 등급별 색상: 확실=에메랄드 / 추정=앰버 / 정보 부족=슬레이트
-// (모던 SaaS 톤. 4단계 스케일 50/100/500/700 의 의미 매핑은 tailwind.config.js 참조)
+// 등급별 색상: 확실=에메랄드 / 추정=앰버 / 정보 부족=슬레이트
+// (BE enum 키는 불변, 색상 매핑용)
 const LEVEL_STYLE: Record<ConfidenceLevel, string> = {
   확실:
     "bg-confidence-high-50 text-confidence-high-700 border-confidence-high-100",
@@ -10,6 +10,15 @@ const LEVEL_STYLE: Record<ConfidenceLevel, string> = {
     "bg-confidence-medium-50 text-confidence-medium-700 border-confidence-medium-100",
   "정보 부족":
     "bg-confidence-low-50 text-confidence-low-700 border-confidence-low-100",
+};
+
+// 표시 라벨 — "신뢰도"(병원 평가처럼 들림)가 아니라 *우리 분류가 몇 개 독립 출처로
+// 뒷받침되나*(근거 강도)를 직관적으로. 의료법 §56 검수 통과 카피(2026-06-01).
+// BE enum(확실/추정/정보 부족)은 그대로 두고 표시만 치환.
+const LEVEL_LABEL: Record<ConfidenceLevel, string> = {
+  확실: "여러 출처가 일치",
+  추정: "일부 출처로 확인",
+  "정보 부족": "자칭만 확인됨",
 };
 
 interface ConfidenceBadgeProps {
@@ -32,7 +41,7 @@ export function ConfidenceBadge({
       )}
     >
       <span aria-hidden>●</span>
-      <span>{confidence.level}</span>
+      <span>{LEVEL_LABEL[confidence.level]}</span>
       {showScore ? (
         <span className="font-mono text-[11px] opacity-80">
           {confidence.score}

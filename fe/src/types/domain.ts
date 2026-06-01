@@ -188,6 +188,9 @@ export interface HospitalDetail {
   hospital_id: string;
   name: string;
   standard_specialty: string;
+  /** 표시용 파생 카테고리 — standard_specialty='기타'면 primary_focus 로 도출한 하위
+   * 카테고리(미용/모발·탈모/통증·근골격/수면 등). 그 외엔 standard_specialty 와 동일. */
+  etc_subcategory?: string;
   primary_focus: string[];
   confidence: Confidence;
   location: Location;
@@ -227,6 +230,8 @@ export interface SearchResultItem {
   hospital_id: string;
   name: string;
   standard_specialty: string;
+  /** 표시용 파생 카테고리 — '기타'면 primary_focus 로 도출(미용/모발·탈모/통증·근골격…). */
+  etc_subcategory?: string;
   primary_focus: string[];
   confidence: Confidence;
   /** 위경도 검색일 때만 채워짐 */
