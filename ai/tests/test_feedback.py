@@ -9,7 +9,7 @@ boto3 resource 는 unittest.mock.patch 로 완전히 차단하며 assert_not_cal
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
@@ -177,7 +177,6 @@ class TestAggregateFeedbackStats:
     @patch("ai.search.feedback.get_dynamodb_resource")
     def test_correct_table_name_used(self, mock_get_resource: MagicMock) -> None:
         """DYNAMO_TABLE 환경변수 기본값 테이블이 사용돼야 한다."""
-        import os
         from ai.search.feedback import aggregate_feedback_stats, _DYNAMO_TABLE
 
         table_mock = _make_mock_table(query_items=[])

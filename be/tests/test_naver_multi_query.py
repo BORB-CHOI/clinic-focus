@@ -8,11 +8,10 @@
 - Rate limit 유지
 """
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import time
 
 import httpx
-import pytest
 
 from be.adapters.naver_map_adapter import NaverMapAdapter
 
