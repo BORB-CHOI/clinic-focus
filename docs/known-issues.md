@@ -72,3 +72,68 @@
 - 후기 청크에서 부정 후기를 **제외**할지 **감점 보존**할지(임베딩 어휘 풍부도 vs 관련성).
 - 처리 시 의료법 재검수 필요: 청크 구성 변경은 [`kb_store.py:247-251`](../ai/search/kb_store.py#L247)
   §56③ 면제 조건과 충돌하지 않는지 `medical-language-reviewer` 검수.
+
+---
+
+## ISSUE-002 · thin-signal 토픽 retrieval recall — 내과·소아 계열이 top5 미진입
+
+- **상태**: 🟡 미해결 (추후) — 랭킹 버그 아닌 **검색 recall** 한계, 주력강도 도입으로도 안 고쳐짐
+- **발견일**: 2026-06-01
+- **트랙**: ai/ (vector-search)
+- **우선순위**: 중 (주력강도 랭킹 라운드와 별개의 후속 과제)
+
+### 증상 / 시나리오
+
+호흡기·감기 / 예방접종 / 알레르기 등 **내과·소아 계열 thin-signal 토픽**은 해당 진료를
+실제로 하는 병원이 있어도 자연어 검색 top5 에 안 뜬다. 이번 라운드에서 relevance 랭킹을
+'최고 청크 코사인 1개'에서 **주력 강도(focus intensity)** 로 바꿔 전반 개선을 봤지만
+(주력 토픽 84개 A/B: P@1 0.571→0.655, P@5 0.562→0.617, MRR 0.675→0.734), 이 토픽군은
+**랭킹을 바꿔도 top5 에 진입조차 못 한다.**
+
+### 근본 원인 (코드 판단)
+
+랭킹(정렬) 문제가 **아니라** retrieval(후보 진입) 문제다. 두 요인이 겹친다:
+
+1. **임베딩 자체가 약함** — 이 토픽군은 병원 사이트·후기에 텍스트가 빈약해서
+   (감기·예방접종은 굳이 길게 홍보 안 함) 청크가 짧고 일반적 → Titan v2 임베딩의
+   쿼리 코사인이 **~0.41** 수준에 머문다.
+2. **min_score 컷에 걸림** — KB Retrieve 후보를 `min_score`(기본 0.42)로 거른다
+   ([`kb_store.py:1109`](../ai/search/kb_store.py#L1109) `KB_MIN_SCORE`, 컷은
+   [`kb_store.py:1170`](../ai/search/kb_store.py#L1170)·[`kb_store.py:1198`](../ai/search/kb_store.py#L1198)).
+   ~0.41 짜리 thin-signal 청크는 **컷라인(0.42)을 못 넘어** 후보 풀에서 탈락 →
+   top5 에 들 기회 자체가 없다.
+
+핵심: **주력 강도(`_focus_intensity` [`kb_store.py:957`](../ai/search/kb_store.py#L957))는
+컷을 통과한 후보들의 *순서*만 교정한다.** 컷에서 떨어진 청크는 애초에
+`_aggregate_by_hospital`([`kb_store.py:915`](../ai/search/kb_store.py#L915))에 안 모이므로,
+빈도·청크수 가산이 무의미하다. 그래서 주력강도로도 안 고쳐진다(컷라인을 못 넘어서).
+
+### 현재 안전장치 (그래서 당장 치명적이진 않음)
+
+| 안전장치 | 근거 |
+|---|---|
+| min_score 는 **무관 쿼리 억지 매칭 방지**가 본래 목적 (0.42 = 92쿼리 eval sweet spot) | [`kb_store.py:1106-1109`](../ai/search/kb_store.py#L1106) 주석 |
+| 무관 쿼리는 구조적으로 **'검색 결과 없음'** 으로 떨어짐 (거짓 양성 < 거짓 음성 트레이드오프) | 커밋 `5374431` min-sim 0.3→0.42 |
+| 카테고리 경로(`sigungu`·`specialty`)는 KB 미경유 → 내과·소아과 **목록 탐색은 정상 동작** | 검색 경로 이원화 ([`be/api/search.py`](../be/api/search.py)) |
+| 위치 검색(bbox+haversine)도 KB lat·lng 기반이라 thin-signal 코사인과 무관 | 검색 경로 이원화 |
+
+→ 즉 "내과 진료 병원을 못 찾는다"가 아니다. **카테고리·위치 탐색으론 다 나온다.**
+피해는 **자연어 쿼리에서 thin-signal 토픽이 top5 에 못 드는** recall 한정.
+
+### 해결 방향 (택1 또는 조합)
+
+1. **토픽별 동적 min_score** — 임상/주력 토픽은 0.42 유지, thin-signal 토픽군엔 더 낮은
+   임계(예: 0.38)를 허용. 단 무관 쿼리 거짓 양성이 늘 위험 → eval 재스윕 필요.
+2. **thin-signal 청크 보강** — standard_specialty·진료과목 메타를 텍스트로 청크에 명시
+   주입해 임베딩 신호를 키움 (예: "내과 / 감기 / 예방접종" 키워드 청크). 청크 구성 변경이라
+   §56③ 면제 조건 재검수 동반.
+3. **하이브리드 retrieval** — 코사인 컷에 걸린 쿼리는 standard_specialty 키워드 매칭으로
+   폴백(BoW/룰)해 후보를 보충. KB 임베딩 + 룰 폴백 2단.
+
+### 결정 필요 사항
+
+- min_score 를 토픽별로 가변화할지(거짓 양성 리스크 재평가) vs 청크 보강으로 신호를 키울지.
+- 청크 보강 시 의료법 재검수: 청크 구성 변경이 §56③ 면제 조건과 충돌 않는지
+  `medical-language-reviewer` 검수.
+- 전수 eval: 변경 후 [`be/scripts/_retrieval_eval.py`](../be/scripts/_retrieval_eval.py)(92쿼리)·
+  [`be/scripts/focus_rank_eval.py`](../be/scripts/focus_rank_eval.py)(주력 토픽 84개) 무회귀 확인.

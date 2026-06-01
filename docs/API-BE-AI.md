@@ -674,25 +674,32 @@ def retrieve_hospital(
 
 > **호출당 LLM 0건.** KB Retrieve API가 내부에서 Titan v2 임베딩 1회 + 벡터 검색 1회를 수행. Sonnet/Haiku 호출 0건. 응답 ~200~500ms, 검색당 비용 ~$0.00003. 자세한 건 `overview.md` "4-5. 검색 동작 원리" 참조.
 
+> **relevance 랭킹 = 주력 강도(focus intensity).** 병원당 '최고 청크 코사인 1개'가 아니라 (코사인 + primary_focus 일치 + 언급/청크 빈도)로 재랭킹한다. 아래 "랭킹 — 주력 강도" 섹션 참조.
+
+> **페이지네이션은 BE가 슬라이스한다.** 이 함수는 `query.limit` 까지의 *정렬 완료* 목록을 돌려줄 뿐이고, offset 기반 페이지 분할은 `be/api/search.py` 가 담당한다. BE는 `query.limit=FETCH_CAP(100)` 으로 한 번에 전체를 받아 정렬 순서를 보존한 채 `[offset:offset+limit]` 로 자른다(`meta.total` = 슬라이스 전 전체 매칭 수). 따라서 BE는 relevance 정렬에서 similarity(코사인)로 재정렬하면 안 된다 — 그러면 이 함수가 매긴 주력 강도 랭킹을 덮어쓴다.
+
 #### 동작 흐름
 
 **전제**: `query.query_text` 필수 (KB Retrieve 는 빈 쿼리 불가). 위치만 있는 단독 검색이나 메타 전체 목록 조회는 BE 측 DynamoDB GSI 경로로 처리되어 이 함수에 도달하지 않는다.
 
 **자연어 단독 검색** (`query_text` 만 있음):
 
-1. `bedrock-agent-runtime:Retrieve` 호출 — KB가 내부에서 Titan v2 임베딩 + 벡터 검색
+0. `process_query(query_text)` 로 검색어 전처리 — 불용어 제거 + 의료 동의어 확장(임베딩용 `embedding_text`) + 진료과 추론(`inferred_specialty`). 추론 진료과는 사용자가 specialty 를 명시 안 했을 때만 메타필터로 보강(명시값 우선, 일반의 진료과는 비-필터).
+1. `bedrock-agent-runtime:Retrieve` 호출 — KB가 내부에서 Titan v2 임베딩 + 벡터 검색. `numberOfResults` 는 항상 KB 최대(100)로 받아 dedup/집계 풀을 키운다(단일 호출·동일 비용).
 2. `filter` 에 `team_id="clinic-focus"` + `sido`/`sigungu`/`specialty`/`min_confidence` 조건 추가
 3. KB가 반환한 청크들의 `metadata.hospital_id` 로 역추적
-4. **같은 hospital_id 에서 여러 청크 매칭 시 최고 score 1개만 유지 (dedup)**
-5. score 내림차순 정렬 후 상위 `limit` 개 반환
+4. **`_aggregate_by_hospital` 로 hospital_id 별 집계** — 최고 청크 코사인(`max_score`) + 쿼리 추출어 언급 횟수(`mentions`) + 매칭 청크 수(`n_chunks`) + primary_focus 일치 여부(`pf_match`)를 모은다. (코사인 1개만 dedup 하던 옛 방식과 달리 빈도·주력 신호를 살린다)
+5. **`max_score >= KB_MIN_SCORE`(기본 0.42) 컷** 후 `_focus_intensity` 로 재랭킹 — relevance 정렬 1순위는 주력 강도, 동점 보조키는 코사인 → 이름. 상위 `limit` 개 반환. (`sort=confidence` 면 confidence 우선, 주력 강도가 보조키)
 6. 빈 결과 시 지역/specialty/min_confidence 완화 fallback (team_id 는 유지)
+
+`min_score` 컷은 무관 쿼리(자동차·우주여행 등)에 대해 "검색 결과 없음"을 구조적으로 가능하게 한다(억지 매칭 방지). `KB_MIN_SCORE=0` 이면 비활성.
 
 **자연어 + 위치 복합 검색** (`query_text` + `lat`/`lng`):
 
 1. KB Retrieve 호출 — `filter` 에 lat/lng bounding box 범위 필터 추가 (`greaterThanOrEquals` / `lessThanOrEquals`)
-2. KB 결과의 `metadata.lat`/`lng` 로 EC2 에서 haversine 공식으로 정확한 거리 재계산
-3. `query.radius_km` 내 결과만 필터링
-4. `sort` 기준(`relevance` / `distance` / `confidence`)으로 정렬
+2. `_aggregate_by_hospital` 집계(자연어 단독과 동일) 후, KB 결과의 `metadata.lat`/`lng` 로 EC2 에서 haversine 공식으로 정확한 거리 재계산
+3. `query.radius_km` 내 결과만 필터링 (`max_score < KB_MIN_SCORE` 또는 좌표 없는 병원은 제외)
+4. `sort` 기준으로 정렬 — `relevance` 는 주력 강도(`_focus_intensity`), `distance` 는 거리 → confidence → 이름, `confidence` 는 confidence → 주력 강도 → 이름 (결정적 보조키)
 5. 상위 `limit` 개 반환
 
 **필터 조립 규칙**:
@@ -714,11 +721,39 @@ filter = {
 }
 ```
 
+#### 랭킹 — 주력 강도(focus intensity)
+
+relevance 정렬의 1순위 키를 '병원당 최고 청크 코사인 1개'에서 **주력 강도**로 바꿨다. 코드: `ai/search/kb_store.py` 의 `_aggregate_by_hospital` (hospital_id 별 집계) + `_focus_intensity` (점수 계산).
+
+```
+relevance_score(병원) = max_chunk_cosine                              # 의미 근접도 (기본점·게이트)
+                      + W_PF   · [쿼리 토픽 ∈ 그 병원 primary_focus]   # 주력으로 주장하나
+                      + W_FREQ · log1p(쿼리어 언급 횟수)                # 얼마나 많이 언급
+                      + W_CHUNK· log1p(매칭 청크 수 − 1)                # 여러 시그널·문단 = 사례 폭
+```
+
+**왜 코사인 단독을 버렸나**: ① 임베딩은 길이 정규화로 '빈도/양'을 씻어낸다(1회 언급 vs 31회가 비슷한 코사인). ② 병원당 최고 청크 1개만 dedup 하면 반복 주장을 버린다. ③ "언급했나"는 알아도 "이게 메인이냐"(시술 30개 중 1개 vs 전문)는 모른다. 실측: "레이저 제모"에 제모 31회+주력인 병원이 코사인으로는 2위, 5회+비주력이 1위로 뒤집혔고, 주력 강도로 교정됐다.
+
+**가중치 (env 튜닝 가능)**:
+
+| 변수 | 기본값 | 의미 |
+|---|---|---|
+| `FOCUS_RANK_WPF` | `0.06` | primary_focus 일치 보너스(W_PF) |
+| `FOCUS_RANK_WFREQ` | `0.010` | 언급 빈도 가중치(W_FREQ) |
+| `FOCUS_RANK_WCHUNK` | `0.010` | 매칭 청크 수 가중치(W_CHUNK) |
+| `RANK_MODE` | `intensity` | `cosine` 으로 두면 옛 코사인-only 동작(대규모 A/B eval 비교용) |
+
+> 코사인 스프레드가 좁아(top10 ~0.03) 작은 가중치로도 재정렬이 일어난다. 기본값은 강남 주력 토픽 전수 eval(`be/scripts/focus_rank_eval.py`)로 보정됐다(P@1 0.571→0.655, P@5 0.562→0.617, MRR 0.675→0.734; 독립 92쿼리 retrieval eval 무회귀·개선).
+
+> **알려진 한계 (랭킹이 아닌 retrieval recall 문제)**: 호흡기·감기/예방접종/알레르기 등 내과·소아 thin-signal 토픽은 텍스트가 빈약→임베딩이 약해(코사인 ~0.41) `KB_MIN_SCORE`(0.42) 컷에 걸려 top5 에 못 든다. 주력 강도는 컷라인을 *넘은* 후보를 재정렬할 뿐이라 이 문제를 고치지 못한다(후속 과제).
+
 #### 의존성
 
 - `KB_ID`: 환경 변수
 - `AWS_REGION`: 환경 변수 (기본 `us-east-1`)
 - IAM: `bedrock-agent-runtime:Retrieve` (지원 계정 인스턴스 프로파일)
+- `FOCUS_RANK_WPF` / `FOCUS_RANK_WFREQ` / `FOCUS_RANK_WCHUNK` / `RANK_MODE`: 주력 강도 랭킹 튜닝 (선택, 위 표)
+- `KB_MIN_SCORE`: min-sim 컷 임계 (기본 `0.42`, 0 이면 비활성)
 - **LLM(Sonnet/Haiku) 호출 없음**
 
 #### 예외
@@ -781,7 +816,7 @@ filter = {
 
 3. **`lat`/`lng` bounding box 필터는 KB metadata 의 number 필터로 처리** — `ingest_hospital` 에서 metadata 에 `lat`/`lng` 를 number 타입으로 박고, Retrieve 시 `greaterThan`/`lessThan` 조합으로 bounding box 필터 적용. null 이면 metadata 키 자체 누락(빈 리스트/None 거절 실측 함정 동일).
 
-4. **`numberOfResults` 최대 100 제한** — KB Retrieve API는 한 번 호출에 최대 100개 청크 반환. 한 병원에서 여러 청크가 나올 수 있으므로 `hospital_id` 기준 dedup 후 실제 병원 수는 더 적어질 수 있음. 카테고리 전체 탐색(`sigungu=강남구 & specialty=피부과` 전체 목록)이 이 경로에 적합하지 않은 이유.
+4. **`numberOfResults` 최대 100 제한** — KB Retrieve API는 한 번 호출에 최대 100개 청크 반환. 한 병원이 self_claim/blog/reviews/vision 최대 4청크를 갖고 `_aggregate_by_hospital` 가 hospital_id 로 묶으므로, 100청크를 받아도 집계 후 실제 병원 수는 더 적어진다(그래서 항상 KB 최대 100으로 받아 집계 풀을 키운다). 카테고리 전체 탐색(`sigungu=강남구 & specialty=피부과` 전체 목록)이 이 경로에 적합하지 않은 이유.
 
 5. **부정 문장 매칭 함정** — `generate_description`이 "X 정보 없음", "X는 다루지 않음" 형태로 쓴 부정 단락도 임베딩 공간에서 X 쿼리와 유사도가 높게 잡힘(`ingest_hospital` 실측 함정 6번 동일 현상). 현재는 무시하고 진행하되, V2에서 부정 단락을 임베딩 본문에서 분리하는 방안 검토 예정. Retrieve 결과에서 해당 청크를 점수 가중치 하향 처리하는 방어 로직도 고려.
 

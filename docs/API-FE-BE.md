@@ -258,12 +258,14 @@ GET /api/search
 | `sido` | string | × | 시도 필터 (위경도와 함께 쓰면 위경도 우선) |
 | `sigungu` | string | × | 시군구 필터 |
 | `specialty` | string | × | 표준 진료과목 필터 |
-| `min_confidence` | number | × | 최소 신뢰도 (기본 70) |
-| `sort` | string | × | `relevance` (기본) / `distance` (위경도 있을 때 권장) / `confidence` |
-| `limit` | number | × | 결과 개수 (기본 20, 최대 50) |
-| `offset` | number | × | 페이지네이션 (기본 0) |
+| `min_confidence` | number | × | 최소 신뢰도 하한. **기본 0 = 전체 노출** (분류 전 병원 포함). `>0`일 때만 `confidence_score ≥ min_confidence` 필터 적용 |
+| `sort` | string | × | `relevance` (기본, =주력 강도) / `distance` (위경도 있을 때 권장) / `confidence`. 의미는 아래 "정렬(`sort`) 의미" 표 |
+| `limit` | number | × | 페이지당 결과 개수 (기본 20, **최대 100** `le=100`). 지도는 100으로 한 번에 마커 노출 |
+| `offset` | number | × | 페이지네이션 시작 위치 (기본 0). FE 는 `(page-1) * limit` 로 환산 |
 
-> `q`·`lat`/`lng`·(`sigungu`+`specialty`) 세 조합 중 **최소 하나는 필수**. 처리 경로는 아래 "`meta.search_mode` 4 모드 분기" 표 참조. `q` + `lat`/`lng` 동시 사용 시 의미 검색 결과를 반경 내로 필터링한다.
+> `q`·`lat`/`lng`·(`sigungu`(+`specialty`)) 세 조합 중 **최소 하나는 필수**. 처리 경로는 아래 "`meta.search_mode` 4 모드 분기" 표 참조. `q` + `lat`/`lng` 동시 사용 시 의미 검색 결과를 반경 내로 필터링한다.
+
+> ℹ️ `min_confidence` 기본값은 70 → **0** 으로 바뀌었다. 강남 분류완료가 ~3098개라 70 하한을 기본으로 두면 분류 전/저신뢰 병원이 통째로 빠져 카테고리 목록이 비어 보이는 문제가 있어, 기본은 전체 노출로 두고 필터는 사용자 선택으로 돌렸다.
 
 #### 응답 (200)
 ```json
@@ -287,21 +289,41 @@ GET /api/search
         "lat": 37.5443,
         "lng": 126.9510
       },
+      "etc_subcategory": "피부과",
       "website_url": "https://...",
       "one_line_summary": "일반 피부 진료 중심, 미용 시술은 거의 안 하는 동네 의원",
       "matched_focus": ["탈모"]
     }
   ],
   "meta": {
-    "total": 47,
+    "total": 47,                       // 필터 후 전체 매칭 수 (페이지 길이 아님)
     "limit": 20,
     "offset": 0,
+    "has_more": true,                  // offset + limit < total
     "search_mode": "natural+nearby",   // "natural" / "nearby" / "natural+nearby" / "category"
     "query_interpretation": "탈모 진료 / 의원급",
+    "center": { "lat": 37.4979, "lng": 127.0276 },  // 위치검색일 때만, 아니면 null
+    "radius_km": 3,                    // 위치검색일 때만, 아니면 null
     "sort": "distance"
   }
 }
 ```
+
+#### 검색 카드 필드 (`data[]`) 설명
+
+검색 카드는 상세(`HospitalDetail`)의 헤더 필드만 추린 형태다.
+
+| 필드 | 설명 |
+|---|---|
+| `standard_specialty` | 표준 진료과목. 분류 전 병원은 `""` (빈 문자열 placeholder) |
+| `etc_subcategory` | **표시용 파생 카테고리.** `standard_specialty='기타'`면 `primary_focus`로 의미 있는 하위 카테고리(미용/모발·탈모/통증·근골격/수면/정신…)를 도출, 그 외엔 `standard_specialty`와 동일. FE 는 '기타' 대신 이 값을 노출한다 |
+| `primary_focus` | 룰 기반 자칭 주력 태그. 분류 전 `[]` |
+| `confidence` | 신뢰도(근거 강도) 객체. 분류 전 `null` |
+| `distance_km` | 위치검색(`nearby`/`natural+nearby`)일 때만 숫자, 아니면 `null` |
+| `matched_focus` | 자연어 쿼리가 매칭된 주력 분야 (NL 경로에서만 채워짐). 기본 `[]` |
+| `one_line_summary` | 카드용 한 줄 요약(AI 생성). description 미생성 병원은 `""` |
+
+> ⚠️ 검색 카드(`be/api/search.py:_hospital_card`)에는 `thumbnail_url` 키가 **없다**(상세 응답에만 존재). FE 도메인 타입(`SearchResultItem.thumbnail_url`)에는 자리가 있으나 BE 가 내려주지 않아 항상 플레이스홀더로 떨어진다. 이미지 수집·저장 로직은 미구현.
 
 #### 에러 예시
 ```json
@@ -313,26 +335,109 @@ GET /api/search
 }
 ```
 
-#### `meta.search_mode` 4 모드 분기 (V2)
+#### `meta.search_mode` 4 모드 분기
 
 요청 파라미터 조합에 따라 BE 가 분기. `search_mode` 는 응답 `meta` 에 정확히 어느 경로로 처리됐는지 박는다.
 
 | 모드 | 트리거 조건 | 처리 경로 | AI 경유 | 정렬 기본 |
 |---|---|---|---|---|
-| `natural` | `q` O / `lat,lng` X | AI `retrieve_hospital(SearchQuery)` → KB Retrieve | O | `relevance` |
-| `nearby` | `q` X / `lat,lng` O | DDB `geo-index` bounding box + haversine 재계산 | X | `distance` |
+| `natural` | `q` O / `lat,lng` X | AI `retrieve_hospital(SearchQuery)` → KB Retrieve (검색 시점 LLM 0회, Titan Embed v2 semantic) | O | `relevance` |
+| `nearby` | `q` X / `lat,lng` O | AI `retrieve_hospital` 이 KB lat/lng bbox + EC2 haversine 재계산 | O | `distance` |
 | `natural+nearby` | `q` O / `lat,lng` O | KB Retrieve 결과를 반경 내로 필터링 (KB filter 에 lat/lng bounding) | O | `distance` |
-| `category` | `q` X / `lat,lng` X / `sigungu`+`specialty` 만 O | DDB `sigungu-specialty-index` GSI 직접 조회, AI 미경유 | X | `confidence` |
+| `category` | `q` X / `lat,lng` X / `sigungu`(+선택 `specialty`) 만 O | DDB `sigungu-specialty-index` GSI 직접 조회, AI 미경유 | X | `confidence` |
 
-`category` 모드는 V2 신규 — `q` 없이 사용자가 시군구·진료과목만 골라 카테고리 목록을 훑는 경우. 자연어 검색 비용·지연을 피하려고 DDB GSI 로 직접 처리한다 (`docs/plans/task-queue.md` §3-3 `sigungu-specialty-index`, `CLAUDE.md` "검색 경로 이원화").
+`category` 모드는 `q` 없이 사용자가 시군구(+선택 진료과목)만 골라 카테고리 목록을 훑는 경우. 자연어 검색 비용·지연을 피하려고 DDB GSI 로 직접 처리한다 (`docs/plans/task-queue.md` §3-3 `sigungu-specialty-index`, `CLAUDE.md` "검색 경로 이원화"). 경량 처리(`ProjectionExpression` 로 `hospital_id`·`name`·`confidence_score`·`standard_specialty` 만) 로 전체 매칭 수(`meta.total`)를 먼저 산출한 뒤, **현재 페이지 슬라이스만 풀 하이드레이트**(META+CLASSIFICATION+DESCRIPTION join)해 N+1 을 회피한다.
 
-위 4 조건에 다 부합 안 하면 (예: `q` X, `lat/lng` X, `sigungu`/`specialty` 도 X) 400 `INVALID_PARAMETER`.
+위 4 조건에 다 부합 안 하면 (예: `q` X, `lat/lng` X, `sigungu` 도 X) 400 `INVALID_PARAMETER`.
 
-> ℹ️ 현 코드 동작: `be/api/search.py` 의 검색 결과 카드(`_hospital_card`)는 META + CLASSIFICATION + DESCRIPTION 을 join 하되, **아직 분류·설명이 없는 병원**은 분류 필드를 placeholder 로 채운다 — `standard_specialty: ""`, `primary_focus: []`, `confidence: null`, `one_line_summary: ""`. 또한 검색 결과 카드에는 `thumbnail_url` 키 자체가 없다(위 상세 응답에만 존재). 분류 전 병원(9990개)에서 이 placeholder 들이 그대로 나오는 점을 FE 렌더링에서 의식할 것.
+#### 페이지네이션 (`meta.total` / `has_more`)
+
+- `meta.total` = **필터(`min_confidence`·반경 등) 적용 후 전체 매칭 병원 수** — 현재 페이지 길이(`data.length`)가 아니다. FE 는 이걸로 `totalPages = ceil(total / limit)` 를 계산해 페이지 컨트롤을 그린다.
+- `meta.has_more` = `offset + limit < total`. 다음 페이지 존재 여부의 직접 신호.
+- NL/위치 경로는 `retrieve_hospital(SearchQuery)` 를 `FETCH_CAP=100` 으로 호출해 (이미 min-sim 컷·랭킹된) 전체를 받아 BE 에서 `[offset : offset+limit]` 로 슬라이스한다. 카테고리 경로는 경량 목록 전체 길이가 곧 `total` 이고 슬라이스 구간만 하이드레이트.
+
+#### 정렬(`sort`) 의미 — `relevance` = **주력 강도(focus intensity)**
+
+검색 `relevance` 랭킹은 "최고 청크 코사인 1개"가 아니라 **주력 강도**다. 같은 키워드를 더 자주·주력으로 다루는 병원이 위로 온다.
+
+```
+relevance_score(병원) = max_chunk_cosine
+                      + W_PF    · [쿼리 토픽 ∈ 그 병원 primary_focus]   (주력으로 주장하나)
+                      + W_FREQ  · log1p(쿼리어 언급 횟수)                (얼마나 많이 언급)
+                      + W_CHUNK · log1p(매칭 청크 수 − 1)                (여러 시그널·문단 = 사례 폭)
+```
+
+코사인 단독은 ①임베딩 길이 정규화로 빈도/양이 씻겨 1회 vs 31회 언급이 비슷해지고 ②병원당 최고 청크 1개만 남겨 반복 주장을 버리며 ③"메인이냐"(시술 30개 중 1개 vs 전문)를 모른다. 산출은 AI 측 `ai/search/kb_store.py`(`_aggregate_by_hospital`·`_focus_intensity`)에서 이뤄지고, **BE 는 `relevance` 정렬 시 `retrieve_hospital` 이 준 순서를 그대로 보존**한다(여기서 similarity 로 재정렬하면 주력 랭킹을 코사인으로 덮어쓰므로 금지).
+
+| `sort` | 1순위 | 2순위(tie-break) | 3순위 | 비고 |
+|---|---|---|---|---|
+| `relevance` (기본) | **주력 강도** (retrieve 순서 보존) | — | — | NL 경로. 카테고리/위치엔 부적합 |
+| `confidence` | `confidence.score` desc | 유사도 desc | 이름 asc | 근거 강도 우선 |
+| `distance` | `distance_km` asc | `confidence.score` desc | 이름 asc | 위경도 있을 때만 의미 |
+
+> 카테고리(`category`) 경로는 relevance/distance 가 무의미하므로 항상 `confidence_score` desc → 이름 asc 로 정렬된다(`meta.sort` 는 요청값 에코).
+
+> ℹ️ 현 코드 동작: `be/api/search.py` 의 검색 결과 카드(`_hospital_card`)는 META + CLASSIFICATION + DESCRIPTION 을 join 하되, **아직 분류·설명이 없는 병원**은 분류 필드를 placeholder 로 채운다 — `standard_specialty: ""`, `etc_subcategory: ""`, `primary_focus: []`, `confidence: null`, `one_line_summary: ""`. 또한 검색 결과 카드에는 `thumbnail_url` 키 자체가 없다(위 상세 응답에만 존재). 강남 분류완료가 ~3098개라 그 밖 병원에서 이 placeholder 들이 그대로 나오는 점을 FE 렌더링에서 의식할 것.
 
 ---
 
-### 2. 병원 상세
+### 2. 진료과목 목록 (카테고리 탐색)
+
+```
+GET /api/specialties
+```
+
+시군구 안에서 **표준 진료과목별 분류완료 병원 수**를 집계해 돌려준다. FE 검색 랜딩(질의·진료과 미선택)의 진료과 그리드 타일(아이콘 + 건수)을 채우는 데이터 소스 — 타일 클릭 시 그 과로 드릴인(`GET /api/search?sigungu=...&specialty=...`)하는 닥터나우/모두닥/굿닥 패턴.
+
+자연어 검색을 거치지 않는 단순 카테고리 탐색이라 AI 미경유, DDB GSI(`sigungu-specialty-index`) 만으로 처리한다 (`CLAUDE.md` "검색 경로 이원화").
+
+#### 쿼리 파라미터
+
+| 이름 | 타입 | 필수 | 설명 |
+|---|---|:---:|---|
+| `sigungu` | string | ○ | 시군구 이름. 예: `강남구`. 비거나 공백이면 400 `INVALID_PARAMETER` |
+
+#### 응답 (200)
+```json
+{
+  "data": [
+    { "specialty": "내과", "count": 612 },
+    { "specialty": "피부과", "count": 388 },
+    { "specialty": "정형외과", "count": 241 },
+    { "specialty": "기타", "count": 97 }
+  ],
+  "meta": {
+    "sigungu": "강남구",
+    "total_hospitals": 3098,
+    "total_specialties": 22
+  }
+}
+```
+
+- `data` 는 **`count` 내림차순**으로 정렬돼 온다 (BE 가 `Counter.most_common()` 으로 산출).
+- `data[].specialty` 는 표준 진료과목 22종 중 하나 (`standard_specialty`). `'기타'` 도 한 항목으로 등장하며, FE 는 검색 카드와 달리 여기선 `'기타'` 라벨을 그대로 타일로 노출한다(드릴인 후 카드 단위로 `etc_subcategory` 가 의미 하위를 보여줌).
+- `meta.total_hospitals` = 그 시군구의 **분류완료(GSI 등록) 병원 총수**. 진료과목 count 의 단순 합과 다를 수 있다(한 병원이 한 GSI 키만 가지므로 보통은 일치하나, 향후 다중 specialty denormalize 시 분기).
+- `meta.total_specialties` = `data` 항목 수.
+
+> 분류 전 병원은 `sigungu_specialty` GSI 키가 없어 **집계에서 제외**된다. 즉 이 엔드포인트는 분류완료 병원만 본다(검색 카드의 placeholder 와 달리 placeholder 진료과는 안 나옴).
+
+#### 에러
+```json
+{
+  "error": { "code": "INVALID_PARAMETER", "message": "sigungu 는 필수입니다" }
+}
+```
+
+| 코드 | HTTP | 트리거 |
+|---|---|---|
+| `INVALID_PARAMETER` | 400 | `sigungu` 비었거나 공백 |
+| `INTERNAL_ERROR` | 500 | 집계(`db.list_specialty_counts`) 중 예외 |
+
+> 현 구현 (`be/api/specialties.py` · `be/adapters/dynamo_adapter.py:list_specialty_counts`): `entity=META` & `sigungu` 일치 & `sigungu_specialty` 존재 항목을 Scan, `"{sigungu}#{specialty}"` 의 `#` 뒤를 group-by. FE 는 `useSpecialties(sigungu)` hook(`fe/src/hooks/useSpecialties.ts`, staleTime 5분)으로 받아 `CategoryGrid` 에 그린다.
+
+---
+
+### 3. 병원 상세
 
 ```
 GET /api/hospitals/{hospital_id}
@@ -612,7 +717,7 @@ detailed_signals: {
 
 ---
 
-### 3. 분류 변경 이력
+### 4. 분류 변경 이력
 
 ```
 GET /api/hospitals/{hospital_id}/history
@@ -667,7 +772,7 @@ GET /api/hospitals/{hospital_id}/history
 
 ---
 
-### 4. 피드백 제출
+### 5. 피드백 제출
 
 ```
 POST /api/feedback
@@ -751,25 +856,60 @@ export function getDeviceId(): string {
 }
 ```
 
-### TanStack Query 사용 예시
+### TanStack Query 사용 예시 (as-built)
+
+검색 hook 은 page 기반이며 `q` 유무로 자연어/카테고리 경로를 BE 에 위임한다. `offset = (page-1) * limit` 로 환산하고, 정렬·필터·페이지를 전부 `queryKey` 에 묶어 변경 시 자동 refetch 한다. 페이지 전환 깜빡임 방지로 `placeholderData: (prev) => prev`.
 
 ```typescript
-// hooks/useSearch.ts
-import { useQuery } from '@tanstack/react-query';
+// fe/src/hooks/useSearch.ts (요약)
+export const PAGE_SIZE = 20;
 
-export function useSearch(q: string, filters: SearchFilters) {
-  return useQuery({
-    queryKey: ['search', q, filters],
-    queryFn: async () => {
-      const params = new URLSearchParams({ q, ...filters });
-      const res = await fetch(`/api/search?${params}`);
-      if (!res.ok) throw new Error(await res.text());
-      return res.json();
-    },
-    enabled: q.length > 0,
+export function useSearch({ q, minConfidence, sort, page = 1, specialty,
+                            limit = PAGE_SIZE, lat, lng, radius_km, enabled = true }: SearchArgs) {
+  const offset = (page - 1) * limit;
+  return useQuery<SearchResponse>({
+    enabled,
+    queryKey: ['search', q, minConfidence, sort, page, specialty, limit, lat, lng, radius_km],
+    queryFn: ({ signal }) =>
+      apiGet<SearchResponse>('/api/search', {
+        q: q || undefined,                       // 비면 카테고리(시군구) 경로
+        sigungu: '강남구',
+        min_confidence: minConfidence || undefined,  // 0 이면 보내지 않음(=전체)
+        sort, limit, offset,
+        specialty: specialty || undefined,
+        lat, lng, radius_km,
+      }, signal),                                // AbortSignal 전달 — 입력 중 취소
+    placeholderData: (prev) => prev,
+    staleTime: 60_000,
   });
 }
 ```
+
+진료과 그리드는 별도 hook:
+
+```typescript
+// fe/src/hooks/useSpecialties.ts (요약)
+export function useSpecialties(sigungu: string) {
+  return useQuery<SpecialtiesResponse>({
+    queryKey: ['specialties', sigungu],
+    queryFn: () => apiGet<SpecialtiesResponse>('/api/specialties', { sigungu }),
+    staleTime: 5 * 60_000,
+    enabled: sigungu.length > 0,
+  });
+}
+```
+
+### 페이지네이션 렌더링
+
+`meta.total` + `limit` 로 `totalPages = ceil(total / limit)` 를 계산한다. `Pagination` 컴포넌트(`fe/src/components/search/Pagination.tsx`)는 `totalPages <= 1` 이면 렌더하지 않고, 이전/다음 버튼 + `현재/전체` 표시만 둔다. `has_more` 는 "다음" 버튼 enable 판단의 직접 신호로도 쓸 수 있다.
+
+### 진료과 그리드 → 드릴인 흐름
+
+검색 랜딩(질의·진료과 미선택)에서 `CategoryGrid`(`fe/src/components/search/CategoryGrid.tsx`)가 `useSpecialties` 데이터로 진료과 타일(아이콘 + `count`곳)을 그린다. 맨 앞 "전체 병원" 타일은 `specialty=""`(강남구 전체), 나머지는 해당 `specialty` 로 `useSearch` 드릴인. 타일 클릭 → 결과 리스트 + 페이지네이션.
+
+### 지도 검색 (실 API 연동)
+
+지도 페이지(`fe/src/pages/MapPage.tsx`)는 목업 데이터를 제거하고 실 `GET /api/search` 위치검색(`lat`/`lng`/`radius_km`)으로 동작한다. 기본 중심은 강남역, 카카오맵 JS SDK 임베드. `useSearch` 를 `limit: 100` 으로 호출해 반경 내 병원을 한 번에 마커로 노출한다(페이지네이션 대신 한 화면 마커). `search_mode` 는 `q` 동반 여부에 따라 `nearby` / `natural+nearby`, 정렬 기본은 `distance`. `meta.center`·`meta.radius_km` 로 현재 검색 영역을 확인.
 
 ### 타입 자동 생성
 
