@@ -108,7 +108,13 @@ def main(argv: list[str] | None = None):
             signal_chunks = build_signal_chunks(crawl_data=crawl_data, **external)
             if signal_chunks:
                 metadata = build_ingest_metadata(hospital_meta, classification)
-                ingest_hospital(hospital_id, signal_chunks, metadata, trigger_ingestion=False)
+                # prune_absent: 자칭이 URL 오매칭으로 비워졌을 때 옛 self_claim 청크(stale 메타)가
+                # S3 에 잔존해 검색을 오염시키지 않도록, 이번에 안 만든 시그널의 옛 파일을 삭제.
+                # build_signal_chunks 가 전체 시그널을 한 번에 채워 넘기므로 안전.
+                ingest_hospital(
+                    hospital_id, signal_chunks, metadata,
+                    trigger_ingestion=False, prune_absent=True,
+                )
 
             success += 1
             print(f"  [{i}/{len(hospital_ids)}] ✅ {hospital_meta.name} — {classification.primary_focus} "

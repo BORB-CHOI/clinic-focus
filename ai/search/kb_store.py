@@ -643,12 +643,18 @@ def build_ingest_metadata(
 # C. ingest
 # ---------------------------------------------------------------------------
 
+# build_signal_chunks 가 만들 수 있는 전체 시그널 타입 — prune_absent 가 "없는 시그널"을
+# 판정할 때 기준. build_signal_chunks 의 result 키와 일치해야 한다.
+_ALL_SIGNAL_TYPES = ("self_claim", "blog", "reviews", "vision")
+
+
 def ingest_hospital(
     hospital_id: str,
     signal_chunks: dict[str, str],
     metadata: dict,
     *,
     trigger_ingestion: bool = False,
+    prune_absent: bool = False,
 ) -> None:
     """시그널 청크를 KB DataSource S3 에 업로드하고 선택적으로 ingestion job 트리거.
 
@@ -663,6 +669,11 @@ def ingest_hospital(
         metadata: build_ingest_metadata() 반환 평탄 dict (metadataAttributes 안쪽).
         trigger_ingestion: True 면 업로드 완료 후 StartIngestionJob 1회 호출.
                            배치 시 False 로 다 올린 뒤 마지막 병원에서만 True 사용.
+        prune_absent: True 면, 이번 signal_chunks 에 없는(또는 빈) 시그널 타입의 기존 S3
+                      파일(.txt + .metadata.json)을 삭제한다. 재분류가 어떤 시그널을 비웠을 때
+                      (예: URL 오매칭으로 자칭 제외) 옛 청크가 stale 메타로 잔존해 검색을 오염
+                      시키는 것을 막는다. **호출자가 signal_chunks 를 *전체* 신호로 채워 넘길
+                      때만** 사용할 것(부분 ingest 에서 켜면 멀쩡한 다른 시그널을 지운다).
 
     Raises:
         KBIngestError: S3 업로드 또는 ingestion job 트리거 실패 시.
@@ -719,6 +730,22 @@ def ingest_hospital(
             "KB S3 업로드 완료: hospital_id=%s signal=%s key=%s",
             hospital_id, signal_type, text_key,
         )
+
+    # prune: 이번에 안 올라간 시그널 타입의 옛 S3 파일을 지운다(stale 청크/메타 잔존 방지).
+    if prune_absent:
+        present = {st for st, t in signal_chunks.items() if t}
+        for signal_type in _ALL_SIGNAL_TYPES:
+            if signal_type in present:
+                continue
+            text_key = f"{prefix}{hospital_id}/{signal_type}.txt"
+            for key in (text_key, f"{text_key}.metadata.json"):
+                try:
+                    s3_client.delete_object(Bucket=bucket, Key=key)
+                except Exception as exc:  # 삭제 실패는 치명적 아님 — 로깅만
+                    logger.warning(
+                        "ingest_hospital prune 삭제 실패 (hospital_id=%s, key=%s): %s",
+                        hospital_id, key, exc,
+                    )
 
     if not trigger_ingestion:
         return

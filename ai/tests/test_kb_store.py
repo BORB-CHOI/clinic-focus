@@ -586,6 +586,45 @@ class TestIngestHospital:
 
     @patch("boto3.client")
     @patch.dict(os.environ, _ENV)
+    def test_prune_absent_deletes_stale_signals(self, mock_boto3):
+        """prune_absent=True 면, 이번 청크에 없는 시그널 타입의 옛 S3 파일을 삭제한다.
+
+        URL 오매칭으로 self_claim 이 비워졌을 때 옛 self_claim 청크(stale 메타)가
+        잔존해 검색을 오염시키는 버그(docs/issues/stale-kb-self-claim-metadata.md) 방지.
+        """
+        mock_s3 = MagicMock()
+        mock_agent = MagicMock()
+        mock_boto3.side_effect = lambda service, region_name=None: (
+            mock_s3 if service == "s3" else mock_agent
+        )
+        # reviews 만 있고 self_claim/blog/vision 은 없음 → 그 셋의 옛 파일이 삭제돼야 함
+        ingest_hospital(
+            hospital_id="h_prune",
+            signal_chunks={"reviews": "방문자 후기 키워드 요약"},
+            metadata={"team_id": "clinic-focus", "hospital_id": "h_prune",
+                      "standard_specialty": "기타", "sido": "서울",
+                      "sigungu": "강남구", "confidence_score": 60},
+            trigger_ingestion=False,
+            prune_absent=True,
+        )
+        deleted = {c.kwargs["Key"] for c in mock_s3.delete_object.call_args_list}
+        # 없는 시그널(self_claim/blog/vision)의 .txt + 사이드카가 삭제 대상
+        assert "clinic-focus/prod/h_prune/self_claim.txt" in deleted
+        assert "clinic-focus/prod/h_prune/self_claim.txt.metadata.json" in deleted
+        assert "clinic-focus/prod/h_prune/blog.txt" in deleted
+        assert "clinic-focus/prod/h_prune/vision.txt" in deleted
+        # 존재하는 시그널(reviews)은 절대 삭제 안 됨
+        assert not any("reviews.txt" in k for k in deleted), "있는 시그널이 삭제됨"
+
+    @patch("boto3.client")
+    @patch.dict(os.environ, _ENV)
+    def test_prune_absent_false_no_delete(self, mock_boto3):
+        """prune_absent 기본값(False)에서는 어떤 삭제도 일어나지 않는다(부분 ingest 안전)."""
+        mock_s3, _ = self._run_ingest(mock_boto3)  # 기본 prune_absent=False
+        mock_s3.delete_object.assert_not_called()
+
+    @patch("boto3.client")
+    @patch.dict(os.environ, _ENV)
     def test_trigger_ingestion_false_no_job_called(self, mock_boto3):
         """trigger_ingestion=False 면 start_ingestion_job 이 호출되지 않는다."""
         _, mock_agent = self._run_ingest(mock_boto3, trigger_ingestion=False)
