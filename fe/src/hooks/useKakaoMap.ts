@@ -3,8 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import {
   buildMarkerImage,
   loadKakaoMaps,
-  type KakaoCircle,
-  type KakaoLatLng,
   type KakaoMap,
   type KakaoMapsApi,
   type KakaoMarker,
@@ -12,49 +10,56 @@ import {
 import type { SearchResultItem } from "@/types/domain";
 
 interface UseKakaoMapOptions {
-  /** 지도 초기 중심 (사용자 위치 또는 기본값) */
+  /** 지도 초기 중심. 변경 시(예: GPS '내 위치') 지도를 그 좌표로 옮긴다 */
   center: { lat: number; lng: number };
   /** 지도 줌 레벨 (1=가까움 ~ 14=멈) */
   level?: number;
   /** 표시할 마커 데이터 */
   items: SearchResultItem[];
-  /** 반경 원 (km). undefined면 원 미표시 */
-  radiusKm?: number;
   /** 마커 클릭 시 해당 hospital_id 전달 */
   onMarkerClick?: (hospitalId: string) => void;
-  /** 지도 빈 곳 클릭 시 그 좌표 전달 — 탐색 위치 핀 찍기 */
-  onMapClick?: (lat: number, lng: number) => void;
+  /**
+   * 지도 이동·줌이 멈췄을 때(idle) 현재 보이는 구역을 알린다.
+   * center=현재 지도 중심, radiusKm=중심에서 화면 모서리까지(보이는 영역을 덮는 반경).
+   * → 호출부가 이 좌표/반경으로 재검색하면 "보이는 구역의 병원"이 표시된다.
+   * ※ 이 값을 다시 center prop 으로 되먹이면 idle 루프가 나므로, 호출부는 검색용
+   *   별도 state 로만 쓰고 지도 center 로 피드백하지 말 것.
+   */
+  onIdle?: (center: { lat: number; lng: number }, radiusKm: number) => void;
 }
 
 interface UseKakaoMapResult {
-  /** 지도 컨테이너 div 에 붙일 ref */
   mapRef: React.RefObject<HTMLDivElement>;
-  /** SDK 로드·맵 생성 단계 */
   status: "idle" | "loading" | "ready" | "error";
-  /** error 상태일 때의 에러 메시지 */
   error: string | null;
-  /** 외부에서 지도 중심을 옮기고 싶을 때 사용 */
+  /** 외부에서 지도 중심을 옮기고 싶을 때 */
   panTo: (lat: number, lng: number) => void;
 }
 
+function haversineKm(aLat: number, aLng: number, bLat: number, bLng: number): number {
+  const R = 6371;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(bLat - aLat);
+  const dLng = toRad(bLng - aLng);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
 // 카카오맵 인스턴스의 라이프사이클을 React 훅으로 감쌈.
-//
-// SDK 로드는 마운트 시 한 번. items/center/radius 변동 시에는
-// 마커·원만 동기화하고 맵 자체는 재생성하지 않는다.
+// SDK 로드는 마운트 시 한 번. items/center 변동 시 마커·중심만 동기화(맵 재생성 X).
 export function useKakaoMap({
   center,
   level = 4,
   items,
-  radiusKm,
   onMarkerClick,
-  onMapClick,
+  onIdle,
 }: UseKakaoMapOptions): UseKakaoMapResult {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapsApiRef = useRef<KakaoMapsApi | null>(null);
   const mapInstanceRef = useRef<KakaoMap | null>(null);
   const markersRef = useRef<KakaoMarker[]>([]);
-  const circleRef = useRef<KakaoCircle | null>(null);
-  const centerMarkerRef = useRef<KakaoMarker | null>(null);
 
   const [status, setStatus] = useState<UseKakaoMapResult["status"]>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -64,10 +69,10 @@ export function useKakaoMap({
   useEffect(() => {
     onMarkerClickRef.current = onMarkerClick;
   }, [onMarkerClick]);
-  const onMapClickRef = useRef(onMapClick);
+  const onIdleRef = useRef(onIdle);
   useEffect(() => {
-    onMapClickRef.current = onMapClick;
-  }, [onMapClick]);
+    onIdleRef.current = onIdle;
+  }, [onIdle]);
 
   // ─ SDK 로드 + 맵 생성 (마운트 시 1회) ─────────────────────────────
   useEffect(() => {
@@ -84,11 +89,19 @@ export function useKakaoMap({
           level,
         });
         mapInstanceRef.current = map;
-        // 지도 빈 곳 클릭 → 그 좌표를 탐색 위치로 (핀 찍기)
-        maps.event.addListener(map, "click", (ev?: { latLng: KakaoLatLng }) => {
-          if (!ev?.latLng) return;
-          onMapClickRef.current?.(ev.latLng.getLat(), ev.latLng.getLng());
+
+        // 이동·줌이 멈추면(idle) 현재 보이는 구역을 호출부에 알린다.
+        // 보이는 영역을 덮도록 반경 = 중심 → 화면 모서리(NE) 거리.
+        maps.event.addListener(map, "idle", () => {
+          const c = map.getCenter();
+          const b = map.getBounds();
+          const ne = b.getNorthEast();
+          const cl = c.getLat();
+          const cn = c.getLng();
+          const radiusKm = haversineKm(cl, cn, ne.getLat(), ne.getLng());
+          onIdleRef.current?.({ lat: cl, lng: cn }, radiusKm);
         });
+
         setStatus("ready");
       })
       .catch((err: unknown) => {
@@ -100,32 +113,16 @@ export function useKakaoMap({
     return () => {
       cancelled = true;
     };
-    // 맵 재생성을 막기 위해 center/level 변동은 무시. 변경은 panTo 또는
-    // 별도 effect 에서 setCenter 로 처리.
+    // 맵 재생성 방지: center/level 변동은 무시(아래 effect·panTo 에서 처리).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ─ center 변동 시 부드럽게 이동 (재생성 X) ────────────────────────
+  // ─ center 변동 시 이동 (외부 recenter, 예: GPS). idle 로부터 되먹이면 안 됨 ─
   useEffect(() => {
     const map = mapInstanceRef.current;
     const maps = mapsApiRef.current;
     if (!map || !maps || status !== "ready") return;
     map.setCenter(new maps.LatLng(center.lat, center.lng));
-  }, [center.lat, center.lng, status]);
-
-  // ─ 중심(탐색 위치) 핀 동기화 — 병원 마커(색 원)와 구분되는 기본 핀 ──
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    const maps = mapsApiRef.current;
-    if (!map || !maps || status !== "ready") return;
-    const position = new maps.LatLng(center.lat, center.lng);
-    if (centerMarkerRef.current) {
-      centerMarkerRef.current.setPosition(position);
-    } else {
-      // 이미지 미지정 = 카카오 기본 핀(병원 마커는 색 원이라 시각적으로 구분됨)
-      const marker = new maps.Marker({ position, map, title: "탐색 위치" });
-      centerMarkerRef.current = marker;
-    }
   }, [center.lat, center.lng, status]);
 
   // ─ 마커 동기화 ───────────────────────────────────────────────────
@@ -134,11 +131,9 @@ export function useKakaoMap({
     const maps = mapsApiRef.current;
     if (!map || !maps || status !== "ready") return;
 
-    // 기존 마커 정리
     for (const m of markersRef.current) m.setMap(null);
     markersRef.current = [];
 
-    // 새 마커 부착
     for (const item of items) {
       const position = new maps.LatLng(item.location.lat, item.location.lng);
       const image = buildMarkerImage(maps, item.confidence.level);
@@ -154,41 +149,6 @@ export function useKakaoMap({
       markersRef.current = [];
     };
   }, [items, status]);
-
-  // ─ 반경 원 동기화 ────────────────────────────────────────────────
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    const maps = mapsApiRef.current;
-    if (!map || !maps || status !== "ready") return;
-
-    // 기존 원 제거
-    if (circleRef.current) {
-      circleRef.current.setMap(null);
-      circleRef.current = null;
-    }
-
-    if (radiusKm && radiusKm > 0) {
-      const circle = new maps.Circle({
-        center: new maps.LatLng(center.lat, center.lng),
-        radius: radiusKm * 1000, // m
-        strokeWeight: 1,
-        strokeColor: "#2563eb",
-        strokeOpacity: 0.5,
-        strokeStyle: "dashed",
-        fillColor: "#2563eb",
-        fillOpacity: 0.06,
-      });
-      circle.setMap(map);
-      circleRef.current = circle;
-    }
-
-    return () => {
-      if (circleRef.current) {
-        circleRef.current.setMap(null);
-        circleRef.current = null;
-      }
-    };
-  }, [radiusKm, center.lat, center.lng, status]);
 
   const panTo = (lat: number, lng: number) => {
     const map = mapInstanceRef.current;
