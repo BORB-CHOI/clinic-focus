@@ -1028,9 +1028,11 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
 
     client = boto3.client("bedrock-agent-runtime", region_name=region)
 
-    # min-sim 임계 — 유사도가 너무 낮은(관련 없는) 결과 컷. 동의어 도배 제거 후 점수 분포가
-    # 낮아지므로 보수적 기본값 + env 튜닝(KB_MIN_SCORE). 0 이면 비활성.
-    min_score = float(os.environ.get("KB_MIN_SCORE", "0.3"))
+    # min-sim 임계 — 유사도가 너무 낮은(관련 없는) 결과를 컷해 "검색 결과 없음"이 구조적으로
+    # 가능하게 한다(무관한 쿼리에 억지 매칭 금지). 0.42 = 92쿼리 eval 실측 sweet spot:
+    # 임상 쿼리 거의 유지(P@5 0.857→0.848), 무관 쿼리(자동차/우주여행)는 0건(빈 결과).
+    # 0.45 이상은 임상 쿼리(탈모 등)까지 깎여 과다. env(KB_MIN_SCORE)로 튜닝, 0 이면 비활성.
+    min_score = float(os.environ.get("KB_MIN_SCORE", "0.42"))
 
     has_location = query.lat is not None and query.lng is not None
 
