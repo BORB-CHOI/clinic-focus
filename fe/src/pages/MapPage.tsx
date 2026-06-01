@@ -75,6 +75,8 @@ export default function MapPage() {
     items: visibleItems,
     radiusKm,
     onMarkerClick: setSelectedId,
+    // 지도 빈 곳 클릭 → 그 좌표를 탐색 중심으로(핀 이동) → useSearch 가 재검색
+    onMapClick: (lat, lng) => setCenter({ lat, lng }),
   });
 
   function handleRecenter() {
@@ -99,7 +101,7 @@ export default function MapPage() {
       <header>
         <h1 className="text-2xl font-bold tracking-tight">지도 검색</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          강남 중심으로 반경 내 병원을 근거 등급 색 마커로 표시합니다.
+          강남 중심으로 반경 내 병원을 근거 등급 색 마커로 표시합니다. <strong>지도를 클릭</strong>하면 그 위치를 탐색 중심으로 다시 검색합니다.
         </p>
       </header>
 
