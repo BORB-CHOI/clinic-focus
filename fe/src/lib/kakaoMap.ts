@@ -187,9 +187,10 @@ const MARKER_H = 36;
 
 export function buildMarkerImage(
   maps: KakaoMapsApi,
-  level: ConfidenceLevel,
+  level: ConfidenceLevel | null | undefined,
 ): KakaoMarkerImage {
-  const fill = CONFIDENCE_HEX[level];
+  // 미분류(null) 병원도 지도에 뜰 수 있다 → 슬레이트(정보 부족 색)로 폴백.
+  const fill = CONFIDENCE_HEX[level ?? "정보 부족"];
   // 위는 둥글고 아래는 뾰족한 핀 모양 + 가운데 흰 점
   const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 36" width="28" height="36">

@@ -248,7 +248,8 @@ export interface SearchResultItem {
   /** 표시용 파생 카테고리 — '기타'면 primary_focus 로 도출(미용/모발·탈모/통증·근골격…). */
   etc_subcategory?: string;
   primary_focus: string[];
-  confidence: Confidence;
+  /** 분류 전(미분류) 병원은 null — 카테고리·지도엔 노출되나 신뢰도/근거 없음 */
+  confidence: Confidence | null;
   /** 위경도 검색일 때만 채워짐 */
   distance_km: number | null;
   location: Location;

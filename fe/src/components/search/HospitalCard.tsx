@@ -35,7 +35,8 @@ export function HospitalCard({
   compact = false,
   className,
 }: HospitalCardProps) {
-  const isLowConfidence = item.confidence.level === "정보 부족";
+  // 미분류(confidence=null) 병원도 카테고리·지도엔 노출된다 → null 안전 처리.
+  const isLowConfidence = !item.confidence || item.confidence.level === "정보 부족";
 
   return (
     <Link
@@ -103,7 +104,13 @@ export function HospitalCard({
             >
               {item.name}
             </h3>
-            <ConfidenceBadge confidence={item.confidence} />
+            {item.confidence ? (
+              <ConfidenceBadge confidence={item.confidence} />
+            ) : (
+              <span className="inline-flex shrink-0 items-center rounded-full border border-dashed border-input px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                미분류
+              </span>
+            )}
           </div>
 
           {/* 3) 위치 · 거리 메타 */}
