@@ -82,40 +82,20 @@
 
 ---
 
-## 참고: 주력 강도 랭킹 (as-built — 재작업 아님, 회귀 감시용 수치만)
+## 참고 — 회귀 감시 기준선
 
-검색 relevance 랭킹은 '최고 청크 코사인 1개' → '주력 강도'(`_focus_intensity`)로 교체 완료.
-코드: `ai/search/kb_store.py`(`_aggregate_by_hospital`·`_focus_intensity`), 가중치 env `FOCUS_RANK_WPF`(0.06)·`FOCUS_RANK_WFREQ`(0.010)·`FOCUS_RANK_WCHUNK`(0.010), `RANK_MODE=cosine`로 옛 동작 A/B.
-**BE `be/api/search.py`는 relevance 정렬에서 retrieve_hospital 순서를 보존**(여기서 similarity 재정렬하면 주력 랭킹을 덮어쓰므로 금지).
-
-검증(회귀 감시 기준선):
-- 강남 주력 토픽 84개 A/B (`be/scripts/focus_rank_eval.py`): P@1 0.571→**0.655** · P@5 0.562→**0.617** · MRR 0.675→**0.734**.
-- 독립 92쿼리 retrieval eval (`be/scripts/_retrieval_eval.py`): 0.859/0.906→**0.891/0.921**(무회귀·개선).
+**주력 강도 랭킹**(as-built, 재작업 아님): relevance 1순위를 코사인→`_focus_intensity`로 교체. 계산식·
+코드·BE 순서보존 규칙 상세 = [`../architecture.md`](../architecture.md) §5-1. 회귀가 나는지 감시할 기준 수치:
+- 84토픽 A/B (`be/scripts/focus_rank_eval.py`): P@1 .571→**.655** · P@5 .562→**.617** · MRR .675→**.734**.
+- 92쿼리 eval (`be/scripts/_retrieval_eval.py`): 0.859/0.906→**0.891/0.921**.
 
 ---
 
-## DDB 스키마 — single-table (be/CLAUDE.md 참조 단일 진실)
+## DDB 스키마
 
-`PK=hospital_id (S)` · `SK=entity (S)`. AI=`kmuproj-10-clinic-Main`, BE=`kmuproj-02-team3-backend`.
-
-**entity 분류 — raw(수집) ↔ 가공(산출) 구분** (현재 실적재 수치는 2026-06-01 강남 기준):
-
-| 구분 | entity | 비고 / 현재 |
-|---|---|---|
-| **기준 데이터** | `META` | HIRA 종별·주소·좌표 + 카카오 보강. ✅ 6117 |
-| **raw · 자체사이트** | `SITE#PAGES` · `SITE#IMAGES` | ⚠️ **본문은 DDB 아님 — S3** `crawl/{id}/crawl_data.json`(정제본 2133). DDB엔 안 둠 |
-| **raw · 외부 수집** | `NAVER#PLACE` · `NAVER#PLACE#REVIEWS` · `NAVER#BLOG` · `KAKAO#PLACE` · `KAKAO#REVIEWS` · `KAKAO#BLOG` · `GOOGLE#PLACE` · `GOOGLE#REVIEWS` · `PUBLIC#DEVICES` · `PUBLIC#DOCTORS` | 플랫폼 수집 원본. ✅ KAKAO 641/641/347 · NAVER#BLOG 854 / 나머지 미수집 |
-| **가공 · 룰 (전체 풀커버)** | `CLASSIFICATION` | 4시그널 교차검증 → 과목·주력·신뢰도. LLM 0회. ✅ 강남 ~3098 |
-| **가공 · LLM·Vision (시연 10개)** | `VISION#RESULTS` · `DESCRIPTION` · `SERVICES` · `RELATED` | Vision 분석·`generate_description`·시술/의사 추출·연관병원. 시연 10개 적재분 정적 사용(추가 호출 동결) |
-| **가공 · KB 적재** | `INGEST#STATE` | content_hash·last_ingested·KB object key(재적재 스킵용). ⚠️ KB **벡터·청크는 DDB 아님** — DataSource S3 `clinic-focus/prod/{id}/{signal}.txt` + KB 내부 인덱스 |
-| **사용자·시스템** | `FEEDBACK#{device}#{ts}` · `FEEDBACK#STATS` · `HISTORY#{iso}` | 1-tap 피드백·집계·분류 변경 이력 |
-
-> **헷갈림 정리**: ① 자체사이트 **본문**과 ② KB **벡터/청크**는 DDB가 아니라 **S3**에 있다(DDB는 메타·포인터만).
-> raw = 외부에서 긁어온 것(자체사이트·플레이스·블로그·공공). 가공 = 그걸 파이프라인이 만든 것
-> (룰=`CLASSIFICATION` 전수 / LLM·Vision=`DESCRIPTION`·`SERVICES`·`RELATED`·`VISION#RESULTS` 시연 10개 / KB=`INGEST#STATE`).
-
-**GSI**: `sigungu-specialty-index`(PK=`sigungu#standard_specialty`, SK=`confidence_score`↓ — 카테고리 탐색 BE 직접) ·
-`geo-index`(PK=`geohash_prefix`, SK=`lat#lng` — 지도 근처 검색).
+`PK=hospital_id`·`SK=entity` single-table (GSI: 카테고리 `sigungu-specialty-index` · 지도 `geo-index`).
+entity 종류·raw(수집)↔가공(산출) 구분·본문(S3)/벡터(KB)/메타(DDB) 3층 구조 상세 =
+[`../architecture.md`](../architecture.md) §1 · [`../../be/CLAUDE.md`](../../be/CLAUDE.md). 적재 현황 수치는 위 "현재 상태".
 
 ---
 
