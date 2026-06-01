@@ -233,6 +233,33 @@ class TestSearchEndpoint:
             assert body["meta"]["search_mode"] == "natural"
             mock_retrieve.assert_called_once()
 
+    def test_location_only_uses_ddb_geo_not_kb(self, client):
+        """위치 단독(q 없음) → KB(쿼리 필수) 아닌 DDB 지오(haversine). 반경 내만 거리순.
+
+        예전엔 retrieve_hospital(빈 쿼리)로 가 INVALID_PARAMETER 로 실패 → 지도 마커 0.
+        이제 list_hospitals_by_sigungu_light 의 lat/lng 로 직접 반경 필터.
+        """
+        with patch("be.api.search.db") as mock_db, \
+             patch("ai.retrieve_hospital") as mock_retrieve:
+            # 중심 (37.5,127.0): 2건 반경 1km 내, 1건 ~11km 밖
+            mock_db.list_hospitals_by_sigungu_light.return_value = [
+                {"hospital_id": "near1", "name": "가까운1", "confidence_score": 80.0,
+                 "lat": 37.5, "lng": 127.0},
+                {"hospital_id": "near2", "name": "가까운2", "confidence_score": 70.0,
+                 "lat": 37.501, "lng": 127.0},
+                {"hospital_id": "far1", "name": "먼곳", "confidence_score": 90.0,
+                 "lat": 37.6, "lng": 127.0},
+            ]
+            mock_db.load_hospital_meta.return_value = None  # 카드 None → data 빈, total 만 검증
+            resp = client.get("/api/search?lat=37.5&lng=127.0&radius_km=1&sigungu=강남구&limit=50")
+            assert resp.status_code == 200  # 더 이상 INVALID_PARAMETER 아님
+            meta = resp.json()["meta"]
+            assert meta["search_mode"] == "nearby"
+            assert meta["total"] == 2  # 반경 1km 내 2건만 (먼곳 제외)
+            assert meta["center"] == {"lat": 37.5, "lng": 127.0}
+            assert meta["radius_km"] == 1.0
+            mock_retrieve.assert_not_called()  # KB 미경유
+
 
 class TestFeedbackEndpoint:
     """POST /api/feedback 스펙 테스트."""
