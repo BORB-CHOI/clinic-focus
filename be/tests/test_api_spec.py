@@ -29,7 +29,8 @@ def client():
     with patch("be.api.hospital.DynamoAdapter") as MockDB, \
          patch("be.api.search.DynamoAdapter") as MockDB2, \
          patch("be.api.feedback.DynamoAdapter") as MockDB3, \
-         patch("be.api.history.DynamoAdapter") as MockDB4:
+         patch("be.api.history.DynamoAdapter") as MockDB4, \
+         patch("be.api.specialties.DynamoAdapter") as MockDB5:
 
         from be.handlers.api import app
         return TestClient(app)
@@ -120,13 +121,108 @@ class TestSearchEndpoint:
     def test_with_sigungu_returns_data_meta(self, client):
         """시군구 단독(카테고리) 검색 → DDB GSI 직접 조회 → {"data": [...], "meta": {...}}."""
         with patch("be.api.search.db") as mock_db:
-            mock_db.list_hospitals_by_sigungu.return_value = []
+            mock_db.list_hospitals_by_sigungu_light.return_value = []
             resp = client.get("/api/search?sigungu=성북구")
             assert resp.status_code == 200
             body = resp.json()
             assert "data" in body
             assert "meta" in body
             assert body["meta"]["search_mode"] == "category"
+
+    def test_search_meta_has_total_and_has_more(self, client):
+        """meta.total 은 전체 수, has_more = offset+limit < total."""
+        with patch("be.api.search.db") as mock_db:
+            # 경량 목록 25건 반환, limit=10, offset=0 → has_more=True, total=25
+            mock_db.list_hospitals_by_sigungu_light.return_value = [
+                {"hospital_id": f"h_{i:03d}", "name": f"병원{i}", "confidence_score": 80.0}
+                for i in range(25)
+            ]
+            mock_db.load_hospital_meta.return_value = None  # 카드 None → data 빈 배열
+            resp = client.get("/api/search?sigungu=강남구&limit=10&offset=0")
+            assert resp.status_code == 200
+            meta = resp.json()["meta"]
+            assert meta["total"] == 25
+            assert meta["has_more"] is True
+            assert meta["limit"] == 10
+            assert meta["offset"] == 0
+
+    def test_search_last_page_has_more_false(self, client):
+        """마지막 페이지 → has_more=False."""
+        with patch("be.api.search.db") as mock_db:
+            mock_db.list_hospitals_by_sigungu_light.return_value = [
+                {"hospital_id": f"h_{i:03d}", "name": f"병원{i}", "confidence_score": 80.0}
+                for i in range(5)
+            ]
+            mock_db.load_hospital_meta.return_value = None
+            resp = client.get("/api/search?sigungu=강남구&limit=10&offset=0")
+            assert resp.status_code == 200
+            meta = resp.json()["meta"]
+            assert meta["total"] == 5
+            assert meta["has_more"] is False
+
+    def test_search_limit_max_is_100(self, client):
+        """limit 최대는 100(이전 50에서 상향). 101 이면 FastAPI 422."""
+        with patch("be.api.search.db") as mock_db:
+            mock_db.list_hospitals_by_sigungu_light.return_value = []
+            resp = client.get("/api/search?sigungu=강남구&limit=101")
+            # FastAPI le=100 validator 위반 → 422
+            assert resp.status_code == 422
+
+    def test_nl_search_fetch_cap_is_100(self, client):
+        """자연어 검색은 FETCH_CAP=100 으로 retrieve_hospital 호출."""
+        from shared.models import SearchQuery, SearchResult
+
+        with patch("be.api.search.db") as mock_db, \
+             patch("ai.retrieve_hospital") as mock_retrieve:
+            mock_retrieve.return_value = []
+            resp = client.get("/api/search?q=피부과&limit=10")
+            assert resp.status_code == 200
+            # retrieve_hospital 이 호출됐을 때 SearchQuery.limit == FETCH_CAP(100)
+            call_args = mock_retrieve.call_args[0][0]
+            assert call_args.limit == 100
+
+    def test_nl_search_meta_has_total_independent_of_limit(self, client):
+        """NL 결과 5건, limit=3 → total=5, has_more=True, data 3건."""
+        from shared.models import SearchResult
+
+        sample_meta = HospitalMeta(
+            hospital_id="h_001",
+            name="테스트의원",
+            location=Location(address="서울", lat=37.5, lng=127.0, sido="서울", sigungu="강남구"),
+            contact=Contact(website_url=None),
+        )
+
+        with patch("be.api.search.db") as mock_db, \
+             patch("ai.retrieve_hospital") as mock_retrieve:
+            mock_retrieve.return_value = [
+                SearchResult(
+                    hospital_id=f"h_{i:03d}",
+                    similarity_score=0.9 - i * 0.1,
+                    matched_focus=[],
+                    query_interpretation=None,
+                )
+                for i in range(5)
+            ]
+            mock_db.load_hospital_meta.return_value = sample_meta
+            mock_db.load_classification.return_value = None
+            mock_db.load_description.return_value = None
+
+            resp = client.get("/api/search?q=피부과&limit=3&offset=0")
+            assert resp.status_code == 200
+            body = resp.json()
+            assert body["meta"]["total"] == 5
+            assert body["meta"]["has_more"] is True
+            assert len(body["data"]) == 3
+
+    def test_category_with_specialty_uses_specialty_light(self, client):
+        """specialty 있는 카테고리 검색 → list_hospitals_by_sigungu_specialty_light 호출."""
+        with patch("be.api.search.db") as mock_db:
+            mock_db.list_hospitals_by_sigungu_specialty_light.return_value = []
+            resp = client.get("/api/search?sigungu=강남구&specialty=피부과")
+            assert resp.status_code == 200
+            mock_db.list_hospitals_by_sigungu_specialty_light.assert_called_once_with(
+                "강남구", "피부과"
+            )
 
     def test_natural_query_uses_retrieve_hospital(self, client):
         """자연어(q) 검색 → AI retrieve_hospital(KB Retrieve) 경유."""
@@ -182,3 +278,115 @@ class TestFeedbackEndpoint:
             body = resp.json()
             assert "error" in body
             assert body["error"]["code"] == "DUPLICATE_FEEDBACK"
+
+
+class TestSpecialtiesEndpoint:
+    """GET /api/specialties 신규 엔드포인트 스펙 테스트."""
+
+    def test_no_sigungu_returns_422(self, client):
+        """sigungu 파라미터 없으면 FastAPI 422 (필수 파라미터)."""
+        resp = client.get("/api/specialties")
+        assert resp.status_code == 422
+
+    def test_returns_data_meta_envelope(self, client):
+        """정상 요청 → {"data": [...], "meta": {...}} 봉투."""
+        with patch("be.api.specialties.db") as mock_db:
+            mock_db.list_specialty_counts.return_value = (
+                [{"specialty": "피부과", "count": 120}, {"specialty": "치과", "count": 85}],
+                205,
+            )
+            resp = client.get("/api/specialties?sigungu=강남구")
+            assert resp.status_code == 200
+            body = resp.json()
+            assert "data" in body
+            assert "meta" in body
+
+    def test_data_sorted_by_count_desc(self, client):
+        """data 는 count 내림차순 정렬."""
+        with patch("be.api.specialties.db") as mock_db:
+            mock_db.list_specialty_counts.return_value = (
+                [
+                    {"specialty": "피부과", "count": 120},
+                    {"specialty": "치과", "count": 85},
+                    {"specialty": "한의원", "count": 40},
+                ],
+                245,
+            )
+            resp = client.get("/api/specialties?sigungu=강남구")
+            data = resp.json()["data"]
+            counts = [item["count"] for item in data]
+            assert counts == sorted(counts, reverse=True)
+
+    def test_meta_fields(self, client):
+        """meta 에 sigungu·total_hospitals·total_specialties 포함."""
+        with patch("be.api.specialties.db") as mock_db:
+            mock_db.list_specialty_counts.return_value = (
+                [{"specialty": "피부과", "count": 10}],
+                10,
+            )
+            resp = client.get("/api/specialties?sigungu=강남구")
+            meta = resp.json()["meta"]
+            assert meta["sigungu"] == "강남구"
+            assert "total_hospitals" in meta
+            assert "total_specialties" in meta
+            assert meta["total_specialties"] == 1
+
+    def test_empty_sigungu_returns_400(self, client):
+        """빈 sigungu 값 → 400."""
+        with patch("be.api.specialties.db"):
+            resp = client.get("/api/specialties?sigungu=")
+            assert resp.status_code == 400
+            assert resp.json()["error"]["code"] == "INVALID_PARAMETER"
+
+
+class TestSearchSortOrder:
+    """보조정렬 규칙 단위 테스트 (_sort_nl_results)."""
+
+    def _make_card(self, hospital_id: str, name: str, confidence: int, similarity: float) -> dict:
+        return {
+            "hospital_id": hospital_id,
+            "name": name,
+            "confidence": {"score": confidence},
+            "distance_km": None,
+        }
+
+    def test_relevance_sort_by_similarity_then_confidence_then_name(self):
+        from be.api.search import _sort_nl_results
+
+        cards = [
+            self._make_card("c", "C의원", 90, 0.7),
+            self._make_card("a", "A의원", 80, 0.9),
+            self._make_card("b", "B의원", 95, 0.9),
+        ]
+        score_map = {"a": 0.9, "b": 0.9, "c": 0.7}
+        sorted_cards = _sort_nl_results(cards, "relevance", score_map=score_map)
+        ids = [c["hospital_id"] for c in sorted_cards]
+        # 유사도 0.9 동점: confidence 95>80 이므로 b → a, 그 다음 c
+        assert ids == ["b", "a", "c"]
+
+    def test_confidence_sort(self):
+        from be.api.search import _sort_nl_results
+
+        cards = [
+            self._make_card("a", "A의원", 70, 0.9),
+            self._make_card("b", "B의원", 90, 0.5),
+            self._make_card("c", "C의원", 90, 0.8),
+        ]
+        score_map = {"a": 0.9, "b": 0.5, "c": 0.8}
+        sorted_cards = _sort_nl_results(cards, "confidence", score_map=score_map)
+        ids = [c["hospital_id"] for c in sorted_cards]
+        # confidence 90 동점: 유사도 0.8>0.5 이므로 c → b, 그 다음 a(70)
+        assert ids == ["c", "b", "a"]
+
+    def test_distance_sort(self):
+        from be.api.search import _sort_nl_results
+
+        cards = [
+            {**self._make_card("a", "A의원", 80, 0.5), "distance_km": 2.0},
+            {**self._make_card("b", "B의원", 90, 0.5), "distance_km": 1.0},
+            {**self._make_card("c", "C의원", 70, 0.5), "distance_km": 1.0},
+        ]
+        sorted_cards = _sort_nl_results(cards, "distance")
+        ids = [c["hospital_id"] for c in sorted_cards]
+        # 거리 1.0 동점: confidence 90>70 이므로 b → c, 그 다음 a(2.0)
+        assert ids == ["b", "c", "a"]

@@ -200,6 +200,115 @@ class DynamoAdapter:
             kwargs["ExclusiveStartKey"] = resp["LastEvaluatedKey"]
         return results
 
+    def list_hospitals_by_sigungu_light(self, sigungu: str) -> list[dict]:
+        """sigungu-only 경량 목록. 카테고리 검색 페이지네이션 전처리용.
+
+        풀 HospitalMeta 파싱 없이 hospital_id·name·confidence_score·
+        standard_specialty·location 만 포함한 dict 목록을 반환한다.
+        슬라이스 후 해당 구간만 _hospital_card 로 하이드레이트할 것.
+        sigungu_specialty GSI 에 없는 분류 전 병원도 포함한다.
+        """
+        results: list[dict] = []
+        filter_expr = Attr("entity").eq(E_META) & Attr("sigungu").eq(sigungu)
+        kwargs: dict[str, Any] = {
+            "FilterExpression": filter_expr,
+            "ProjectionExpression": (
+                "hospital_id, #nm, confidence_score, standard_specialty, sigungu_specialty, #loc"
+            ),
+            "ExpressionAttributeNames": {"#nm": "name", "#loc": "location"},
+        }
+        while True:
+            resp = self._table.scan(**kwargs)
+            for item in resp.get("Items", []):
+                results.append({
+                    "hospital_id": item.get("hospital_id", ""),
+                    "name": item.get("name", ""),
+                    "confidence_score": float(item["confidence_score"])
+                    if "confidence_score" in item else 0.0,
+                    "standard_specialty": item.get("standard_specialty", ""),
+                })
+            if "LastEvaluatedKey" not in resp:
+                break
+            kwargs["ExclusiveStartKey"] = resp["LastEvaluatedKey"]
+        return results
+
+    def list_hospitals_by_sigungu_specialty_light(
+        self,
+        sigungu: str,
+        standard_specialty: str,
+    ) -> list[dict]:
+        """sigungu + specialty 경량 목록. sigungu-specialty-index GSI 사용.
+
+        GSI 에 등록된(분류 완료) 병원만 반환된다(의도된 동작).
+        confidence_score 내림차순 정렬은 GSI ScanIndexForward=False 로 수행.
+        """
+        composite = f"{sigungu}#{standard_specialty}"
+        kwargs: dict[str, Any] = {
+            "IndexName": "sigungu-specialty-index",
+            "KeyConditionExpression": Key("sigungu_specialty").eq(composite),
+            "ScanIndexForward": False,  # confidence_score 내림차순
+            "ProjectionExpression": "hospital_id, #nm, confidence_score, standard_specialty",
+            "ExpressionAttributeNames": {"#nm": "name"},
+        }
+
+        results: list[dict] = []
+        while True:
+            resp = self._table.query(**kwargs)
+            for item in resp.get("Items", []):
+                results.append({
+                    "hospital_id": item.get("hospital_id", ""),
+                    "name": item.get("name", ""),
+                    "confidence_score": float(item["confidence_score"])
+                    if "confidence_score" in item else 0.0,
+                    "standard_specialty": item.get("standard_specialty", standard_specialty),
+                })
+            if "LastEvaluatedKey" not in resp:
+                break
+            kwargs["ExclusiveStartKey"] = resp["LastEvaluatedKey"]
+        return results
+
+    def list_specialty_counts(self, sigungu: str) -> tuple[list[dict], int]:
+        """sigungu 내 표준 진료과목별 분류완료 병원 수. /api/specialties 엔드포인트 전용.
+
+        sigungu_specialty GSI 에 등록된(분류완료) META 항목만 집계한다.
+        GSI PK = "{sigungu}#{standard_specialty}" 형태이므로, sigungu 로 시작하는
+        모든 sigungu_specialty 항목을 Scan 해 '#' 뒤 표준진료과목으로 group-by 한다.
+        반환: ([{"specialty": str, "count": int}, ...] count 내림차순, 분류완료 병원 총수).
+        """
+        from collections import Counter
+
+        counts: Counter[str] = Counter()
+        total_hospitals: set[str] = set()
+
+        # sigungu_specialty 가 있는 META 만 스캔(=분류 완료 병원)
+        filter_expr = (
+            Attr("entity").eq(E_META) &
+            Attr("sigungu").eq(sigungu) &
+            Attr("sigungu_specialty").exists()
+        )
+        kwargs: dict[str, Any] = {
+            "FilterExpression": filter_expr,
+            "ProjectionExpression": "hospital_id, sigungu_specialty",
+        }
+        while True:
+            resp = self._table.scan(**kwargs)
+            for item in resp.get("Items", []):
+                ss: str = item.get("sigungu_specialty", "")
+                # 형태: "강남구#피부과"
+                if "#" in ss:
+                    specialty = ss.split("#", 1)[1]
+                    counts[specialty] += 1
+                    total_hospitals.add(item.get("hospital_id", ""))
+            if "LastEvaluatedKey" not in resp:
+                break
+            kwargs["ExclusiveStartKey"] = resp["LastEvaluatedKey"]
+
+        result = [
+            {"specialty": specialty, "count": cnt}
+            for specialty, cnt in counts.most_common()
+        ]
+        return result, len(total_hospitals)
+
     def list_hospitals_by_sigungu_specialty(
         self,
         sigungu: str,

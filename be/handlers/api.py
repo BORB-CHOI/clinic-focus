@@ -19,6 +19,7 @@ from be.api.feedback import router as feedback_router
 from be.api.history import router as history_router
 from be.api.hospital import router as hospital_router
 from be.api.search import router as search_router
+from be.api.specialties import router as specialties_router
 
 app = FastAPI(
     title="ClinicFocus API",
@@ -46,6 +47,7 @@ app.include_router(search_router)
 app.include_router(hospital_router)
 app.include_router(history_router)
 app.include_router(feedback_router)
+app.include_router(specialties_router)
 
 
 @app.get("/health")
