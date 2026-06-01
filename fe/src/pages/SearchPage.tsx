@@ -5,6 +5,7 @@ import { HospitalCard } from "@/components/search/HospitalCard";
 import { HospitalCardSkeleton } from "@/components/search/HospitalCardSkeleton";
 import { SearchFilters } from "@/components/search/SearchFilters";
 import { useSearch } from "@/hooks/useSearch";
+import { isEmergencyQuery } from "@/lib/emergency";
 import type { SortOption } from "@/types/domain";
 
 // 검색 결과 페이지 — BE /api/search 연동 (useSearch hook)
@@ -22,7 +23,7 @@ const SEARCH_MODE_LABEL: Record<string, string> = {
 
 const SORT_LABEL: Record<SortOption, string> = {
   distance: "거리순",
-  confidence: "신뢰도순",
+  confidence: "근거 많은 순",
   relevance: "관련도순",
 };
 
@@ -78,6 +79,20 @@ export default function SearchPage() {
           표시하는지를 보여줍니다.
         </p>
       </div>
+
+      {isEmergencyQuery(query) ? (
+        <div
+          role="alert"
+          className="rounded-lg border-2 border-red-300 bg-red-50 p-4 text-sm leading-relaxed text-red-800"
+        >
+          <p className="text-base font-bold">🚨 응급 상황으로 보입니다</p>
+          <p className="mt-1">
+            지금 <strong>119에 전화</strong>하거나 가까운 <strong>응급실</strong>로 바로 가세요.
+            이 서비스는 병원이 무엇에 주력하는지 보여줄 뿐, <strong>응급 진료기관을 추천하지
+            않습니다</strong>. 아래 검색 결과를 응급 판단에 사용하지 마세요.
+          </p>
+        </div>
+      ) : null}
 
       <SearchFilters
         minConfidence={minConfidence}
