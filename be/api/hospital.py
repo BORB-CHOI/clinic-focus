@@ -111,7 +111,10 @@ def _adapt_detailed_signals(classification, website_url: str | None) -> dict | N
     sc, v, blog, rev = ds.self_claim, ds.vision, ds.blog, ds.reviews
     return {
         "self_claim": {
-            "extracted_keywords": list(sc.keywords or []),
+            # 정제된 주력(primary_focus)을 자칭 컨셉으로 노출. raw sc.keywords 는 자기 사이트의
+            # 블로그/FAQ 문맥어(예: 탈모약 부작용 FAQ의 '당뇨·기형아·분만')까지 섞여 오인 소지 →
+            # 빈도·교차검증 거친 primary_focus 로 대체(분류 노이즈가 상세 화면에 그대로 노출되는 것 방지).
+            "extracted_keywords": list(classification.primary_focus or []),
             "source_text": "",  # 자칭 원문은 임베딩 전용·미저장
             "source_url": website_url or "",
         },

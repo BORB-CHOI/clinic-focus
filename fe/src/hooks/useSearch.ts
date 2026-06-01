@@ -26,7 +26,7 @@ export function useSearch({ q, minConfidence, sort }: SearchArgs) {
         sigungu: POC_SIGUNGU,
         min_confidence: minConfidence,
         sort,
-        limit: 30,
+        limit: 50, // BE 최대치(le=50)와 통일. KB는 내부 100청크 fetch→dedup이라 실 상한 ~30-60
       }),
     // 필터/정렬 토글 시 이전 결과 유지해 깜빡임 방지
     placeholderData: (prev) => prev,
