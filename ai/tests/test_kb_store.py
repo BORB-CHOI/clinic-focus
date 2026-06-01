@@ -761,11 +761,17 @@ class TestRetrieveHospital:
         retrieve_text = call_kwargs["retrievalQuery"]["text"]
 
         def _specialty_in_filter(f: dict, value: str) -> bool:
+            # 추론 specialty 는 equals 가 아니라 in [추론, 기타] 형태로 들어간다
+            # (기타=분류 못 한 특화 부티크를 하드 배제하지 않으려는 의도).
             if f.get("equals", {}).get("key") == "standard_specialty":
                 return f["equals"]["value"] == value
+            if f.get("in", {}).get("key") == "standard_specialty":
+                return value in f["in"]["value"]
             return any(_specialty_in_filter(c, value) for c in f.get("andAll", []))
 
         assert _specialty_in_filter(kb_filter, "피부과"), f"추론 진료과 필터 없음: {kb_filter}"
+        # 추론 specialty 에는 '기타'가 함께 허용돼야 한다(특화 부티크 배제 방지)
+        assert _specialty_in_filter(kb_filter, "기타"), f"추론 필터에 '기타' 미포함: {kb_filter}"
         assert retrieve_text != "사마귀 어디가 좋을까", "동의어 확장이 적용되지 않음"
         assert "사마귀" in retrieve_text
         # query_interpretation("이렇게 이해했어요") 가 결과에 채워져야 한다

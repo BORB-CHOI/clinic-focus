@@ -769,7 +769,7 @@ def _haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
 def _build_kb_filter(
     sido: str | None = None,
     sigungu: str | None = None,
-    specialty: str | None = None,
+    specialty: "str | list[str] | None" = None,
     min_confidence: int | None = None,
     lat_range: tuple[float, float] | None = None,
     lng_range: tuple[float, float] | None = None,
@@ -793,7 +793,16 @@ def _build_kb_filter(
     if sigungu:
         conditions.append({"equals": {"key": "sigungu", "value": sigungu}})
     if specialty:
-        conditions.append({"equals": {"key": "standard_specialty", "value": specialty}})
+        # specialty 가 리스트면 그 중 하나라도 일치(in) — 추론 specialty 에 '기타'를 함께
+        # 허용해 분류 못 한 특화 부티크를 하드 배제하지 않으려는 용도. 단일 문자열이면 equals.
+        if isinstance(specialty, (list, tuple, set)):
+            vals = [s for s in specialty if s]
+            if len(vals) == 1:
+                conditions.append({"equals": {"key": "standard_specialty", "value": vals[0]}})
+            elif vals:
+                conditions.append({"in": {"key": "standard_specialty", "value": vals}})
+        else:
+            conditions.append({"equals": {"key": "standard_specialty", "value": specialty}})
     if min_confidence:
         # min_confidence=0(또는 None)이면 신뢰도 하드필터 없음 — 모든 병원 노출.
         # 의료법: 특정 병원만 보이고 일부가 검색에서 사라지면 차별 노출 소지가 있어,
@@ -951,8 +960,21 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
     # 사용자가 specialty 를 명시 안 했을 때만 메타필터로 보강(명시값 우선).
     processed = process_query(q_text)
     retrieve_text = processed.embedding_text or q_text
-    effective_specialty = query.specialty or processed.inferred_specialty
     interpretation = _build_interpretation(processed)  # FE "이렇게 이해했어요" 박스용
+
+    # specialty 메타필터 값 결정.
+    # - 사용자가 명시 선택한 specialty(query.specialty)는 의도가 분명하므로 그대로 하드 일치.
+    # - 쿼리에서 *추론*한 specialty 는 하드 배제 대신 '기타'를 함께 허용한다([추론, 기타]).
+    #   본 제품의 정체성이 "표준 진료과목 *너머* 실제 주력"이라, HIRA 종별/이름파싱이 분류 못 해
+    #   '기타'로 떨어진 모발이식·미용 부티크(=정작 그 쿼리의 핵심 병원)를 specialty 하드필터로
+    #   배제하면 안 된다. 실측: "M자 탈모"→피부과 하드필터가 기타로 분류된 모엠·모우다·뉴셀
+    #   (진짜 모발의원)을 통째 배제했고, '기타' 허용 시 정밀도 손실 없이 이들이 복귀.
+    if query.specialty:
+        specialty_filter: "str | list[str] | None" = query.specialty
+    elif processed.inferred_specialty and processed.inferred_specialty != "기타":
+        specialty_filter = [processed.inferred_specialty, "기타"]
+    else:
+        specialty_filter = processed.inferred_specialty  # None 또는 이미 '기타'
     if processed.was_expanded or processed.inferred_specialty:
         logger.info(
             "retrieve_hospital: 쿼리 전처리 — terms=%s specialty=%s expanded=%s",
@@ -980,11 +1002,11 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
         lat_range = (query.lat - deg_offset, query.lat + deg_offset)  # type: ignore[operator]
         lng_range = (query.lng - deg_offset, query.lng + deg_offset)  # type: ignore[operator]
 
-    # --- 1차 호출: 전체 필터 적용 (specialty 는 추론값 보강) ---
+    # --- 1차 호출: 전체 필터 적용 (specialty 는 추론값+기타 보강) ---
     kb_filter = _build_kb_filter(
         sido=query.sido,
         sigungu=query.sigungu,
-        specialty=effective_specialty,
+        specialty=specialty_filter,
         min_confidence=query.min_confidence,
         lat_range=lat_range,
         lng_range=lng_range,
@@ -998,7 +1020,7 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
     raw = _kb_retrieve(client, kb_id, retrieve_text, kb_filter, n_request)
 
     # --- fallback: 빈 결과 시 지역/specialty/confidence 완화 (team_id 는 유지) ---
-    if not raw and (query.sido or query.sigungu or effective_specialty or has_location):
+    if not raw and (query.sido or query.sigungu or specialty_filter or has_location):
         logger.info(
             "retrieve_hospital: 결과 0건 → 지역/specialty/min_confidence 필터 완화 fallback (query=%r)",
             q_text,
