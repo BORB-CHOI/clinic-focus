@@ -350,19 +350,21 @@ class TestSearchSortOrder:
             "distance_km": None,
         }
 
-    def test_relevance_sort_by_similarity_then_confidence_then_name(self):
+    def test_relevance_preserves_retrieve_order(self):
         from be.api.search import _sort_nl_results
 
+        # relevance 는 retrieve_hospital 이 '주력 강도'(빈도+primary_focus+코사인)로 이미
+        # 정렬해 돌려준 순서를 보존해야 한다 — 여기서 similarity(코사인) 로 재정렬하면 주력
+        # 랭킹을 덮어쓴다. 따라서 입력 순서 그대로 반환(코사인이 더 높은 c 가 뒤여도 유지).
         cards = [
-            self._make_card("c", "C의원", 90, 0.7),
-            self._make_card("a", "A의원", 80, 0.9),
-            self._make_card("b", "B의원", 95, 0.9),
+            self._make_card("c", "C의원", 90, 0.9),  # 코사인 최고지만 입력상 1번 아님 → 보존
+            self._make_card("a", "A의원", 80, 0.5),
+            self._make_card("b", "B의원", 95, 0.6),
         ]
-        score_map = {"a": 0.9, "b": 0.9, "c": 0.7}
+        score_map = {"a": 0.5, "b": 0.6, "c": 0.9}
         sorted_cards = _sort_nl_results(cards, "relevance", score_map=score_map)
         ids = [c["hospital_id"] for c in sorted_cards]
-        # 유사도 0.9 동점: confidence 95>80 이므로 b → a, 그 다음 c
-        assert ids == ["b", "a", "c"]
+        assert ids == ["c", "a", "b"]  # 입력 순서 그대로 (재정렬 안 함)
 
     def test_confidence_sort(self):
         from be.api.search import _sort_nl_results
