@@ -51,6 +51,7 @@ be/data/crawl/
 be/data/clinic-focus/
 be/data/naver_raw/
 be/data/naver_targets.json
+be/data/naver_impact/
 data/clinic-focus/
 
 # --- Claude Code 개인 설정 ---
