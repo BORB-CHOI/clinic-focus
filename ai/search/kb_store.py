@@ -996,12 +996,25 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
     #   '기타'로 떨어진 모발이식·미용 부티크(=정작 그 쿼리의 핵심 병원)를 specialty 하드필터로
     #   배제하면 안 된다. 실측: "M자 탈모"→피부과 하드필터가 기타로 분류된 모엠·모우다·뉴셀
     #   (진짜 모발의원)을 통째 배제했고, '기타' 허용 시 정밀도 손실 없이 이들이 복귀.
+    # specialty 메타필터 결정.
+    # - 사용자 *명시* specialty 는 의도가 분명하므로 그대로 하드 일치.
+    # - 쿼리에서 *추론*한 specialty 는 [추론, 기타] 로 — 분류 못 한 특화 부티크(기타)를 배제 안 함.
+    # - ★일반의(generalist) 진료과(가정의학과·기타)로 추론되면 하드필터 안 함. 가정의학과는
+    #   "증상 평가"성 일반 키워드(요통·관절통·불면·우울·알레르기·당뇨…)가 anchor 돼 있어, 이걸로
+    #   하드필터하면 정작 그 증상의 전문의(정형·정신·내과)를 통째 배제한다. 일반의는 specialist 를
+    #   가리지 않는 게 맞다 → 비-필터(임베딩+min-sim 에 위임). 단어별 사전 패치가 아니라 이 클래스 전체 차단.
+    # - SPECIALTY_FILTER_MODE=off 면 추론 specialty 로 아예 하드필터 안 함(실험/대안용).
+    _filter_mode = os.environ.get("SPECIALTY_FILTER_MODE", "plus_etc")
+    _GENERALIST = {"기타", "가정의학과"}
+    inferred_sp = processed.inferred_specialty
     if query.specialty:
         specialty_filter: "str | list[str] | None" = query.specialty
-    elif processed.inferred_specialty and processed.inferred_specialty != "기타":
-        specialty_filter = [processed.inferred_specialty, "기타"]
+    elif _filter_mode == "off":
+        specialty_filter = None
+    elif inferred_sp and inferred_sp not in _GENERALIST:
+        specialty_filter = [inferred_sp, "기타"]
     else:
-        specialty_filter = processed.inferred_specialty  # None 또는 이미 '기타'
+        specialty_filter = None  # None·기타·가정의학과 → 하드필터 없음(전문의 배제 금지)
     if processed.was_expanded or processed.inferred_specialty:
         logger.info(
             "retrieve_hospital: 쿼리 전처리 — terms=%s specialty=%s expanded=%s",
