@@ -42,6 +42,9 @@ async function request<T>(path: string, init?: RequestInit, params?: QueryParams
       ...init,
     });
   } catch (e) {
+    // 요청 취소(타이핑 중 이전 요청을 TanStack Query 가 abort)는 에러가 아니라 정상 흐름
+    // → 그대로 던져 React Query 가 조용히 무시하게 한다. 안 그러면 "서버 연결 실패"로 오표시.
+    if (e instanceof DOMException && e.name === "AbortError") throw e;
     throw new ApiError("NETWORK_ERROR", "서버에 연결하지 못했습니다", 0);
   }
   const json = (await res.json().catch(() => null)) as
@@ -59,9 +62,10 @@ async function request<T>(path: string, init?: RequestInit, params?: QueryParams
   return json as T;
 }
 
-/** GET — {data, meta} 봉투 전체를 그대로 돌려준다 (호출부가 data/meta 분해). */
-export function apiGet<T>(path: string, params?: QueryParams): Promise<T> {
-  return request<T>(path, { method: "GET" }, params);
+/** GET — {data, meta} 봉투 전체를 그대로 돌려준다 (호출부가 data/meta 분해).
+ *  signal: TanStack Query 의 AbortSignal 을 넘기면 타이핑 중 옛 요청이 자동 취소된다. */
+export function apiGet<T>(path: string, params?: QueryParams, signal?: AbortSignal): Promise<T> {
+  return request<T>(path, { method: "GET", signal }, params);
 }
 
 /** POST — body 를 JSON 으로 전송. */

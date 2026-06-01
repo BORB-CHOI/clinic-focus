@@ -20,15 +20,21 @@ export interface SearchArgs {
 export function useSearch({ q, minConfidence, sort }: SearchArgs) {
   return useQuery<SearchResponse>({
     queryKey: ["search", q, minConfidence, sort],
-    queryFn: () =>
-      apiGet<SearchResponse>("/api/search", {
-        q: q || undefined, // 비면 카테고리(시군구) 경로로
-        sigungu: POC_SIGUNGU,
-        min_confidence: minConfidence,
-        sort,
-        limit: 50, // BE 최대치(le=50)와 통일. KB는 내부 100청크 fetch→dedup이라 실 상한 ~30-60
-      }),
+    queryFn: ({ signal }) =>
+      apiGet<SearchResponse>(
+        "/api/search",
+        {
+          q: q || undefined, // 비면 카테고리(시군구) 경로로
+          sigungu: POC_SIGUNGU,
+          min_confidence: minConfidence,
+          sort,
+          limit: 50, // BE 최대치(le=50)와 통일. KB는 내부 100청크 fetch→dedup이라 실 상한 ~30-60
+        },
+        signal, // 타이핑 중 옛 요청 자동 취소(서버 부하·레이스 방지)
+      ),
     // 필터/정렬 토글 시 이전 결과 유지해 깜빡임 방지
     placeholderData: (prev) => prev,
+    // 전송 취소(AbortError)는 재시도하지 않음 — 정상 흐름
+    retry: 1,
   });
 }
