@@ -136,7 +136,7 @@ export function useKakaoMap({
 
     for (const item of items) {
       const position = new maps.LatLng(item.location.lat, item.location.lng);
-      const image = buildMarkerImage(maps, item.confidence.level);
+      const image = buildMarkerImage(maps, item.confidence?.level);
       const marker = new maps.Marker({ position, map, image, title: item.name });
       maps.event.addListener(marker, "click", () => {
         onMarkerClickRef.current?.(item.hospital_id);
