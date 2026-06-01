@@ -17,6 +17,7 @@ from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 
 from be.adapters.dynamo_adapter import DynamoAdapter
+from shared.etc_category import display_specialty
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,12 @@ def _hospital_card(hospital_id: str, *, distance_km=None, matched_focus=None) ->
         "hospital_id": meta.hospital_id,
         "name": meta.name,
         "standard_specialty": classification.standard_specialty if classification else "",
+        # 파생 표시 카테고리: standard_specialty='기타'면 primary_focus 로 의미있는 하위
+        # 카테고리(미용/모발·탈모/통증·근골격/수면/정신…) 도출. FE 가 '기타' 대신 노출.
+        "etc_subcategory": (
+            display_specialty(classification.standard_specialty, classification.primary_focus)
+            if classification else ""
+        ),
         "primary_focus": classification.primary_focus if classification else [],
         "confidence": classification.confidence.model_dump() if classification else None,
         "location": meta.location.model_dump() if meta.location else None,

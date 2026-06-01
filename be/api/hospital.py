@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException
 
 from be.adapters.dynamo_adapter import DynamoAdapter
 from be.core.feedback import compute_feedback_stats
+from shared.etc_category import display_specialty
 
 router = APIRouter(prefix="/api/hospitals", tags=["hospitals"])
 db = DynamoAdapter()
@@ -53,6 +54,10 @@ def get_hospital_detail(hospital_id: str):
             "hospital_id": meta.hospital_id,
             "name": meta.name,
             "standard_specialty": classification.standard_specialty if classification else "",
+            "etc_subcategory": (
+                display_specialty(classification.standard_specialty, classification.primary_focus)
+                if classification else ""
+            ),
             "primary_focus": classification.primary_focus if classification else [],
             "confidence": classification.confidence.model_dump() if classification else None,
             "location": meta.location.model_dump() if meta.location else None,
