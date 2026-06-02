@@ -1,106 +1,87 @@
-# EC2 배포·운영
+# 배포·운영 (EC2)
 
-> **역할 경계** — 이 디렉토리는 *이미 준비된 EC2*에서 FastAPI를 systemd로 띄우고 데이터 적재
-> 파이프라인을 돌리는 **운영**만 다룬다. AWS 자격증명·Bedrock 모델 가용성·KB·DDB/S3 생성 같은
-> **계정/자원 셋업(1회)**은 [`../docs/setup/aws-onboarding.md`](../docs/setup/aws-onboarding.md)가
-> 진입점이다. 둘은 겹치지 않게 분리한다 — 셋업은 onboarding, 기동·적재는 여기.
+> **SafeRole 붙은 EC2에서만 동작** — DDB·KB는 IAM Role 인증이라 로컬 PC 불가.
+> **자원 생성은 콘솔에서만** — SafeRole 에 `CreateTable`/`CreateBucket` 권한 없음.
 
-## 파일
+## 1. 1회 셋업
 
-| 파일 | 역할 |
-|---|---|
-| `clinicfocus.service` | systemd unit — `be.handlers.api:app` 을 uvicorn으로 (`AWS_REGION=us-east-1`, `0.0.0.0:8000`, `Restart=always`) |
-| `setup.sh` | EC2 최초 1회 — venv 생성 · `requirements.txt` 설치 · 로컬 캐시 디렉토리 생성 · systemd 등록·시작 |
+**① 콘솔에서 자원 생성**
+- **DynamoDB 테이블** (`us-east-1`, On-demand) — 스키마(PK `hospital_id` / SK `entity` + GSI 2개)는 [`../be/CLAUDE.md`](../be/CLAUDE.md) "스키마 — V2 single-table" 그대로.
+- **S3 크롤 버킷** — 크롤·재분류 돌릴 때만 필요. `aws s3 mb s3://<username>-clinic-focus-crawl --region us-east-1`
 
-## 서버 자동 시작 (systemd)
+**② 코드·의존성**
+```bash
+git clone https://github.com/BORB-CHOI/clinic-focus.git && cd clinic-focus
+python -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
+cd fe && npm install && cd ..
+playwright install        # 크롤 돌릴 때만
+```
+
+**③ `.env`** (루트 — 데모 서빙에 필요한 최소)
+```ini
+AWS_REGION=us-east-1
+DYNAMO_TABLE=<자기 테이블>          # 예: kmuproj-10-clinic-Main
+KB_ID=GTBJ6HLFDK
+KB_DATA_SOURCE_ID=PLC6QYALDU
+# 크롤/재분류 때만: S3_CRAWL_BUCKET, HIRA_API_KEY, KAKAO_REST_API_KEY, NAVER_MAP_CLIENT_ID/SECRET
+```
+`fe/.env`:
+```ini
+VITE_KAKAO_MAP_KEY=<카카오 JS 키>
+VITE_API_BASE_URL=                 # 비움 (상대경로 + vite proxy)
+```
+> 서빙(검색·상세·피드백)은 **KB Retrieve + DDB** 만 호출 → 개인 Bedrock·S3·크롤 API 키 불필요. 전체 키는 [`../.env.example`](../.env.example).
+
+## 2. 데이터
+
+**A. 공유 번들로 (권장)**
+```bash
+unzip clinic-focus-data-share-*.zip && cd clinic-focus-data-share
+python3 restore.py --skip-s3       # DDB만 (서빙엔 S3 불필요). 옛 데이터 섞였으면 --replace
+cd ..
+```
+> KB는 강남-only 로 공유·임베딩 완료 → **재인제스트 금지**.
+
+**B. 처음부터 적재**
+```bash
+python be/scripts/load_seoul_5gu.py                       # 심평원 → DDB META
+python be/scripts/enrich_urls.py                          # 홈페이지 URL 보강
+python be/scripts/crawl_all.py                            # 자체사이트 크롤 → S3
+python be/scripts/run_classification.py --sigungu 강남구   # 룰 분류 + KB ingest
+```
+
+## 3. 기동
 
 ```bash
+# 백엔드 (:8000) — systemd (영속)
 sudo cp deploy/clinicfocus.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable clinicfocus
-sudo systemctl start clinicfocus
+sudo systemctl daemon-reload && sudo systemctl enable --now clinicfocus
+sudo journalctl -u clinicfocus -f                         # 로그
 
-sudo systemctl status clinicfocus       # 상태
-sudo journalctl -u clinicfocus -f       # 실시간 로그
-```
-
-## 수동 실행 (개발 중)
-
-```bash
-cd ~/clinic-focus
+# 또는 수동 (둘 다 repo 루트에서)
 source .venv/bin/activate
-python be/main.py                       # uvicorn 진입점 (PORT env, 기본 8000)
-# 또는
-python -m uvicorn be.handlers.api:app --host 0.0.0.0 --port 8000 --workers 1
+python -m uvicorn be.handlers.api:app --host 0.0.0.0 --port 8000   # 권장
+python be/main.py                                                   # 동일
+
+# 프론트 (:5173, /api → :8000 proxy)
+cd fe && npm run dev
 ```
 
-> `.env`(레포 **루트**)는 `be/handlers/api.py`가 기동 시 자동 로드한다. 별도 export 불필요.
-
-## 데이터 적재 순서 (강남 PoC 기준)
-
-> 자기 계정 자원(DDB·S3) 셋업 전제. 미완료면 [`../docs/setup/aws-onboarding.md`](../docs/setup/aws-onboarding.md) Step 6·7 먼저.
-
+## 4. SSH (학교망 등)
 ```bash
-source .venv/bin/activate
-
-# 1. 심평원(HIRA) → DynamoDB META (강남구; load_seoul_5gu 가 5개 구 코드 보유, 강남만 적재해도 됨)
-python be/scripts/load_seoul_5gu.py
-
-# 2. 카카오/네이버로 자체 홈페이지 URL 보강
-python be/scripts/enrich_urls.py
-
-# 3. 자체사이트 크롤 (본문 → S3, .env 의 S3_CRAWL_BUCKET/CRAWL_DATA_DIR 따름)
-python be/scripts/crawl_all.py
-
-# 4. 네이버 플레이스 후기 합류 (로컬 raw 수집 후 적재)
-python be/scripts/crawl_naver_local.py
-python be/scripts/ingest_naver_local.py --confirm
-
-# 5. 룰 기반 분류 + KB ingest (LLM 0회, 강남 전수 베이스라인)
-python be/scripts/run_classification.py --sigungu 강남구
+ssh -p 443 -i <key>.pem ec2-user@<ec2-ip>
+# API/UI 터널
+ssh -p 443 -i <key>.pem -L 8000:localhost:8000 -L 5173:localhost:5173 ec2-user@<ec2-ip>
 ```
-
-> **시연 10개 한정 LLM/Vision 오버레이**(`run_vision_demo.py` → `run_llm_demo.py`)는 개인 계정
-> Sonnet 4.6을 쓴다. **2026-06-01부터 개인 계정 쿼터 소진으로 신규 호출 금지** — 기존 적재분은
-> 정적 데이터로 사용한다. 분류/검색 동작 상세는 [`../docs/architecture.md`](../docs/architecture.md),
-> 남은 작업은 [`../docs/plans/task-queue.md`](../docs/plans/task-queue.md).
 
 ## FE 배포
-
-FE는 별도. `cd fe && npm run build` → `aws s3 sync dist/ s3://<fe-bucket>` (CloudFront). 자세한 건
-[`../fe/CLAUDE.md`](../fe/CLAUDE.md). dev 서버는 `npm run dev`(:5173, vite proxy `/api → :8000`).
-
-## SSH 접속
-
 ```bash
-# <ec2-public-ip> 는 현재 인스턴스 퍼블릭 IP로 치환 (재시작 시 변할 수 있음)
-ssh -p 443 -i "키파일.pem" ec2-user@<ec2-public-ip>
-
-# 학교 네트워크 등에서 API 접속용 터널
-ssh -p 443 -i "키파일.pem" -L 8000:localhost:8000 ec2-user@<ec2-public-ip>
-# → 로컬 브라우저에서 http://localhost:8000/docs
+cd fe && npm run build && aws s3 sync dist/ s3://<fe-bucket>   # CloudFront
 ```
 
-> 평소 개발은 VSCode Remote-SSH(로컬 UI + EC2 실행). 셋업은 onboarding Step 0 참조.
-
-## 환경변수
-
-레포 루트 `.env` 에 적재(전체 키·코멘트는 [`.env.example`](../.env.example)). 최소 필수:
-
-- `AWS_REGION=us-east-1` — 지원 계정 자원(DDB·S3·Titan·KB)
-- `DYNAMO_TABLE` — 이 EC2(AI 계정)는 `kmuproj-10-clinic-Main`. (BE 계정 배포는 `kmuproj-02-team3-backend`)
-- `S3_CRAWL_BUCKET` — 자체사이트 본문 버킷 (계정별 `kmuproj-XX-...`)
-- `KB_ID=GTBJ6HLFDK` · `KB_DATA_SOURCE_ID=PLC6QYALDU` — 강사 제공 KB `kmuproj-team-03`
-- `HIRA_API_KEY` (공공데이터포털) · `KAKAO_REST_API_KEY` · `NAVER_MAP_CLIENT_ID/SECRET` (URL 보강·외부 시그널)
-- `AI_AWS_ACCESS_KEY_ID/SECRET_ACCESS_KEY/REGION` — 개인 계정 Sonnet 4.6 Vision 호출용 IAM User 키(서울 `ap-northeast-2`). onboarding Step 5 참조. (2026-06-01 쿼터 소진, 신규 호출 보류)
-- `VITE_KAKAO_MAP_KEY` — FE 카카오맵 JS 키
-
-> 검색 랭킹 튜닝용 `KB_MIN_SCORE`(기본 0.42)·`FOCUS_RANK_WPF/WFREQ/WCHUNK`·`RANK_MODE`는 기본값이
-> 운영값이라 평소 설정 불필요 — 의미는 [`../docs/architecture.md`](../docs/architecture.md) §5 참조.
-
 ## 관련 문서
-
-- [`../docs/setup/aws-onboarding.md`](../docs/setup/aws-onboarding.md) — 계정·자원 셋업(1회) 진입점
-- [`../docs/architecture.md`](../docs/architecture.md) — 데이터·분류·검색 아키텍처(주력 강도 랭킹 §5-1)
-- [`../docs/plans/task-queue.md`](../docs/plans/task-queue.md) — 남은 작업
-- [`../docs/API-FE-BE.md`](../docs/API-FE-BE.md) · [`../docs/API-BE-AI.md`](../docs/API-BE-AI.md) — 인터페이스 명세
+- [`../be/CLAUDE.md`](../be/CLAUDE.md) — DDB 스키마·엔드포인트
+- [`../docs/architecture.md`](../docs/architecture.md) — 데이터·분류·검색 (주력 강도 §5-1)
+- [`../docs/API-BE-AI.md`](../docs/API-BE-AI.md) — KB ingest/retrieve 함정·메타 스키마
+- [`../docs/known-issues.md`](../docs/known-issues.md) — 알려진 한계 (negation·thin-signal)
+- [`../CLAUDE.md`](../CLAUDE.md) — AWS 계정·인프라·권한 정책
