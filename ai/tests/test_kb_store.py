@@ -35,7 +35,6 @@ from shared.models import (
     SignalContributions,
 )
 from ai.search.kb_store import (
-    _enrich_with_synonyms,
     build_blog_chunk,
     build_ingest_metadata,
     build_reviews_chunk,
@@ -353,42 +352,12 @@ class TestBuildSignalChunks:
             assert text.strip(), f"{key} 시그널 텍스트가 비어있음"
 
 
-class TestSynonymEnrichment:
-    """문서-측 동의어 주입(_enrich_with_synonyms) — '사마귀≠심상성 우췌' 양방향 매칭."""
+class TestNoDocSideSynonymInjection:
+    """회귀 가드 — build_signal_chunks 는 동의어를 문서-측에 주입하지 않는다.
 
-    def test_reverse_injection_academic_to_common(self):
-        """본문에 학명만 있어도 일반어가 부착된다 (사용자가 '사마귀'로 검색 가능)."""
-        out = _enrich_with_synonyms("저희 의원은 심상성 우췌 냉동요법을 시행합니다.")
-        assert "사마귀" in out
-        assert "[관련 의학 용어]" in out
-
-    def test_forward_injection_common_to_academic(self):
-        """본문에 일반어가 있으면 학명·영문이 부착된다."""
-        out = _enrich_with_synonyms("사마귀 치료를 전문으로 합니다.")
-        assert "심상성 우췌" in out
-        assert "verruca" in out
-
-    def test_short_key_no_false_trigger(self):
-        """len<2 키(점·목·침·냉)는 부분문자열 오매칭을 일으키지 않는다."""
-        out = _enrich_with_synonyms("이 시점에 주목해 주세요. 목요일 일정 안내입니다.")
-        assert "[관련 의학 용어]" not in out
-
-    def test_no_match_returns_unchanged(self):
-        """의료 키워드가 없으면 원문 그대로 반환한다."""
-        text = "주차 가능하며 친절하게 안내해 드립니다."
-        assert _enrich_with_synonyms(text) == text
-
-    def test_empty_returns_empty(self):
-        assert _enrich_with_synonyms("") == ""
-
-    def test_no_duplicate_terms_added(self):
-        """이미 본문에 있는 표현은 중복 부착하지 않는다 (정확 일치 기준)."""
-        out = _enrich_with_synonyms("사마귀 심상성 우췌 둘 다 언급")
-        added = out.split("[관련 의학 용어]")[-1] if "[관련 의학 용어]" in out else ""
-        added_terms = [t.strip() for t in added.split(",")]
-        # 본문에 이미 있는 정확한 표현은 추가 목록에 없어야 (substring 인 "심상성 사마귀" 등은 허용)
-        assert "사마귀" not in added_terms
-        assert "심상성 우췌" not in added_terms
+    옛 _enrich_with_synonyms 제거: 트리거 단어 1회만으로 동의어 클러스터 전체를 청크에
+    박아 임베딩 변별력을 파괴했다(치과가 "M자 탈모" 0.708 1위). 동의어 갭은 쿼리-side
+    확장(process_query)으로만 메운다."""
 
     def test_build_signal_chunks_no_doc_side_injection(self):
         """build_signal_chunks 는 doc-side 동의어 주입을 하지 않는다 — 청크=진짜 내용.

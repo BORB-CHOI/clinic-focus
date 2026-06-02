@@ -172,9 +172,8 @@ def extract_medical_terms(normalized: str) -> list[str]:
     keywords = _all_medical_keywords()
 
     # 1글자 키(점·열·틱·혹·침·뜸 등)는 substring 으로 잡으면 더 긴 한글 단어에 오매칭한다
-    # (예: "눈이 침침하고"의 '침' → 한의원 오추론). 문서-side(_enrich_with_synonyms)엔 이미
-    # len>=2 가드가 있는데 쿼리-side 에만 빠져 있던 비대칭 버그 → 1글자 키는 **독립 토큰으로
-    # 등장할 때만** 매칭(어절경계). (예: "침 맞고 싶어"의 '침'은 잡고, "침침"의 '침'은 거름.)
+    # (예: "눈이 침침하고"의 '침' → 한의원 오추론) → 1글자 키는 **독립 토큰으로 등장할
+    # 때만** 매칭(어절경계). (예: "침 맞고 싶어"의 '침'은 잡고, "침침"의 '침'은 거름.)
     _tokens = set(normalized.split())
 
     found: list[tuple[int, str]] = []  # (position, keyword)

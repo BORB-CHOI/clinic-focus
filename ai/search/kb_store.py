@@ -439,56 +439,6 @@ def build_vision_chunk(
     return "\n".join(parts)
 
 
-# 한 청크에 부착할 동의어 최대 개수 — 임베딩 본문 비대 방지.
-_MAX_SYNONYM_ADDITIONS = 60
-
-# 동의어 클러스터 캐시 (dictionaries 에서 1회 로드).
-_SYNONYM_CLUSTERS: list[list[str]] | None = None
-
-
-def _enrich_with_synonyms(text: str) -> str:
-    """문서(병원 청크)에 동의어 클러스터를 부착해 임베딩 어휘를 **양방향** 확장한다.
-
-    문제: 병원 본문에 "심상성 우췌"로만 적혀 있으면 사용자가 "사마귀"로 검색해도
-    Titan v2 의 한국어 의학 동의어 갭(cos 0.25) 때문에 못 찾는다(쿼리 확장만으로는
-    쿼리에 트리거 단어가 정확히 있어야 작동 — 취약).
-
-    해결(설계 문서 트랙 A): 청크에 클러스터 멤버가 하나라도 있으면 나머지 멤버를
-    `[관련 의학 용어]` 줄로 덧붙인다. 그러면 본문이 어느 표현을 쓰든 임베딩이 일반어·
-    학명·영문·치료를 모두 담아 어느 방향 쿼리에도 매칭된다. 임베딩 전용(화면 미표시)
-    이라 §56 무관.
-
-    오매칭 방지: 길이 2 미만 멤버(점·목·침·냉)는 **트리거로 쓰지 않는다** — "시점"의
-    "점" 같은 부분문자열 사고 차단. 단 트리거된 클러스터의 짧은 멤버는 부착 대상에는
-    포함(임베딩 어휘 보강).
-    """
-    global _SYNONYM_CLUSTERS
-    if not text:
-        return text
-    if _SYNONYM_CLUSTERS is None:
-        from ai.search.dictionaries import build_synonym_clusters  # 순환·boto3 무관
-        _SYNONYM_CLUSTERS = build_synonym_clusters()
-
-    additions: list[str] = []
-    seen: set[str] = set()
-    for cluster in _SYNONYM_CLUSTERS:
-        # 트리거: len>=2 멤버가 본문에 등장해야 클러스터 활성 (짧은 키 오매칭 방지)
-        if not any(len(m) >= 2 and m in text for m in cluster):
-            continue
-        for m in cluster:
-            if m not in text and m not in seen:
-                seen.add(m)
-                additions.append(m)
-                if len(additions) >= _MAX_SYNONYM_ADDITIONS:
-                    break
-        if len(additions) >= _MAX_SYNONYM_ADDITIONS:
-            break
-
-    if not additions:
-        return text
-    return f"{text}\n[관련 의학 용어] {', '.join(additions)}"
-
-
 # ── 의료광고(§56) 표현 스크럽 — 임베딩 입력에서만 중화 ──────────────────
 # 청크는 화면 미표시(임베딩 전용)이라 §56 직접 위반은 아니나, 광고·과장 어휘가 임베딩에 섞이면
 # (1) 자칭 광고가 검색 노출 근거가 되고 (2) 후기·블로그의 과장·체험단성 어휘가 시그널을 부풀린다.
@@ -552,10 +502,9 @@ def build_signal_chunks(
     """모든 시그널 청크를 조립하여 비어있지 않은 것만 반환.
 
     각 인자는 dict 또는 대응 Pydantic 모델(KakaoPlace 등) 둘 다 받는다.
-    자칭·블로그 청크는 ``_enrich_with_synonyms`` 로 **문서-측 동의어 주입**해 임베딩
-    어휘를 양방향 확장한다.
-    reviews 청크는 키워드 빈도 + 후기 본문 원문을 포함한다. 청크 본문은
-    화면에 미표시(임베딩 전용)이므로 _enrich_with_synonyms 는 생략하지 않는다.
+    청크 본문은 화면 미표시(임베딩 전용)라 광고·과장 표현만 스크럽한다. **동의어는
+    문서-측에 주입하지 않는다** — 쿼리-side 확장(process_query)으로만 메운다(아래 주석 참조).
+    reviews 청크는 키워드 빈도 + 후기 본문 원문을 포함한다.
     vision 청크는 analyze_images() 결과가 있을 때만 추가된다(시연 10개 한정).
 
     Args:
