@@ -18,7 +18,7 @@
 
 > Bedrock KB(Retrieve / StartIngestionJob) · Titan Embed · Haiku/Nova 는 **지원 계정**(us-east-1) 자원으로 EC2 인스턴스
 > 프로파일로 자동 인증. Sonnet 4.6(Vision 시연용)만 **개인 계정**(서울 리전 `ap-northeast-2`) 자격증명으로 boto3
-> 클라이언트를 따로 생성한다. Global cross-region inference profile (`global.anthropic.claude-sonnet-4-6`)이라 IAM 정책에 3-ARN(inference-profile + regional FM + global FM) 필수. 자세한 건 `../CLAUDE.md`의 "AWS 계정·인프라 구조" + [`../docs/setup/aws-onboarding.md` Step 5](../docs/setup/aws-onboarding.md#step-5--개인-계정-sonnet-46-vision-연결-서울-리전-global-cross-region-inference) 참조.
+> 클라이언트를 따로 생성한다. Global cross-region inference profile (`global.anthropic.claude-sonnet-4-6`)이라 IAM 정책에 3-ARN(inference-profile + regional FM + global FM) 필수. 자세한 건 `../CLAUDE.md`의 "AWS 계정·인프라 구조" 참조.
 
 ## AI 트랙 3트랙 구조
 
@@ -48,7 +48,7 @@
 
 로컬 PC에서는 지원 계정 자원 직접 호출 불가 (Access Key 발급 안 됨, IAM Role만 제공). **워크플로**: 로컬 VSCode → Remote-SSH 확장으로 EC2 접속 → EC2 위에서 직접 편집·터미널·git·Claude Code 실행. UI만 로컬, 실행 컨텍스트는 전부 EC2. EC2 인스턴스 프로파일이 지원 계정 자원(Bedrock KB · Titan · DynamoDB · Haiku/Nova)을 자동 인증. 개인 계정 Sonnet 4.6(Vision)은 EC2 `~/.aws/credentials`에 named profile `personal`(region `ap-northeast-2`)로 저장 후 boto3 `Session(profile_name="personal")`로 호출.
 
-> 환경 세팅 단계별 가이드는 [`../docs/setup/aws-onboarding.md`](../docs/setup/aws-onboarding.md). 팀원 온보딩 또는 EC2 재발급 시 따라가면 됨.
+> 환경 세팅·기동·적재 명령은 [`../deploy/README.md`](../deploy/README.md). 팀원 온보딩 또는 EC2 재발급 시 따라가면 됨.
 
 > Cloud9 권한이 강사 계정에서 발급 안 된 상태라 EC2가 임시 대체 환경. Cloud9 권한 받으면 동일 워크플로(브라우저 IDE + 인스턴스 프로파일)를 Cloud9로 이전 가능.
 

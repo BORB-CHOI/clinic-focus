@@ -1016,7 +1016,7 @@ class FeedbackStats(BaseModel):
 
 > Bedrock KB(Retrieve/StartIngestionJob) · Titan Embed · Haiku/Nova 는 **지원 계정**(us-east-1) 자원으로 EC2 인스턴스
 > 프로파일로 자동 인증된다. **Sonnet 4.6(Vision 시연)만 개인 계정** (서울 리전 `ap-northeast-2`) 자격증명으로 boto3
-> 클라이언트를 따로 생성한다. 자세한 건 `../CLAUDE.md`의 "AWS 계정·인프라 구조" + [`setup/aws-onboarding.md` Step 5](setup/aws-onboarding.md#step-5--개인-계정-sonnet-46-vision-연결-서울-리전-global-cross-region-inference) 참조.
+> 클라이언트를 따로 생성한다. 자세한 건 `../CLAUDE.md`의 "AWS 계정·인프라 구조" 참조.
 
 ---
 

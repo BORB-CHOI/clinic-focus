@@ -76,7 +76,7 @@ RDS도 가용했지만 우리 access pattern과 워크로드가 DDB에 맞음:
 
 ### 스키마 — V2 single-table
 
-[`be/adapters/dynamo_adapter.py`](adapters/dynamo_adapter.py) 가 가정하는 구조. **테이블은 콘솔에서 수동 생성** (SafeRole 에 `dynamodb:CreateTable` 권한 없음 — 절차는 [`../docs/setup/aws-onboarding.md`](../docs/setup/aws-onboarding.md) Step 6).
+[`be/adapters/dynamo_adapter.py`](adapters/dynamo_adapter.py) 가 가정하는 구조. **테이블은 콘솔에서 수동 생성** (SafeRole 에 `dynamodb:CreateTable` 권한 없음). 스펙은 아래 표, 생성·기동 명령은 [`../deploy/README.md`](../deploy/README.md).
 
 ```
 PK = hospital_id (S)
