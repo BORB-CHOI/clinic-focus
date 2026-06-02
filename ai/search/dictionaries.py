@@ -7,10 +7,11 @@
 - 특정 케이스 하드코딩이 아니라 22 진료과 전반을 덮는 "대용량 지식사전" 으로 운영.
 - ``dictionaries.py`` 는 파싱·정규화·캐시만.
 
-소비처(단일 출처):
+소비처:
 - ``query_processor.py`` — **쿼리 측** 확장·진료과 추론 (사용자 입력 → 본문 매칭).
-- ``kb_store.py`` (``_enrich_with_synonyms``) — **문서 측** 주입. 병원 청크에 동의어
-  클러스터를 부착해 본문이 "심상성 우췌"라고만 적혀도 "사마귀" 쿼리에 매칭.
+  사전은 **사용자 쿼리만** 확장한다. 병원 청크(문서 측)에는 주입하지 않는다 — doc-side
+  주입은 트리거 단어 1회만으로 무관 진료과 동의어를 끌어들여 임베딩 변별력을 파괴해
+  제거됨(치과가 "M자 탈모" 1위 사고, 2026-05-31).
 
 마크다운 형식 (loader 가 이 규약을 파싱):
     ## 불용어
@@ -129,8 +130,3 @@ STOPWORDS: frozenset[str] = frozenset(_PARSED["stopwords"])
 SYNONYMS: dict[str, list[str]] = _PARSED["synonyms"]
 KEYWORD_TO_SPECIALTY: dict[str, list[str]] = _PARSED["keyword_to_specialty"]
 KEYWORD_TO_FOCUS: dict[str, list[str]] = _PARSED["keyword_to_focus"]
-
-
-def build_synonym_clusters() -> list[list[str]]:
-    """SYNONYMS 를 {키 + 값} 단위 클러스터 리스트로 변환 (문서-측 주입용 양방향 그룹)."""
-    return [[key, *values] for key, values in SYNONYMS.items()]
