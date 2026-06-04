@@ -26,6 +26,8 @@ interface UseKakaoMapOptions {
    *   별도 state 로만 쓰고 지도 center 로 피드백하지 말 것.
    */
   onIdle?: (center: { lat: number; lng: number }, radiusKm: number) => void;
+  /** 선택된 병원 ID — 해당 마커를 크게/강조 표시 */
+  selectedId?: string | null;
 }
 
 interface UseKakaoMapResult {
@@ -55,24 +57,25 @@ export function useKakaoMap({
   items,
   onMarkerClick,
   onIdle,
+  selectedId,
 }: UseKakaoMapOptions): UseKakaoMapResult {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapsApiRef = useRef<KakaoMapsApi | null>(null);
   const mapInstanceRef = useRef<KakaoMap | null>(null);
-  const markersRef = useRef<KakaoMarker[]>([]);
+  // hospital_id → { marker, item } — setImage 로 이미지만 교체하기 위해 item 보존
+  const markersRef = useRef<Map<string, { marker: KakaoMarker; item: SearchResultItem }>>(new Map());
 
   const [status, setStatus] = useState<UseKakaoMapResult["status"]>("idle");
   const [error, setError] = useState<string | null>(null);
 
   // 콜백을 ref 에 담아 effect 의존성에서 분리
   const onMarkerClickRef = useRef(onMarkerClick);
-  useEffect(() => {
-    onMarkerClickRef.current = onMarkerClick;
-  }, [onMarkerClick]);
+  useEffect(() => { onMarkerClickRef.current = onMarkerClick; }, [onMarkerClick]);
   const onIdleRef = useRef(onIdle);
-  useEffect(() => {
-    onIdleRef.current = onIdle;
-  }, [onIdle]);
+  useEffect(() => { onIdleRef.current = onIdle; }, [onIdle]);
+  // selectedId 도 ref 로 — 마커 초기 생성 시 current value 참조용
+  const selectedIdRef = useRef(selectedId);
+  useEffect(() => { selectedIdRef.current = selectedId; }, [selectedId]);
 
   // ─ SDK 로드 + 맵 생성 (마운트 시 1회) ─────────────────────────────
   useEffect(() => {
@@ -112,6 +115,10 @@ export function useKakaoMap({
 
     return () => {
       cancelled = true;
+      if (mapRef.current) mapRef.current.innerHTML = "";
+      markersRef.current.clear();
+      mapInstanceRef.current = null;
+      mapsApiRef.current = null;
     };
     // 맵 재생성 방지: center/level 변동은 무시(아래 effect·panTo 에서 처리).
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -131,24 +138,35 @@ export function useKakaoMap({
     const maps = mapsApiRef.current;
     if (!map || !maps || status !== "ready") return;
 
-    for (const m of markersRef.current) m.setMap(null);
-    markersRef.current = [];
+    markersRef.current.forEach(({ marker }) => marker.setMap(null));
+    markersRef.current.clear();
 
     for (const item of items) {
       const position = new maps.LatLng(item.location.lat, item.location.lng);
-      const image = buildMarkerImage(maps, item.confidence?.level);
+      const isSelected = selectedIdRef.current === item.hospital_id;
+      const image = buildMarkerImage(maps, item.confidence?.level, isSelected);
       const marker = new maps.Marker({ position, map, image, title: item.name });
       maps.event.addListener(marker, "click", () => {
         onMarkerClickRef.current?.(item.hospital_id);
       });
-      markersRef.current.push(marker);
+      markersRef.current.set(item.hospital_id, { marker, item });
     }
 
     return () => {
-      for (const m of markersRef.current) m.setMap(null);
-      markersRef.current = [];
+      markersRef.current.forEach(({ marker }) => marker.setMap(null));
+      markersRef.current.clear();
     };
   }, [items, status]);
+
+  // ─ 선택 마커 강조 (items 재생성 없이 이미지만 교체) ───────────────
+  useEffect(() => {
+    const maps = mapsApiRef.current;
+    if (!maps || status !== "ready") return;
+    markersRef.current.forEach(({ marker, item }) => {
+      const isSelected = item.hospital_id === selectedId;
+      marker.setImage(buildMarkerImage(maps, item.confidence?.level, isSelected));
+    });
+  }, [selectedId, status]);
 
   const panTo = (lat: number, lng: number) => {
     const map = mapInstanceRef.current;

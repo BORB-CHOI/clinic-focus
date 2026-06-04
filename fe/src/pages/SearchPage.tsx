@@ -3,6 +3,7 @@ import { ChevronLeft } from "lucide-react";
 
 import { CategoryGrid } from "@/components/search/CategoryGrid";
 import { EmptyState } from "@/components/common/EmptyState";
+import { WeatherBadge } from "@/components/analytics/WeatherBadge";
 import { HospitalCard } from "@/components/search/HospitalCard";
 import { HospitalCardSkeleton } from "@/components/search/HospitalCardSkeleton";
 import { Pagination } from "@/components/search/Pagination";
@@ -138,6 +139,10 @@ export default function SearchPage() {
           표준 진료과목 너머, 이 병원이 자기 사이트에서 무엇을 메인으로
           표시하는지를 보여줍니다.
         </p>
+      </div>
+
+      <div className="animate-in fade-in slide-in-from-top-1 duration-300 rounded-md border bg-muted/25 px-3 py-2">
+        <WeatherBadge />
       </div>
 
       {isEmergencyQuery(query) ? (

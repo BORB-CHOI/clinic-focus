@@ -34,6 +34,7 @@ export interface KakaoMap {
 export interface KakaoMarker {
   setMap(map: KakaoMap | null): void;
   getPosition(): KakaoLatLng;
+  setImage(image: KakaoMarkerImage): void;
 }
 
 export interface KakaoCircle {
@@ -45,6 +46,22 @@ export interface KakaoCircle {
 export interface KakaoMarkerImage {
   // SDK 내부 객체. 본 코드에선 직접 호출하지 않음
   readonly __brand: "MarkerImage";
+}
+
+// Kakao Places 검색 결과 한 건
+export interface KakaoPlaceResult {
+  place_name: string;
+  address_name: string;
+  x: string; // 경도(lng)
+  y: string; // 위도(lat)
+}
+
+export interface KakaoPlacesService {
+  keywordSearch(
+    query: string,
+    callback: (results: KakaoPlaceResult[], status: string) => void,
+    options?: { size?: number },
+  ): void;
 }
 
 // 본 PoC가 의존하는 SDK 면을 모은 namespace 타입
@@ -85,6 +102,11 @@ export interface KakaoMapsApi {
     ): void;
   };
   load(callback: () => void): void;
+  // libraries=services 로드 시 제공되는 하위 네임스페이스
+  services: {
+    Places: new () => KakaoPlacesService;
+    Status: { OK: string; ZERO_RESULT: string; ERROR: string };
+  };
 }
 
 // SDK가 window 에 붙이는 네임스페이스. 가장 바깥의 `kakao.maps` 만 사용
@@ -153,7 +175,7 @@ export function loadKakaoMaps(): Promise<KakaoMapsApi> {
     script.async = true;
     script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(
       KAKAO_MAP_KEY,
-    )}&autoload=false`;
+    )}&libraries=services&autoload=false`;
     script.addEventListener("load", onScriptReady, { once: true });
     script.addEventListener(
       "error",
@@ -170,6 +192,38 @@ export function loadKakaoMaps(): Promise<KakaoMapsApi> {
   return loadPromise;
 }
 
+// ── 장소 검색 (libraries=services) ──────────────────────────────────
+/**
+ * 키워드로 장소를 검색해 첫 번째 결과의 좌표를 반환.
+ * 위치 검색 입력 → 지도 이동 용도.
+ */
+export function searchPlace(
+  query: string,
+): Promise<{ lat: number; lng: number; name: string }> {
+  return loadKakaoMaps().then(
+    (maps) =>
+      new Promise((resolve, reject) => {
+        const ps = new maps.services.Places();
+        ps.keywordSearch(
+          query,
+          (results, status) => {
+            if (status === maps.services.Status.OK && results.length > 0) {
+              const r = results[0];
+              resolve({
+                lat: parseFloat(r.y),
+                lng: parseFloat(r.x),
+                name: r.place_name,
+              });
+            } else {
+              reject(new Error("장소를 찾을 수 없습니다"));
+            }
+          },
+          { size: 1 },
+        );
+      }),
+  );
+}
+
 // ── 신뢰도 색 마커 이미지 ────────────────────────────────────────────
 // Tailwind 토큰 confidence.{high,medium,low}.500 와 동일한 hue 를 SVG 에
 // 직접 박아 색상 정합성 유지 (모던 SaaS 톤: 에메랄드 + 앰버 + 슬레이트).
@@ -184,23 +238,28 @@ const CONFIDENCE_HEX: Record<ConfidenceLevel, string> = {
 
 const MARKER_W = 28;
 const MARKER_H = 36;
+const SELECTED_W = 40;
+const SELECTED_H = 52;
 
 export function buildMarkerImage(
   maps: KakaoMapsApi,
   level: ConfidenceLevel | null | undefined,
+  selected = false,
 ): KakaoMarkerImage {
-  // 미분류(null) 병원도 지도에 뜰 수 있다 → 슬레이트(정보 부족 색)로 폴백.
   const fill = CONFIDENCE_HEX[level ?? "정보 부족"];
-  // 위는 둥글고 아래는 뾰족한 핀 모양 + 가운데 흰 점
+  const w = selected ? SELECTED_W : MARKER_W;
+  const h = selected ? SELECTED_H : MARKER_H;
+  // selected 시: 외곽 흰 링 + 핀 크게 + 중앙 점 크게
   const svg = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 36" width="28" height="36">
-  <path d="M14 0 C6 0 0 6 0 14 C0 22 14 36 14 36 C14 36 28 22 28 14 C28 6 22 0 14 0 Z"
-        fill="${fill}" stroke="white" stroke-width="2"/>
-  <circle cx="14" cy="13" r="4.5" fill="white"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 36" width="${w}" height="${h}">
+  ${selected ? `<path d="M14 0 C6 0 0 6 0 14 C0 22 14 36 14 36 C14 36 28 22 28 14 C28 6 22 0 14 0 Z" fill="white" opacity="0.5"/>` : ""}
+  <path d="M14 2 C7 2 2 7 2 14 C2 21 14 34 14 34 C14 34 26 21 26 14 C26 7 21 2 14 2 Z"
+        fill="${fill}" stroke="white" stroke-width="${selected ? 2.5 : 1.5}"/>
+  <circle cx="14" cy="13" r="${selected ? 6 : 4.5}" fill="white"/>
 </svg>`.trim();
 
   const dataUri = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-  const size = new maps.Size(MARKER_W, MARKER_H);
-  const offset = new maps.Point(MARKER_W / 2, MARKER_H);
+  const size = new maps.Size(w, h);
+  const offset = new maps.Point(w / 2, h);
   return new maps.MarkerImage(dataUri, size, { offset });
 }
