@@ -1,4 +1,5 @@
 import { MapPin, Phone, ExternalLink, Calendar, Clock } from "lucide-react";
+import { trackAnalyticsSelect, trackAnalyticsClick } from "@/lib/events";
 
 import { Section } from "@/components/common/Section";
 import { Separator } from "@/components/ui/separator";
@@ -19,6 +20,9 @@ const APPT_LABEL: Record<AppointmentMethod, string> = {
 };
 
 interface BasicInfoSectionProps {
+  hospitalId: string;
+  hospitalName: string;
+  standardSpecialty: string;
   location: Location;
   operating_hours: OperatingHours | null;
   contact: Contact;
@@ -55,11 +59,15 @@ function isOpenNow(hours: OperatingHours, now = new Date()): boolean {
 //   - 핵심 행동(전화·홈페이지)을 큰 버튼 형태로 상단에
 //   - 주소·운영시간·예약 방법은 라벨 아이콘으로 위계 표시
 export function BasicInfoSection({
+  hospitalId,
+  hospitalName,
+  standardSpecialty,
   location,
   operating_hours,
   contact,
 }: BasicInfoSectionProps) {
   const openNow = operating_hours ? isOpenNow(operating_hours) : false;
+  const ctx = { hospitalId, hospitalName, standardSpecialty, sigungu: location.sigungu };
 
   return (
     <Section
@@ -91,6 +99,7 @@ export function BasicInfoSection({
       <div className="grid gap-2 sm:grid-cols-2">
         <a
           href={`tel:${contact.phone}`}
+          onClick={() => trackAnalyticsSelect(ctx, { lat: location.lat, lng: location.lng })}
           className="group flex items-center justify-between gap-3 rounded-md border border-primary/20 bg-primary/5 px-3 py-2.5 text-sm transition-colors hover:border-primary hover:bg-primary/10"
         >
           <span className="flex items-center gap-2">
@@ -106,6 +115,7 @@ export function BasicInfoSection({
             href={contact.homepage_url}
             target="_blank"
             rel="noreferrer"
+            onClick={() => trackAnalyticsClick(ctx, { lat: location.lat, lng: location.lng })}
             className="group flex items-center justify-between gap-3 rounded-md border bg-background px-3 py-2.5 text-sm transition-colors hover:border-primary/40 hover:bg-accent"
           >
             <span className="flex items-center gap-2">

@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Locate } from "lucide-react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { Locate, MapPin } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ConfidenceLegend } from "@/components/map/ConfidenceLegend";
@@ -8,7 +9,9 @@ import { EmptyState } from "@/components/common/EmptyState";
 import { WarningBanner } from "@/components/common/WarningBanner";
 import { useKakaoMap } from "@/hooks/useKakaoMap";
 import { useSearch } from "@/hooks/useSearch";
+import { trackClick, trackImpression, trackAnalyticsClick, trackAnalyticsImpression } from "@/lib/events";
 import { HAS_KAKAO_MAP_KEY } from "@/lib/env";
+import { searchPlace } from "@/lib/kakaoMap";
 import { cn } from "@/lib/utils";
 
 // 지도 검색 페이지 — 뷰포트(보이는 구역) 기반 검색.
@@ -23,27 +26,33 @@ const FALLBACK_CENTER = { lat: 37.4979, lng: 127.0276 };
 const MAX_RADIUS_KM = 30; // BE /api/search radius_km le=30 — 너무 줌아웃해도 캡
 
 export default function MapPage() {
+  const [searchParams] = useSearchParams();
+  const query = searchParams.get("q") ?? "";
+
   // 지도 중심(초기·GPS recenter 전용). idle 로부터 되먹이지 않는다.
   const [center, setCenter] = useState(FALLBACK_CENTER);
   // 실제 검색에 쓰는 영역 — 지도 idle 이 채운다. 초기값은 강남역 3km.
   const [searchArea, setSearchArea] = useState({
     lat: FALLBACK_CENTER.lat,
     lng: FALLBACK_CENTER.lng,
-    radiusKm: 3,
+    radiusKm: 4,  // level=6 초기 뷰포트에 맞춰 설정 (idle 이후 실제 bounds로 자동 갱신)
   });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [geoMessage, setGeoMessage] = useState<string | null>(null);
+  const [locationInput, setLocationInput] = useState("");
+  const [locationError, setLocationError] = useState<string | null>(null);
   const selectedCardRef = useRef<HTMLDivElement>(null);
 
-  // 보이는 구역 위치검색. 한 화면에 마커를 한 번에 깔아야 하므로 limit=100(BE 상한).
+  // 검색어 없을 때는 fetch 하지 않는다 — 전체 병원을 무작위로 뿌리지 않음
   const { data, isLoading } = useSearch({
-    q: "",
+    q: query,
     minConfidence: 0,
-    sort: "distance",
+    sort: query ? "relevance" : "distance",
     lat: searchArea.lat,
     lng: searchArea.lng,
     radius_km: searchArea.radiusKm,
     limit: 100,
+    enabled: query.length > 0,
   });
 
   const items = useMemo(() => data?.data ?? [], [data]);
@@ -63,11 +72,37 @@ export default function MapPage() {
     }
   }, [selectedItem]);
 
-  const { mapRef, status, error } = useKakaoMap({
+  // 검색 결과가 바뀔 때마다 노출된 병원 전체를 impression으로 기록
+  useEffect(() => {
+    visibleItems.forEach((item, i) => {
+      trackImpression(item.hospital_id, query || undefined, i);
+      trackAnalyticsImpression(
+        { hospitalId: item.hospital_id, hospitalName: item.name,
+          standardSpecialty: item.standard_specialty ?? item.etc_subcategory ?? "",
+          sigungu: item.location.sigungu },
+        { query: query || undefined, position: i },
+      );
+    });
+  }, [visibleItems]);
+
+  const { mapRef, status, error, panTo } = useKakaoMap({
     center,
+    level: 5,
     items: visibleItems,
-    onMarkerClick: setSelectedId,
-    // 지도 이동·줌 멈추면 보이는 구역으로 재검색 (center prop 에는 되먹이지 않음 = 루프 차단)
+    selectedId,
+    onMarkerClick: (id) => {
+      setSelectedId(id);
+      trackClick(id, query || undefined);
+      const item = visibleItems.find((h) => h.hospital_id === id);
+      if (item) {
+        trackAnalyticsClick(
+          { hospitalId: id, hospitalName: item.name,
+            standardSpecialty: item.standard_specialty ?? item.etc_subcategory ?? "",
+            sigungu: item.location.sigungu },
+          { query: query || undefined, lat: searchArea.lat, lng: searchArea.lng },
+        );
+      }
+    },
     onIdle: (c, radiusKm) =>
       setSearchArea({
         lat: c.lat,
@@ -75,6 +110,19 @@ export default function MapPage() {
         radiusKm: Math.min(Math.max(radiusKm, 0.3), MAX_RADIUS_KM),
       }),
   });
+
+  function handleLocationSearch(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const q = locationInput.trim();
+    if (!q) return;
+    setLocationError(null);
+    searchPlace(q)
+      .then(({ lat, lng, name }) => {
+        setCenter({ lat, lng });
+        setLocationInput(name); // 검색된 정식 장소명으로 교체 → 입력 확인 가능
+      })
+      .catch(() => setLocationError("장소를 찾을 수 없습니다 — 다른 이름으로 시도해보세요"));
+  }
 
   function handleRecenter() {
     if (!("geolocation" in navigator)) {
@@ -97,36 +145,54 @@ export default function MapPage() {
   return (
     <section className="space-y-3">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight">지도 검색</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          {query ? `"${query}" — 지도 검색` : "지도 검색"}
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          <strong>지도를 움직이거나 확대</strong>하면 그때 보이는 구역의 병원을 근거 등급 색
-          마커로 다시 표시합니다.
+          {query ? (
+            <>검색어를 유지한 채 <strong>지도를 움직이거나 확대</strong>하면 보이는 구역 안에서 다시 검색합니다.</>
+          ) : (
+            <><strong>지도를 움직이거나 확대</strong>하면 그때 보이는 구역의 병원을 근거 등급 색 마커로 다시 표시합니다.</>
+          )}
         </p>
       </header>
 
       {geoMessage ? <WarningBanner message={geoMessage} /> : null}
 
-      {/* 컨트롤 바 — 범례·결과 카운트·내위치 */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border bg-card p-3">
-        <ConfidenceLegend />
-
-        <div className="ml-auto flex items-center gap-3">
-          <span className="text-xs text-muted-foreground">
-            {isLoading ? (
-              <span className="animate-pulse">불러오는 중…</span>
-            ) : (
-              <>
-                <span className="text-base font-semibold text-foreground">
-                  {visibleItems.length}
-                </span>
-                <span className="ml-1">건</span>
-              </>
-            )}
-          </span>
-          <Button variant="outline" size="sm" onClick={handleRecenter}>
-            <Locate className="h-4 w-4" aria-hidden />
+      {/* 컨트롤 바 */}
+      <div className="space-y-2 rounded-lg border bg-card p-3">
+        {/* 위치 검색 */}
+        <form onSubmit={handleLocationSearch} className="flex gap-2">
+          <div className="relative flex-1">
+            <MapPin className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
+            <input
+              type="search"
+              value={locationInput}
+              onChange={(e) => { setLocationInput(e.target.value); setLocationError(null); }}
+              placeholder="위치 이동 (예: 홍대입구역, 수원역, 서울 마포구)"
+              className="h-8 w-full rounded-md border border-input bg-background py-1 pl-8 pr-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </div>
+          <Button type="submit" variant="outline" size="sm">이동</Button>
+          <Button type="button" variant="outline" size="sm" onClick={handleRecenter}>
+            <Locate className="h-3.5 w-3.5" aria-hidden />
             내 위치
           </Button>
+        </form>
+        {locationError ? <p className="text-xs text-destructive">{locationError}</p> : null}
+
+        {/* 범례·결과 카운트 */}
+        <div className="flex flex-wrap items-center gap-x-4">
+          <ConfidenceLegend />
+          {query ? (
+            <span className="ml-auto text-xs text-muted-foreground">
+              {isLoading ? (
+                <span className="animate-pulse">불러오는 중…</span>
+              ) : (
+                <><span className="font-semibold text-foreground">{visibleItems.length}</span>건</>
+              )}
+            </span>
+          ) : null}
         </div>
       </div>
 
@@ -171,15 +237,17 @@ export default function MapPage() {
             </h2>
             {selectedItem ? (
               <HospitalCard item={selectedItem} compact />
+            ) : !query ? (
+              <EmptyState message="위 검색창에 증상·시술을 입력하면 해당 병원을 지도에 표시합니다" />
             ) : visibleItems.length === 0 && !isLoading ? (
-              <EmptyState message="이 구역에 병원이 없습니다 — 지도를 옮기거나 확대해보세요" />
+              <EmptyState message="이 구역에 해당 병원이 없습니다 — 지도를 옮기거나 확대해보세요" />
             ) : (
               <EmptyState message="지도에서 마커를 클릭하면 카드가 여기에 표시됩니다" />
             )}
           </div>
 
-          {/* 보이는 구역 리스트 — 거리순. 키 유무와 무관하게 시연 가능하도록 항상 노출 */}
-          {visibleItems.length > 0 ? (
+          {/* 검색어 있을 때만 리스트 노출 */}
+          {query && visibleItems.length > 0 ? (
             <div className="space-y-2">
               <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 보이는 구역 (거리순)
@@ -202,6 +270,17 @@ export default function MapPage() {
                         selectedId === item.hospital_id &&
                           "ring-2 ring-primary ring-offset-1",
                       )}
+                      onClick={(h) => {
+                        setSelectedId(h.hospital_id);
+                        panTo(h.location.lat, h.location.lng);
+                        trackClick(h.hospital_id, query || undefined);
+                        trackAnalyticsClick(
+                          { hospitalId: h.hospital_id, hospitalName: h.name,
+                            standardSpecialty: h.standard_specialty ?? h.etc_subcategory ?? "",
+                            sigungu: h.location.sigungu },
+                          { query: query || undefined, lat: h.location.lat, lng: h.location.lng },
+                        );
+                      }}
                     />
                   </li>
                 ))}

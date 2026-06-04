@@ -4,6 +4,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import SearchPage from "@/pages/SearchPage";
 import HospitalDetailPage from "@/pages/HospitalDetailPage";
 import MapPage from "@/pages/MapPage";
+import InsightsPage from "@/pages/InsightsPage";
 
 // 라우팅을 글로벌 셸(AppShell)로 감싼다.
 // 셸은 헤더 + sticky 검색바 + 리스트/지도 토글 + 본문 컨테이너를 일괄 제공.
@@ -19,6 +20,7 @@ export default function App() {
           element={<HospitalDetailPage />}
         />
         <Route path="/map" element={<MapPage />} />
+        <Route path="/insights" element={<InsightsPage />} />
         <Route
           path="*"
           element={

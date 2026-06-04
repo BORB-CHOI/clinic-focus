@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { List, Map } from "lucide-react";
+import { BarChart3, List, Map } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -10,6 +10,7 @@ export function ViewModeToggle({ className }: { className?: string }) {
   const search = location.search; // ?q=... 보존
   const onSearch = location.pathname.startsWith("/search");
   const onMap = location.pathname.startsWith("/map");
+  const onInsights = location.pathname.startsWith("/insights");
 
   return (
     <nav
@@ -24,6 +25,9 @@ export function ViewModeToggle({ className }: { className?: string }) {
       </ToggleLink>
       <ToggleLink to={`/map${search}`} active={onMap} icon={<Map />}>
         지도
+      </ToggleLink>
+      <ToggleLink to="/insights" active={onInsights} icon={<BarChart3 />}>
+        인사이트
       </ToggleLink>
     </nav>
   );

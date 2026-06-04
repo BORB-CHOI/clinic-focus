@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 
 import { EmptyState } from "@/components/common/EmptyState";
@@ -13,6 +14,7 @@ import { RecentChangesSection } from "@/components/hospital/RecentChangesSection
 import { RelatedHospitalsSection } from "@/components/hospital/RelatedHospitalsSection";
 import { MetadataSection } from "@/components/hospital/MetadataSection";
 import { useHospitalDetail } from "@/hooks/useHospitalDetail";
+import { trackSelect, trackAnalyticsSelect } from "@/lib/events";
 
 // 병원 상세 페이지 — BE /api/hospitals/{id} 연동 (useHospitalDetail)
 //
@@ -29,6 +31,18 @@ type TabValue = (typeof TAB_ITEMS)[number]["value"];
 export default function HospitalDetailPage() {
   const { hospitalId } = useParams();
   const { data: hospital, isLoading, isError, error } = useHospitalDetail(hospitalId);
+
+  // 상세 페이지 진입 = select 이벤트 (가장 강한 전환 신호)
+  useEffect(() => {
+    if (!hospital) return;
+    trackSelect(hospital.hospital_id);
+    trackAnalyticsSelect(
+      { hospitalId: hospital.hospital_id, hospitalName: hospital.name,
+        standardSpecialty: hospital.standard_specialty,
+        sigungu: hospital.location.sigungu },
+      { lat: hospital.location.lat, lng: hospital.location.lng },
+    );
+  }, [hospital?.hospital_id]);
 
   if (isLoading) {
     return (
@@ -86,6 +100,9 @@ export default function HospitalDetailPage() {
                 thumbnail_url={hospital.thumbnail_url}
               />
               <BasicInfoSection
+                hospitalId={hospital.hospital_id}
+                hospitalName={hospital.name}
+                standardSpecialty={hospital.standard_specialty}
                 location={hospital.location}
                 operating_hours={hospital.operating_hours}
                 contact={hospital.contact}

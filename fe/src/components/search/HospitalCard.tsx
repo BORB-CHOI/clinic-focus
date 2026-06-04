@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { MapPin } from "lucide-react";
+import { trackAnalyticsClick } from "@/lib/events";
 
 import { Badge } from "@/components/ui/badge";
 import { ConfidenceBadge } from "@/components/common/ConfidenceBadge";
@@ -15,6 +16,11 @@ interface HospitalCardProps {
    */
   compact?: boolean;
   className?: string;
+  /**
+   * 제공 시 Link 기본 페이지 이동 대신 이 핸들러를 호출한다.
+   * 지도 페이지에서 카드 클릭 → 지도 이동 용도.
+   */
+  onClick?: (item: SearchResultItem) => void;
 }
 
 // 검색 결과 카드 — 정보 위계
@@ -34,6 +40,7 @@ export function HospitalCard({
   item,
   compact = false,
   className,
+  onClick,
 }: HospitalCardProps) {
   // 미분류(confidence=null) 병원도 카테고리·지도엔 노출된다 → null 안전 처리.
   const isLowConfidence = !item.confidence || item.confidence.level === "정보 부족";
@@ -42,6 +49,18 @@ export function HospitalCard({
     <Link
       to={`/hospitals/${item.hospital_id}`}
       aria-label={`${item.name} 상세 페이지로 이동`}
+      onClick={onClick
+        ? (e) => { e.preventDefault(); onClick(item); }
+        : () => {
+            // 병원 좌표를 날씨 조회에 활용 (GPS 권한 불필요)
+            trackAnalyticsClick(
+              { hospitalId: item.hospital_id, hospitalName: item.name,
+                standardSpecialty: item.standard_specialty ?? item.etc_subcategory ?? "",
+                sigungu: item.location.sigungu },
+              { lat: item.location.lat, lng: item.location.lng },
+            );
+          }
+      }
       className={cn(
         // 카드 내부 본문 사이즈는 컨테이너 폭에 맞춰 분기:
         //   - 일반(검색 페이지 max-w-screen-md): 0.8em

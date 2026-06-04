@@ -30,20 +30,31 @@ export function FeedbackSection({
 
   function handleSubmit(verdict: "agree" | "disagree") {
     if (submitted) return;
-    // TODO(api): POST /api/feedback (device_id, hospital_id, primary_focus, verdict)
-    // 409 DUPLICATE_FEEDBACK 처리 포함. 지금은 낙관적 업데이트만.
-    void getDeviceId();
-    void hospitalId;
 
+    // 낙관적 업데이트 — 응답 기다리지 않고 UI 즉시 반영
     const next = { ...stats };
     next.total_count += 1;
     if (verdict === "agree") next.agree_count += 1;
     else next.disagree_count += 1;
     next.agree_ratio = next.agree_count / next.total_count;
     next.last_feedback_at = new Date().toISOString();
-
     setStats(next);
     setSubmitted(verdict);
+
+    // BE POST /api/feedback — fire-and-forget
+    const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
+    fetch(`${API_BASE}/api/feedback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        hospital_id:   hospitalId,
+        device_id:     getDeviceId(),
+        primary_focus: primary_focus[0] ?? "",
+        verdict,
+      }),
+    }).catch(() => {
+      // 전송 실패 무시 — 이미 낙관적 업데이트 완료
+    });
   }
 
   return (

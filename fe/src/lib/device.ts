@@ -3,10 +3,18 @@
 
 const DEVICE_ID_KEY = "app_device_id";
 
+function createDeviceId(): string {
+  if (globalThis.crypto?.randomUUID) {
+    return "d_" + globalThis.crypto.randomUUID();
+  }
+
+  return `d_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
+}
+
 export function getDeviceId(): string {
   let id = localStorage.getItem(DEVICE_ID_KEY);
   if (!id) {
-    id = "d_" + crypto.randomUUID();
+    id = createDeviceId();
     localStorage.setItem(DEVICE_ID_KEY, id);
   }
   return id;
