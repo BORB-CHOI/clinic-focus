@@ -3,13 +3,21 @@ import { Link } from "react-router-dom";
 import { TrendingUp } from "lucide-react";
 import { apiGet } from "@/lib/api";
 
-interface SpecialtyRow {
+interface SegmentRow {
   label: string;
   count: number;
 }
 
+interface SeasonRow {
+  label: string;
+  count: number;
+  segments: SegmentRow[];
+}
+
 interface InsightsData {
-  specialty_by_season: SpecialtyRow[] | null;
+  charts: {
+    specialty_by_season: SeasonRow[];
+  };
   current_season: string;
 }
 
@@ -20,8 +28,9 @@ const SEASON_LABEL: Record<string, string> = {
   winter: "겨울",
 };
 
-// browse 홈 — 현재 계절에 많이 찾은 진료과목 상위 칩 표시.
-// Analytics 인사이트 기반. 데이터 미충족(k-anonymity < 5)이면 섹션 숨김.
+// browse 홈 — Analytics HEALTH_STATS 기반 현재 계절 인기 진료과목 표시.
+// specialty_by_season 에서 current_season 에 해당하는 row의 segments를 칩으로 노출.
+// k-anonymity 미충족 or 데이터 없으면 자동 숨김.
 export function TrendingSection() {
   const { data, isLoading } = useQuery<{ data: InsightsData }>({
     queryKey: ["analytics-insights-trending"],
@@ -33,9 +42,12 @@ export function TrendingSection() {
 
   if (isLoading) return null;
 
-  const rows = data?.data?.specialty_by_season ?? [];
   const season = data?.data?.current_season ?? "";
-  const top = rows.slice(0, 5);
+  const bySeasonRows = data?.data?.charts?.specialty_by_season ?? [];
+
+  // 현재 계절 row 찾기 → segments(진료과) 추출
+  const currentRow = bySeasonRows.find((r) => r.label === season);
+  const top = currentRow?.segments?.slice(0, 5) ?? [];
 
   if (top.length === 0) return null;
 
