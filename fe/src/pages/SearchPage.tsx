@@ -3,7 +3,7 @@ import { ChevronLeft } from "lucide-react";
 
 import { CategoryGrid } from "@/components/search/CategoryGrid";
 import { EmptyState } from "@/components/common/EmptyState";
-import { TrendingSection } from "@/components/analytics/TrendingSection";
+import { RecommendSection } from "@/components/analytics/RecommendSection";
 import { WeatherBadge } from "@/components/analytics/WeatherBadge";
 import { HospitalCard } from "@/components/search/HospitalCard";
 import { HospitalCardSkeleton } from "@/components/search/HospitalCardSkeleton";
@@ -163,7 +163,7 @@ export default function SearchPage() {
       {isBrowse ? (
         /* ── 둘러보기: 트렌딩 + 진료과목 그리드 랜딩 ── */
         <div className="space-y-5">
-          <TrendingSection />
+          <RecommendSection />
           <div className="flex items-baseline justify-between">
             <h2 className="text-base font-semibold tracking-tight">
               진료과목으로 둘러보기
