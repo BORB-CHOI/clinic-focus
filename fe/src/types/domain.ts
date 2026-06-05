@@ -224,7 +224,7 @@ export interface HospitalDetail {
 // (상세 페이지 응답과 다른 엔드포인트라 별도 타입으로 분리)
 
 export type SearchMode = "natural" | "nearby" | "natural+nearby" | "category";
-export type SortOption = "distance" | "confidence" | "relevance";
+export type SortOption = "distance" | "confidence" | "relevance" | "popular";
 
 // ── 진료과목 (GET /api/specialties) ─────────────────────────────────────
 export interface Specialty {
@@ -248,6 +248,8 @@ export interface SearchResultItem {
   /** 표시용 파생 카테고리 — '기타'면 primary_focus 로 도출(미용/모발·탈모/통증·근골격…). */
   etc_subcategory?: string;
   primary_focus: string[];
+  /** NL 검색 시 쿼리와 매칭된 주력 분야 키워드 */
+  matched_focus: string[];
   /** 분류 전(미분류) 병원은 null — 카테고리·지도엔 노출되나 신뢰도/근거 없음 */
   confidence: Confidence | null;
   /** 위경도 검색일 때만 채워짐 */
@@ -257,6 +259,10 @@ export interface SearchResultItem {
   one_line_summary: string;
   /** 병원 대표 이미지 URL. 카드 좌측 썸네일에서 사용. null 이면 플레이스홀더 */
   thumbnail_url: string | null;
+  /** 클릭률 (clicks / impressions). compute_event_scores.py 집계 기준 */
+  ctr: number;
+  /** 누적 클릭 수 */
+  click_count: number;
 }
 
 export interface SearchMeta {

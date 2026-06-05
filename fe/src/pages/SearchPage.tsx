@@ -3,6 +3,7 @@ import { ChevronLeft } from "lucide-react";
 
 import { CategoryGrid } from "@/components/search/CategoryGrid";
 import { EmptyState } from "@/components/common/EmptyState";
+import { TrendingSection } from "@/components/analytics/TrendingSection";
 import { WeatherBadge } from "@/components/analytics/WeatherBadge";
 import { HospitalCard } from "@/components/search/HospitalCard";
 import { HospitalCardSkeleton } from "@/components/search/HospitalCardSkeleton";
@@ -30,7 +31,7 @@ const SEARCH_MODE_LABEL: Record<string, string> = {
   category: "카테고리",
 };
 
-const VALID_SORTS: SortOption[] = ["distance", "confidence", "relevance"];
+const VALID_SORTS: SortOption[] = ["distance", "confidence", "relevance", "popular"];
 
 export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -160,8 +161,9 @@ export default function SearchPage() {
       ) : null}
 
       {isBrowse ? (
-        /* ── 둘러보기: 진료과목 그리드 랜딩 ── */
-        <div className="space-y-3">
+        /* ── 둘러보기: 트렌딩 + 진료과목 그리드 랜딩 ── */
+        <div className="space-y-5">
+          <TrendingSection />
           <div className="flex items-baseline justify-between">
             <h2 className="text-base font-semibold tracking-tight">
               진료과목으로 둘러보기
