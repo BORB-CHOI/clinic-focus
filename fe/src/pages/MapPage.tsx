@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { Sparkles } from "lucide-react";
 
 import { ConfidenceLegend } from "@/components/map/ConfidenceLegend";
+import { HelpGuide } from "@/components/common/HelpGuide";
 import { HospitalCard } from "@/components/search/HospitalCard";
 import { EmptyState } from "@/components/common/EmptyState";
 import { WarningBanner } from "@/components/common/WarningBanner";
 import { useKakaoMap } from "@/hooks/useKakaoMap";
 import { useSearch } from "@/hooks/useSearch";
+import { useRecommendedHospitals } from "@/hooks/useRecommendedHospitals";
 import { trackClick, trackImpression, trackAnalyticsClick, trackAnalyticsImpression } from "@/lib/events";
 import { HAS_KAKAO_MAP_KEY } from "@/lib/env";
 import { useLocationStore } from "@/lib/locationContext";
@@ -29,7 +32,7 @@ export default function MapPage() {
   const query = searchParams.get("q") ?? "";
 
   // 지도 중심·GPS 안내는 전역 위치 상태에서. idle 로부터 되먹이지 않는다.
-  const { center, message: geoMessage } = useLocationStore();
+  const { center, hasLocation, message: geoMessage } = useLocationStore();
   // 실제 검색에 쓰는 영역 — 지도 idle 이 채운다. 초기값은 center 기준 4km.
   const [searchArea, setSearchArea] = useState({
     lat: center.lat,
@@ -51,15 +54,22 @@ export default function MapPage() {
     enabled: query.length > 0,
   });
 
+  // 검색어 없을 때 보여줄 맞춤 추천 병원
+  const { hospitals: recommendedHospitals, cohortLabel, reasonText, contextReason, isLoading: isRecommendLoading } =
+    useRecommendedHospitals();
+
   const items = useMemo(() => data?.data ?? [], [data]);
   const visibleItems = useMemo(
     () => [...items].sort((a, b) => (a.distance_km ?? 0) - (b.distance_km ?? 0)),
     [items],
   );
 
+  // 검색어 없으면 추천 병원을 지도 마커로 사용
+  const mapItems = query ? visibleItems : recommendedHospitals;
+
   const selectedItem = useMemo(
-    () => visibleItems.find((item) => item.hospital_id === selectedId) ?? null,
-    [selectedId, visibleItems],
+    () => mapItems.find((item) => item.hospital_id === selectedId) ?? null,
+    [selectedId, mapItems],
   );
 
   useEffect(() => {
@@ -81,15 +91,19 @@ export default function MapPage() {
     });
   }, [visibleItems]);
 
+  // 4번: 추천 1순위 병원으로 지도 최초 이동
+  const hasPannedRef = useRef(false);
+
   const { mapRef, status, error, panTo } = useKakaoMap({
     center,
     level: 5,
-    items: visibleItems,
+    items: mapItems,
     selectedId,
+    userLocation: hasLocation ? center : null,
     onMarkerClick: (id) => {
       setSelectedId(id);
       trackClick(id, query || undefined);
-      const item = visibleItems.find((h) => h.hospital_id === id);
+      const item = mapItems.find((h) => h.hospital_id === id);
       if (item) {
         trackAnalyticsClick(
           { hospitalId: id, hospitalName: item.name,
@@ -107,19 +121,40 @@ export default function MapPage() {
       }),
   });
 
+  // 4번: 검색어 없을 때 추천 1순위 병원으로 최초 1회 이동
+  useEffect(() => {
+    if (!query && status === "ready" && recommendedHospitals.length > 0 && !hasPannedRef.current) {
+      hasPannedRef.current = true;
+      const top = recommendedHospitals[0];
+      panTo(top.location.lat, top.location.lng);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, status, recommendedHospitals]);
+
   return (
     <section className="space-y-3">
-      <header>
-        <h1 className="text-2xl font-bold tracking-tight">
-          {query ? `"${query}" — 지도 검색` : "지도 검색"}
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {query ? (
-            <>검색어를 유지한 채 <strong>지도를 움직이거나 확대</strong>하면 보이는 구역 안에서 다시 검색합니다.</>
-          ) : (
-            <><strong>지도를 움직이거나 확대</strong>하면 그때 보이는 구역의 병원을 근거 등급 색 마커로 다시 표시합니다.</>
-          )}
-        </p>
+      <header className="flex items-start justify-between gap-2">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {query ? `"${query}" — 지도 검색` : "지도 검색"}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {query ? (
+              <>검색어를 유지한 채 <strong>지도를 움직이거나 확대</strong>하면 보이는 구역 안에서 다시 검색합니다.</>
+            ) : (
+              <><strong>지도를 움직이거나 확대</strong>하면 그때 보이는 구역의 병원을 근거 등급 색 마커로 다시 표시합니다.</>
+            )}
+          </p>
+        </div>
+        <HelpGuide
+          align="right"
+          steps={[
+            { icon: "👤", label: "프로필 설정", text: "오른쪽 상단 버튼에서 나이·성별을 입력하면 지도에서 내 연령대 맞춤 병원 마커를 바로 볼 수 있어요." },
+            { icon: "📍", label: "내 위치", text: "상단 검색창에 주소·지하철역을 입력하면 그 주변으로 지도가 이동해요." },
+            { icon: "🔍", label: "증상·시술 검색", text: "검색창에 \"무릎 통증\" 처럼 입력하면 지도에 해당 주력 병원 마커가 표시돼요." },
+            { icon: "🏥", label: "마커 클릭", text: "마커를 클릭하면 사이드에 카드가 나타나요. 색상으로 신뢰도(초록=확실/노랑=추정/회색=정보 부족)를 확인하세요." },
+          ]}
+        />
       </header>
 
       {geoMessage ? <WarningBanner message={geoMessage} /> : null}
@@ -149,6 +184,7 @@ export default function MapPage() {
                 ref={mapRef}
                 role="region"
                 aria-label="병원 지도"
+                style={{ touchAction: "none" }}
                 className="h-[560px] w-full overflow-hidden rounded-lg border bg-muted shadow-sm"
               />
               {status === "loading" ? (
@@ -181,14 +217,70 @@ export default function MapPage() {
             </h2>
             {selectedItem ? (
               <HospitalCard item={selectedItem} compact />
-            ) : !query ? (
-              <EmptyState message="위 검색창에 증상·시술을 입력하면 해당 병원을 지도에 표시합니다" />
+            ) : !query && visibleItems.length === 0 && !isLoading ? (
+              <EmptyState message="지도에서 추천 마커를 클릭하면 카드가 여기에 표시됩니다" />
             ) : visibleItems.length === 0 && !isLoading ? (
               <EmptyState message="이 구역에 해당 병원이 없습니다 — 지도를 옮기거나 확대해보세요" />
             ) : (
               <EmptyState message="지도에서 마커를 클릭하면 카드가 여기에 표시됩니다" />
             )}
           </div>
+
+          {/* 검색어 없을 때: 맞춤 추천 */}
+          {!query && (
+            <div className="space-y-3 rounded-lg border bg-card p-4 shadow-sm">
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="h-4 w-4 text-primary" aria-hidden />
+                <h3 className="text-sm font-semibold tracking-tight">
+                  {isRecommendLoading ? (
+                    <span className="animate-pulse text-muted-foreground">추천 불러오는 중…</span>
+                  ) : (
+                    cohortLabel ?? "맞춤 추천"
+                  )}
+                </h3>
+              </div>
+              {reasonText && (
+                <p className="text-xs text-muted-foreground">{reasonText}</p>
+              )}
+              {contextReason && (
+                <p className="text-xs text-muted-foreground/80 border-l-2 border-primary/30 pl-2">{contextReason}</p>
+              )}
+              {recommendedHospitals.length > 0 ? (
+                <ul className="space-y-2">
+                  {recommendedHospitals.map((item, i) => (
+                    <li
+                      key={item.hospital_id}
+                      className="animate-in fade-in slide-in-from-bottom-1 fill-mode-both duration-300"
+                      style={{ animationDelay: `${i * 60}ms` }}
+                    >
+                      <HospitalCard
+                        item={item}
+                        compact
+                        className={cn(
+                          "transition-shadow",
+                          selectedId === item.hospital_id &&
+                            "ring-2 ring-primary ring-offset-1",
+                        )}
+                        onClick={(h) => {
+                          setSelectedId(h.hospital_id);
+                          panTo(h.location.lat, h.location.lng);
+                          trackClick(h.hospital_id, undefined);
+                          trackAnalyticsClick(
+                            { hospitalId: h.hospital_id, hospitalName: h.name,
+                              standardSpecialty: h.standard_specialty ?? h.etc_subcategory ?? "",
+                              sigungu: h.location.sigungu },
+                            { query: undefined, lat: h.location.lat, lng: h.location.lng },
+                          );
+                        }}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              ) : !isRecommendLoading ? (
+                <EmptyState message="추천 병원을 불러올 수 없습니다" />
+              ) : null}
+            </div>
+          )}
 
           {/* 검색어 있을 때만 리스트 노출 */}
           {query && visibleItems.length > 0 ? (
@@ -233,6 +325,7 @@ export default function MapPage() {
           ) : null}
         </aside>
       </div>
+
     </section>
   );
 }

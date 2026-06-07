@@ -83,13 +83,13 @@ export function WeatherBadge({ lat = DEFAULT_LAT, lng = DEFAULT_LNG, compact = f
     const humid = HUMIDITY_MAP[w.humidity_bucket] ?? HUMIDITY_MAP.unknown;
 
     return (
-      <div className="hidden items-center gap-2 whitespace-nowrap text-xs sm:flex">
+      <div className="flex items-center gap-2 whitespace-nowrap text-xs">
         <span className="hidden text-muted-foreground/40 lg:inline" aria-hidden>|</span>
         <span className="hidden text-muted-foreground lg:inline">오늘의 날씨</span>
-        {/* 온도 — 태블릿부터 이모지+숫자 노출 */}
+        {/* 온도 — 모바일 이모지만, sm+ 숫자도 노출 */}
         <span className="flex items-center gap-0.5 font-medium text-foreground">
           <span aria-hidden>{temp.emoji}</span>
-          <span>{formatNumber(w.temp_c, "°C") ?? temp.label}</span>
+          <span className="hidden sm:inline">{formatNumber(w.temp_c, "°C") ?? temp.label}</span>
         </span>
         {/* 습도·미세먼지 — 데스크톱(lg)부터만 */}
         <span className="hidden items-center gap-0.5 text-muted-foreground lg:flex">
@@ -130,8 +130,8 @@ export function WeatherBadge({ lat = DEFAULT_LAT, lng = DEFAULT_LNG, compact = f
   const pm25     = PM25_MAP[w.pm25_bucket]         ?? PM25_MAP.unknown;
 
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-      <span className="flex items-center gap-1 font-medium text-foreground">
+    <div className="flex items-center gap-x-3 text-xs overflow-x-auto">
+      <span className="flex items-center gap-1 font-medium text-foreground shrink-0">
         <span aria-hidden>{w.is_raining ? "☔" : temp.emoji}</span>
         {formatNumber(w.temp_c, "°C") ?? temp.label}
         {w.feels_like_c != null && (
@@ -140,22 +140,22 @@ export function WeatherBadge({ lat = DEFAULT_LAT, lng = DEFAULT_LNG, compact = f
           </span>
         )}
       </span>
-      <span className="text-border" aria-hidden>│</span>
-      <span className="flex items-center gap-1 text-muted-foreground">
+      <span className="text-border shrink-0" aria-hidden>│</span>
+      <span className="flex shrink-0 items-center gap-1 text-muted-foreground">
         <span aria-hidden>{humidity.emoji}</span>습도 {formatNumber(w.humidity_pct, "%") ?? humidity.label}
       </span>
-      <span className="text-border" aria-hidden>│</span>
-      <span className={`flex items-center gap-1 ${pm25.color}`}>
+      <span className="text-border shrink-0" aria-hidden>│</span>
+      <span className={`flex shrink-0 items-center gap-1 ${pm25.color}`}>
         <span aria-hidden>{pm25.emoji}</span>초미세 {pm25.label}
         {w.pm25_value != null && (
           <span className="font-normal opacity-60">({formatNumber(w.pm25_value, "㎍/m³")})</span>
         )}
       </span>
-      <span className="text-border" aria-hidden>│</span>
-      <span className="flex items-center gap-1 text-muted-foreground/50">
+      <span className="text-border shrink-0" aria-hidden>│</span>
+      <span className="flex shrink-0 items-center gap-1 text-muted-foreground/50">
         <span aria-hidden>📊</span>일교차 {formatNumber(w.temp_diff_c, "°C") ?? "—"}
       </span>
-      <span className="ml-auto text-[10px] text-muted-foreground/40">실시간</span>
+      <span className="text-[10px] text-muted-foreground/40 shrink-0">실시간</span>
     </div>
   );
 }

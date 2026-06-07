@@ -64,16 +64,11 @@ export default function HospitalDetailPage() {
 
   return (
     <div className="space-y-4">
-      <header className="flex flex-wrap items-baseline justify-between gap-2">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{hospital.name}</h1>
-          <p className="text-sm text-muted-foreground">
-            {hospital.location.sigungu} · {hospital.standard_specialty}
-          </p>
-        </div>
-        <span className="text-xs text-muted-foreground">
-          ID: <code>{hospital.hospital_id}</code>
-        </span>
+      <header>
+        <h1 className="text-3xl font-bold tracking-tight">{hospital.name}</h1>
+        <p className="text-sm text-muted-foreground">
+          {hospital.location.sigungu} · {hospital.standard_specialty}
+        </p>
       </header>
 
       {hospital.metadata.warning ? (

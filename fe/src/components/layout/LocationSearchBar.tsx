@@ -40,9 +40,9 @@ export function LocationSearchBar({ className }: { className?: string }) {
             type="search"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="위치 이동 (예: 홍대입구역)"
+            placeholder="내 위치 (예: 홍대입구역)"
             aria-label="지도 위치 검색"
-            className="h-8 w-28 rounded-full border border-input bg-background py-1 pl-7 pr-3 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:w-44"
+            className="h-8 w-20 rounded-full border border-input bg-background py-1 pl-7 pr-3 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-28 lg:w-44"
           />
         </div>
         <Button

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { UserRound } from "lucide-react";
 
 import { HealthProfileModal } from "@/components/analytics/HealthProfileModal";
@@ -15,10 +15,6 @@ interface HeaderProps {
 export function Header({ className }: HeaderProps) {
   const [profileOpen, setProfileOpen] = useState(false);
   const hasProfile = hasHealthProfile();
-  const location = useLocation();
-  // 위치 검색은 지도에서만 의미가 있다 → 지도 페이지에서만 헤더에 노출.
-  // 리스트(/search)·상세·인사이트에선 숨긴다.
-  const showLocationBar = location.pathname.startsWith("/map");
 
   return (
     <>
@@ -66,19 +62,11 @@ export function Header({ className }: HeaderProps) {
             >
               <UserRound className="h-3.5 w-3.5 shrink-0" aria-hidden />
               {hasProfile ? (
-                showLocationBar ? (
-                  // 지도: 모바일 아이콘만 / 태블릿 "내 정보" / 데스크톱 "내 정보 수정"
-                  <span className="hidden sm:inline">
-                    내 정보<span className="hidden lg:inline"> 수정</span>
-                  </span>
-                ) : (
-                  // 위치바 없는 화면: 여유 있으니 모바일부터 풀 라벨
-                  <span className="inline">내 정보 수정</span>
-                )
-              ) : (
-                <span className={cn(showLocationBar ? "hidden sm:inline" : "inline")}>
-                  내 정보
+                <span className="hidden sm:inline">
+                  내 정보<span className="hidden lg:inline"> 수정</span>
                 </span>
+              ) : (
+                <span className="hidden sm:inline">내 정보</span>
               )}
               {/* 미입력 시 주의 점 */}
               {!hasProfile && (
@@ -86,7 +74,7 @@ export function Header({ className }: HeaderProps) {
               )}
             </button>
 
-            {showLocationBar ? <LocationSearchBar /> : null}
+            <LocationSearchBar />
 
             <WeatherBadge compact />
           </div>

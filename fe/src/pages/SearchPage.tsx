@@ -1,10 +1,11 @@
 import { useSearchParams } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 
+import { HelpGuide } from "@/components/common/HelpGuide";
+
 import { CategoryGrid } from "@/components/search/CategoryGrid";
 import { EmptyState } from "@/components/common/EmptyState";
 import { RecommendSection } from "@/components/analytics/RecommendSection";
-import { WeatherBadge } from "@/components/analytics/WeatherBadge";
 import { AdCard } from "@/components/search/AdCard";
 import { HospitalCard } from "@/components/search/HospitalCard";
 import { HospitalCardSkeleton } from "@/components/search/HospitalCardSkeleton";
@@ -144,15 +145,24 @@ export default function SearchPage() {
   return (
     <section className="space-y-5">
       <div className="animate-in fade-in slide-in-from-top-1 duration-300">
-        <h1 className="text-2xl font-bold tracking-tight">병원 검색</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          표준 진료과목 너머, 이 병원이 자기 사이트에서 무엇을 메인으로
-          표시하는지를 보여줍니다.
-        </p>
-      </div>
-
-      <div className="animate-in fade-in slide-in-from-top-1 duration-300 rounded-md border bg-muted/25 px-3 py-2">
-        <WeatherBadge />
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">병원 검색</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              표준 진료과목 너머, 이 병원이 자기 사이트에서 무엇을 메인으로
+              표시하는지를 보여줍니다.
+            </p>
+          </div>
+          <HelpGuide
+            align="right"
+            steps={[
+              { icon: "👤", label: "프로필 설정", text: "오른쪽 상단 버튼에서 나이·성별을 입력하면 내 연령대 맞춤 병원을 추천해 드려요." },
+              { icon: "📍", label: "내 위치", text: "상단 검색창에 내 위치를 입력하면 가까운 병원 순서로 볼 수 있어요." },
+              { icon: "🔍", label: "증상·시술 검색", text: "\"무릎 통증\", \"여드름 레이저\" 처럼 검색하면 실제로 그 분야를 주력하는 병원을 보여줘요." },
+              { icon: "📋", label: "진료과목 탐색", text: "진료과목 그리드를 클릭하면 해당 과목 병원 전체 목록을 볼 수 있어요." },
+            ]}
+          />
+        </div>
       </div>
 
       {isEmergencyQuery(query) ? (
