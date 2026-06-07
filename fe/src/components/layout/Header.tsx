@@ -1,20 +1,24 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Stethoscope, MapPin, UserRound } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { UserRound } from "lucide-react";
 
 import { HealthProfileModal } from "@/components/analytics/HealthProfileModal";
 import { WeatherBadge } from "@/components/analytics/WeatherBadge";
+import { LocationSearchBar } from "@/components/layout/LocationSearchBar";
 import { hasHealthProfile } from "@/lib/healthProfile";
 import { cn } from "@/lib/utils";
 
 interface HeaderProps {
-  locationLabel?: string | null;
   className?: string;
 }
 
-export function Header({ locationLabel = null, className }: HeaderProps) {
+export function Header({ className }: HeaderProps) {
   const [profileOpen, setProfileOpen] = useState(false);
   const hasProfile = hasHealthProfile();
+  const location = useLocation();
+  // 위치 검색은 지도에서만 의미가 있다 → 지도 페이지에서만 헤더에 노출.
+  // 리스트(/search)·상세·인사이트에선 숨긴다.
+  const showLocationBar = location.pathname.startsWith("/map");
 
   return (
     <>
@@ -26,46 +30,63 @@ export function Header({ locationLabel = null, className }: HeaderProps) {
       >
         <div className="container flex h-14 items-center justify-between gap-4">
           <Link
-            to="/search"
+            to="/map"
             aria-label="clinic-focus 홈"
-            className="flex items-center gap-2 text-base font-semibold tracking-tight"
+            className="flex items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
-            <span
-              aria-hidden
-              className="grid h-7 w-7 place-items-center rounded-md bg-primary text-primary-foreground"
-            >
-              <Stethoscope className="h-4 w-4" />
-            </span>
-            <span>clinic-focus</span>
+            <img
+              src="/logo.svg"
+              alt="clinic-focus"
+              className="h-9 w-auto"
+              width={180}
+              height={40}
+            />
           </Link>
 
-          <div className="flex items-center gap-3">
-            {/* 내 정보 버튼 */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* 내 정보 버튼.
+                - 위치바 없는 화면(리스트 등): 모바일에서도 라벨 노출 (여유 있음)
+                - 지도 화면(위치바 동반): 모바일은 아이콘만, sm+ 라벨.
+                  640~710px 빡빡 구간에서 두 줄로 안 깨지게 nowrap + 한 톤 작게 */}
+            {/* 내 정보 버튼.
+                - 위치바 없는 화면(리스트 등): 모바일에서도 라벨 노출 (여유 있음)
+                - 지도 화면(위치바 동반):
+                    모바일(<640) 아이콘만 / 태블릿(640~1023) "내 정보"
+                    / 데스크톱(1024+) "내 정보 수정" */}
             <button
               type="button"
               onClick={() => setProfileOpen(true)}
-              aria-label="건강 프로파일 설정"
+              aria-label={hasProfile ? "내 정보 수정" : "내 정보 설정"}
               className={cn(
-                "relative flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors hover:border-primary/50 hover:text-foreground",
+                "relative flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-1 text-xs transition-colors hover:border-primary/50 hover:text-foreground sm:px-2.5",
                 hasProfile
                   ? "border-primary/30 bg-primary/5 text-primary"
                   : "border-input text-muted-foreground",
               )}
             >
-              <UserRound className="h-3.5 w-3.5" aria-hidden />
-              <span>{hasProfile ? "내 정보 수정" : "내 정보"}</span>
+              <UserRound className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              {hasProfile ? (
+                showLocationBar ? (
+                  // 지도: 모바일 아이콘만 / 태블릿 "내 정보" / 데스크톱 "내 정보 수정"
+                  <span className="hidden sm:inline">
+                    내 정보<span className="hidden lg:inline"> 수정</span>
+                  </span>
+                ) : (
+                  // 위치바 없는 화면: 여유 있으니 모바일부터 풀 라벨
+                  <span className="inline">내 정보 수정</span>
+                )
+              ) : (
+                <span className={cn(showLocationBar ? "hidden sm:inline" : "inline")}>
+                  내 정보
+                </span>
+              )}
               {/* 미입력 시 주의 점 */}
               {!hasProfile && (
                 <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-primary" />
               )}
             </button>
 
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <MapPin className="h-3.5 w-3.5" aria-hidden />
-              <span className="max-w-[12ch] truncate">
-                {locationLabel ?? "위치 미설정"}
-              </span>
-            </div>
+            {showLocationBar ? <LocationSearchBar /> : null}
 
             <WeatherBadge compact />
           </div>

@@ -13,7 +13,7 @@ export default function App() {
   return (
     <Routes>
       <Route element={<AppShell />}>
-        <Route path="/" element={<Navigate to="/search" replace />} />
+        <Route path="/" element={<Navigate to="/map" replace />} />
         <Route path="/search" element={<SearchPage />} />
         <Route
           path="/hospitals/:hospitalId"

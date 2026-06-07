@@ -83,20 +83,22 @@ export function WeatherBadge({ lat = DEFAULT_LAT, lng = DEFAULT_LNG, compact = f
     const humid = HUMIDITY_MAP[w.humidity_bucket] ?? HUMIDITY_MAP.unknown;
 
     return (
-      <div className="hidden items-center gap-2 text-xs sm:flex">
-        <span className="text-muted-foreground/40" aria-hidden>|</span>
-        <span className="text-muted-foreground">오늘의 날씨</span>
+      <div className="hidden items-center gap-2 whitespace-nowrap text-xs sm:flex">
+        <span className="hidden text-muted-foreground/40 lg:inline" aria-hidden>|</span>
+        <span className="hidden text-muted-foreground lg:inline">오늘의 날씨</span>
+        {/* 온도 — 태블릿부터 이모지+숫자 노출 */}
         <span className="flex items-center gap-0.5 font-medium text-foreground">
-          <span aria-hidden>{temp.emoji}</span>{formatNumber(w.temp_c, "°C") ?? temp.label}
+          <span aria-hidden>{temp.emoji}</span>
+          <span>{formatNumber(w.temp_c, "°C") ?? temp.label}</span>
         </span>
-        <span className="flex items-center gap-0.5 text-muted-foreground">
-          <span aria-hidden>{humid.emoji}</span>{formatNumber(w.humidity_pct, "%") ?? humid.label}
+        {/* 습도·미세먼지 — 데스크톱(lg)부터만 */}
+        <span className="hidden items-center gap-0.5 text-muted-foreground lg:flex">
+          <span aria-hidden>{humid.emoji}</span>
+          <span>{formatNumber(w.humidity_pct, "%") ?? humid.label}</span>
         </span>
-        <span className={`flex items-center gap-0.5 ${pm25.color}`}>
-          <span aria-hidden>{pm25.emoji}</span>{pm25.label}
-        </span>
-        <span className="flex items-center gap-0.5 text-muted-foreground">
-          <span aria-hidden>📊</span>일교차 {formatNumber(w.temp_diff_c, "°C") ?? "—"}
+        <span className={`hidden items-center gap-0.5 lg:flex ${pm25.color}`}>
+          <span aria-hidden>{pm25.emoji}</span>
+          <span>{pm25.label}</span>
         </span>
       </div>
     );

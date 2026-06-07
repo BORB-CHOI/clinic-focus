@@ -5,6 +5,7 @@ import { CategoryGrid } from "@/components/search/CategoryGrid";
 import { EmptyState } from "@/components/common/EmptyState";
 import { RecommendSection } from "@/components/analytics/RecommendSection";
 import { WeatherBadge } from "@/components/analytics/WeatherBadge";
+import { AdCard } from "@/components/search/AdCard";
 import { HospitalCard } from "@/components/search/HospitalCard";
 import { HospitalCardSkeleton } from "@/components/search/HospitalCardSkeleton";
 import { Pagination } from "@/components/search/Pagination";
@@ -12,6 +13,7 @@ import { SearchFilters } from "@/components/search/SearchFilters";
 import { useSearch, PAGE_SIZE } from "@/hooks/useSearch";
 import { useSpecialties } from "@/hooks/useSpecialties";
 import { isEmergencyQuery } from "@/lib/emergency";
+import { getAds } from "@/lib/ads";
 import type { SortOption } from "@/types/domain";
 
 // 검색 결과 페이지 — BE /api/search 연동 (useSearch hook)
@@ -125,6 +127,13 @@ export default function SearchPage() {
   const meta = data?.meta;
   const total = meta?.total ?? 0;
 
+  // 광고 슬롯 — 결과 목록 첫 페이지 상단에만 노출. 진료과 컨텍스트로 매칭.
+  // 응급 쿼리에선 광고를 숨긴다 (응급 상황에 협찬 노출은 부적절).
+  const ads =
+    page === 1 && !isEmergencyQuery(query)
+      ? getAds({ specialty, limit: 1 })
+      : [];
+
   // 목록 제목
   const listTitle = query
     ? `“${query}” 검색 결과`
@@ -217,6 +226,22 @@ export default function SearchPage() {
             onMinConfidenceChange={setMinConfidence}
             onSortChange={setSort}
           />
+
+          {/* 광고(협찬) 슬롯 — 자연 검색 결과와 분리. "광고" 라벨 명시 */}
+          {ads.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                스폰서
+              </p>
+              <ul className="grid gap-3">
+                {ads.map((ad) => (
+                  <li key={ad.ad_id}>
+                    <AdCard ad={ad} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
 
           {/* 카드 목록 */}
           {isError ? (

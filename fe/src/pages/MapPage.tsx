@@ -1,8 +1,6 @@
-import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Locate, MapPin } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { ConfidenceLegend } from "@/components/map/ConfidenceLegend";
 import { HospitalCard } from "@/components/search/HospitalCard";
 import { EmptyState } from "@/components/common/EmptyState";
@@ -11,7 +9,7 @@ import { useKakaoMap } from "@/hooks/useKakaoMap";
 import { useSearch } from "@/hooks/useSearch";
 import { trackClick, trackImpression, trackAnalyticsClick, trackAnalyticsImpression } from "@/lib/events";
 import { HAS_KAKAO_MAP_KEY } from "@/lib/env";
-import { searchPlace } from "@/lib/kakaoMap";
+import { useLocationStore } from "@/lib/locationContext";
 import { cn } from "@/lib/utils";
 
 // 지도 검색 페이지 — 뷰포트(보이는 구역) 기반 검색.
@@ -20,27 +18,25 @@ import { cn } from "@/lib/utils";
 // 다시 호출해, "지금 화면에 보이는 구역의 병원"을 마커로 깐다. 반경 선택·핀 찍기는 없다.
 // ★검색영역(searchArea)은 지도 center prop 과 분리한다 — idle 값을 center 로 되먹이면
 //   map.setCenter ↔ idle 무한 루프(흰 화면)가 난다.
+//
+// 위치 검색·"내 위치" 입력은 헤더(LocationSearchBar)로 올라갔고, 그 결과는
+// LocationContext.center 로 공유된다. MapPage 는 center 를 구독만 한다.
 
-// 강남역 좌표 (데이터 = 강남구). GPS '내 위치' 또는 초기 중심.
-const FALLBACK_CENTER = { lat: 37.4979, lng: 127.0276 };
 const MAX_RADIUS_KM = 30; // BE /api/search radius_km le=30 — 너무 줌아웃해도 캡
 
 export default function MapPage() {
   const [searchParams] = useSearchParams();
   const query = searchParams.get("q") ?? "";
 
-  // 지도 중심(초기·GPS recenter 전용). idle 로부터 되먹이지 않는다.
-  const [center, setCenter] = useState(FALLBACK_CENTER);
-  // 실제 검색에 쓰는 영역 — 지도 idle 이 채운다. 초기값은 강남역 3km.
+  // 지도 중심·GPS 안내는 전역 위치 상태에서. idle 로부터 되먹이지 않는다.
+  const { center, message: geoMessage } = useLocationStore();
+  // 실제 검색에 쓰는 영역 — 지도 idle 이 채운다. 초기값은 center 기준 4km.
   const [searchArea, setSearchArea] = useState({
-    lat: FALLBACK_CENTER.lat,
-    lng: FALLBACK_CENTER.lng,
+    lat: center.lat,
+    lng: center.lng,
     radiusKm: 4,  // level=6 초기 뷰포트에 맞춰 설정 (idle 이후 실제 bounds로 자동 갱신)
   });
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [geoMessage, setGeoMessage] = useState<string | null>(null);
-  const [locationInput, setLocationInput] = useState("");
-  const [locationError, setLocationError] = useState<string | null>(null);
   const selectedCardRef = useRef<HTMLDivElement>(null);
 
   // 검색어 없을 때는 fetch 하지 않는다 — 전체 병원을 무작위로 뿌리지 않음
@@ -111,37 +107,6 @@ export default function MapPage() {
       }),
   });
 
-  function handleLocationSearch(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const q = locationInput.trim();
-    if (!q) return;
-    setLocationError(null);
-    searchPlace(q)
-      .then(({ lat, lng, name }) => {
-        setCenter({ lat, lng });
-        setLocationInput(name); // 검색된 정식 장소명으로 교체 → 입력 확인 가능
-      })
-      .catch(() => setLocationError("장소를 찾을 수 없습니다 — 다른 이름으로 시도해보세요"));
-  }
-
-  function handleRecenter() {
-    if (!("geolocation" in navigator)) {
-      setGeoMessage("이 브라우저는 위치 정보를 지원하지 않습니다");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        // center 만 바꾼다 → 지도가 그 위치로 이동 → idle → searchArea 자동 갱신
-        setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        setGeoMessage(null);
-      },
-      () =>
-        setGeoMessage(
-          "위치 권한이 없어 현재 위치를 가져오지 못했습니다 — 강남 중심으로 표시합니다",
-        ),
-    );
-  }
-
   return (
     <section className="space-y-3">
       <header>
@@ -159,29 +124,8 @@ export default function MapPage() {
 
       {geoMessage ? <WarningBanner message={geoMessage} /> : null}
 
-      {/* 컨트롤 바 */}
-      <div className="space-y-2 rounded-lg border bg-card p-3">
-        {/* 위치 검색 */}
-        <form onSubmit={handleLocationSearch} className="flex gap-2">
-          <div className="relative flex-1">
-            <MapPin className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
-            <input
-              type="search"
-              value={locationInput}
-              onChange={(e) => { setLocationInput(e.target.value); setLocationError(null); }}
-              placeholder="위치 이동 (예: 홍대입구역, 수원역, 서울 마포구)"
-              className="h-8 w-full rounded-md border border-input bg-background py-1 pl-8 pr-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-          </div>
-          <Button type="submit" variant="outline" size="sm">이동</Button>
-          <Button type="button" variant="outline" size="sm" onClick={handleRecenter}>
-            <Locate className="h-3.5 w-3.5" aria-hidden />
-            내 위치
-          </Button>
-        </form>
-        {locationError ? <p className="text-xs text-destructive">{locationError}</p> : null}
-
-        {/* 범례·결과 카운트 */}
+      {/* 컨트롤 바 — 위치 검색은 헤더로 이동, 여기엔 범례·결과 카운트만 */}
+      <div className="rounded-lg border bg-card p-3">
         <div className="flex flex-wrap items-center gap-x-4">
           <ConfidenceLegend />
           {query ? (

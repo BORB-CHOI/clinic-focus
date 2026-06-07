@@ -21,8 +21,8 @@ import { trackSelect, trackAnalyticsSelect } from "@/lib/events";
 // 9영역을 3탭(기본/진료/운영·후기)으로 묶는다. 비-데모 병원은 ai_description·vision·
 // operating_hours 가 null 일 수 있어 각 섹션이 null-safe 하게 렌더(차등 표시).
 const TAB_ITEMS = [
-  { value: "info", label: "기본 정보" },
   { value: "core", label: "진료 정보" },
+  { value: "info", label: "기본 정보" },
   { value: "ops", label: "운영·후기" },
 ] as const;
 
@@ -88,7 +88,7 @@ export default function HospitalDetailPage() {
         />
       ) : null}
 
-      <Tabs<TabValue> defaultValue="info" items={TAB_ITEMS}>
+      <Tabs<TabValue> defaultValue="core" items={TAB_ITEMS}>
         {{
           info: (
             <div className="space-y-4">

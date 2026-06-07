@@ -26,10 +26,10 @@ export function Section({
   return (
     <section
       id={id}
-      className={cn("scroll-mt-20 rounded-lg border bg-card p-6", className)}
+      className={cn("scroll-mt-20 rounded-lg border bg-card p-4 sm:p-6", className)}
     >
-      <header className="mb-4 flex items-start justify-between gap-4">
-        <div>
+      <header className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="min-w-0">
           <div className="flex items-center gap-2">
             {badge ? (
               <span className="text-xs font-mono text-muted-foreground">
@@ -42,7 +42,9 @@ export function Section({
             <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
           ) : null}
         </div>
-        {action ? <div className="shrink-0">{action}</div> : null}
+        {action ? (
+          <div className="shrink-0 self-start sm:self-auto">{action}</div>
+        ) : null}
       </header>
       {children}
     </section>
