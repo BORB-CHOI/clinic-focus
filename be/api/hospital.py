@@ -70,6 +70,9 @@ def get_hospital_detail(hospital_id: str):
     public_doctors = db.load_public_doctors(hospital_id)
     public_nonpay = db.load_public_nonpay(hospital_id)
 
+    # ⑨ data_sources 산출용 — SITE#PAGES 존재 여부(GetItem 단건, 비용 최소)
+    site_pages = db.get_entity(hospital_id, "SITE#PAGES")
+
     # ⑥ 피드백 통계
     feedback_list = db.get_feedback_for_hospital(hospital_id)
     feedback_stats = compute_feedback_stats(feedback_list)
@@ -139,7 +142,12 @@ def get_hospital_detail(hospital_id: str):
             # ⑨ 메타 정보
             "metadata": {
                 "last_updated_at": classification.classified_at.isoformat() if classification else None,
-                "data_sources": ["public_registry"],
+                "data_sources": _build_data_sources(
+                    classification=classification,
+                    public_doctors=public_doctors,
+                    public_nonpay=public_nonpay,
+                    site_pages=site_pages,
+                ),
                 "data_completeness": _calc_completeness(classification, description, services_and_doctors),
                 "warning": "정보 부족 — 직접 병원에 문의 권장" if not classification else None,
             },
@@ -254,6 +262,52 @@ def _adapt_related(r) -> dict:
             for f in d["primary_focus"] if str(f).strip()
         ]
     return d
+
+
+def _build_data_sources(
+    classification,
+    public_doctors: dict,
+    public_nonpay: list,
+    site_pages: dict | None,
+) -> list[str]:
+    """실제로 존재하는 데이터 출처만 동적 산출.
+
+    규약(API-FE-BE.md DataMetadata.data_sources):
+      "public_registry" — 심평원 기본정보(META 항상) + 심평원 공공 시그널(PUBLIC#DOCTORS·PUBLIC#NONPAY)
+      "self_site"       — 자체 사이트 크롤(SITE#PAGES 있을 때)
+      "user_reviews"    — 카카오·네이버·구글 리뷰 집계(detailed_signals.reviews.total_reviews > 0)
+      "blog"            — 카카오·네이버 블로그 집계(detailed_signals.blog.total_posts > 0)
+
+    규약 enum 외 추가 식별자(태스크 지시 — 규약에 없으면 아래 값으로):
+      "vision"          — Vision 분석 결과(detailed_signals.vision 존재 시)
+      "public_data"     — 심평원 공공 신호를 이미 "public_registry" 에 통합하므로 미사용
+                          (PUBLIC#DOCTORS / PUBLIC#NONPAY 는 public_registry 로 처리)
+
+    추가 DDB 호출 없음 — 모두 이미 로드된 객체에서 판단.
+    """
+    sources: list[str] = ["public_registry"]  # META + 심평원 공공 데이터 → 항상 포함
+
+    # SITE#PAGES 존재 → 자체 사이트 크롤 결과 있음
+    if site_pages:
+        sources.append("self_site")
+
+    # classification.detailed_signals 에서 리뷰·블로그·Vision 여부 판단
+    if classification:
+        ds = classification.detailed_signals
+        if ds:
+            rev = ds.reviews
+            if rev and (rev.total_reviews or 0) > 0:
+                sources.append("user_reviews")
+
+            blog = ds.blog
+            if blog and (blog.total_posts or 0) > 0:
+                sources.append("blog")
+
+            # Vision 분석 결과가 있으면 — 규약 외 식별자이나 태스크 지시에 따라 포함
+            if ds.vision:
+                sources.append("vision")
+
+    return sources
 
 
 def _calc_completeness(classification, description, services_and_doctors) -> float:

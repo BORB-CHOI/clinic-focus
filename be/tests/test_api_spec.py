@@ -64,16 +64,23 @@ class TestHospitalDetailEndpoint:
             resp = client.get("/api/hospitals/nonexistent")
             assert resp.status_code == 404
 
+    def _mock_db_base(self, mock_db, meta):
+        """상세 API mock_db 공통 설정 헬퍼."""
+        mock_db.load_hospital_meta.return_value = meta
+        mock_db.load_classification.return_value = None
+        mock_db.load_description.return_value = None
+        mock_db.load_services_and_doctors.return_value = None
+        mock_db.load_related_hospitals.return_value = []
+        mock_db.load_recent_changes.return_value = []
+        mock_db.get_feedback_for_hospital.return_value = []
+        mock_db.load_public_doctors.return_value = {}
+        mock_db.load_public_nonpay.return_value = []
+        mock_db.get_entity.return_value = None  # SITE#PAGES 없음
+
     def test_found_returns_data_wrapper(self, client, sample_hospital_meta):
         """존재하는 병원 → {"data": {...}} 형태."""
         with patch("be.api.hospital.db") as mock_db:
-            mock_db.load_hospital_meta.return_value = sample_hospital_meta
-            mock_db.load_classification.return_value = None
-            mock_db.load_description.return_value = None
-            mock_db.load_services_and_doctors.return_value = None
-            mock_db.load_related_hospitals.return_value = []
-            mock_db.load_recent_changes.return_value = []
-            mock_db.get_feedback_for_hospital.return_value = []
+            self._mock_db_base(mock_db, sample_hospital_meta)
 
             resp = client.get("/api/hospitals/test_001")
             assert resp.status_code == 200
