@@ -1,6 +1,6 @@
-"""Analytics 테이블 어댑터 — kmuproj-02-clinic-Analytics 전용.
+"""Analytics 테이블 어댑터 — 테이블명은 env ``ANALYTICS_TABLE`` 로 지정.
 
-Main 테이블(kmuproj-10-clinic-Main)과 완전 분리. 환경 컨텍스트·건강
+Main 테이블(``DYNAMO_TABLE``)과 완전 분리. 환경 컨텍스트·건강
 프로파일·집계 통계를 독자적으로 저장한다.
 
 스키마 (PK=pk, SK=sk):
@@ -21,7 +21,7 @@ from typing import Any, Literal
 import boto3
 from boto3.dynamodb.conditions import Attr, Key
 
-TABLE_NAME = os.environ.get("ANALYTICS_TABLE", "kmuproj-02-clinic-Analytics")
+TABLE_NAME = os.environ.get("ANALYTICS_TABLE", "kmuproj-10-clinic-Analytics")
 TTL_SECONDS = 365 * 24 * 3600  # raw 이벤트 1년 후 자동 만료
 
 
