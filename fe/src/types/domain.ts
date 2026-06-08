@@ -79,28 +79,27 @@ export interface Doctor {
   source_url: string | null;
 }
 
-export interface DayHours {
-  open: string;
-  close: string;
-  lunch_start: string | null;
-  lunch_end: string | null;
-}
-
+/**
+ * 심평원 신고 기준 운영시간 — BE shared/models.py OperatingHours 와 1:1 매핑.
+ * 모든 필드 평문 string. 예: weekday="09:30~18:00", lunch_break="13:00~14:00",
+ * sunday="휴진", parking_note="가능(무료)".
+ * null 이면 해당 항목 신고 정보 없음.
+ */
 export interface OperatingHours {
-  weekday: DayHours;
-  saturday: DayHours | null;
-  sunday: DayHours | null;
-  night_clinic: boolean;
-  holiday_clinic: boolean;
+  weekday: string | null;
+  saturday: string | null;
+  sunday: string | null;
+  holiday: string | null;
+  lunch_break: string | null;
+  /** 심평원 getDtlInfo2.8 parkEtc — 주차 안내 텍스트 (예: "외래진료 30분 무료") */
+  parking_note: string | null;
 }
 
-export type AppointmentMethod = "walk_in" | "phone" | "online";
-
+/** BE Contact — phone·website_url·reservation_url 세 필드만. */
 export interface Contact {
-  phone: string;
-  homepage_url: string | null;
-  parking_available: boolean;
-  appointment_methods: AppointmentMethod[];
+  phone: string | null;
+  website_url: string | null;
+  reservation_url: string | null;
 }
 
 export interface FeedbackStats {
