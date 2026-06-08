@@ -54,5 +54,10 @@ be/data/naver_targets.json
 be/data/naver_impact/
 data/clinic-focus/
 
+# --- 진단 스크래치 · 재분류 덤프 · 발표 바이너리 (추적 금지) ---
+be/scripts/_diag_*.py
+be/scripts/_reclassify_*.json
+*.pptx
+
 # --- Claude Code 개인 설정 ---
 .claude/
