@@ -70,3 +70,26 @@ class S3Adapter:
             ContentType="image/png",
         )
         return f"s3://{BUCKET}/{key}"
+
+    # ── 대표 이미지(썸네일) — 홈페이지 스크린샷 등 ────────────────────────────
+    # 버킷이 public-access 차단이라 외부 직접노출 불가 → BE 가 GET /api/hospitals/{id}/thumbnail
+    # 으로 스트리밍한다. 키는 hospital_id 결정적(thumbnails/{id}.jpg).
+
+    def save_thumbnail(self, hospital_id: str, jpg_bytes: bytes) -> str:
+        """대표 이미지 JPG 저장. S3 키 반환."""
+        key = f"thumbnails/{hospital_id}.jpg"
+        self._s3.put_object(
+            Bucket=BUCKET, Key=key, Body=jpg_bytes, ContentType="image/jpeg",
+        )
+        return key
+
+    def load_thumbnail(self, hospital_id: str) -> bytes | None:
+        """대표 이미지 JPG bytes 로드. 없으면 None."""
+        key = f"thumbnails/{hospital_id}.jpg"
+        try:
+            resp = self._s3.get_object(Bucket=BUCKET, Key=key)
+            return resp["Body"].read()
+        except ClientError as e:
+            if e.response["Error"]["Code"] in ("NoSuchKey", "404"):
+                return None
+            raise

@@ -67,6 +67,33 @@ python be/main.py                                                   # 동일
 cd fe && npm run dev
 ```
 
+### 백그라운드 (SSH 끊어도 유지)
+
+systemd 없이 데모용으로 빠르게 띄울 때. `nohup`으로 띄우면 SSH 세션을 닫아도 프로세스가 살아있다. **둘 다 repo 루트에서:**
+
+```bash
+source .venv/bin/activate
+
+# 백엔드 (:8000)
+nohup python -m uvicorn be.handlers.api:app --host 0.0.0.0 --port 8000 > be.log 2>&1 &
+
+# 프론트 (:5173) — 외부 접속 허용하려면 --host
+nohup npm --prefix fe run dev -- --host > fe.log 2>&1 &
+```
+
+```bash
+# 상태 확인 / 로그
+jobs -l                          # 같은 셸에서 띄웠을 때
+ps aux | grep -E 'uvicorn|vite'  # 재접속 후
+tail -f be.log fe.log
+
+# 종료 (포트로 PID 찾아서)
+kill $(lsof -ti:8000)            # 백엔드
+kill $(lsof -ti:5173)            # 프론트
+```
+
+> 재부팅 후에도 자동 기동이 필요하면 `nohup` 대신 위의 **systemd**를 쓴다.
+
 ## 4. SSH (학교망 등)
 ```bash
 ssh -p 443 -i <key>.pem ec2-user@<ec2-ip>

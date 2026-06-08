@@ -4,11 +4,30 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from typing import Self
 
 from playwright.async_api import Browser, BrowserContext, Page, Playwright, async_playwright
 
 logger = logging.getLogger(__name__)
+
+# 썸네일 스크린샷 정크 페이지 시그널 — 파킹·봇체크·에러·준비중·도메인판매.
+# 이런 화면을 대표 이미지로 쓰면 회색 플레이스홀더보다 나쁘므로 캡처 자체를 버린다.
+_JUNK_PAGE_RE = re.compile(
+    r"(perfectdomain|이 ?도메인|도메인.{0,6}(판매|구매|이전|만료)|domain.{0,6}(for ?sale|sale|expired|parking)"
+    r"|security verification|checking your browser|just a moment|cloudflare|access denied|forbidden"
+    r"|404.{0,6}not ?found|not ?found|페이지를 ?찾을 ?수 ?없|존재하지 ?않는 ?페이지"
+    r"|서비스 ?준비 ?중|준비 ?중입니다|공사 ?중|오픈 ?예정|coming ?soon|under ?construction"
+    r"|suspended|계정이 ?정지|이용이 ?정지|호스팅 ?만료|website ?expired)",
+    re.IGNORECASE,
+)
+
+
+def _is_junk_page(text: str, url: str) -> bool:
+    """렌더된 title+본문 텍스트가 파킹·봇체크·에러·준비중이면 True(썸네일 부적합)."""
+    if not text or len(text.strip()) < 2:
+        return True  # 완전 빈 화면(로딩 실패)
+    return bool(_JUNK_PAGE_RE.search(text))
 
 
 class BrowserManager:
@@ -108,6 +127,76 @@ class BrowserManager:
                     try:
                         await context.close()
                     except Exception:
+                        pass
+                self._page_count += 1
+                if self._page_count >= self.MAX_PAGES_BEFORE_RESTART:
+                    await self._restart_browser()
+
+    async def screenshot_hero(self, url: str) -> bytes | None:
+        """홈페이지 above-fold 메인화면 1장 PNG (카드 썸네일용). 팝업 닫고 캡처.
+
+        카드/히어로 썸네일 용도라 스크롤 없이 최상단 한 화면(1280×800)만 찍는다.
+        팝업·쿠키배너·오버레이는 닫은 뒤 찍어 메인 비주얼이 가려지지 않게 한다.
+        networkidle 대신 load+짧은 타임아웃(광고 통신으로 30초 풀타임아웃 회피). 실패 시 None.
+        """
+        async with self._semaphore:
+            await self._ensure_browser()
+            context: BrowserContext | None = None
+            try:
+                context = await self._browser.new_context(  # type: ignore[union-attr]
+                    viewport={"width": 1280, "height": 800},
+                )
+                page: Page = await context.new_page()
+                try:
+                    await page.goto(url, wait_until="load", timeout=15_000)
+                except Exception as exc:  # noqa: BLE001
+                    logger.info("screenshot_hero goto 부분로드/타임아웃(%s): %s", url, exc)
+                await page.wait_for_timeout(1500)  # 팝업·지연 렌더 대기
+                # 팝업/오버레이 닫기 — screenshot_page_scroll 과 동일 로직(메인 비주얼 가림 방지)
+                try:
+                    await page.keyboard.press("Escape")
+                    await page.evaluate(
+                        """() => {
+                            const kill = el => { try { el.style.display='none'; } catch(e){} };
+                            document.querySelectorAll(
+                              '[class*=popup i],[class*=modal i],[class*=layer i],[id*=popup i],[id*=modal i],[class*=dimm i],[class*=overlay i]'
+                            ).forEach(kill);
+                            document.querySelectorAll('body *').forEach(el => {
+                              const cs = getComputedStyle(el);
+                              if ((cs.position==='fixed'||cs.position==='absolute')
+                                  && parseInt(cs.zIndex||0) >= 100 && el.offsetHeight > 200) kill(el);
+                            });
+                        }"""
+                    )
+                    for sel in ("text=오늘 하루", "text=닫기", ".close", "[aria-label*=close i]", ".btn-close"):
+                        try:
+                            await page.click(sel, timeout=400)
+                        except Exception:  # noqa: BLE001
+                            pass
+                except Exception:  # noqa: BLE001
+                    pass
+                await page.wait_for_timeout(300)
+                # 정크 페이지 게이트 — 파킹·봇체크·에러·준비중은 썸네일로 부적합 → None.
+                try:
+                    title = (await page.title()) or ""
+                    body = await page.evaluate("() => (document.body && document.body.innerText || '').slice(0, 1500)")
+                except Exception:  # noqa: BLE001
+                    title, body = "", ""
+                if _is_junk_page(f"{title}\n{body}", url):
+                    logger.info("screenshot_hero: 정크 페이지 스킵 %s (title=%r)", url, title[:60])
+                    return None
+                await page.evaluate("() => window.scrollTo(0, 0)")  # 최상단 보장
+                return await page.screenshot(full_page=False, type="png")
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("screenshot_hero failed for %s: %s", url, exc)
+                if self._browser and not self._browser.is_connected():
+                    await self._restart_browser()
+                return None
+            finally:
+                if context:
+                    try:
+                        await context.close()
+                    except Exception:  # noqa: BLE001
                         pass
                 self._page_count += 1
                 if self._page_count >= self.MAX_PAGES_BEFORE_RESTART:

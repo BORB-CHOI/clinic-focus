@@ -15,6 +15,7 @@ load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from be.api.categories import router as categories_router
 from be.api.feedback import router as feedback_router
 from be.api.history import router as history_router
 from be.api.hospital import router as hospital_router
@@ -48,6 +49,7 @@ app.include_router(hospital_router)
 app.include_router(history_router)
 app.include_router(feedback_router)
 app.include_router(specialties_router)
+app.include_router(categories_router)
 
 
 @app.get("/health")

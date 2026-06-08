@@ -65,7 +65,9 @@ def _strip_meta_attrs(item: dict) -> dict:
     float 로 되돌려 직렬화 시 표현 일관성을 보장한다 (FE 가 number 기대).
     """
     drop = {"entity", "sigungu", "sido", "sigungu_specialty", "confidence_score",
-            "geohash_prefix", "lat_lng"}
+            "geohash_prefix", "lat_lng",
+            # 분류 완료 시 META 에 denormalize 되는 계층 카테고리 보조 키 (HospitalMeta 필드 아님).
+            "display_category", "primary_focus"}
     cleaned = {k: v for k, v in item.items() if k not in drop}
 
     loc = cleaned.get("location")
@@ -214,7 +216,8 @@ class DynamoAdapter:
         kwargs: dict[str, Any] = {
             "FilterExpression": filter_expr,
             "ProjectionExpression": (
-                "hospital_id, #nm, confidence_score, standard_specialty, sigungu_specialty, #loc"
+                "hospital_id, #nm, confidence_score, standard_specialty, sigungu_specialty, "
+                "display_category, primary_focus, #loc"
             ),
             "ExpressionAttributeNames": {"#nm": "name", "#loc": "location"},
         }
@@ -228,6 +231,9 @@ class DynamoAdapter:
                     "confidence_score": float(item["confidence_score"])
                     if "confidence_score" in item else 0.0,
                     "standard_specialty": item.get("standard_specialty", ""),
+                    # 계층 둘러보기용 — display_category(L1, '기타' 해체), primary_focus(L2 칩)
+                    "display_category": item.get("display_category", ""),
+                    "primary_focus": [str(x) for x in (item.get("primary_focus") or [])],
                     "lat": float(loc["lat"]) if loc.get("lat") is not None else None,
                     "lng": float(loc["lng"]) if loc.get("lng") is not None else None,
                 })
@@ -313,6 +319,84 @@ class DynamoAdapter:
         ]
         return result, len(total_hospitals)
 
+    def list_category_tree(self, sigungu: str, *, max_sub: int = 12) -> tuple[list[dict], int]:
+        """계층형 카테고리 트리. L1 = display_category('기타' 해체된 의미 버킷 포함),
+        L2 = primary_focus 세부 시술·증상 태그. /api/categories 전용.
+
+        분류 완료(display_category 보유) META 만 집계한다. 메타 1회 스캔으로 L1 카운트 +
+        L2 태그 카운트를 동시에 만든다(primary_focus 가 META 에 denormalize 돼 있어 가능).
+
+        반환:
+          ([{key, origin, count, sub:[{label,count}...]}...]  count 내림차순),
+           분류완료 병원 총수)
+          - origin: "specialty"(표준 진료과) | "etc"('기타'에서 파생한 의미 버킷).
+        """
+        from collections import Counter, defaultdict
+
+        l1_count: Counter[str] = Counter()
+        l1_origin: dict[str, str] = {}
+        l2_count: dict[str, Counter] = defaultdict(Counter)
+        seen: set[str] = set()
+
+        filter_expr = (
+            Attr("entity").eq(E_META)
+            & Attr("sigungu").eq(sigungu)
+            & Attr("display_category").exists()
+        )
+        kwargs: dict[str, Any] = {
+            "FilterExpression": filter_expr,
+            "ProjectionExpression": (
+                "hospital_id, display_category, standard_specialty, primary_focus"
+            ),
+        }
+        while True:
+            resp = self._table.scan(**kwargs)
+            for item in resp.get("Items", []):
+                l1 = item.get("display_category")
+                if not l1:
+                    continue
+                l1_count[l1] += 1
+                seen.add(item.get("hospital_id", ""))
+                ss = item.get("standard_specialty")
+                # display_category 가 표준 진료과면 specialty, '기타' 파생 버킷이면 etc.
+                l1_origin[l1] = "specialty" if (ss and ss != "기타") else "etc"
+                for tag in (item.get("primary_focus") or []):
+                    l2_count[l1][str(tag)] += 1
+            if "LastEvaluatedKey" not in resp:
+                break
+            kwargs["ExclusiveStartKey"] = resp["LastEvaluatedKey"]
+
+        data = [
+            {
+                "key": l1,
+                "origin": l1_origin.get(l1, "specialty"),
+                "count": cnt,
+                "sub": [
+                    {"label": lbl, "count": c}
+                    for lbl, c in l2_count[l1].most_common(max_sub)
+                ],
+            }
+            for l1, cnt in l1_count.most_common()
+        ]
+        return data, len(seen)
+
+    def patch_meta_categories(
+        self, hospital_id: str, standard_specialty: str | None, primary_focus: list[str],
+    ) -> None:
+        """기존 META 에 display_category + primary_focus 보강(백필 전용).
+
+        save_classification 의 denormalize 와 동일 결과 — 이미 분류됐으나 META 에 계층
+        카테고리 키가 없는 병원에 한 번 채워준다(스키마 추가 후 1회).
+        """
+        from shared.etc_category import display_specialty
+
+        dc = display_specialty(standard_specialty, primary_focus)
+        self._table.update_item(
+            Key={"hospital_id": hospital_id, "entity": E_META},
+            UpdateExpression="SET display_category = :dc, primary_focus = :pf",
+            ExpressionAttributeValues={":dc": dc, ":pf": list(primary_focus or [])},
+        )
+
     def list_hospitals_by_sigungu_specialty(
         self,
         sigungu: str,
@@ -345,6 +429,20 @@ class DynamoAdapter:
             UpdateExpression="SET contact.website_url = :url",
             ExpressionAttributeValues={":url": url},
         )
+
+    def update_thumbnail_url(self, hospital_id: str, url: str | None) -> None:
+        """META 의 thumbnail_url 만 patch (대표 이미지 백필용). url=None 이면 키 제거."""
+        if url:
+            self._table.update_item(
+                Key={"hospital_id": hospital_id, "entity": E_META},
+                UpdateExpression="SET thumbnail_url = :u",
+                ExpressionAttributeValues={":u": url},
+            )
+        else:
+            self._table.update_item(
+                Key={"hospital_id": hospital_id, "entity": E_META},
+                UpdateExpression="REMOVE thumbnail_url",
+            )
 
     def iter_hospitals_with_url(self) -> Iterator[dict]:
         """website_url(http/https)이 있는 META 병원을 {hospital_id, name, url} 로 yield.
@@ -392,12 +490,22 @@ class DynamoAdapter:
             raise ValueError(
                 f"save_classification({data.hospital_id}): META 에 sigungu 없음 — GSI 키 patch 불가."
             )
+        # display_category = 계층 둘러보기 L1 키. 표준 진료과는 그대로, '기타'면 주력에서
+        # 파생한 의미 버킷(미용/모발·탈모/통증·근골격…)으로 — '기타'를 둘러보기에서 해체한다.
+        # primary_focus 도 denormalize 해 L2 세부 칩 집계·필터를 META 스캔 1회로 끝낸다.
+        from shared.etc_category import display_specialty
+        display_category = display_specialty(data.standard_specialty, data.primary_focus)
         self._table.update_item(
             Key={"hospital_id": data.hospital_id, "entity": E_META},
-            UpdateExpression="SET sigungu_specialty = :ss, confidence_score = :cs",
+            UpdateExpression=(
+                "SET sigungu_specialty = :ss, confidence_score = :cs, "
+                "display_category = :dc, primary_focus = :pf"
+            ),
             ExpressionAttributeValues={
                 ":ss": f"{sigungu}#{data.standard_specialty}",
                 ":cs": Decimal(str(data.confidence.score)),
+                ":dc": display_category,
+                ":pf": list(data.primary_focus or []),
             },
         )
 

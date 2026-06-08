@@ -47,25 +47,47 @@ _TOKEN2CAT: dict[str, str] = {
     "보철·크라운": "일반",
 }
 
-# 한 병원이 여러 focus 에 걸치면 특이성(부티크 정체성) 높은 카테고리로 귀속.
-# 미용 신호(리프팅·보톡스)가 거의 전 병원에 도배돼 있어, 미용은 우선순위 최하위(일반 직전).
-# → 통증재활·모발·우울·비만 등 전문 신호가 하나라도 있으면 그쪽이 이긴다.
+# 동점 타이브레이크용 특이성 순위 — 같은 주력 가중치면 특이성 높은(앞선) 카테고리로.
+# 미용 신호(리프팅·보톡스)가 거의 전 병원에 도배돼 있어 미용은 최하위(일반 직전).
+# ※ 주의: 이건 '동점일 때만' 쓰는 보조 순위다. 예전엔 이 순위를 *주키*로 써서, 토큰이
+# 말단(가장 약한 주력)에 있어도 순위만 높으면 이겨버렸다 — 리프팅이 주력인 미용 의원이
+# 사이트에 '탈모' 한 번 언급했다고 '모발·탈모'로 뜨는 버그의 원인이었다(2026-06 실측 25곳).
 _PRIORITY = ["수면", "정신", "모발·탈모", "통증·근골격", "비만·다이어트",
              "비뇨·여성", "피부·알레르기", "미용", "일반"]
 _RANK = {c: i for i, c in enumerate(_PRIORITY)}
 
 
+# '기타'에서 승격되는 의미 버킷 전체 — 계층 둘러보기에서 origin='etc' 판정용.
+# derive_etc_subcategory 가 돌려줄 수 있는 값의 폐쇄 집합(+ '일반' 폴백).
+ETC_BUCKETS: frozenset[str] = frozenset(_TOKEN2CAT.values()) | {"일반"}
+
+
 def derive_etc_subcategory(primary_focus: list[str] | None) -> str:
     """primary_focus 토큰으로 기타 하위 카테고리를 결정적으로 파생.
 
-    여러 카테고리에 걸치면 _PRIORITY 에서 가장 특이성 높은(앞선) 것으로 귀속.
+    primary_focus 는 분류기가 **신호 강도 내림차순**으로 정렬한다(앞일수록 주력 —
+    classify.py 의 sorted_focus). 각 카테고리를 그 카테고리를 떠받치는 토큰들의 **주력
+    가중치(역순위 합)** 로 점수화해 최고점 카테고리를 고른다. 동점이면 _PRIORITY 로
+    타이브레이크(특이성 높은 전문 분야 우선).
+
+    예) ['리프팅·탄력','비만·영양','모발·탈모'] → 미용  (리프팅이 주력. 탈모는 말단)
+        ['모발·탈모','한방피부·미용']          → 모발·탈모 (탈모가 주력)
+        ['보톡스·필러','통증재활','척추·디스크'] → 통증·근골격 (미용 3 = 통증 3 동점 → 특이성)
     매핑되는 토큰이 없거나 비면 '일반'.
     """
-    cats = {_TOKEN2CAT.get(f) for f in (primary_focus or [])}
-    cats.discard(None)
-    if not cats:
+    focus = primary_focus or []
+    n = len(focus)
+    scores: dict[str, float] = {}
+    for i, f in enumerate(focus):
+        cat = _TOKEN2CAT.get(f)
+        if cat is None:
+            continue
+        # 앞 토큰(강한 주력)일수록 큰 가중치: 첫 토큰 n, 마지막 1.
+        scores[cat] = scores.get(cat, 0.0) + (n - i)
+    if not scores:
         return "일반"
-    return min(cats, key=lambda c: _RANK.get(c, 999))
+    # 최고 주력 가중치 → 동점이면 특이성(_RANK 작은 쪽) 우선.
+    return max(scores, key=lambda c: (scores[c], -_RANK.get(c, 999)))
 
 
 def display_specialty(standard_specialty: str | None, primary_focus: list[str] | None) -> str:

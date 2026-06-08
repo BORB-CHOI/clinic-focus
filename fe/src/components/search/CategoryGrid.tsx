@@ -1,10 +1,12 @@
-// 진료과목 둘러보기 그리드 — 닥터나우/모두닥/굿닥의 진료과 타일 패턴.
+// 진료과목·카테고리 둘러보기 그리드 — 닥터나우/모두닥/굿닥의 진료과 타일 패턴.
 //
-// 검색 랜딩(질의·진료과 미선택)에서 "어떤 진료과를 볼까"를 한눈에 보여주는
-// 아이콘 타일 그리드. 타일 클릭 → 그 진료과 목록으로 드릴인(specialty 파라미터).
+// 검색 랜딩(질의·카테고리 미선택)에서 "어떤 진료 분야를 볼까"를 한눈에 보여주는
+// 아이콘 타일 그리드. 타일 클릭 → 그 카테고리 목록으로 드릴인(category 파라미터).
 // 맨 앞 "전체 병원" 타일은 강남구 전체 목록으로 진입.
 //
-// 가로 스크롤 칩 한 줄이 "이걸로 뭘 하라는 건지" 안 보이던 문제를 그리드 랜딩으로 해소.
+// /api/categories 응답 기반 2레벨 구조:
+//   L1: specialty(표준 진료과) + etc(기타에서 승격된 버킷) 혼합, count 내림차순
+//   L2: 세부 시술·증상 태그 — 부모 L1이 선택된 뒤 FocusChipBar 에서 노출
 
 import type { ComponentType } from "react";
 import {
@@ -23,20 +25,23 @@ import {
   HeartPulse,
   LayoutGrid,
   Leaf,
+  Scale,
   Scissors,
   Smile,
   Sparkles,
   Stethoscope,
   Syringe,
+  Wind,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import type { Specialty } from "@/types/domain";
+import type { CategoryNode } from "@/types/domain";
 
 type IconType = ComponentType<{ className?: string }>;
 
-// 표준 진료과목 → 아이콘. 없는 과목은 Stethoscope 기본값.
-const SPECIALTY_ICON: Record<string, IconType> = {
+// 표준 진료과목(specialty) + etc 버킷 → 아이콘. 없으면 Stethoscope 기본값.
+const CATEGORY_ICON: Record<string, IconType> = {
+  // ── 표준 진료과 (origin: "specialty") ────────────────────────────────
   내과: Stethoscope,
   소아청소년과: Baby,
   이비인후과: Ear,
@@ -58,18 +63,29 @@ const SPECIALTY_ICON: Record<string, IconType> = {
   종합병원: Building2,
   요양병원: BedDouble,
   보건소: Cross,
-  기타: LayoutGrid,
+  // ── etc 버킷 (origin: "etc") — 기타에서 승격된 주력 분야 ─────────────
+  미용: Sparkles,
+  "모발·탈모": Scissors,
+  "통증·근골격": Bone,
+  "비만·다이어트": Scale,
+  정신: Brain,
+  수면: BedDouble,
+  "비뇨·여성": Flower2,
+  "피부·알레르기": Droplet,
+  일반: Stethoscope,
+  // ── 기타·레거시 ────────────────────────────────────────────────────
+  기타: Wind,
 };
 
 interface CategoryGridProps {
-  specialties: Specialty[];
+  categories: CategoryNode[];
   totalHospitals: number;
-  onSelect: (specialty: string) => void; // "" = 전체 병원
+  onSelect: (categoryKey: string) => void; // "" = 전체 병원
   isLoading?: boolean;
 }
 
 export function CategoryGrid({
-  specialties,
+  categories,
   totalHospitals,
   onSelect,
   isLoading,
@@ -100,14 +116,15 @@ export function CategoryGrid({
         primary
       />
 
-      {specialties.map((sp, i) => (
+      {categories.map((node, i) => (
         <Tile
-          key={sp.specialty}
+          key={node.key}
           index={i + 1}
-          icon={SPECIALTY_ICON[sp.specialty] ?? Stethoscope}
-          label={sp.specialty}
-          count={sp.count}
-          onClick={() => onSelect(sp.specialty)}
+          icon={CATEGORY_ICON[node.key] ?? Stethoscope}
+          label={node.key}
+          count={node.count}
+          onClick={() => onSelect(node.key)}
+          isEtcBucket={node.origin === "etc"}
         />
       ))}
     </div>
@@ -121,9 +138,11 @@ interface TileProps {
   count: number;
   onClick: () => void;
   primary?: boolean;
+  /** etc 버킷(기타에서 승격된 분야)은 미묘하게 다른 강조 색 적용 */
+  isEtcBucket?: boolean;
 }
 
-function Tile({ index, icon: Icon, label, count, onClick, primary }: TileProps) {
+function Tile({ index, icon: Icon, label, count, onClick, primary, isEtcBucket }: TileProps) {
   return (
     <button
       type="button"
@@ -136,6 +155,7 @@ function Tile({ index, icon: Icon, label, count, onClick, primary }: TileProps) 
         "transition-all hover:-translate-y-1 hover:border-primary/50 hover:shadow-md",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         primary && "border-primary/40 bg-primary/5",
+        isEtcBucket && "border-violet-200/60 bg-violet-50/30",
       )}
     >
       <span
@@ -143,7 +163,9 @@ function Tile({ index, icon: Icon, label, count, onClick, primary }: TileProps) 
           "flex h-11 w-11 items-center justify-center rounded-full transition-colors",
           primary
             ? "bg-primary/15 text-primary"
-            : "bg-accent text-accent-foreground group-hover:bg-primary/10 group-hover:text-primary",
+            : isEtcBucket
+              ? "bg-violet-100 text-violet-600 group-hover:bg-violet-200/70 group-hover:text-violet-700"
+              : "bg-accent text-accent-foreground group-hover:bg-primary/10 group-hover:text-primary",
         )}
       >
         <Icon className="h-5 w-5" />

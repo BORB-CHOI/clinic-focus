@@ -56,6 +56,8 @@ def _hospital_card(hospital_id: str, *, distance_km=None, matched_focus=None) ->
         ),
         "primary_focus": classification.primary_focus if classification else [],
         "confidence": classification.confidence.model_dump() if classification else None,
+        # 대표 이미지 — 백필된 카카오/크롤 이미지. None 이면 FE 가 그라데이션 플레이스홀더.
+        "thumbnail_url": meta.thumbnail_url,
         "location": meta.location.model_dump() if meta.location else None,
         "website_url": meta.contact.website_url if meta.contact else None,
         "one_line_summary": description.one_line_summary if description else "",
@@ -115,6 +117,11 @@ def search_hospitals(
     sido: str | None = Query(None),
     sigungu: str | None = Query(None),
     specialty: str | None = Query(None),
+    category: str | None = Query(
+        None,
+        description="계층 둘러보기 L1(display_category). '기타' 해체된 의미 버킷(미용/모발·탈모 등) 포함",
+    ),
+    focus: str | None = Query(None, description="계층 둘러보기 L2 세부 시술·증상 태그(primary_focus)"),
     min_confidence: int = Query(0, description="0=전체 노출(기본). >0 일 때만 신뢰도 하한 필터"),
     sort: str = Query("relevance"),
     limit: int = Query(20, le=100),  # 상향: le=50 → le=100
@@ -127,11 +134,12 @@ def search_hospitals(
     """
     has_location = lat is not None and lng is not None
     # 명세(API-FE-BE.md 라인 356): q·lat/lng·sigungu 다 없으면 400 INVALID_PARAMETER
-    if q is None and not has_location and not sigungu:
+    # category(계층 둘러보기 L1)만 와도 강남 PoC 기본 시군구로 처리하므로 허용.
+    if q is None and not has_location and not sigungu and not category:
         return JSONResponse(
             status_code=400,
             content={"error": {"code": "INVALID_PARAMETER",
-                               "message": "q, lat/lng, sigungu 중 최소 하나는 필수입니다"}},
+                               "message": "q, lat/lng, sigungu, category 중 최소 하나는 필수입니다"}},
         )
 
     # 검색 모드 결정
@@ -207,6 +215,17 @@ def search_hospitals(
             if sr.query_interpretation:
                 query_interpretation = sr.query_interpretation
 
+        # 분류 게이트 — KB 메타(standard_specialty)는 재적재 전까지 스테일이라, 최신 DDB
+        # 분류로 교정한다. 쿼리가 특정 진료과를 추론(무좀→피부과)했는데 최신 분류상 무관한
+        # 의료과목(정형·정신·내과 등으로 재분류된 통증·검진 클리닉)이면 결과에서 제외.
+        # ('기타'·미분류는 통과 — 특화 부티크 배제 금지 원칙 유지, 미용은 의도-강등이 처리.)
+        from ai.search.query_processor import process_query
+        _GENERALIST = {"기타", "가정의학과"}
+        inferred_sp = process_query(q).inferred_specialty
+        if inferred_sp and inferred_sp not in _GENERALIST:
+            allowed = {inferred_sp, "기타", ""}
+            all_cards = [c for c in all_cards if c.get("standard_specialty") in allowed]
+
         # 보조정렬 적용 (retrieve_hospital 이 1순위 정렬 해왔지만 2·3순위 보강)
         all_cards = _sort_nl_results(all_cards, sort, score_map=score_map)
 
@@ -253,12 +272,23 @@ def search_hospitals(
         }
 
     # --- 시군구 단독(카테고리) 경로: DDB GSI 직접 (경량 처리) ---
-    elif sigungu:
-        # 1) 경량 META 목록 확보 (hospital_id·name·confidence_score·standard_specialty 만)
-        if specialty:
-            light_items = db.list_hospitals_by_sigungu_specialty_light(sigungu, specialty)
+    elif sigungu or category:
+        sg = sigungu or "강남구"  # category 만 와도 강남 PoC 기본 시군구
+        # 1) 경량 META 목록 확보.
+        # 계층 둘러보기(category=L1 display_category / focus=L2 태그)는 display_category·
+        # primary_focus 가 필요해 full 라이트 스캔으로(특수 GSI projection 으론 부족).
+        # '기타' 해체 의미 버킷(미용·모발·탈모…)은 GSI(sigungu#standard_specialty)에 없으므로
+        # 반드시 이 경로로 필터한다.
+        if category or focus:
+            light_items = db.list_hospitals_by_sigungu_light(sg)
+            if category:
+                light_items = [it for it in light_items if it.get("display_category") == category]
+            if focus:
+                light_items = [it for it in light_items if focus in (it.get("primary_focus") or [])]
+        elif specialty:
+            light_items = db.list_hospitals_by_sigungu_specialty_light(sg, specialty)
         else:
-            light_items = db.list_hospitals_by_sigungu_light(sigungu)
+            light_items = db.list_hospitals_by_sigungu_light(sg)
 
         # 2) min_confidence 필터 (META.confidence_score 로 슬라이스 전 적용)
         if min_confidence > 0:

@@ -38,6 +38,13 @@ export function HospitalCard({
   // 미분류(confidence=null) 병원도 카테고리·지도엔 노출된다 → null 안전 처리.
   const isLowConfidence = !item.confidence || item.confidence.level === "정보 부족";
 
+  // 분류 태그 — 흰색(outline) 1개 = 진료과 라벨, 회색(secondary) N개 = 실제 주력 분야.
+  // '기타' 병원은 라벨을 primary_focus 에서 파생(etc_subcategory)하는데, 그 파생값이
+  // 주력 토큰과 글자까지 같으면(예: 모발·탈모) 흰색·회색에 같은 말이 두 번 찍힌다.
+  // → 라벨과 동일한 주력 토큰은 회색에서 제거해 중복을 없앤다.
+  const categoryLabel = item.etc_subcategory || item.standard_specialty;
+  const focusTags = item.primary_focus.filter((f) => f !== categoryLabel);
+
   return (
     <Link
       to={`/hospitals/${item.hospital_id}`}
@@ -64,29 +71,31 @@ export function HospitalCard({
           {/* 1) 분류 태그 — 표준 진료과목 + 주력 분야 */}
           <div className="flex flex-wrap items-center gap-1">
             <Badge variant="outline" className="font-normal">
-              {item.etc_subcategory || item.standard_specialty}
+              {categoryLabel}
             </Badge>
-            {item.primary_focus.length > 0 ? (
-              item.primary_focus
-                // compact 에선 첫 태그 하나만 (좁은 폭에 줄바꿈 방지)
-                .slice(0, compact ? 1 : item.primary_focus.length)
-                .map((focus) => (
+            {focusTags.length > 0
+              ? focusTags
+                  // compact 에선 첫 태그 하나만 (좁은 폭에 줄바꿈 방지)
+                  .slice(0, compact ? 1 : focusTags.length)
+                  .map((focus) => (
+                    <Badge
+                      key={focus}
+                      variant="secondary"
+                      className="font-normal"
+                    >
+                      {focus}
+                    </Badge>
+                  ))
+              : // 주력이 라벨과 같아 회색 태그가 비는 경우(모발·탈모 등)는 라벨만으로 충분.
+                // 원래 primary_focus 자체가 빈(분류는 됐으나 주력 미상) 병원만 점선 표시.
+                item.primary_focus.length === 0 && (
                   <Badge
-                    key={focus}
-                    variant="secondary"
-                    className="font-normal"
+                    variant="outline"
+                    className="border-dashed font-normal text-muted-foreground"
                   >
-                    {focus}
+                    주력 미확정
                   </Badge>
-                ))
-            ) : (
-              <Badge
-                variant="outline"
-                className="border-dashed font-normal text-muted-foreground"
-              >
-                주력 미확정
-              </Badge>
-            )}
+                )}
           </div>
 
           {/* 2) 병원명 + 신뢰도 배지 */}

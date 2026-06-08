@@ -188,17 +188,19 @@ LOW = 70, HIGH = 95, CONFIDENCE_LEVEL1_CAP = 70, MIN_CERTAIN_SIGNALS = 2
 | 일반어 | 동의어 (학명·전문용어·영문·치료) | 주력분야 |
 | 여드름 | acne, 심상성 좌창, 좌창, 면포, comedone, 아크네 | 여드름·흉터 |
 ```
-- `ai/search/dictionaries.py` 가 이 .md 를 파싱 → `build_synonym_clusters()` 로 동의어 클러스터 생성.
-- **두 곳에서 소비** (양방향 확장):
-  - **문서 측**(`kb_store._enrich_with_synonyms`) — 청크에 클러스터 멤버가 하나라도 있으면 나머지를
-    `[관련 의학 용어] …` 줄로 덧붙임(최대 60개). 본문이 어느 표현을 쓰든 임베딩이 일반어·학명·영문을 다 담음.
-  - **쿼리 측**(`process_query`) — 검색어를 동의어·진료과로 확장.
+- `ai/search/dictionaries.py` 가 이 .md 를 파싱 → `SYNONYMS`·`KEYWORD_TO_SPECIALTY` 사전 생성.
+- **쿼리 측에서만 소비**(`process_query`/`expand_with_synonyms`) — 검색어를 동의어·진료과로 확장.
+  순수 영어(한글 없는) 동의어는 임베딩 중심을 "일반 의학"으로 끌어당겨 특화 의원을 밀어내므로 제외한다.
+- ⚠️ **문서 측 주입은 제거됨**(PR `6b9ddec`, 2026-06-02). 옛 `kb_store._enrich_with_synonyms`·
+  `build_synonym_clusters` 가 청크에 동의어를 덧붙였으나, 트리거 1회로 무관 진료과 동의어를 끌어들여
+  임베딩 변별력을 파괴했다(치과가 'M자 탈모' 0.708 1위 사고) → 함수·테스트까지 삭제. 지금은 **쿼리-side 단방향**.
 - **장치**: 길이 2 미만 멤버(점·목·침)는 트리거로 안 씀(부분문자열 오매칭 차단). 임베딩 전용(화면 미표시)이라 §56 무관.
 - **의료법**: .md 자체가 효능·광고어(최고·전문·완치) 금지 + medical-language-reviewer 검수 통과. focus 라벨의
   효능·심미 암시는 중립화(재생→치료, 심미→미용). 표준 시술명은 사실 용어라 recall 위해 유지(미노출).
 
-→ **"왜 자체사이트 룰 기반 전수 커버인데 검색이 되나"의 핵심**: 비싼 LLM 재작성 없이, 사전 .md 한 장으로
-문서·쿼리 양쪽 어휘를 맞춰 한국어 의학 검색 recall 을 끌어올린다.
+→ **한계(실측 2026-06-05)**: 쿼리-side 동의어 확장은 *코퍼스에 그 내용이 있을 때만* 작동한다. "무좀"을
+족부백선·tinea pedis 로 확장해도, 강남 병원 본문이 무좀을 거의 안 다루면(미용 피부과 집적지) recall 이 안 산다.
+이 thin-signal 한계와 후속안(LLM 질의어 보강)은 [`known-issues.md` ISSUE-002·003](known-issues.md) 참조.
 
 ---
 

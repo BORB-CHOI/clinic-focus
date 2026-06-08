@@ -1,0 +1,9852 @@
+[
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzMxIyQxIyQzIyQ3OSQzNjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "플랜미의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "기미",
+   "리프팅",
+   "보톡스",
+   "필러",
+   "여드름",
+   "흉터",
+   "토닝",
+   "레이저토닝"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzUxIyQxIyQxIyQ3OSQyNjEyMjIjNTEjJDEjJDYjJDgz",
+  "name": "미엘르인청담의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzMxIyQxIyQ3IyQwMyQ0NjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "클리니크후즈후의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxOTYxIzMxIyQxIyQzIyQwMyQ0NjE0ODEjNTEjJDEjJDYjJDgz",
+  "name": "견의원",
+  "from": "기타",
+  "to": "비뇨의학과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxOTYxIzUxIyQxIyQ1IyQ4MiQzNjE4MzIjODEjJDEjJDIjJDgz",
+  "name": "메타의원",
+  "from": "기타",
+  "to": "정신건강의학과",
+  "cosmetic": false,
+  "kw": [
+   "불안",
+   "공황",
+   "우울",
+   "강박",
+   "비만",
+   "스트레스",
+   "다이어트",
+   "심장"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzIxIyQxIyQxIyQ3MiQzNjEyMjIjNjEjJDEjJDgjJDgz",
+  "name": "비티에프의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "동안",
+   "보톡스",
+   "체형",
+   "비만"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxOTYxIzExIyQxIyQ3IyQxMyQzNjEyMjIjODEjJDEjJDYjJDgz",
+  "name": "삐땅기의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "안검",
+   "상안검",
+   "갑상선",
+   "쌍꺼풀",
+   "쌍커풀",
+   "하안검",
+   "탄력",
+   "감기"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzIxIyQxIyQ1IyQwMyQyNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "바이슈의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "체형"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzExIyQxIyQzIyQxMyQ0NjE0ODEjNjEjJDEjJDAjJDgz",
+  "name": "강남라렌의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzIxIyQxIyQxIyQ2MiQzNjE4MzIjNTEjJDEjJDIjJDgz",
+  "name": "베르미의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "써마지",
+   "지방흡입",
+   "초음파",
+   "보톡스",
+   "필러",
+   "슈링크",
+   "모발"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkMzgxNzAyIzIxIyQxIyQxIyQ4OSQzNjE4MzIjNjEjJDEjJDAjJDgz",
+  "name": "세란의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "라식",
+   "라섹",
+   "시력교정",
+   "백내장",
+   "녹내장",
+   "안구건조",
+   "교정",
+   "1차병원"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzUxIyQxIyQxIyQ2MiQyNjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "예쁨주의쁨의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "스포츠"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxOTYxIzMxIyQxIyQ3IyQ3OSQzNjE4MzIjNTEjJDEjJDYjJDgz",
+  "name": "소은희마인드피아의원",
+  "from": "기타",
+  "to": "정신건강의학과",
+  "cosmetic": false,
+  "kw": [
+   "스트레스",
+   "발달",
+   "불안",
+   "강박",
+   "틱",
+   "우울",
+   "성장",
+   "공황"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzQxIyQxIyQ3IyQwMyQyNjE4MzIjNjEjJDEjJDgjJDgz",
+  "name": "채우다의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": [
+   "모발",
+   "탈모",
+   "모발이식",
+   "후두",
+   "흉터",
+   "헤어라인",
+   "체형",
+   "비만"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQyIyQ1IyQwMCQzNjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "벨포인트의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "필러",
+   "보톡스",
+   "흉터",
+   "리프팅",
+   "색소",
+   "주근깨",
+   "스킨부스터",
+   "실리프팅"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxOTYxIzQxIyQxIyQ3IyQ2MiQzNjE4MzIjNDEjJDEjJDgjJDgz",
+  "name": "비더뉴의원",
+  "from": "기타",
+  "to": "이비인후과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzMxIyQxIyQzIyQ2MiQzNjEwMDIjNDEjJDEjJDQjJDgz",
+  "name": "이즈의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "흉터",
+   "모공",
+   "여드름",
+   "리프팅",
+   "제모",
+   "색소",
+   "보톡스",
+   "필러"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzExIyQxIyQzIyQ2MiQzNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "글로비지테라안티에이징의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "스킨부스터",
+   "써마지",
+   "통증",
+   "보톡스",
+   "스킨보톡스",
+   "모공",
+   "필러",
+   "리프팅"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzQxIyQxIyQ3IyQwMyQzNjE4MzIjNjEjJDEjJDQjJDgz",
+  "name": "서울수면의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "비염",
+   "불안",
+   "불면",
+   "수면장애",
+   "1차병원",
+   "과수면증치료",
+   "기면증",
+   "만성피로"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzIxIyQxIyQ1IyQxMyQyNjE4MzIjNDEjJDEjJDgjJDgz",
+  "name": "설레임의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "모공",
+   "써마지",
+   "여드름",
+   "울쎄라",
+   "틱",
+   "물광",
+   "스킨부스터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNTgxOTYxIzUxIyQxIyQxIyQ2MiQ0NjEwMDIjNTEjJDEjJDYjJDgz",
+  "name": "엠엑스의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzUxIyQxIyQxIyQ3OSQzNjE0ODEjNjEjJDEjJDgjJDgz",
+  "name": "루나의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "여드름",
+   "보톡스",
+   "제모",
+   "화이트닝",
+   "모공",
+   "리프팅",
+   "레이저제모",
+   "기미"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxOTYxIzUxIyQxIyQ1IyQ4OSQyNjE4MzIjNzEjJDEjJDgjJDgz",
+  "name": "뉴케이의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxOTYxIzUxIyQxIyQ1IyQ3OSQyNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "데카비의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": [
+   "두피",
+   "1차병원",
+   "두피관리"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzExIyQxIyQ3IyQxMyQyNjE0ODEjNDEjJDEjJDQjJDgz",
+  "name": "모더함의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": [
+   "모발",
+   "모발이식",
+   "두피",
+   "흉터",
+   "탈모",
+   "헤어라인",
+   "동안",
+   "교정"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzIxIyQxIyQ1IyQ3OSQyNjE4MzIjNDEjJDEjJDgjJDgz",
+  "name": "움찬의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": [
+   "모발",
+   "동안",
+   "스트레스"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzUxIyQxIyQ1IyQ5MiQzNjEyMjIjODEjJDEjJDYjJDgz",
+  "name": "한국영상의원",
+  "from": "기타",
+  "to": "내과",
+  "cosmetic": false,
+  "kw": [
+   "심장",
+   "초음파",
+   "건강검진"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxMTkxIzIxIyQyIyQ5IyQwMCQzNjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "강남12의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "보톡스",
+   "필러",
+   "사각턱",
+   "실리프팅",
+   "지방분해",
+   "동안",
+   "윤곽주사"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzIxIyQxIyQ1IyQ4OSQyNjE0ODEjNDEjJDEjJDQjJDgz",
+  "name": "클래스원의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "필러",
+   "울쎄라",
+   "제모",
+   "모공",
+   "토닝",
+   "써마지",
+   "초음파"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzIxIyQxIyQ1IyQxMyQzNjEwMDIjODEjJDEjJDYjJDgz",
+  "name": "밀리의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "모공",
+   "리프팅",
+   "울쎄라",
+   "써마지",
+   "제모",
+   "동안",
+   "여드름",
+   "트러블"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxOTYxIzUxIyQxIyQxIyQ4OSQzNjE4MzIjNjEjJDEjJDQjJDgz",
+  "name": "한송이영상의학과의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "초음파",
+   "갑상선",
+   "유두",
+   "통증",
+   "부유방",
+   "피임",
+   "흉터",
+   "비만"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzIxIyQxIyQ5IyQ2MiQzNjE0ODEjNjEjJDEjJDQjJDgz",
+  "name": "라해의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "지방이식",
+   "지방흡입",
+   "체형",
+   "수부",
+   "허벅지",
+   "비만",
+   "모발",
+   "팔뚝"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzIxIyQxIyQ1IyQ2MiQzNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "강남에프엠의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "다이어트",
+   "수액",
+   "비만",
+   "영양",
+   "탄력",
+   "리프팅",
+   "한약",
+   "체중감량"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzUxIyQxIyQxIyQ4OSQ0NjEwMDIjNTEjJDEjJDIjJDgz",
+  "name": "드림헤어라인의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzMxIyQxIyQ3IyQxMyQzNjE4MzIjNjEjJDEjJDAjJDgz",
+  "name": "디오레의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "필러",
+   "써마지",
+   "비만",
+   "울쎄라",
+   "슈링크",
+   "통증",
+   "흉터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzUxIyQxIyQ1IyQwMyQ0NjE0ODEjNjEjJDEjJDAjJDgz",
+  "name": "연세모나의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "모발",
+   "모발이식",
+   "탈모",
+   "헤어라인",
+   "흉터",
+   "M자",
+   "교정",
+   "동안"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMzUxIzQxIyQxIyQ3IyQwMyQ0NjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "에반스연세의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "갑상선",
+   "결절",
+   "초음파",
+   "통증",
+   "흉터",
+   "건강검진",
+   "유두",
+   "동안"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzIxIyQxIyQxIyQ3MiQ0NjEwMDIjNjEjJDEjJDQjJDgz",
+  "name": "111의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "지방흡입",
+   "다이어트",
+   "팔뚝",
+   "리프팅",
+   "지방이식",
+   "허벅지",
+   "체질",
+   "스트레스"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzExIyQxIyQzIyQ5OSQyNjEwMDIjNjEjJDEjJDgjJDgz",
+  "name": "온리원의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxNzAyIzMxIyQxIyQ3IyQ5OSQyNjE4MzIjNjEjJDEjJDgjJDgz",
+  "name": "루이샤의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "지방흡입",
+   "비만",
+   "지방이식",
+   "여성성형",
+   "체형",
+   "리프팅",
+   "거상",
+   "허벅지"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzExIyQxIyQ3IyQ2MiQyNjE4MzIjNTEjJDEjJDYjJDgz",
+  "name": "브릴린의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzMxIyQxIyQzIyQ5MiQzNjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "지우개의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "스킨부스터",
+   "체형",
+   "비만",
+   "다이어트",
+   "필러",
+   "탄력",
+   "써마지"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzMxIyQxIyQ3IyQ3OSQzNjE4MzIjNjEjJDEjJDAjJDgz",
+  "name": "모두모의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "모발",
+   "모발이식",
+   "탈모",
+   "두피",
+   "헤어라인",
+   "흉터",
+   "교정",
+   "주사치료"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzIxIyQyIyQ1IyQwMCQ0NjEwMDIjODEjJDEjJDIjJDgz",
+  "name": "우유빛의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": [
+   "울쎄라",
+   "스킨부스터",
+   "여드름",
+   "여드름흉터",
+   "트러블",
+   "흉터",
+   "색소",
+   "리프팅"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzMxIyQxIyQzIyQ5MiQyNjEyMjIjNjEjJDEjJDgjJDgz",
+  "name": "온앤위드의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzUxIyQxIyQxIyQwMyQyNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "미샹떼의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzIxIyQxIyQ5IyQ3OSQzNjEwMDIjNTEjJDEjJDYjJDgz",
+  "name": "청담아티젠의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "탄력",
+   "써마지",
+   "흉터",
+   "여드름",
+   "모공",
+   "울쎄라",
+   "여드름흉터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzUxIyQxIyQ1IyQxMyQzNjE0ODEjODEjJDEjJDYjJDgz",
+  "name": "햇살담은뜰정원의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "필러",
+   "리프팅",
+   "히알루론산",
+   "탄력",
+   "비만",
+   "안면윤곽",
+   "교정",
+   "동안"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzExIyQxIyQ3IyQ2MiQzNjE4MzIjODEjJDEjJDYjJDgz",
+  "name": "연세인의원",
+  "from": "기타",
+  "to": "내과",
+  "cosmetic": false,
+  "kw": [
+   "당뇨",
+   "알레르기",
+   "고혈압",
+   "비만",
+   "예방접종",
+   "접종",
+   "통증",
+   "임신"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNTgxMzUxIzUxIyQxIyQxIyQ3OSQyNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "아니다웰니스의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": [
+   "1차병원"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzIxIyQxIyQ1IyQ3OSQyNjE4MzIjNzEjJDEjJDgjJDgz",
+  "name": "드올의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "동안"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzUxIyQxIyQxIyQ3MiQzNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "강남셀리팅의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzMxIyQxIyQ3IyQ2MiQzNjEwMDIjNjEjJDEjJDgjJDgz",
+  "name": "베이드의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "필러",
+   "색소",
+   "보톡스",
+   "여드름",
+   "모공",
+   "흉터",
+   "실리프팅"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzIxIyQxIyQ5IyQ3OSQyNjE4MzIjNTEjJDEjJDIjJDgz",
+  "name": "리즈벨의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzIxIyQxIyQ5IyQ2MiQyNjEwMDIjNjEjJDEjJDgjJDgz",
+  "name": "루엘의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "여드름",
+   "흉터",
+   "모공",
+   "기미",
+   "색소",
+   "리프팅",
+   "모발",
+   "비만"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzQxIyQxIyQ3IyQ3MiQyNjE4MzIjNTEjJDEjJDIjJDgz",
+  "name": "참닥터의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "모발",
+   "모발이식",
+   "두피",
+   "탈모",
+   "스케일링",
+   "흉터",
+   "보톡스",
+   "헤어라인"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzUxIyQxIyQ1IyQ5MiQzNjE0ODEjODEjJDEjJDYjJDgz",
+  "name": "연세베러의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "써마지",
+   "울쎄라",
+   "모발",
+   "실리프팅",
+   "비만"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzMxIyQxIyQzIyQ3OSQyNjEyMjIjNzEjJDEjJDgjJDgz",
+  "name": "디토셀의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "비만",
+   "리프팅",
+   "탄력",
+   "모발",
+   "두피",
+   "체형",
+   "영양"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzQxIyQyIyQ3IyQwMCQ0NjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "블랑드비의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "흉터",
+   "모공",
+   "토닝",
+   "미백",
+   "실리프팅",
+   "비만",
+   "체형"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzUxIyQyIyQ1IyQwMCQ0NjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "청담비엘에스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxOTYxIzIxIyQxIyQ5IyQ4OSQ0NjE0ODEjODEjJDEjJDIjJDgz",
+  "name": "강남로미모의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzIxIyQxIyQ1IyQwMyQyNjE0ODEjNjEjJDEjJDQjJDgz",
+  "name": "골드제이의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "필러",
+   "초음파",
+   "울쎄라",
+   "써마지",
+   "모공",
+   "색소",
+   "통증"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzIxIyQyIyQxIyQwMCQyNjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "에르시아의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzQxIyQxIyQ3IyQxMyQ0NjE0ODEjNzEjJDEjJDgjJDgz",
+  "name": "지힐링스퀘어의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "지방흡입",
+   "탄력",
+   "초음파",
+   "분만",
+   "거상",
+   "안면윤곽",
+   "허벅지",
+   "틱"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzUxIyQxIyQ1IyQwMyQzNjEyMjIjNTEjJDEjJDIjJDgz",
+  "name": "오드의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "스킨부스터",
+   "필러",
+   "울쎄라",
+   "써마지",
+   "탄력",
+   "자보",
+   "히알루론산"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzMxIyQxIyQ3IyQ4OSQyNjEyMjIjNjEjJDEjJDQjJDgz",
+  "name": "누브의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "필러",
+   "보톡스",
+   "리프팅",
+   "울쎄라",
+   "통증",
+   "흉터",
+   "스킨부스터",
+   "제모"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzIxIyQxIyQxIyQwMyQyNjEyMjIjNjEjJDEjJDQjJDgz",
+  "name": "모아이의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "탈모",
+   "모발",
+   "모발이식",
+   "두피",
+   "헤어라인",
+   "성장",
+   "원형탈모",
+   "스트레스"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzMxIyQyIyQ3IyQwMCQzNjEyMjIjNjEjJDEjJDQjJDgz",
+  "name": "미인도의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "연골",
+   "교정",
+   "리프팅",
+   "흉터",
+   "쌍꺼풀",
+   "트임",
+   "보형물",
+   "콧볼"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxOTYxIzUxIyQyIyQxIyQwMCQ0NjEwMDIjNjEjJDEjJDgjJDgz",
+  "name": "임지연의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ1IyQwMyQzNjEyMjIjNjEjJDEjJDQjJDgz",
+  "name": "연세다정한365의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "수액",
+   "탈모",
+   "예방접종",
+   "접종",
+   "스트레스",
+   "영양",
+   "보톡스",
+   "심장"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzUxIyQxIyQ1IyQwMyQ0NjEwMDIjNzEjJDEjJDgjJDgz",
+  "name": "세라미크의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "제모",
+   "써마지",
+   "울쎄라",
+   "임신",
+   "알러지"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzUxIyQxIyQxIyQ5OSQzNjEwMDIjNTEjJDEjJDYjJDgz",
+  "name": "앤퍼센트의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "탄력",
+   "울쎄라",
+   "슈링크",
+   "필러",
+   "써마지",
+   "초음파",
+   "탈모"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzIxIyQxIyQ5IyQ3OSQzNjE4MzIjODEjJDEjJDYjJDgz",
+  "name": "디아뜨의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzQxIyQxIyQ3IyQ4OSQzNjEyMjIjNTEjJDEjJDIjJDgz",
+  "name": "베스트이화의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQxIyQxMyQzNjEwMDIjODEjJDEjJDIjJDgz",
+  "name": "뉴브의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "울쎄라",
+   "색소",
+   "리프팅",
+   "흉터",
+   "필러",
+   "보톡스",
+   "써마지",
+   "스킨부스터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxOTYxIzUxIyQyIyQ1IyQwMCQ0NjE0ODEjNjEjJDEjJDAjJDgz",
+  "name": "에이치투오의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "통증",
+   "체형",
+   "영양",
+   "흉터",
+   "교정",
+   "동안",
+   "필러",
+   "리프팅"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzUxIyQxIyQ1IyQ5MiQyNjE0ODEjNTEjJDEjJDYjJDgz",
+  "name": "코코라인의원",
+  "from": "기타",
+  "to": "이비인후과",
+  "cosmetic": false,
+  "kw": [
+   "코성형",
+   "인후"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzQxIyQxIyQ3IyQ2MiQzNjE0ODEjNDEjJDEjJDQjJDgz",
+  "name": "뉴영의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxOTYxIzIxIyQxIyQ5IyQ5OSQyNjE0ODEjNDEjJDEjJDQjJDgz",
+  "name": "우리진단방사선과의원",
+  "from": "기타",
+  "to": "정형외과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNTgxMzUxIzUxIyQxIyQxIyQ3MiQyNjEwMDIjNDEjJDEjJDQjJDgz",
+  "name": "조앤박의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": [
+   "헤어라인",
+   "두피",
+   "교정",
+   "통증",
+   "리프팅",
+   "써마지",
+   "1차병원",
+   "반영구"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ1IyQ5MiQzNjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "르제이의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzQxIyQxIyQ3IyQ3MiQzNjEwMDIjNTEjJDEjJDIjJDgz",
+  "name": "모즈의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "수액",
+   "필러",
+   "색소",
+   "윤곽주사",
+   "탄력",
+   "허벅지",
+   "체중감량"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzIxIyQxIyQ1IyQ3MiQzNjE0ODEjNjEjJDEjJDAjJDgz",
+  "name": "셀앤의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMSMkMCMkOTkkMzgxMzUxIzQxIyQxIyQ3IyQxMyQyNjE0ODEjNjEjJDEjJDgjJDgz",
+  "name": "청담해리슨병원",
+  "from": "기타",
+  "to": "재활의학과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzUxIyQxIyQxIyQxMyQzNjE4MzIjNDEjJDEjJDgjJDgz",
+  "name": "연세이미지라인의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ1IyQ5MiQ0NjE0ODEjNjEjJDEjJDAjJDgz",
+  "name": "인코드의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "필러",
+   "보톡스",
+   "히알루론산",
+   "리프팅",
+   "탄력",
+   "비만",
+   "코성형",
+   "실리프팅"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzUxIyQxIyQxIyQ4MiQyNjEyMjIjODEjJDEjJDIjJDgz",
+  "name": "갤러리의원",
+  "from": "기타",
+  "to": "이비인후과",
+  "cosmetic": false,
+  "kw": [
+   "인후"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzMxIyQyIyQ3IyQwMCQyNjEwMDIjNzEjJDEjJDgjJDgz",
+  "name": "더안청담의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "울쎄라",
+   "써마지",
+   "초음파",
+   "필러",
+   "탄력",
+   "실리프팅",
+   "비만"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzQxIyQxIyQ3IyQ3MiQyNjEwMDIjNTEjJDEjJDIjJDgz",
+  "name": "셀더영의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "수액",
+   "탄력",
+   "성기능",
+   "흉터",
+   "모공",
+   "영양",
+   "보톡스",
+   "리프팅"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzIxIyQxIyQxIyQ5MiQyNjE4MzIjNDEjJDEjJDgjJDgz",
+  "name": "청담파크의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ5IyQ5MiQyNjE4MzIjNDEjJDEjJDQjJDgz",
+  "name": "청담안느의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "울쎄라",
+   "써마지"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzMxIyQyIyQ3IyQwMCQzNjE0ODEjNjEjJDEjJDgjJDgz",
+  "name": "루비의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "여드름",
+   "필러",
+   "동안",
+   "토닝",
+   "통증",
+   "흉터",
+   "모공",
+   "색소"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzMxIyQxIyQ3IyQ5MiQ0NjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "포헤어의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "모발",
+   "모발이식",
+   "탈모",
+   "두피",
+   "성장",
+   "헤어라인",
+   "스트레스",
+   "영양"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxMTkxIzMxIyQyIyQ3IyQwMCQyNjE4MzIjODEjJDEjJDIjJDgz",
+  "name": "재단법인한국의학연구소강남의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzIxIyQxIyQxIyQ5OSQyNjE4MzIjODEjJDEjJDYjJDgz",
+  "name": "조병수의원",
+  "from": "기타",
+  "to": "내과",
+  "cosmetic": false,
+  "kw": [
+   "신장",
+   "장염",
+   "고혈압",
+   "소화기",
+   "사상",
+   "내시경",
+   "당뇨",
+   "초음파"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMSMkMCMkOTkkMzgxMzUxIzMxIyQxIyQ3IyQ2MiQyNjE4MzIjODEjJDEjJDIjJDgz",
+  "name": "강남제이에스병원",
+  "from": "기타",
+  "to": "정형외과",
+  "cosmetic": false,
+  "kw": [
+   "무릎",
+   "관절",
+   "연골",
+   "건강검진",
+   "척추",
+   "스포츠",
+   "통증",
+   "유치"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ5IyQ4OSQyNjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "서울탑초이스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "화이트닝",
+   "색소",
+   "리프팅",
+   "여드름",
+   "모공",
+   "보톡스",
+   "필러",
+   "울쎄라"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzMxIyQxIyQ3IyQ5OSQzNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "채올의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "울쎄라",
+   "초음파",
+   "필러",
+   "써마지",
+   "동안",
+   "보톡스",
+   "스킨부스터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzUxIyQxIyQ1IyQ5OSQyNjE4MzIjNDEjJDEjJDQjJDgz",
+  "name": "바우스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "탄력",
+   "울쎄라",
+   "두피",
+   "탈모",
+   "필러",
+   "미백",
+   "보톡스"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzIxIyQxIyQ5IyQ2MiQzNjE4MzIjNjEjJDEjJDQjJDgz",
+  "name": "닥터에버스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "제모",
+   "여드름",
+   "필러",
+   "모공",
+   "토닝",
+   "보톡스",
+   "인모드"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzIxIyQxIyQ1IyQ3OSQzNjE4MzIjODEjJDEjJDIjJDgz",
+  "name": "연세자연의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ1IyQwMyQyNjE4MzIjNDEjJDEjJDgjJDgz",
+  "name": "알파모의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "모발",
+   "모발이식",
+   "탈모",
+   "두피",
+   "헤어라인",
+   "교정",
+   "보톡스",
+   "통증"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzExIyQxIyQ3IyQxMyQ0NjE0ODEjNjEjJDEjJDgjJDgz",
+  "name": "비티큐의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "탄력",
+   "색소",
+   "보톡스",
+   "필러",
+   "스킨부스터",
+   "탈모",
+   "실리프팅"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNTgxMzUxIzIxIyQxIyQxIyQ5MiQyNjE4MzIjNTEjJDEjJDIjJDgz",
+  "name": "마이셀의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "통증",
+   "유두",
+   "보형물",
+   "척추",
+   "주사치료",
+   "관절",
+   "근막",
+   "코성형"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzExIyQxIyQzIyQ4MiQzNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "아트라인의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "지방흡입",
+   "지방이식",
+   "탄력",
+   "스킨부스터",
+   "필러",
+   "동안",
+   "보톡스",
+   "리프팅"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzUxIyQxIyQ1IyQ2MiQzNjEyMjIjNTEjJDEjJDYjJDgz",
+  "name": "삼성비앤에스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzIxIyQxIyQ5IyQ4OSQyNjE0ODEjNTEjJDEjJDYjJDgz",
+  "name": "프레쉬테마의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ5IyQwMyQzNjE4MzIjNDEjJDEjJDQjJDgz",
+  "name": "스카이라인의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "지방이식",
+   "지방흡입",
+   "흉터",
+   "필러",
+   "가슴성형",
+   "보형물",
+   "수부"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzMxIyQxIyQ3IyQ2MiQyNjEyMjIjNjEjJDEjJDgjJDgz",
+  "name": "이지마인드의원",
+  "from": "기타",
+  "to": "정신건강의학과",
+  "cosmetic": false,
+  "kw": [
+   "스트레스",
+   "우울",
+   "공황",
+   "동안",
+   "불안",
+   "불면",
+   "강박",
+   "요로"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzExIyQxIyQzIyQ3OSQzNjE4MzIjNDEjJDEjJDgjJDgz",
+  "name": "청담솔루션의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzMxIyQxIyQ3IyQwMyQyNjE0ODEjNDEjJDEjJDQjJDgz",
+  "name": "바디업의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "지방흡입",
+   "흉터",
+   "허벅지",
+   "지방이식",
+   "체형"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzMxIyQxIyQ3IyQ5OSQzNjEwMDIjNzEjJDEjJDgjJDgz",
+  "name": "민앤민의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "흉터",
+   "알레르기",
+   "성병",
+   "통증",
+   "울쎄라",
+   "탄력",
+   "탈모"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzIxIyQxIyQxIyQ5MiQyNjEyMjIjODEjJDEjJDIjJDgz",
+  "name": "아비쥬의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "보톡스",
+   "모공",
+   "동안",
+   "윤곽주사",
+   "스킨부스터",
+   "제모",
+   "사각턱"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzQxIyQxIyQ3IyQ3MiQyNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "연세리움의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ5IyQ2MiQyNjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "셀리에의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "탄력",
+   "울쎄라",
+   "보톡스",
+   "써마지",
+   "필러",
+   "실리프팅",
+   "수액"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMSMkMCMkOTkkMzgxMzUxIzIxIyQyIyQ5IyQwMCQyNjEyMjIjNDEjJDEjJDQjJDgz",
+  "name": "김정수여러분병원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "디스크",
+   "통증",
+   "2차병원",
+   "디스크질환",
+   "통증치료"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzMxIyQxIyQzIyQ3OSQ0NjE0ODEjNDEjJDEjJDQjJDgz",
+  "name": "유라인의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "다이어트",
+   "팔뚝",
+   "허벅지",
+   "광대",
+   "지방이식",
+   "지방분해",
+   "체형"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ5IyQ2MiQyNjE0ODEjNTEjJDEjJDYjJDgz",
+  "name": "비테라의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "다이어트",
+   "리프팅",
+   "당뇨",
+   "울쎄라",
+   "비만",
+   "체중감량",
+   "알러지",
+   "써마지"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzUxIyQxIyQ1IyQwMyQzNjE4MzIjNDEjJDEjJDgjJDgz",
+  "name": "성수의원",
+  "from": "기타",
+  "to": "내과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzIxIyQxIyQ1IyQ5OSQzNjE0ODEjNTEjJDEjJDYjJDgz",
+  "name": "연세문상영의원",
+  "from": "기타",
+  "to": "정형외과",
+  "cosmetic": false,
+  "kw": [
+   "통증",
+   "프롤로",
+   "오십견",
+   "관절",
+   "척추",
+   "디스크",
+   "허리",
+   "목통증"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzIxIyQxIyQxIyQ3MiQyNjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "90일의기적의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "보톡스",
+   "동안",
+   "치매",
+   "보툴리눔",
+   "모공"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzIxIyQxIyQ5IyQxMyQyNjEyMjIjNjEjJDEjJDQjJDgz",
+  "name": "클라시코의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "탄력",
+   "틱",
+   "리프팅",
+   "수액",
+   "모공",
+   "토닝",
+   "보톡스",
+   "필러"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzUxIyQxIyQxIyQ5OSQ0NjE0ODEjNzEjJDEjJDgjJDgz",
+  "name": "(의)성광의료재단 차움의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzIxIyQxIyQ1IyQ5MiQ0NjEwMDIjNjEjJDEjJDQjJDgz",
+  "name": "휘마의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzExIyQyIyQ3IyQwMCQ0NjEwMDIjODEjJDEjJDYjJDgz",
+  "name": "청담마이의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "탄력",
+   "허벅지",
+   "다이어트"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxNzAyIzIxIyQxIyQ5IyQ5OSQzNjEwMDIjNDEjJDEjJDQjJDgz",
+  "name": "이안의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "모발",
+   "모발이식",
+   "내시경",
+   "제모",
+   "거상",
+   "안면윤곽",
+   "지방흡입",
+   "지방이식"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzExIyQxIyQ3IyQ5MiQzNjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "예젤유의원",
+  "from": "기타",
+  "to": "산부인과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzIxIyQxIyQ1IyQ5OSQyNjEyMjIjODEjJDEjJDIjJDgz",
+  "name": "청담에끌라드의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "흉터",
+   "스킨부스터",
+   "색소",
+   "모공",
+   "여드름",
+   "리프팅",
+   "제모",
+   "보툴리눔"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzIxIyQxIyQ5IyQ3MiQzNjE0ODEjNTEjJDEjJDIjJDgz",
+  "name": "르로제의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "지방흡입",
+   "지방이식",
+   "다이어트",
+   "허벅지",
+   "팔뚝",
+   "흉터",
+   "탄력",
+   "체질"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzMxIyQxIyQ3IyQ5OSQ0NjEwMDIjNDEjJDEjJDQjJDgz",
+  "name": "포르테의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "스킨부스터",
+   "리프팅",
+   "탄력",
+   "인모드",
+   "실리프팅",
+   "통증",
+   "물광",
+   "영양"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzIxIyQxIyQxIyQwMyQzNjE4MzIjNDEjJDEjJDgjJDgz",
+  "name": "닥터송포유의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "거상",
+   "안면거상",
+   "rhinoplasty",
+   "리프팅",
+   "이마거상",
+   "트임",
+   "안검",
+   "동안"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzUxIyQxIyQxIyQ3MiQyNjE0ODEjNjEjJDEjJDQjJDgz",
+  "name": "봄마루의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "실리프팅",
+   "결절",
+   "허벅지",
+   "거상",
+   "광대",
+   "양악",
+   "지방흡입"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzIxIyQxIyQxIyQ3MiQ0NjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "압구정리앤스타의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzQxIyQxIyQ3IyQ3MiQzNjE0ODEjNzEjJDEjJDgjJDgz",
+  "name": "에이포의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "보톡스",
+   "필러",
+   "울쎄라"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzExIyQxIyQ3IyQxMyQzNjEyMjIjODEjJDEjJDYjJDgz",
+  "name": "더더블유의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "보형물",
+   "가슴성형",
+   "초음파",
+   "유두",
+   "지방이식",
+   "결절",
+   "흉터",
+   "거상"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzUxIyQxIyQxIyQ5OSQyNjE4MzIjNzEjJDEjJDgjJDgz",
+  "name": "어반힐의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "색소",
+   "체형",
+   "피부톤",
+   "탄력",
+   "통증",
+   "보톡스",
+   "교정",
+   "갑상선"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzUxIyQxIyQxIyQ4OSQ0NjEwMDIjODEjJDEjJDIjJDgz",
+  "name": "강남원의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzMxIyQxIyQ3IyQ5OSQzNjE0ODEjNzEjJDEjJDgjJDgz",
+  "name": "프레쉬홍닥터의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ1IyQ5OSQyNjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "올라라의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxMTkxIzUxIyQxIyQxIyQ5MiQyNjE0ODEjNjEjJDEjJDQjJDgz",
+  "name": "닥터밸리의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMSMkMCMkOTkkMzgxMzUxIzQxIyQxIyQ3IyQ4MiQzNjE4MzIjNDEjJDEjJDgjJDgz",
+  "name": "두발로병원",
+  "from": "기타",
+  "to": "재활의학과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxOTYxIzUxIyQxIyQ1IyQwMyQ0NjEwMDIjODEjJDEjJDYjJDgz",
+  "name": "연세라인업의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "비만",
+   "보톡스",
+   "체형",
+   "필러",
+   "교정",
+   "리프팅",
+   "동안",
+   "여드름"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzExIyQxIyQzIyQ4MiQyNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "연세미다인의원",
+  "from": "기타",
+  "to": "한의원",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMSMkMCMkOTkkMzgxMzUxIzMxIyQyIyQzIyQwMCQyNjE4MzIjNjEjJDEjJDAjJDgz",
+  "name": "선한목자병원",
+  "from": "기타",
+  "to": "정형외과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMSMkMCMkOTkkMzgxMzUxIzIxIyQxIyQ5IyQxMyQyNjEyMjIjNTEjJDEjJDYjJDgz",
+  "name": "미병원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "보톡스",
+   "필러",
+   "리프팅",
+   "안면윤곽",
+   "지방흡입",
+   "지방이식",
+   "도수",
+   "도수치료"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzMxIyQxIyQzIyQ3MiQzNjE4MzIjODEjJDEjJDYjJDgz",
+  "name": "포인트업의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "필러",
+   "보톡스",
+   "실리프팅",
+   "여드름",
+   "모공",
+   "토닝",
+   "레이저토닝"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ5IyQ2MiQyNjE4MzIjODEjJDEjJDIjJDgz",
+  "name": "이노벨의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMzUxIzExIyQxIyQ3IyQ2MiQ0NjE0ODEjNjEjJDEjJDQjJDgz",
+  "name": "한사랑노노의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "필러",
+   "보톡스",
+   "비만",
+   "물광",
+   "안면윤곽",
+   "체형",
+   "리프팅",
+   "여드름"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzExIyQxIyQ3IyQxMyQzNjE0ODEjNTEjJDEjJDIjJDgz",
+  "name": "청담포레브의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "모공",
+   "실리프팅",
+   "여드름",
+   "스킨부스터",
+   "흉터",
+   "울쎄라",
+   "써마지"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzQxIyQxIyQ3IyQ2MiQyNjEyMjIjNTEjJDEjJDYjJDgz",
+  "name": "모던스탠다드의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "제모",
+   "색소",
+   "레이저제모",
+   "보톡스",
+   "강남제모",
+   "남성제모",
+   "젠맥프플",
+   "신논현제모"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzExIyQxIyQzIyQ4OSQzNjE4MzIjNjEjJDEjJDgjJDgz",
+  "name": "민의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "흉터",
+   "모공",
+   "색소",
+   "보톡스",
+   "필러",
+   "울쎄라",
+   "스킨부스터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzIxIyQxIyQ5IyQ5MiQzNjEyMjIjODEjJDEjJDYjJDgz",
+  "name": "청담아리움의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "필러",
+   "여드름",
+   "백신",
+   "보톡스",
+   "모공",
+   "잡티",
+   "미백",
+   "비만"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzExIyQxIyQzIyQxMyQyNjE4MzIjODEjJDEjJDIjJDgz",
+  "name": "이승우의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMSMkMCMkOTkkMzgxMzUxIzMxIyQxIyQzIyQ3MiQyNjEwMDIjNTEjJDEjJDIjJDgz",
+  "name": "강남초이스병원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzMxIyQxIyQ3IyQ4OSQ0NjE0ODEjNDEjJDEjJDQjJDgz",
+  "name": "이고의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "필러",
+   "스킨부스터",
+   "쥐젖",
+   "피임",
+   "써마지",
+   "결절",
+   "통증",
+   "리프팅"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzExIyQxIyQzIyQxMyQzNjE4MzIjODEjJDEjJDIjJDgz",
+  "name": "더마스터의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzMxIyQxIyQ3IyQ5MiQyNjE0ODEjNTEjJDEjJDIjJDgz",
+  "name": "델픽의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "흉터",
+   "모공",
+   "기미",
+   "잡티",
+   "자보",
+   "여드름",
+   "색소",
+   "미백"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzMxIyQxIyQ3IyQxMyQzNjE0ODEjNjEjJDEjJDAjJDgz",
+  "name": "모다올의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": [
+   "모발",
+   "모발이식",
+   "탈모",
+   "성장",
+   "두피",
+   "헤어라인",
+   "영양",
+   "흉터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzIxIyQxIyQ5IyQ3MiQ0NjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "제이디의원",
+  "from": "기타",
+  "to": "재활의학과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzMxIyQxIyQ3IyQ4OSQzNjEwMDIjNDEjJDEjJDQjJDgz",
+  "name": "유안의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "여드름",
+   "흉터",
+   "모공",
+   "기미",
+   "잡티",
+   "미백",
+   "보톡스"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzMxIyQyIyQ3IyQwMCQ0NjE0ODEjNTEjJDEjJDIjJDgz",
+  "name": "자연예쁨의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "필러",
+   "리프팅",
+   "비만",
+   "보톡스",
+   "색소",
+   "모발",
+   "체형",
+   "동안"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzUxIyQxIyQxIyQxMyQyNjE4MzIjNjEjJDEjJDAjJDgz",
+  "name": "청아연의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "초음파",
+   "울쎄라",
+   "인모드",
+   "보톡스",
+   "스킨부스터",
+   "써마지",
+   "필러"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzUxIyQxIyQ1IyQ4OSQyNjE0ODEjNjEjJDEjJDgjJDgz",
+  "name": "라비앙의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzQxIyQxIyQ3IyQ4MiQzNjEwMDIjNzEjJDEjJDgjJDgz",
+  "name": "예쁜얼굴의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "실리프팅",
+   "울쎄라",
+   "탄력",
+   "써마지",
+   "인모드",
+   "지방이식",
+   "거상"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzIxIyQxIyQxIyQ4MiQyNjEyMjIjNjEjJDEjJDQjJDgz",
+  "name": "셀피아의료생활협동조합셀피아의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzMxIyQxIyQ3IyQ3OSQzNjEwMDIjODEjJDEjJDIjJDgz",
+  "name": "뉴셀의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "모발",
+   "모발이식",
+   "탈모",
+   "두피",
+   "보톡스",
+   "필러",
+   "리프팅",
+   "실리프팅"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzExIyQyIyQzIyQwMCQzNjE0ODEjNTEjJDEjJDIjJDgz",
+  "name": "읻다의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "흉터",
+   "통증",
+   "비만",
+   "여드름",
+   "기미",
+   "색소",
+   "보톡스",
+   "필러"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzUxIyQxIyQ1IyQ3OSQzNjEwMDIjNjEjJDEjJDgjJDgz",
+  "name": "다나아의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNTgxOTYxIzExIyQxIyQzIyQ4OSQ0NjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "팜스프링서울의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "비만",
+   "영양",
+   "성장",
+   "스트레스",
+   "당뇨",
+   "콜레스테롤",
+   "우울",
+   "탄력"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzExIyQxIyQ3IyQ2MiQ0NjE0ODEjODEjJDEjJDYjJDgz",
+  "name": "바이원의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "지방흡입",
+   "허벅지",
+   "체형",
+   "탄력",
+   "흉터",
+   "스킨부스터",
+   "어깨",
+   "비만"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMzUxIzIxIyQxIyQ1IyQ3MiQzNjE0ODEjNTEjJDEjJDIjJDgz",
+  "name": "(의)열린의료재단 강남열린의원",
+  "from": "기타",
+  "to": "비뇨의학과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ5IyQwMyQyNjE4MzIjNzEjJDEjJDgjJDgz",
+  "name": "압구정에테르나의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "루프",
+   "성병",
+   "써마지",
+   "기미",
+   "잡티",
+   "탄력",
+   "토닝",
+   "임신"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzQxIyQxIyQ3IyQ3OSQzNjE4MzIjODEjJDEjJDIjJDgz",
+  "name": "서울ND(엔디)의원",
+  "from": "기타",
+  "to": "한의원",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxOTYxIzQxIyQxIyQ3IyQ5MiQzNjE4MzIjNTEjJDEjJDIjJDgz",
+  "name": "뉴슬림의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "지방흡입",
+   "지방이식",
+   "거상",
+   "체형",
+   "허벅지",
+   "안면거상",
+   "동안"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzMxIyQxIyQzIyQ5MiQzNjE0ODEjNjEjJDEjJDgjJDgz",
+  "name": "브랜뉴의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "윤곽주사",
+   "필러",
+   "비만",
+   "통증",
+   "보톡스",
+   "모공",
+   "여드름",
+   "틱"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzUxIyQxIyQ1IyQ5OSQyNjEwMDIjNTEjJDEjJDYjJDgz",
+  "name": "에이브의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "필러",
+   "보톡스",
+   "스킨부스터",
+   "흉터",
+   "모공",
+   "사상",
+   "울쎄라"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzMxIyQxIyQ3IyQ3MiQyNjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "리브영의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "보톡스",
+   "스킨부스터",
+   "모공",
+   "색소",
+   "미백",
+   "필러",
+   "탄력"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxOTYxIzIxIyQxIyQxIyQ3MiQzNjEwMDIjNDEjJDEjJDQjJDgz",
+  "name": "서울대학교병원 강남의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "초음파",
+   "내시경",
+   "건강검진",
+   "갑상선",
+   "위내시경",
+   "대장내시경",
+   "고지혈",
+   "동맥경화"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxOTYxIzMxIyQxIyQzIyQ4OSQyNjEyMjIjNjEjJDEjJDQjJDgz",
+  "name": "마이어스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "1차병원",
+   "실손24"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzIxIyQxIyQ5IyQ3MiQzNjEwMDIjNjEjJDEjJDAjJDgz",
+  "name": "강남미의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "피부톤",
+   "울쎄라",
+   "틱",
+   "영양",
+   "acne"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMSMkMCMkOTkkMzgxMzUxIzMxIyQxIyQzIyQ2MiQzNjEwMDIjODEjJDEjJDIjJDgz",
+  "name": "튼튼병원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "관절",
+   "건강검진",
+   "통증",
+   "척추",
+   "성장",
+   "비만",
+   "재활",
+   "종합검진"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzExIyQxIyQ3IyQ4OSQ0NjE0ODEjNjEjJDEjJDgjJDgz",
+  "name": "압구정튠의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "여드름",
+   "모공",
+   "물광",
+   "보톡스",
+   "필러",
+   "윤곽주사",
+   "울쎄라"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMzUxIzQxIyQxIyQ3IyQ5OSQ0NjE0ODEjODEjJDEjJDYjJDgz",
+  "name": "이지미의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzExIyQxIyQ3IyQxMyQ0NjEwMDIjNjEjJDEjJDAjJDgz",
+  "name": "비욘드의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzIxIyQxIyQxIyQ4OSQyNjE0ODEjODEjJDEjJDIjJDgz",
+  "name": "올리나의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "탄력",
+   "실리프팅",
+   "광대",
+   "모공",
+   "스트레스",
+   "통증",
+   "잡티"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxOTYxIzUxIyQxIyQ1IyQ3OSQyNjEyMjIjNTEjJDEjJDYjJDgz",
+  "name": "코헨의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "코성형",
+   "동안"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxNzAyIzExIyQxIyQzIyQ2MiQyNjE4MzIjNTEjJDEjJDIjJDgz",
+  "name": "압구정미라클의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "보톡스",
+   "필러",
+   "안면윤곽",
+   "실리프팅",
+   "통증",
+   "1차병원",
+   "레이저시술"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzIxIyQxIyQ5IyQ5OSQyNjEyMjIjNjEjJDEjJDAjJDgz",
+  "name": "편안한시간의원",
+  "from": "기타",
+  "to": "내과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzUxIyQxIyQ1IyQ4OSQ0NjEwMDIjNjEjJDEjJDgjJDgz",
+  "name": "피팅의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "지방흡입",
+   "지방이식",
+   "허벅지",
+   "리프팅",
+   "틱",
+   "동안"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzQxIyQxIyQ3IyQ3MiQyNjEyMjIjNjEjJDEjJDgjJDgz",
+  "name": "르디테의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "필러",
+   "울쎄라",
+   "이마필러",
+   "입술필러",
+   "피부과",
+   "리투오",
+   "1차병원"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNTgxMzUxIzQxIyQxIyQ3IyQ5OSQzNjE4MzIjNDEjJDEjJDgjJDgz",
+  "name": "강남우리집의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "건강검진",
+   "예방접종",
+   "접종",
+   "통증",
+   "1차병원",
+   "내과",
+   "통증치료"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzUxIyQxIyQxIyQ4OSQzNjEwMDIjNjEjJDEjJDgjJDgz",
+  "name": "모빈치의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": [
+   "모발",
+   "모발이식"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzExIyQxIyQzIyQxMyQzNjEyMjIjNTEjJDEjJDYjJDgz",
+  "name": "리오셀의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzUxIyQxIyQxIyQ5MiQyNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "더루루의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "필러",
+   "비만",
+   "보톡스",
+   "윤곽주사",
+   "체형",
+   "교정",
+   "동안"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzMxIyQxIyQzIyQ4MiQyNjEyMjIjNDEjJDEjJDQjJDgz",
+  "name": "다리핏의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "탈모",
+   "초음파",
+   "성장",
+   "탄력",
+   "모발",
+   "심장",
+   "두피",
+   "색소"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzExIyQxIyQ3IyQ4OSQzNjE0ODEjNjEjJDEjJDAjJDgz",
+  "name": "양준상의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "접종",
+   "교정",
+   "배란",
+   "예방접종"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzMxIyQxIyQ3IyQ5MiQyNjEyMjIjODEjJDEjJDYjJDgz",
+  "name": "아르나의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzMxIyQyIyQzIyQwMCQyNjEyMjIjNTEjJDEjJDYjJDgz",
+  "name": "엔디어트의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "다이어트",
+   "비만",
+   "체형",
+   "지방분해",
+   "체질",
+   "체중감량",
+   "영양",
+   "탄력"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQyIyQ5IyQwMCQzNjEyMjIjNjEjJDEjJDQjJDgz",
+  "name": "더올라운더랩의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "도수",
+   "도수치료",
+   "물리치료",
+   "비만",
+   "통증",
+   "성장",
+   "체형",
+   "교정"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzExIyQxIyQ3IyQ3OSQ0NjE0ODEjNDEjJDEjJDQjJDgz",
+  "name": "살롱드닥터튠즈의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "탄력",
+   "다이어트"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzExIyQxIyQzIyQxMyQzNjEwMDIjNjEjJDEjJDQjJDgz",
+  "name": "스페이드의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "제모",
+   "무릎",
+   "색소"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzIxIyQxIyQxIyQwMyQzNjEwMDIjNjEjJDEjJDQjJDgz",
+  "name": "글로리의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "필러",
+   "리프팅",
+   "색소",
+   "IPL",
+   "울쎄라",
+   "인모드",
+   "모공",
+   "슈링크"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzIxIyQxIyQxIyQwMyQ0NjEwMDIjNTEjJDEjJDIjJDgz",
+  "name": "뽐나게빼의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzQxIyQxIyQ3IyQ3OSQyNjE4MzIjNzEjJDEjJDgjJDgz",
+  "name": "보통의의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "예방접종",
+   "접종",
+   "영양",
+   "수액",
+   "사상",
+   "백신"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzMxIyQxIyQ3IyQ2MiQyNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "헤이데이의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "토닝",
+   "색소",
+   "여드름",
+   "스킨부스터",
+   "비만",
+   "미백",
+   "흉터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzExIyQxIyQzIyQ3OSQyNjE4MzIjNTEjJDEjJDYjJDgz",
+  "name": "맑은선의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "모공",
+   "여드름",
+   "흉터",
+   "색소",
+   "잡티",
+   "토닝",
+   "피부톤",
+   "제모"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzUxIyQxIyQ1IyQ5OSQyNjE4MzIjNTEjJDEjJDYjJDgz",
+  "name": "닥터윤뷰티플의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "여드름",
+   "보톡스",
+   "필러",
+   "리프팅",
+   "흉터",
+   "모공",
+   "여드름자국",
+   "기미"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzMxIyQxIyQzIyQ5OSQzNjEyMjIjNTEjJDEjJDYjJDgz",
+  "name": "모아트의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMSMkMCMkOTkkMzgxMzUxIzQxIyQxIyQ3IyQ5MiQyNjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "더드림병원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "척추",
+   "관절",
+   "icl",
+   "디스크",
+   "허리",
+   "협착",
+   "무릎",
+   "어지럼"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzMxIyQxIyQzIyQ2MiQzNjEwMDIjNDEjJDEjJDQjJDgz",
+  "name": "더이쁨풀의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "색소",
+   "흉터",
+   "모공",
+   "여드름",
+   "제모",
+   "실리프팅",
+   "보톡스"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzUxIyQxIyQxIyQ3OSQzNjEwMDIjNjEjJDEjJDQjJDgz",
+  "name": "리무브의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "울쎄라",
+   "근막",
+   "보톡스",
+   "써마지",
+   "슈링크",
+   "실리프팅",
+   "1차병원"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzIxIyQxIyQ5IyQ4OSQ0NjEwMDIjODEjJDEjJDYjJDgz",
+  "name": "청담끌레어의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "필러",
+   "울쎄라",
+   "탄력",
+   "보톡스",
+   "실리프팅",
+   "흉터",
+   "모공"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzQxIyQxIyQ3IyQ5MiQzNjE4MzIjNjEjJDEjJDgjJDgz",
+  "name": "르쏘메의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "보톡스",
+   "리프팅",
+   "비만",
+   "초음파",
+   "체형",
+   "동안",
+   "성장",
+   "탄력"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzUxIyQxIyQ1IyQ5OSQ0NjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "강남편하지의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzIxIyQxIyQ1IyQ5MiQyNjEyMjIjNDEjJDEjJDQjJDgz",
+  "name": "르메디크의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzIxIyQxIyQ5IyQ3OSQyNjEyMjIjODEjJDEjJDYjJDgz",
+  "name": "바비라인의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "지방흡입",
+   "탄력",
+   "체형",
+   "허벅지",
+   "리프팅",
+   "지방이식",
+   "교정",
+   "허리"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzIxIyQxIyQxIyQxMyQyNjE4MzIjNjEjJDEjJDAjJDgz",
+  "name": "아미스킨의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzUxIyQxIyQxIyQ2MiQzNjEyMjIjNTEjJDEjJDIjJDgz",
+  "name": "오운의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "필러",
+   "리프팅",
+   "스킨부스터",
+   "모발",
+   "울쎄라",
+   "써마지",
+   "슈링크",
+   "인모드"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzUxIyQxIyQxIyQxMyQyNjE4MzIjNjEjJDEjJDAjJDgz",
+  "name": "오퍼스의원",
+  "from": "기타",
+  "to": "재활의학과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzQxIyQxIyQ3IyQ5OSQyNjEyMjIjODEjJDEjJDIjJDgz",
+  "name": "하나비의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "코성형",
+   "콧볼",
+   "매부리",
+   "교정",
+   "흉터",
+   "보형물",
+   "스트레스"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzUxIyQxIyQxIyQwMyQyNjE0ODEjNzEjJDEjJDgjJDgz",
+  "name": "오르세윤의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "필러",
+   "리프팅",
+   "보톡스",
+   "여드름",
+   "모공",
+   "윤곽주사",
+   "울쎄라",
+   "써마지"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzUxIyQxIyQxIyQ4OSQyNjE0ODEjNTEjJDEjJDYjJDgz",
+  "name": "청담별의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "신경차단",
+   "코성형",
+   "사각턱",
+   "필러",
+   "지방흡입",
+   "지방이식",
+   "체형",
+   "흉터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzUxIyQxIyQxIyQ3MiQyNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "닥터소녀로의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "필러",
+   "인모드",
+   "리프팅",
+   "보톡스",
+   "울쎄라",
+   "탄력",
+   "슈링크",
+   "광대"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzIxIyQxIyQxIyQ4MiQzNjE4MzIjNjEjJDEjJDQjJDgz",
+  "name": "이오의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "비만",
+   "다이어트",
+   "지방분해",
+   "리프팅",
+   "지방흡입",
+   "당뇨",
+   "필러",
+   "울쎄라"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzUxIyQxIyQ1IyQxMyQyNjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "다시온의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxOTYxIzExIyQxIyQ3IyQxMyQzNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "현대사랑의원",
+  "from": "기타",
+  "to": "이비인후과",
+  "cosmetic": false,
+  "kw": [
+   "접종",
+   "예방접종",
+   "독감",
+   "관절",
+   "알레르기",
+   "인후",
+   "호흡기"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzUxIyQxIyQxIyQ5MiQ0NjEwMDIjODEjJDEjJDYjJDgz",
+  "name": "필앤필의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkMzgxOTYxIzExIyQxIyQ3IyQ5MiQzNjE0ODEjNjEjJDEjJDgjJDgz",
+  "name": "강남웰남성의원",
+  "from": "기타",
+  "to": "비뇨의학과",
+  "cosmetic": false,
+  "kw": [
+   "조루",
+   "정관",
+   "피임",
+   "필러",
+   "보형물",
+   "임플란트",
+   "전립선",
+   "성기능"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzMxIyQxIyQzIyQ4MiQzNjE4MzIjODEjJDEjJDIjJDgz",
+  "name": "리앤델의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "여드름",
+   "필러",
+   "제모",
+   "모발",
+   "흉터",
+   "울쎄라",
+   "써마지"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxOTYxIzExIyQxIyQ3IyQ4MiQzNjEyMjIjODEjJDEjJDYjJDgz",
+  "name": "메종프리베의원",
+  "from": "기타",
+  "to": "내과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzMxIyQxIyQ3IyQ2MiQzNjE0ODEjODEjJDEjJDYjJDgz",
+  "name": "온우의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "필러",
+   "스킨부스터",
+   "모발",
+   "비만",
+   "틱",
+   "1차병원"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzUxIyQxIyQ1IyQwMyQyNjE0ODEjNjEjJDEjJDgjJDgz",
+  "name": "팽팽의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "실리프팅",
+   "탄력"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzIxIyQxIyQ5IyQ5MiQzNjEwMDIjNjEjJDEjJDAjJDgz",
+  "name": "아이니의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "탄력",
+   "성장",
+   "써마지",
+   "사상",
+   "스포츠",
+   "인대",
+   "건강검진"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ5IyQ4MiQyNjE4MzIjNTEjJDEjJDIjJDgz",
+  "name": "이터니스의원",
+  "from": "기타",
+  "to": "정신건강의학과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzExIyQxIyQzIyQ3MiQzNjE0ODEjNzEjJDEjJDgjJDgz",
+  "name": "라인앤뷰의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "지방흡입",
+   "지방이식",
+   "체형",
+   "흉터",
+   "토닝",
+   "레이저토닝",
+   "보톡스",
+   "필러"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzMxIyQxIyQzIyQ4MiQyNjE4MzIjNDEjJDEjJDgjJDgz",
+  "name": "지세븐의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "지방흡입",
+   "지방이식",
+   "흉터",
+   "비만",
+   "여드름",
+   "미백",
+   "물광",
+   "보톡스"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzExIyQxIyQzIyQ5MiQyNjE0ODEjODEjJDEjJDYjJDgz",
+  "name": "강남쏘울의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "흉터",
+   "보톡스",
+   "필러",
+   "코성형",
+   "성장",
+   "체형",
+   "발달",
+   "심장"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzMxIyQxIyQ3IyQwMyQyNjE0ODEjNjEjJDEjJDAjJDgz",
+  "name": "양재유앤미의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzQxIyQxIyQ3IyQ3OSQyNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "클린타투의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzIxIyQxIyQ5IyQ5MiQyNjE0ODEjNzEjJDEjJDgjJDgz",
+  "name": "뉴엘의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "울쎄라",
+   "리프팅",
+   "써마지",
+   "탄력",
+   "스킨부스터",
+   "제모",
+   "여드름",
+   "모공"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzMxIyQyIyQzIyQwMCQyNjEwMDIjNjEjJDEjJDQjJDgz",
+  "name": "골든발란스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "소음순",
+   "질성형",
+   "여성성형",
+   "필러",
+   "리프팅",
+   "탄력",
+   "체형",
+   "교정"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzMxIyQxIyQ3IyQ4MiQyNjE4MzIjNDEjJDEjJDQjJDgz",
+  "name": "청담청아의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": [
+   "색소",
+   "울쎄라",
+   "수액"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzUxIyQxIyQ1IyQ4OSQ0NjE0ODEjODEjJDEjJDIjJDgz",
+  "name": "엘레브의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "통증",
+   "리프팅",
+   "탄력",
+   "필러",
+   "히알루론산",
+   "스킨부스터",
+   "흉터",
+   "모공"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzMxIyQxIyQ3IyQxMyQzNjEwMDIjNjEjJDEjJDQjJDgz",
+  "name": "리연케이의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzIxIyQxIyQ1IyQ3OSQzNjE4MzIjNjEjJDEjJDAjJDgz",
+  "name": "첫번째의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "스킨부스터",
+   "거상",
+   "교정",
+   "써마지",
+   "탄력",
+   "눈밑지방",
+   "안면거상"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzUxIyQxIyQxIyQ2MiQzNjE0ODEjNjEjJDEjJDgjJDgz",
+  "name": "하오덤의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "비만",
+   "여드름",
+   "탄력",
+   "모공",
+   "흉터",
+   "색소",
+   "영양",
+   "트러블"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzIxIyQyIyQ5IyQwMCQzNjEwMDIjNjEjJDEjJDgjJDgz",
+  "name": "압구정더모의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": [
+   "탈모",
+   "두피",
+   "모발",
+   "모발이식",
+   "모공",
+   "M자",
+   "지루성",
+   "이석"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzMxIyQxIyQ3IyQwMyQ0NjEwMDIjNTEjJDEjJDYjJDgz",
+  "name": "비브이의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "필러",
+   "보톡스",
+   "토닝",
+   "윤곽주사",
+   "슈링크",
+   "실리프팅",
+   "모공"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzIxIyQxIyQ5IyQwMyQzNjE4MzIjNTEjJDEjJDIjJDgz",
+  "name": "연세아르미안의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "모공",
+   "필러",
+   "비만",
+   "여드름",
+   "보톡스",
+   "윤곽주사",
+   "리프팅",
+   "제모"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzIxIyQxIyQ1IyQwMyQzNjE4MzIjNTEjJDEjJDIjJDgz",
+  "name": "365메트로의원",
+  "from": "기타",
+  "to": "내과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzExIyQxIyQ3IyQ5OSQ0NjE0ODEjNjEjJDEjJDAjJDgz",
+  "name": "스케줄의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "동안",
+   "디스크",
+   "인후"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxOTYxIzExIyQxIyQzIyQ4MiQyNjE4MzIjNjEjJDEjJDgjJDgz",
+  "name": "아이엠씨강남의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzIxIyQxIyQ5IyQ5OSQzNjEyMjIjNzEjJDEjJDgjJDgz",
+  "name": "웰케어의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "영양",
+   "스트레스",
+   "변비",
+   "트러블",
+   "설사",
+   "여드름",
+   "교정",
+   "신경치료"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzExIyQxIyQ3IyQ4MiQzNjEyMjIjNTEjJDEjJDIjJDgz",
+  "name": "압구정맘모스헤어라인의원",
+  "from": "기타",
+  "to": "한의원",
+  "cosmetic": false,
+  "kw": [
+   "헤어라인",
+   "모발",
+   "모발이식",
+   "탈모",
+   "1차병원",
+   "탈모관리"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzQxIyQxIyQ3IyQ3OSQ0NjE0ODEjNTEjJDEjJDIjJDgz",
+  "name": "닥터핏의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "지방흡입",
+   "허벅지",
+   "비만",
+   "지방이식"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzIxIyQxIyQ1IyQwMyQyNjE0ODEjNjEjJDEjJDAjJDgz",
+  "name": "모앤블레스의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": [
+   "모발",
+   "모발이식",
+   "탈모",
+   "M자",
+   "두피",
+   "헤어라인",
+   "성장",
+   "흉터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzExIyQxIyQzIyQ3OSQ0NjEwMDIjNTEjJDEjJDIjJDgz",
+  "name": "라리안청담의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzUxIyQxIyQ1IyQ3MiQzNjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "청담이룸의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": [
+   "아토피",
+   "영양",
+   "접종",
+   "예방접종",
+   "백신",
+   "수액",
+   "동안",
+   "알레르기"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzMxIyQxIyQzIyQxMyQyNjE4MzIjNTEjJDEjJDIjJDgz",
+  "name": "리노보의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "탄력",
+   "색소",
+   "체형",
+   "여드름",
+   "모공",
+   "기미",
+   "IPL"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzExIyQxIyQzIyQ2MiQzNjEyMjIjNzEjJDEjJDgjJDgz",
+  "name": "더피크의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "필러",
+   "리프팅",
+   "체형",
+   "탄력",
+   "교정",
+   "다이어트",
+   "동안",
+   "울쎄라"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzMxIyQxIyQ3IyQ4OSQzNjE4MzIjNDEjJDEjJDgjJDgz",
+  "name": "강남타임의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "울쎄라",
+   "보톡스",
+   "써마지",
+   "탄력",
+   "물광",
+   "슈링크",
+   "인모드"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzIxIyQxIyQxIyQ4MiQ0NjEwMDIjNzEjJDEjJDgjJDgz",
+  "name": "라인컬처의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "지방흡입",
+   "지방이식",
+   "흉터",
+   "리프팅",
+   "비만",
+   "윤곽주사",
+   "보톡스",
+   "필러"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzIxIyQxIyQxIyQxMyQyNjEwMDIjNjEjJDEjJDAjJDgz",
+  "name": "오크우드봄의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "자궁",
+   "건강검진",
+   "근종",
+   "요실금",
+   "검진센터",
+   "필러",
+   "내시경",
+   "소화기"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzExIyQxIyQ3IyQ2MiQyNjE4MzIjNTEjJDEjJDYjJDgz",
+  "name": "하이즈의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "울쎄라",
+   "색소",
+   "모발",
+   "비만",
+   "필러",
+   "써마지",
+   "도수"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ1IyQ4OSQyNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "루피엘의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "스킨부스터",
+   "탄력",
+   "교정",
+   "비만",
+   "동안",
+   "인대",
+   "음성"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzUxIyQxIyQxIyQ4OSQzNjEwMDIjNTEjJDEjJDIjJDgz",
+  "name": "제니의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "보톡스",
+   "필러",
+   "여드름",
+   "물광",
+   "스킨부스터",
+   "색소",
+   "토닝"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzUxIyQxIyQxIyQ2MiQzNjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "몬스터의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "필러",
+   "리프팅",
+   "실리프팅",
+   "비만",
+   "울쎄라",
+   "체형",
+   "틱",
+   "모발"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzExIyQxIyQ3IyQ3OSQzNjE0ODEjNjEjJDEjJDQjJDgz",
+  "name": "리젠의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "스킨부스터",
+   "탄력",
+   "필러",
+   "울쎄라",
+   "피부톤",
+   "써마지",
+   "동안"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNTgxOTYxIzMxIyQxIyQ3IyQ2MiQyNjEwMDIjNjEjJDEjJDQjJDgz",
+  "name": "청담엔비의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "탄력",
+   "흉터",
+   "모공",
+   "색소",
+   "여드름",
+   "기미",
+   "실리프팅"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzMxIyQxIyQzIyQ3OSQzNjE4MzIjNTEjJDEjJDIjJDgz",
+  "name": "셀리크의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "색소",
+   "필러",
+   "탄력",
+   "스킨부스터",
+   "실리프팅",
+   "히알루론산",
+   "초음파"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzQxIyQyIyQ3IyQwMCQyNjE4MzIjNjEjJDEjJDAjJDgz",
+  "name": "데이뷰의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzIxIyQxIyQxIyQ2MiQzNjE4MzIjNjEjJDEjJDAjJDgz",
+  "name": "루미에의원",
+  "from": "기타",
+  "to": "재활의학과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzIxIyQyIyQ1IyQwMCQyNjE0ODEjNzEjJDEjJDgjJDgz",
+  "name": "연세모에버의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "탈모",
+   "모발",
+   "모발이식",
+   "헤어라인",
+   "영양",
+   "보톡스"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzUxIyQxIyQ1IyQ3MiQzNjEyMjIjNjEjJDEjJDgjJDgz",
+  "name": "포에버의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzQxIyQxIyQ3IyQ2MiQzNjE4MzIjNDEjJDEjJDQjJDgz",
+  "name": "청담루틴의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "울쎄라",
+   "써마지"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzMxIyQxIyQ3IyQxMyQyNjEwMDIjNjEjJDEjJDAjJDgz",
+  "name": "케이라인의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzExIyQyIyQ3IyQwMCQyNjE0ODEjNzEjJDEjJDgjJDgz",
+  "name": "레스트의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzExIyQxIyQ3IyQwMyQyNjEyMjIjODEjJDEjJDIjJDgz",
+  "name": "숨수면의원",
+  "from": "기타",
+  "to": "이비인후과",
+  "cosmetic": false,
+  "kw": [
+   "코골이",
+   "수면무호흡",
+   "수면다원",
+   "수면장애",
+   "불면",
+   "양압기",
+   "비만",
+   "불안"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzExIyQyIyQ3IyQwMCQyNjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "서울베스트의원",
+  "from": "기타",
+  "to": "내과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNTgxMzUxIzMxIyQxIyQzIyQ5OSQzNjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "힐락의원",
+  "from": "기타",
+  "to": "내과",
+  "cosmetic": false,
+  "kw": [
+   "모발",
+   "사상",
+   "동안",
+   "신장",
+   "만성질환",
+   "영양"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ1IyQxMyQyNjEyMjIjNDEjJDEjJDQjJDgz",
+  "name": "큐디의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "눈밑지방",
+   "필러",
+   "리프팅",
+   "울쎄라",
+   "스킨부스터",
+   "모발",
+   "안검",
+   "하안검"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzUxIyQxIyQ1IyQ2MiQyNjE0ODEjNDEjJDEjJDQjJDgz",
+  "name": "셀레스티얼의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "탈모",
+   "흉터",
+   "통증",
+   "탄력",
+   "모발",
+   "두피",
+   "영양",
+   "여드름"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxOTYxIzIxIyQxIyQ1IyQ4OSQzNjE4MzIjNTEjJDEjJDYjJDgz",
+  "name": "티엘씨청담의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "건강검진",
+   "비만",
+   "성장",
+   "성장클리닉",
+   "내과",
+   "대사증후군",
+   "비만치료",
+   "소아과"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzExIyQxIyQzIyQwMyQ0NjE0ODEjNTEjJDEjJDIjJDgz",
+  "name": "바라움의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "우울",
+   "다이어트",
+   "스트레스",
+   "체질",
+   "동안",
+   "불면"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzMxIyQxIyQ3IyQ3OSQzNjE4MzIjODEjJDEjJDYjJDgz",
+  "name": "라클라쎄의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "써마지",
+   "인모드"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzMxIyQxIyQzIyQ5OSQyNjE4MzIjNDEjJDEjJDgjJDgz",
+  "name": "코슬립수면의원",
+  "from": "기타",
+  "to": "이비인후과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzMxIyQxIyQ3IyQwMyQzNjEyMjIjNTEjJDEjJDIjJDgz",
+  "name": "세레스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzExIyQxIyQzIyQ3OSQzNjE4MzIjNDEjJDEjJDgjJDgz",
+  "name": "그녀의헤어라인의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": [
+   "헤어라인",
+   "모발",
+   "모발이식",
+   "제모",
+   "교정",
+   "동안",
+   "탈모",
+   "명품모발이식"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzMxIyQxIyQ3IyQ4MiQ0NjEwMDIjNjEjJDEjJDAjJDgz",
+  "name": "아르네의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "필러",
+   "흉터",
+   "보톡스",
+   "토닝",
+   "색소",
+   "화이트닝",
+   "스킨보톡스"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzIxIyQxIyQ1IyQ4OSQzNjE0ODEjNDEjJDEjJDQjJDgz",
+  "name": "김영재의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "교정",
+   "흉터",
+   "탄력",
+   "통증",
+   "마비",
+   "콧볼",
+   "체질"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzExIyQxIyQ3IyQxMyQzNjE0ODEjNzEjJDEjJDgjJDgz",
+  "name": "샤인빔의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "스킨부스터",
+   "여드름",
+   "흉터",
+   "모공",
+   "색소",
+   "미백",
+   "보톡스",
+   "필러"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzMxIyQxIyQzIyQ4MiQzNjE0ODEjODEjJDEjJDYjJDgz",
+  "name": "아르케의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "지방이식",
+   "거상",
+   "안면거상",
+   "탄력",
+   "동안",
+   "리프팅",
+   "탈모",
+   "두피"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzExIyQxIyQzIyQ3MiQzNjE0ODEjNTEjJDEjJDIjJDgz",
+  "name": "뷰앤플의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxNzAyIzMxIyQxIyQ3IyQ3MiQzNjEwMDIjNjEjJDEjJDAjJDgz",
+  "name": "스카이쁘아뜨의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzExIyQxIyQ3IyQ5OSQyNjE4MzIjNzEjJDEjJDgjJDgz",
+  "name": "앤플러스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "코성형",
+   "매부리",
+   "교정",
+   "동안",
+   "보톡스",
+   "필러",
+   "비중격",
+   "들창코"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxMTkxIzQxIyQxIyQ3IyQ3OSQzNjEwMDIjODEjJDEjJDYjJDgz",
+  "name": "한사랑의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzIxIyQxIyQ5IyQ3OSQyNjEyMjIjNDEjJDEjJDQjJDgz",
+  "name": "모우림의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": [
+   "모발",
+   "모발이식",
+   "교정"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzQxIyQxIyQ3IyQ4MiQ0NjE0ODEjNDEjJDEjJDQjJDgz",
+  "name": "엔비유의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "보톡스",
+   "거상",
+   "안검",
+   "광대",
+   "필러",
+   "실리프팅",
+   "여드름"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzMxIyQxIyQzIyQ5MiQzNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "솔린의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzUxIyQxIyQ1IyQwMyQ0NjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "우리엘의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzQxIyQxIyQ3IyQ5OSQzNjEyMjIjNjEjJDEjJDQjJDgz",
+  "name": "더씨엘의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "실리프팅",
+   "써마지",
+   "울쎄라",
+   "스킨부스터",
+   "통증",
+   "탄력",
+   "사마귀"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzUxIyQxIyQ1IyQ4OSQzNjE4MzIjNjEjJDEjJDQjJDgz",
+  "name": "뷰티앤영의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "필러",
+   "리프팅",
+   "인모드",
+   "울쎄라",
+   "써마지",
+   "슈링크",
+   "스킨부스터",
+   "눈밑지방"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzUxIyQxIyQ1IyQ5MiQ0NjEwMDIjODEjJDEjJDYjJDgz",
+  "name": "아임의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "지방흡입",
+   "다이어트",
+   "허벅지",
+   "리프팅",
+   "팔뚝",
+   "스트레스",
+   "탄력",
+   "체형"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzExIyQxIyQ3IyQ4OSQyNjE4MzIjNjEjJDEjJDgjJDgz",
+  "name": "하루의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "교정",
+   "동안",
+   "턱끝",
+   "거상",
+   "안검",
+   "필러",
+   "탄력"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMSMkMCMkOTkkMzgxMzUxIzQxIyQxIyQ3IyQ5OSQyNjE4MzIjNDEjJDEjJDQjJDgz",
+  "name": "강남유나이티드병원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "통증",
+   "척추",
+   "관절",
+   "연골",
+   "인대",
+   "허리",
+   "도수",
+   "디스크"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzIxIyQxIyQxIyQ4OSQzNjEwMDIjNjEjJDEjJDAjJDgz",
+  "name": "피오르의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "써마지",
+   "탄력",
+   "양악",
+   "슈링크",
+   "거상",
+   "안면거상",
+   "흉터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzIxIyQxIyQxIyQxMyQzNjE0ODEjNjEjJDEjJDAjJDgz",
+  "name": "브리에의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "필러",
+   "리프팅",
+   "흉터",
+   "탄력",
+   "동안",
+   "실리프팅",
+   "스트레스",
+   "지방분해"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzMxIyQxIyQzIyQ4OSQ0NjE0ODEjNTEjJDEjJDYjJDgz",
+  "name": "세이의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "필러",
+   "써마지",
+   "어깨",
+   "여드름",
+   "흉터",
+   "모공",
+   "기미",
+   "리프팅"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzExIyQxIyQzIyQ5MiQyNjEyMjIjODEjJDEjJDYjJDgz",
+  "name": "뽀드베베의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "탄력",
+   "흉터",
+   "써마지",
+   "여드름",
+   "모공",
+   "울쎄라",
+   "팔뚝"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzUxIyQxIyQ1IyQ3OSQzNjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "초이스라인의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzUxIyQxIyQxIyQ3OSQyNjEwMDIjNjEjJDEjJDQjJDgz",
+  "name": "닥터웰니스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "도수",
+   "사상",
+   "동안",
+   "디스크",
+   "1차병원"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkMzgxMTkxIzUxIyQxIyQ1IyQ5MiQzNjE0ODEjNTEjJDEjJDIjJDgz",
+  "name": "웰에이징의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "심장",
+   "동맥경화",
+   "내분비",
+   "협심증",
+   "틱",
+   "치매",
+   "모발",
+   "고혈압"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMSMkMCMkOTkkMzgxMzUxIzQxIyQxIyQ3IyQwMyQ0NjEwMDIjNTEjJDEjJDIjJDgz",
+  "name": "(의)가산의료재단 광동병원",
+  "from": "기타",
+  "to": "재활의학과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQyIyQxIyQwMCQzNjE4MzIjNDEjJDEjJDgjJDgz",
+  "name": "반의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "필러",
+   "비만",
+   "체형",
+   "보톡스",
+   "스킨보톡스",
+   "울쎄라",
+   "인모드"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzMxIyQxIyQzIyQwMyQyNjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "세이지의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "다이어트",
+   "통증"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzExIyQxIyQzIyQ4OSQzNjE0ODEjNTEjJDEjJDIjJDgz",
+  "name": "제이필의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "울쎄라",
+   "필러",
+   "비만",
+   "인모드",
+   "리프팅",
+   "슈링크",
+   "스킨부스터",
+   "모발"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzIxIyQxIyQxIyQ4OSQyNjEwMDIjNjEjJDEjJDgjJDgz",
+  "name": "블리스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "비만",
+   "색소",
+   "리프팅",
+   "임신",
+   "피임",
+   "교정",
+   "도수",
+   "도수치료"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMzUxIzExIyQxIyQzIyQ3MiQyNjE4MzIjNjEjJDEjJDQjJDgz",
+  "name": "연세선우의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": [
+   "잡티",
+   "오타",
+   "1차병원",
+   "레이저시술",
+   "루비레이저",
+   "오타모반제거",
+   "잡티제거"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzQxIyQxIyQ3IyQ2MiQ0NjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "압구정비엘에스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzQxIyQxIyQ3IyQ2MiQzNjEwMDIjNjEjJDEjJDQjJDgz",
+  "name": "권오정리얼뷰티의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMSMkMCMkOTkkMzgxMzUxIzQxIyQxIyQ3IyQ5OSQyNjE0ODEjNjEjJDEjJDQjJDgz",
+  "name": "메드렉스병원",
+  "from": "기타",
+  "to": "정형외과",
+  "cosmetic": false,
+  "kw": [
+   "관절",
+   "연골",
+   "척추",
+   "무릎",
+   "통증",
+   "주사치료",
+   "재활",
+   "허리"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzQxIyQxIyQ3IyQ2MiQyNjE0ODEjNzEjJDEjJDgjJDgz",
+  "name": "반딧불의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMzUxIzIxIyQyIyQ1IyQwMCQzNjE4MzIjNTEjJDEjJDIjJDgz",
+  "name": "리디안의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxMTkxIzUxIyQyIyQ1IyQwMCQyNjEyMjIjODEjJDEjJDYjJDgz",
+  "name": "사점사의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "비만",
+   "울쎄라",
+   "색소",
+   "필러",
+   "써마지",
+   "슈링크",
+   "스킨부스터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzMxIyQxIyQ3IyQ3OSQzNjE4MzIjNjEjJDEjJDgjJDgz",
+  "name": "압구정비앤미의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzIxIyQxIyQ5IyQ2MiQzNjE0ODEjNTEjJDEjJDIjJDgz",
+  "name": "코미인의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzIxIyQxIyQxIyQ3MiQzNjE0ODEjNjEjJDEjJDQjJDgz",
+  "name": "365삼성의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "동안",
+   "호흡기",
+   "건강검진",
+   "통증",
+   "알레르기",
+   "심장",
+   "성병",
+   "접종"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzIxIyQxIyQ1IyQ2MiQyNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "밸런스퀀텀의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "관절",
+   "동안"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzUxIyQxIyQ1IyQxMyQzNjEyMjIjNjEjJDEjJDQjJDgz",
+  "name": "청담르벨의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzIxIyQxIyQ5IyQxMyQyNjEwMDIjNDEjJDEjJDQjJDgz",
+  "name": "리메이크강남의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "인모드",
+   "두피",
+   "비만",
+   "비만클리닉",
+   "통증"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzExIyQxIyQzIyQ3OSQyNjEyMjIjNjEjJDEjJDAjJDgz",
+  "name": "연세더바로의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "통증",
+   "도수",
+   "관절",
+   "재활",
+   "척추",
+   "도수치료",
+   "프롤로",
+   "프롤로테라피"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzIxIyQxIyQ1IyQ5OSQ0NjEwMDIjNjEjJDEjJDQjJDgz",
+  "name": "청담서클의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "모공",
+   "스킨부스터",
+   "동안",
+   "써마지",
+   "탄력",
+   "실리프팅",
+   "여드름"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzQxIyQxIyQ3IyQ4MiQzNjEwMDIjODEjJDEjJDIjJDgz",
+  "name": "라현의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "여드름",
+   "리프팅",
+   "탄력",
+   "동안",
+   "틱",
+   "모공",
+   "기미",
+   "색소"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzExIyQxIyQ3IyQxMyQyNjE4MzIjNjEjJDEjJDAjJDgz",
+  "name": "강남비앤비의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "비만",
+   "물광",
+   "스트레스",
+   "팔뚝",
+   "노안",
+   "다이어트",
+   "동안"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzMxIyQxIyQ3IyQ3OSQ0NjE0ODEjNjEjJDEjJDQjJDgz",
+  "name": "강남유앤아이의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "여드름",
+   "잡티",
+   "토닝",
+   "레이저토닝",
+   "보톡스",
+   "필러",
+   "울쎄라"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzExIyQxIyQ3IyQ3OSQyNjE0ODEjNDEjJDEjJDQjJDgz",
+  "name": "그린몰의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "초음파",
+   "내시경",
+   "재활",
+   "소화기",
+   "통증",
+   "건강검진",
+   "관절",
+   "알레르기"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzMxIyQxIyQzIyQxMyQ0NjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "강남비엘에스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "울쎄라",
+   "써마지",
+   "통증",
+   "탄력",
+   "슈링크",
+   "인모드",
+   "초음파"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzIxIyQxIyQ1IyQ4MiQzNjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "청담잇츠미의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "필러",
+   "울쎄라",
+   "스킨부스터",
+   "탄력",
+   "광대",
+   "써마지",
+   "보톡스"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzUxIyQxIyQ1IyQ2MiQzNjE4MzIjNzEjJDEjJDgjJDgz",
+  "name": "브이모먼트의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "탄력",
+   "제모",
+   "스킨부스터",
+   "울쎄라",
+   "모공",
+   "써마지",
+   "영양"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzMxIyQxIyQzIyQ5OSQyNjE4MzIjODEjJDEjJDYjJDgz",
+  "name": "모엠의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "모발",
+   "모발이식",
+   "탈모",
+   "헤어라인",
+   "M자",
+   "두피",
+   "교정",
+   "흉터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzUxIyQxIyQxIyQ3OSQyNjEwMDIjNjEjJDEjJDgjJDgz",
+  "name": "레이의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "동안",
+   "비만",
+   "보톡스",
+   "필러",
+   "리프팅",
+   "지방이식",
+   "실리프팅",
+   "자보"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzExIyQxIyQ3IyQxMyQ0NjE0ODEjODEjJDEjJDYjJDgz",
+  "name": "아빈의원",
+  "from": "기타",
+  "to": "재활의학과",
+  "cosmetic": false,
+  "kw": [
+   "도수",
+   "동안",
+   "재활"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzExIyQxIyQzIyQ4MiQzNjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "로렌의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "필러",
+   "안검",
+   "리프팅",
+   "하안검",
+   "보톡스",
+   "인모드",
+   "스킨부스터",
+   "거상"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxOTYxIzMxIyQyIyQzIyQwMCQzNjE4MzIjODEjJDEjJDYjJDgz",
+  "name": "김인섭의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "1차병원"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzUxIyQxIyQ1IyQ4MiQyNjE0ODEjODEjJDEjJDYjJDgz",
+  "name": "닥터진의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "광대",
+   "탄력",
+   "모발",
+   "눈밑지방",
+   "거상",
+   "비만"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzExIyQxIyQzIyQ2MiQyNjEyMjIjNjEjJDEjJDAjJDgz",
+  "name": "포레웰의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzMxIyQxIyQ3IyQ5MiQyNjE0ODEjNjEjJDEjJDgjJDgz",
+  "name": "티업의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "보톡스",
+   "리프팅",
+   "슈링크",
+   "제모",
+   "토닝",
+   "스킨부스터",
+   "통증",
+   "색소"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzExIyQxIyQ3IyQ5OSQyNjE4MzIjNjEjJDEjJDAjJDgz",
+  "name": "에이든의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "탄력",
+   "동안",
+   "연하",
+   "보톡스",
+   "필러",
+   "청담피부과",
+   "청담튠페이스"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzUxIyQxIyQ1IyQ3OSQyNjE4MzIjNjEjJDEjJDQjJDgz",
+  "name": "릴리브의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "흉터",
+   "모공",
+   "통증",
+   "필러",
+   "울쎄라",
+   "보톡스",
+   "실리프팅"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzIxIyQxIyQ5IyQ3OSQzNjE4MzIjODEjJDEjJDIjJDgz",
+  "name": "강동우성의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "조루",
+   "성기능",
+   "발기부전",
+   "불안",
+   "신경차단",
+   "중독",
+   "내분비",
+   "사상"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzIxIyQxIyQ5IyQ4OSQyNjE4MzIjODEjJDEjJDYjJDgz",
+  "name": "리뉴얼의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzMxIyQyIyQ3IyQwMCQyNjE4MzIjNDEjJDEjJDgjJDgz",
+  "name": "디의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "써마지",
+   "울쎄라",
+   "리프팅",
+   "통증",
+   "안검",
+   "상안검",
+   "거상",
+   "탄력"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzExIyQxIyQ3IyQwMyQ0NjE0ODEjNTEjJDEjJDYjJDgz",
+  "name": "나를의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "필러",
+   "눈밑지방",
+   "통증",
+   "흉터",
+   "색소",
+   "리프팅",
+   "콧볼",
+   "매부리"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzQxIyQxIyQ3IyQ4MiQyNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "유앤미의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzMxIyQxIyQ3IyQ4MiQyNjEyMjIjNjEjJDEjJDgjJDgz",
+  "name": "서울리샤인의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzMxIyQxIyQzIyQ3OSQyNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "청담퍼스널의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "동안",
+   "틱",
+   "리프팅",
+   "스킨부스터",
+   "제모",
+   "모발",
+   "비만",
+   "통증"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzIxIyQyIyQ5IyQwMCQzNjEwMDIjNTEjJDEjJDYjJDgz",
+  "name": "무지개의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "내시경",
+   "예방접종",
+   "접종",
+   "비만",
+   "소화기",
+   "고혈압",
+   "고지혈",
+   "당뇨"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMSMkMCMkOTkkMzgxMzUxIzMxIyQxIyQ3IyQwMyQ0NjEwMDIjNjEjJDEjJDgjJDgz",
+  "name": "지앤지병원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "코성형",
+   "코막힘",
+   "인후",
+   "보형물",
+   "매부리",
+   "비중격",
+   "비염",
+   "연골"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzExIyQxIyQ3IyQ3MiQyNjE4MzIjNjEjJDEjJDgjJDgz",
+  "name": "더리즈의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "탄력",
+   "리프팅",
+   "색소",
+   "여드름",
+   "흉터",
+   "스킨부스터",
+   "수액",
+   "잡티"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzExIyQxIyQ3IyQ3MiQ0NjEwMDIjNjEjJDEjJDAjJDgz",
+  "name": "구름의자의원",
+  "from": "기타",
+  "to": "치과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzIxIyQxIyQxIyQ5MiQ0NjEwMDIjNTEjJDEjJDIjJDgz",
+  "name": "웰가의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "거상",
+   "안면거상",
+   "이마거상",
+   "실리프팅",
+   "동안",
+   "흉터",
+   "지방이식"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxMzUxIzExIyQxIyQ3IyQ5MiQzNjEyMjIjODEjJDEjJDYjJDgz",
+  "name": "삼성아이비의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "동안",
+   "거상",
+   "지방흡입",
+   "지방이식",
+   "안면거상",
+   "모발",
+   "모발이식",
+   "안검"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQxIyQ3OSQzNjE4MzIjODEjJDEjJDYjJDgz",
+  "name": "밴스모자이너의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzExIyQxIyQzIyQwMyQyNjE0ODEjNjEjJDEjJDQjJDgz",
+  "name": "연세와이비의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQxIyQwMyQzNjE0ODEjNTEjJDEjJDIjJDgz",
+  "name": "유넬의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "여드름",
+   "리프팅",
+   "탄력",
+   "필러",
+   "스킨부스터",
+   "흉터",
+   "모공",
+   "기미"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzIxIyQxIyQ5IyQ3MiQyNjE4MzIjNDEjJDEjJDQjJDgz",
+  "name": "강남라해의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "영양",
+   "탈모",
+   "흉터",
+   "비만",
+   "모발",
+   "성장",
+   "통증",
+   "두피"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzUxIyQyIyQ1IyQwMCQyNjEyMjIjNTEjJDEjJDYjJDgz",
+  "name": "유진스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "울쎄라",
+   "통증",
+   "보톡스",
+   "다이어트",
+   "탄력",
+   "실리프팅",
+   "색소"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzExIyQxIyQ3IyQ2MiQyNjE4MzIjODEjJDEjJDIjJDgz",
+  "name": "강남더의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzMxIyQxIyQ3IyQ4OSQyNjE4MzIjODEjJDEjJDIjJDgz",
+  "name": "닥터고운선의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzQxIyQxIyQ3IyQ3OSQyNjEwMDIjNjEjJDEjJDAjJDgz",
+  "name": "닥터손유나의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "보톡스",
+   "필러",
+   "윤곽주사",
+   "리프팅",
+   "슈링크",
+   "안면윤곽",
+   "지방흡입",
+   "지방분해"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxNzAyIzExIyQxIyQ3IyQ2MiQyNjE4MzIjODEjJDEjJDYjJDgz",
+  "name": "오화경의원",
+  "from": "기타",
+  "to": "내과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzIxIyQxIyQ1IyQ4MiQzNjEyMjIjNTEjJDEjJDYjJDgz",
+  "name": "예뻐진의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "울쎄라",
+   "필러",
+   "리프팅",
+   "스킨부스터",
+   "탄력",
+   "초음파",
+   "팔뚝",
+   "다이어트"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzExIyQxIyQzIyQwMyQyNjE0ODEjNzEjJDEjJDgjJDgz",
+  "name": "로이셀의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzExIyQxIyQ3IyQ5OSQzNjE0ODEjNTEjJDEjJDIjJDgz",
+  "name": "리올의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "필러",
+   "모발",
+   "비만",
+   "조현",
+   "리프팅",
+   "보톡스",
+   "울쎄라",
+   "써마지"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzExIyQxIyQ3IyQ4MiQzNjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "닥터한수민의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "보톡스",
+   "비만",
+   "다이어트"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzIxIyQxIyQ1IyQwMyQzNjE4MzIjNDEjJDEjJDgjJDgz",
+  "name": "815의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "필러",
+   "리프팅",
+   "지방이식",
+   "허리",
+   "윤곽주사",
+   "울쎄라",
+   "인모드",
+   "보형물"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzQxIyQxIyQ3IyQ2MiQzNjEyMjIjODEjJDEjJDIjJDgz",
+  "name": "생각과느낌의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzExIyQxIyQ3IyQ4MiQzNjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "미라젠의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": [
+   "아토피",
+   "지루성",
+   "성장",
+   "통증",
+   "모공"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzIxIyQyIyQ5IyQwMCQ0NjE0ODEjNjEjJDEjJDQjJDgz",
+  "name": "피어봄의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "보톡스",
+   "필러"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzQxIyQxIyQ3IyQ3OSQzNjE4MzIjNDEjJDEjJDQjJDgz",
+  "name": "마이미의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "필러",
+   "여드름",
+   "기미",
+   "흉터",
+   "잡티",
+   "주근깨",
+   "보톡스"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzMxIyQxIyQ3IyQxMyQyNjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "유유의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzMxIyQxIyQzIyQ2MiQ0NjEwMDIjNTEjJDEjJDIjJDgz",
+  "name": "도곡유스앤영의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": [
+   "눈밑지방",
+   "모발",
+   "틱",
+   "통증"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ1IyQ5OSQzNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "파르크도산의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "탄력",
+   "리프팅",
+   "스킨부스터",
+   "모발",
+   "성장",
+   "색소",
+   "미백",
+   "스마일"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMSMkMCMkOTkkMzgxMzUxIzIxIyQxIyQ5IyQ3OSQzNjE4MzIjODEjJDEjJDYjJDgz",
+  "name": "나누리병원",
+  "from": "기타",
+  "to": "재활의학과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzQxIyQxIyQ3IyQxMyQyNjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "케이플러스청담의원",
+  "from": "기타",
+  "to": "정형외과",
+  "cosmetic": false,
+  "kw": [
+   "허리",
+   "무릎",
+   "통증",
+   "도수",
+   "도수치료",
+   "디스크",
+   "관절",
+   "어깨"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzUxIyQxIyQ1IyQxMyQyNjEyMjIjNzEjJDEjJDgjJDgz",
+  "name": "엠레드의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "초음파",
+   "울쎄라",
+   "써마지",
+   "보톡스",
+   "모공",
+   "미백",
+   "필러"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzIxIyQyIyQ5IyQwMCQzNjE4MzIjODEjJDEjJDIjJDgz",
+  "name": "대치뷰티라운지의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzExIyQxIyQ3IyQ5OSQyNjE0ODEjNzEjJDEjJDgjJDgz",
+  "name": "라프린의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzQxIyQxIyQ3IyQ4OSQzNjEyMjIjODEjJDEjJDYjJDgz",
+  "name": "모앤제일의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "모발",
+   "모발이식",
+   "헤어라인",
+   "두피",
+   "교정"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzUxIyQxIyQ1IyQ3MiQ0NjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "윤헤어라인의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": [
+   "헤어라인",
+   "모발",
+   "모발이식",
+   "탈모",
+   "교정",
+   "흉터",
+   "두피",
+   "M자"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzUxIyQxIyQ1IyQ4MiQ0NjE0ODEjODEjJDEjJDYjJDgz",
+  "name": "메이퓨어의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "모공",
+   "탄력",
+   "울쎄라",
+   "써마지",
+   "초음파",
+   "통증",
+   "스킨부스터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzMxIyQxIyQ3IyQwMyQyNjE0ODEjODEjJDEjJDYjJDgz",
+  "name": "봄빛의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "탄력",
+   "색소",
+   "리프팅",
+   "여드름",
+   "화이트닝",
+   "모공",
+   "기미",
+   "인모드"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxNzAyIzExIyQxIyQzIyQ5OSQzNjE0ODEjNjEjJDEjJDgjJDgz",
+  "name": "강남하트스캔의원",
+  "from": "기타",
+  "to": "내과",
+  "cosmetic": false,
+  "kw": [
+   "건강검진",
+   "내시경",
+   "대장내시경",
+   "검진센터",
+   "초음파",
+   "심장",
+   "종합검진",
+   "소화기"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzUxIyQxIyQxIyQ4OSQzNjEyMjIjNjEjJDEjJDQjJDgz",
+  "name": "피그마리온의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "실리프팅",
+   "필러",
+   "모발",
+   "기미",
+   "보톡스",
+   "스킨부스터",
+   "통증"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzIxIyQxIyQ1IyQ4MiQzNjE4MzIjNjEjJDEjJDQjJDgz",
+  "name": "청담비아이의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "동안",
+   "성장",
+   "코성형",
+   "리프팅",
+   "보약",
+   "비만",
+   "요로",
+   "보톡스"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNTgxMzUxIzExIyQxIyQ3IyQxMyQyNjEyMjIjNTEjJDEjJDIjJDgz",
+  "name": "리즈온위드연세슬림라인의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzIxIyQxIyQ5IyQwMyQzNjE4MzIjNDEjJDEjJDgjJDgz",
+  "name": "닥터비의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "코성형"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzUxIyQxIyQ1IyQ4OSQyNjE4MzIjNTEjJDEjJDIjJDgz",
+  "name": "강남메이퓨어의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzExIyQxIyQzIyQ4OSQ0NjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "힐리브의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzUxIyQxIyQxIyQwMyQzNjE4MzIjODEjJDEjJDYjJDgz",
+  "name": "신사디온의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "스트레스",
+   "리프팅",
+   "울쎄라",
+   "자보",
+   "초음파",
+   "색소",
+   "여드름",
+   "흉터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzExIyQxIyQzIyQ5MiQ0NjEwMDIjODEjJDEjJDIjJDgz",
+  "name": "원스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "비만",
+   "수액",
+   "체형",
+   "다이어트",
+   "근막",
+   "사상",
+   "동안",
+   "검진센터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzExIyQxIyQzIyQ3MiQ0NjE0ODEjNDEjJDEjJDQjJDgz",
+  "name": "도브의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "색소",
+   "써마지",
+   "비만",
+   "흉터",
+   "탈모",
+   "슈링크",
+   "인모드"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzExIyQxIyQ3IyQ4OSQzNjEwMDIjNTEjJDEjJDIjJDgz",
+  "name": "문의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzMxIyQxIyQ3IyQ5MiQzNjE4MzIjODEjJDEjJDIjJDgz",
+  "name": "메이드유의원",
+  "from": "기타",
+  "to": "내과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzMxIyQyIyQ3IyQwMCQzNjE0ODEjNjEjJDEjJDQjJDgz",
+  "name": "미자인의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "코성형",
+   "가슴성형",
+   "지방이식",
+   "거상",
+   "내시경",
+   "동안",
+   "리프팅",
+   "쌍꺼풀"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzMxIyQxIyQzIyQ5OSQyNjEwMDIjODEjJDEjJDIjJDgz",
+  "name": "청담헤아린의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzIxIyQxIyQ1IyQxMyQyNjEwMDIjNDEjJDEjJDQjJDgz",
+  "name": "미랩의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "동안",
+   "보톡스",
+   "써마지",
+   "스킨부스터",
+   "사각턱",
+   "리프팅",
+   "울쎄라",
+   "발달"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzExIyQxIyQ3IyQxMyQyNjEyMjIjNzEjJDEjJDgjJDgz",
+  "name": "알파엠남성의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "수액",
+   "조루",
+   "남성수술",
+   "정관",
+   "통증",
+   "체형",
+   "제모",
+   "영양"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNTgxOTYxIzExIyQxIyQ3IyQ3OSQ0NjEwMDIjNDEjJDEjJDQjJDgz",
+  "name": "청담셀의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "탈모",
+   "강남피부관리",
+   "줄기세포주사",
+   "줄기세포치료",
+   "청담동성형외과",
+   "청담동피부과",
+   "1차병원",
+   "탈모관리"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzUxIyQxIyQxIyQ2MiQyNjE0ODEjNzEjJDEjJDgjJDgz",
+  "name": "모힐의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzIxIyQxIyQ5IyQ5MiQyNjE4MzIjNjEjJDEjJDAjJDgz",
+  "name": "모멘텀헤어라인의원",
+  "from": "기타",
+  "to": "내과",
+  "cosmetic": false,
+  "kw": [
+   "탈모",
+   "헤어라인",
+   "모발",
+   "모발이식",
+   "주사치료",
+   "만성질환"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzQxIyQxIyQ3IyQ3OSQzNjEwMDIjODEjJDEjJDYjJDgz",
+  "name": "아카이브청담의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "보톡스",
+   "제모",
+   "스킨부스터",
+   "스킨보톡스",
+   "리프팅",
+   "탄력",
+   "모공",
+   "색소"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzExIyQxIyQzIyQwMyQ0NjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "방지성에이스의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": [
+   "모발",
+   "헤어라인",
+   "모발이식",
+   "두피"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzMxIyQxIyQzIyQwMyQyNjEwMDIjNDEjJDEjJDQjJDgz",
+  "name": "드네의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "울쎄라",
+   "통증",
+   "스킨부스터",
+   "탄력",
+   "다이어트",
+   "보톡스",
+   "어깨"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzExIyQxIyQzIyQ4OSQyNjEyMjIjNDEjJDEjJDQjJDgz",
+  "name": "123의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzUxIyQxIyQ1IyQxMyQzNjE0ODEjNTEjJDEjJDYjJDgz",
+  "name": "예젤의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "잡티",
+   "리프팅",
+   "스킨부스터",
+   "제모",
+   "수액"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMSMkMCMkOTkkMzgxMzUxIzMxIyQxIyQ3IyQ5MiQzNjE4MzIjNTEjJDEjJDIjJDgz",
+  "name": "청담병원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "재활",
+   "관절",
+   "연하",
+   "통증",
+   "뇌졸중",
+   "보행",
+   "도수",
+   "도수치료"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzUxIyQxIyQxIyQ4OSQyNjE4MzIjODEjJDEjJDYjJDgz",
+  "name": "더건강의원",
+  "from": "기타",
+  "to": "정형외과",
+  "cosmetic": false,
+  "kw": [
+   "충격파",
+   "무릎",
+   "체외충격파",
+   "성기능",
+   "탈모",
+   "통증",
+   "리프팅",
+   "비만"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzExIyQxIyQzIyQ5MiQzNjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "소유의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "비만",
+   "필러",
+   "모발"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzQxIyQxIyQ3IyQ4OSQzNjEyMjIjNjEjJDEjJDAjJDgz",
+  "name": "지우의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzIxIyQxIyQ5IyQxMyQzNjE0ODEjNzEjJDEjJDgjJDgz",
+  "name": "청담도트의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "탈모",
+   "두피",
+   "통증",
+   "보톡스",
+   "리프팅",
+   "스킨보톡스",
+   "스킨부스터",
+   "모발"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMzUxIzIxIyQxIyQ1IyQ3OSQ0NjEwMDIjNzEjJDEjJDgjJDgz",
+  "name": "라파셀의원",
+  "from": "기타",
+  "to": "정형외과",
+  "cosmetic": false,
+  "kw": [
+   "통증",
+   "재활",
+   "관절",
+   "도수",
+   "충격파",
+   "척추",
+   "디스크",
+   "어깨"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzIxIyQxIyQ1IyQ3MiQzNjE4MzIjODEjJDEjJDIjJDgz",
+  "name": "위드유의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMzUxIzMxIyQxIyQ3IyQ3OSQyNjEyMjIjODEjJDEjJDYjJDgz",
+  "name": "바로미의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "흉터",
+   "모공",
+   "보톡스",
+   "필러",
+   "기미",
+   "스킨부스터",
+   "체형"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMSMkMCMkOTkkMzgxMzUxIzQxIyQxIyQ3IyQ3MiQyNjE4MzIjNDEjJDEjJDgjJDgz",
+  "name": "서울본브릿지병원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "관절",
+   "척추",
+   "어깨",
+   "내시경",
+   "통증",
+   "연골",
+   "교정",
+   "족부"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzIxIyQxIyQ5IyQxMyQzNjE0ODEjNjEjJDEjJDAjJDgz",
+  "name": "메이린압구정의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "icl",
+   "리프팅",
+   "탄력"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzMxIyQxIyQzIyQ5MiQzNjE0ODEjNTEjJDEjJDYjJDgz",
+  "name": "디에이치페이스업의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzIxIyQxIyQ1IyQ5OSQ0NjE0ODEjNjEjJDEjJDAjJDgz",
+  "name": "서울스페셜수면의원",
+  "from": "기타",
+  "to": "이비인후과",
+  "cosmetic": false,
+  "kw": [
+   "코골이",
+   "수면장애",
+   "불면",
+   "수면다원",
+   "수면무호흡",
+   "불안",
+   "수면제",
+   "건강검진"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ5IyQwMyQzNjEwMDIjNTEjJDEjJDYjJDgz",
+  "name": "시크릿의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "탄력",
+   "색소",
+   "기미",
+   "보툴리눔",
+   "울쎄라",
+   "여드름",
+   "여드름흉터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzUxIyQxIyQxIyQ5OSQyNjE0ODEjNzEjJDEjJDgjJDgz",
+  "name": "아이러브강남의원",
+  "from": "기타",
+  "to": "안과",
+  "cosmetic": false,
+  "kw": [
+   "동안"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzMxIyQxIyQ3IyQ3MiQzNjE0ODEjNjEjJDEjJDAjJDgz",
+  "name": "미서울의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzQxIyQxIyQ3IyQ3MiQzNjEyMjIjNTEjJDEjJDYjJDgz",
+  "name": "라인마스터의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzUxIyQxIyQ1IyQ4MiQyNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "루셀의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMSMkMCMkOTkkMzgxMzUxIzMxIyQxIyQzIyQ5OSQzNjEwMDIjNTEjJDEjJDYjJDgz",
+  "name": "아이디병원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "교정",
+   "코성형",
+   "양악",
+   "눈매교정",
+   "광대",
+   "트임",
+   "사각턱",
+   "안면윤곽"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzUxIyQxIyQxIyQ3OSQyNjEyMjIjODEjJDEjJDYjJDgz",
+  "name": "노블앤코의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "동안",
+   "리프팅",
+   "코성형",
+   "필러",
+   "여드름",
+   "흉터",
+   "모공",
+   "기미"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzMxIyQxIyQzIyQ3OSQzNjE4MzIjODEjJDEjJDIjJDgz",
+  "name": "예피다의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "울쎄라",
+   "성대"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzIxIyQxIyQ5IyQ2MiQyNjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "모든모의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": [
+   "모발",
+   "모발이식",
+   "헤어라인",
+   "두피",
+   "흉터",
+   "탈모",
+   "M자",
+   "원형탈모"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzUxIyQxIyQ1IyQwMyQ0NjE0ODEjNjEjJDEjJDAjJDgz",
+  "name": "르모아의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "모발",
+   "비만",
+   "통증",
+   "울쎄라",
+   "써마지",
+   "잡티",
+   "보톡스"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMSMkMCMkOTkkMzgxMzUxIzMxIyQxIyQ3IyQ2MiQyNjEyMjIjNDEjJDEjJDQjJDgz",
+  "name": "모두가행복한연세병원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "영양",
+   "스트레스",
+   "도수",
+   "침구",
+   "도수치료",
+   "재활",
+   "당뇨",
+   "초음파"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxOTYxIzIxIyQxIyQxIyQxMyQzNjEwMDIjODEjJDEjJDYjJDgz",
+  "name": "서울연세의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "통증",
+   "비만",
+   "물리치료",
+   "관절",
+   "자궁",
+   "우울",
+   "접종",
+   "영양"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzIxIyQxIyQ5IyQ3MiQyNjE4MzIjNzEjJDEjJDgjJDgz",
+  "name": "10년전당신의오늘의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzMxIyQxIyQzIyQ4OSQzNjE4MzIjNjEjJDEjJDQjJDgz",
+  "name": "신사세레아의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "스킨부스터",
+   "보톡스",
+   "필러",
+   "울쎄라",
+   "써마지"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzQxIyQxIyQ3IyQxMyQ0NjE0ODEjNTEjJDEjJDYjJDgz",
+  "name": "시네마의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "기미",
+   "틱",
+   "울쎄라",
+   "스킨부스터",
+   "모발",
+   "비만",
+   "동안"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzUxIyQxIyQ1IyQwMyQ0NjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "셀나인청담의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "여드름",
+   "흉터",
+   "모공",
+   "색소",
+   "지방분해",
+   "화이트닝",
+   "리프팅",
+   "울쎄라"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzIxIyQxIyQxIyQ5OSQzNjEwMDIjNjEjJDEjJDQjJDgz",
+  "name": "티원의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "써마지",
+   "여드름",
+   "울쎄라",
+   "필러",
+   "보톡스",
+   "스킨보톡스",
+   "화이트닝"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzMxIyQxIyQzIyQ3OSQzNjEwMDIjNjEjJDEjJDAjJDgz",
+  "name": "닥터미소의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "흉터",
+   "모공",
+   "탄력",
+   "여드름",
+   "보톡스",
+   "코성형",
+   "통증",
+   "프락셔널"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzExIyQxIyQzIyQwMyQyNjEwMDIjNzEjJDEjJDgjJDgz",
+  "name": "이에이치엘셀의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzUxIyQxIyQ1IyQ3OSQzNjEyMjIjNTEjJDEjJDIjJDgz",
+  "name": "셀러블153강남의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzIxIyQxIyQ1IyQ5MiQyNjE0ODEjODEjJDEjJDIjJDgz",
+  "name": "747의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "모공",
+   "물광",
+   "보톡스",
+   "울쎄라",
+   "써마지",
+   "스킨부스터",
+   "수액"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ5IyQwMyQyNjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "시아의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "보톡스",
+   "윤곽주사",
+   "울쎄라",
+   "써마지"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzQxIyQxIyQ3IyQ3MiQzNjE4MzIjNjEjJDEjJDAjJDgz",
+  "name": "메디올의원",
+  "from": "기타",
+  "to": "이비인후과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxOTYxIzMxIyQxIyQzIyQwMyQyNjE0ODEjNDEjJDEjJDQjJDgz",
+  "name": "하피스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzIxIyQxIyQxIyQ4OSQzNjE0ODEjNjEjJDEjJDgjJDgz",
+  "name": "라셀라의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "필러",
+   "리프팅",
+   "어깨",
+   "스킨부스터",
+   "실리프팅",
+   "보톡스",
+   "탄력",
+   "눈밑지방"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ5IyQ5MiQzNjEyMjIjNjEjJDEjJDAjJDgz",
+  "name": "조재홍의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzIxIyQxIyQ1IyQ3MiQzNjEwMDIjNDEjJDEjJDQjJDgz",
+  "name": "노즈랩의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "코성형",
+   "교정",
+   "연골",
+   "보형물",
+   "매부리",
+   "지방이식",
+   "동안",
+   "콧볼"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzQxIyQyIyQ3IyQwMCQ0NjEwMDIjNjEjJDEjJDgjJDgz",
+  "name": "오셀의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "틱",
+   "보톡스",
+   "비만",
+   "스킨부스터",
+   "지방분해",
+   "필러",
+   "스킨보톡스"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzIxIyQxIyQ1IyQ5OSQyNjE0ODEjNjEjJDEjJDQjJDgz",
+  "name": "예쁜브이라인의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "지방흡입",
+   "리프팅",
+   "안검",
+   "하안검",
+   "거상",
+   "안면거상",
+   "동안",
+   "오타"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzIxIyQyIyQxIyQwMCQzNjEyMjIjNzEjJDEjJDgjJDgz",
+  "name": "누의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "탄력",
+   "써마지",
+   "울쎄라",
+   "초음파",
+   "인모드",
+   "근막",
+   "모공"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzIxIyQxIyQ5IyQwMyQyNjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "미토의원",
+  "from": "기타",
+  "to": "한의원",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzMxIyQxIyQ3IyQwMyQzNjEyMjIjNjEjJDEjJDAjJDgz",
+  "name": "아도의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "필러",
+   "스킨부스터",
+   "비만",
+   "리프팅",
+   "동안",
+   "IPL",
+   "지방흡입",
+   "체형"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzExIyQyIyQzIyQwMCQyNjEwMDIjODEjJDEjJDYjJDgz",
+  "name": "성정원통사의원",
+  "from": "기타",
+  "to": "재활의학과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzIxIyQxIyQxIyQ3OSQzNjEyMjIjNDEjJDEjJDQjJDgz",
+  "name": "청담나의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzIxIyQxIyQxIyQ5MiQyNjE0ODEjNzEjJDEjJDgjJDgz",
+  "name": "하일리의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzUxIyQxIyQxIyQ4OSQ0NjEwMDIjNjEjJDEjJDQjJDgz",
+  "name": "모리스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "제모",
+   "레이저제모",
+   "모공"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzQxIyQxIyQ3IyQ2MiQzNjE0ODEjNDEjJDEjJDQjJDgz",
+  "name": "도곡삼성마인드슬립의원",
+  "from": "기타",
+  "to": "정신건강의학과",
+  "cosmetic": false,
+  "kw": [
+   "불안",
+   "수면무호흡",
+   "족부",
+   "우울",
+   "공황",
+   "스트레스",
+   "주의력",
+   "침구"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzUxIyQxIyQxIyQ2MiQyNjE4MzIjODEjJDEjJDIjJDgz",
+  "name": "청담오케이의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "지방흡입",
+   "필러",
+   "지방이식",
+   "헤어라인",
+   "어깨",
+   "모발",
+   "모발이식",
+   "탄력"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzUxIyQyIyQxIyQwMCQzNjEyMjIjNjEjJDEjJDQjJDgz",
+  "name": "예라인의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "탄력",
+   "성장",
+   "필러",
+   "실리프팅",
+   "보톡스",
+   "스킨부스터",
+   "탈모"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxNzAyIzQxIyQxIyQ3IyQ2MiQzNjEwMDIjNTEjJDEjJDYjJDgz",
+  "name": "엔젤미의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "토닝",
+   "슈링크",
+   "울쎄라",
+   "실리프팅",
+   "색소",
+   "필러",
+   "헤어라인"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzUxIyQxIyQ1IyQ5OSQzNjE0ODEjNzEjJDEjJDgjJDgz",
+  "name": "뉴연세의원",
+  "from": "기타",
+  "to": "이비인후과",
+  "cosmetic": false,
+  "kw": [
+   "결석",
+   "편도",
+   "인후",
+   "동안",
+   "부비동",
+   "음성",
+   "내시경",
+   "감기"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzMxIyQxIyQ3IyQ5MiQzNjE0ODEjNjEjJDEjJDQjJDgz",
+  "name": "청담공의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "분만",
+   "교정"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzExIyQxIyQzIyQ4OSQyNjE4MzIjNTEjJDEjJDIjJDgz",
+  "name": "포즈의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "보톡스",
+   "지방흡입",
+   "지방이식",
+   "1차병원",
+   "지방흡입술"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzUxIyQxIyQ1IyQ4MiQzNjEwMDIjODEjJDEjJDYjJDgz",
+  "name": "유앤아이의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "제모",
+   "보톡스",
+   "토닝",
+   "리프팅",
+   "여드름",
+   "울쎄라",
+   "슈링크",
+   "스킨부스터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMzUxIzIxIyQxIyQ1IyQ4OSQ0NjEwMDIjNjEjJDEjJDAjJDgz",
+  "name": "닥터정리반의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzMxIyQyIyQzIyQwMCQ0NjE0ODEjODEjJDEjJDIjJDgz",
+  "name": "오네토셀슬림의원",
+  "from": "기타",
+  "to": "내과",
+  "cosmetic": false,
+  "kw": [
+   "다이어트",
+   "수액",
+   "탄력",
+   "자보",
+   "체형",
+   "비만",
+   "틱",
+   "지방분해"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzIxIyQxIyQxIyQ4MiQzNjE4MzIjODEjJDEjJDYjJDgz",
+  "name": "서울아트라인의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "필러",
+   "리프팅",
+   "울쎄라",
+   "써마지",
+   "스킨부스터",
+   "실리프팅",
+   "1차병원"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzQxIyQxIyQ3IyQwMyQyNjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "유올림의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzIxIyQxIyQxIyQ2MiQzNjEwMDIjODEjJDEjJDIjJDgz",
+  "name": "미큐의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "탈모",
+   "흉터",
+   "보톡스",
+   "필러",
+   "리프팅",
+   "코성형",
+   "가슴성형",
+   "지방흡입"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzUxIyQyIyQxIyQwMCQyNjEyMjIjNjEjJDEjJDgjJDgz",
+  "name": "압구정탑라인의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "지방흡입",
+   "팔뚝",
+   "지방이식",
+   "허벅지",
+   "자보",
+   "디스크"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzMxIyQxIyQ3IyQxMyQ0NjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "연세에스엘의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzIxIyQxIyQxIyQwMyQyNjEwMDIjNjEjJDEjJDgjJDgz",
+  "name": "연세라파의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxOTYxIzUxIyQxIyQxIyQ4MiQyNjE4MzIjODEjJDEjJDYjJDgz",
+  "name": "압구정연세의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": [
+   "모발",
+   "모발이식",
+   "탈모",
+   "헤어라인",
+   "흉터",
+   "두피",
+   "제모",
+   "색소"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzUxIyQxIyQ1IyQwMyQzNjE4MzIjNDEjJDEjJDgjJDgz",
+  "name": "성모바른의원",
+  "from": "기타",
+  "to": "재활의학과",
+  "cosmetic": false,
+  "kw": [
+   "통증",
+   "재활",
+   "도수",
+   "도수치료",
+   "충격파",
+   "성장",
+   "근막",
+   "목통증"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxNzAyIzExIyQxIyQzIyQ5MiQzNjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "카이로스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzQxIyQxIyQ3IyQ4OSQzNjEyMjIjNzEjJDEjJDgjJDgz",
+  "name": "리비안의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzIxIyQxIyQxIyQ3OSQyNjE0ODEjODEjJDEjJDYjJDgz",
+  "name": "닥터스프링의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "보툴리눔",
+   "동안",
+   "보톡스",
+   "써마지",
+   "탄력"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzIxIyQxIyQ5IyQ5MiQyNjE4MzIjNDEjJDEjJDgjJDgz",
+  "name": "압구정리치모아의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "흉터",
+   "모발",
+   "모발이식",
+   "소음순"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzIxIyQxIyQxIyQ4OSQ0NjE0ODEjNzEjJDEjJDgjJDgz",
+  "name": "닥터홈즈의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "제모",
+   "동안",
+   "여드름",
+   "기미",
+   "색소",
+   "잡티",
+   "탄력"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzExIyQxIyQ3IyQ4OSQzNjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "더제이의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzIxIyQxIyQxIyQ5MiQyNjE4MzIjNDEjJDEjJDQjJDgz",
+  "name": "에스듈의원",
+  "from": "기타",
+  "to": "산부인과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzExIyQxIyQzIyQ5MiQzNjEwMDIjNjEjJDEjJDQjJDgz",
+  "name": "청담지온유의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzIxIyQxIyQ1IyQ5MiQzNjE0ODEjNjEjJDEjJDAjJDgz",
+  "name": "얀의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "필러",
+   "제모",
+   "보톡스",
+   "탄력",
+   "색소",
+   "모공",
+   "울쎄라"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzMxIyQxIyQzIyQ2MiQyNjE4MzIjODEjJDEjJDYjJDgz",
+  "name": "모델라인의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "지방흡입",
+   "팔뚝",
+   "체형",
+   "허벅지",
+   "다이어트",
+   "비만",
+   "지방이식",
+   "스킨부스터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzIxIyQxIyQxIyQ3MiQyNjEyMjIjNTEjJDEjJDYjJDgz",
+  "name": "청담에이스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "필러"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzExIyQxIyQzIyQ2MiQ0NjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "삼성마디풀림의원",
+  "from": "기타",
+  "to": "재활의학과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzUxIyQxIyQ1IyQ2MiQzNjEyMjIjODEjJDEjJDIjJDgz",
+  "name": "엘스타의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMSMkMCMkOTkkMzgxMzUxIzQxIyQxIyQ3IyQxMyQyNjEwMDIjNjEjJDEjJDAjJDgz",
+  "name": "트리니티병원",
+  "from": "기타",
+  "to": "재활의학과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzUxIyQyIyQ1IyQwMCQzNjE4MzIjNzEjJDEjJDgjJDgz",
+  "name": "모리의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "탈모",
+   "모발",
+   "모발이식",
+   "두피",
+   "영양",
+   "헤어라인",
+   "성장",
+   "흉터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzExIyQxIyQ3IyQ4OSQ0NjEwMDIjNDEjJDEjJDQjJDgz",
+  "name": "청담루비의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzMxIyQxIyQzIyQwMyQzNjE4MzIjNjEjJDEjJDAjJDgz",
+  "name": "청담신의의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "다이어트",
+   "성대"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzMxIyQxIyQ3IyQxMyQyNjE0ODEjNjEjJDEjJDgjJDgz",
+  "name": "헬로웰의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "영양",
+   "수액",
+   "동안",
+   "알러지",
+   "출산",
+   "스트레스"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzMxIyQxIyQ3IyQ2MiQyNjE0ODEjNDEjJDEjJDQjJDgz",
+  "name": "제이디리체스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "탄력",
+   "리프팅",
+   "색소",
+   "필러",
+   "피부톤",
+   "모공",
+   "제모",
+   "흉터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzUxIyQxIyQ1IyQ5MiQyNjE4MzIjODEjJDEjJDYjJDgz",
+  "name": "오앤의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "실리프팅",
+   "필러",
+   "모발",
+   "안면윤곽",
+   "양악",
+   "흉터",
+   "색소"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzIxIyQxIyQ1IyQwMyQzNjEyMjIjNDEjJDEjJDQjJDgz",
+  "name": "엠플러스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "독감",
+   "접종",
+   "비만",
+   "예방접종",
+   "호흡기",
+   "감기",
+   "체중감량",
+   "인후"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzIxIyQxIyQxIyQ4OSQzNjE4MzIjNjEjJDEjJDQjJDgz",
+  "name": "이와이의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzUxIyQxIyQxIyQ5OSQyNjEyMjIjNTEjJDEjJDYjJDgz",
+  "name": "비앤영의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "코성형",
+   "거상",
+   "안면거상",
+   "인후",
+   "이마거상",
+   "안검",
+   "매부리",
+   "내시경"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzExIyQxIyQzIyQ4MiQyNjE0ODEjNzEjJDEjJDgjJDgz",
+  "name": "청담리투의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "통증",
+   "탄력",
+   "모공",
+   "보톡스",
+   "색소",
+   "스킨부스터",
+   "흉터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzExIyQxIyQ3IyQ3OSQzNjE0ODEjNjEjJDEjJDgjJDgz",
+  "name": "에이치에스의원",
+  "from": "기타",
+  "to": "재활의학과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzIxIyQxIyQxIyQ3MiQyNjEwMDIjNjEjJDEjJDAjJDgz",
+  "name": "아이엘의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzMxIyQxIyQzIyQ5OSQzNjE4MzIjNjEjJDEjJDgjJDgz",
+  "name": "힐링유의원",
+  "from": "기타",
+  "to": "정신건강의학과",
+  "cosmetic": false,
+  "kw": [
+   "불안",
+   "우울",
+   "틱",
+   "발달",
+   "중독",
+   "스트레스",
+   "공황",
+   "주의력"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMSMkMCMkOTkkMzgxMzUxIzIxIyQxIyQxIyQ5OSQ0NjE0ODEjODEjJDEjJDYjJDgz",
+  "name": "광혜병원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzExIyQxIyQ3IyQ5OSQzNjE0ODEjNzEjJDEjJDgjJDgz",
+  "name": "퀸스유의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "초음파",
+   "통증",
+   "유두",
+   "동안",
+   "갑상선",
+   "틱"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxOTYxIzExIyQxIyQ3IyQxMyQ0NjEwMDIjNTEjJDEjJDYjJDgz",
+  "name": "호산의원",
+  "from": "기타",
+  "to": "산부인과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ5IyQ2MiQyNjEyMjIjNDEjJDEjJDQjJDgz",
+  "name": "강남브엘의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "탄력",
+   "전립선",
+   "비만",
+   "성장",
+   "두피"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQxIyQ4MiQyNjE4MzIjNDEjJDEjJDQjJDgz",
+  "name": "청담아르덴의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzExIyQxIyQzIyQ3OSQyNjE0ODEjNzEjJDEjJDgjJDgz",
+  "name": "담의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "써마지",
+   "울쎄라",
+   "탄력",
+   "화이트닝",
+   "흉터",
+   "여드름",
+   "토닝"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ5IyQ5OSQzNjE4MzIjNjEjJDEjJDgjJDgz",
+  "name": "제로의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "비만",
+   "체형",
+   "다이어트",
+   "지방분해",
+   "리프팅",
+   "동안",
+   "성병",
+   "모발"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzExIyQxIyQzIyQ3OSQyNjE0ODEjODEjJDEjJDYjJDgz",
+  "name": "청담나올의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "울쎄라",
+   "실리프팅",
+   "보톡스",
+   "윤곽주사",
+   "써마지",
+   "탄력",
+   "필러"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzQxIyQxIyQ3IyQ5MiQ0NjEwMDIjNTEjJDEjJDIjJDgz",
+  "name": "리핏의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxOTYxIzMxIyQxIyQzIyQ3MiQyNjEwMDIjNjEjJDEjJDgjJDgz",
+  "name": "소요의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "미백",
+   "탄력",
+   "성장",
+   "허벅지",
+   "비만",
+   "동안",
+   "모공"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkMzgxNzAyIzIxIyQxIyQ5IyQ4OSQ0NjEwMDIjNTEjJDEjJDYjJDgz",
+  "name": "더새로이의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "거상",
+   "리프팅",
+   "지방흡입",
+   "안면거상",
+   "여드름",
+   "흉터",
+   "보톡스",
+   "필러"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzQxIyQyIyQ3IyQwMCQzNjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "조은날의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "비만",
+   "리프팅",
+   "색소",
+   "스킨부스터",
+   "모발",
+   "실리프팅",
+   "동안"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzIxIyQxIyQ1IyQ5OSQyNjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "청담힐의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "실리프팅",
+   "다이어트",
+   "팔뚝",
+   "탄력",
+   "보톡스",
+   "지방분해",
+   "어깨"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxMTkxIzExIyQxIyQ3IyQ5MiQzNjE4MzIjODEjJDEjJDIjJDgz",
+  "name": "디케이의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzIxIyQxIyQ1IyQ4OSQzNjE4MzIjNzEjJDEjJDgjJDgz",
+  "name": "라르떼의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzUxIyQxIyQ1IyQ5MiQzNjEwMDIjNDEjJDEjJDQjJDgz",
+  "name": "닥터안헤어플란트의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzMxIyQxIyQ3IyQxMyQzNjEwMDIjNTEjJDEjJDIjJDgz",
+  "name": "다미아노의원",
+  "from": "기타",
+  "to": "내과",
+  "cosmetic": false,
+  "kw": [
+   "영양",
+   "수액",
+   "치매",
+   "관절",
+   "고혈압",
+   "고지혈",
+   "당뇨",
+   "콜레스테롤"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzExIyQxIyQ3IyQ3OSQyNjEwMDIjODEjJDEjJDIjJDgz",
+  "name": "안티안의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzMxIyQxIyQ3IyQ5OSQ0NjE0ODEjODEjJDEjJDYjJDgz",
+  "name": "연세강의원",
+  "from": "기타",
+  "to": "정형외과",
+  "cosmetic": false,
+  "kw": [
+   "통증",
+   "초음파",
+   "수액",
+   "관절",
+   "물리치료",
+   "도수",
+   "도수치료",
+   "관절주사"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzExIyQxIyQ3IyQ4MiQ0NjEwMDIjNzEjJDEjJDgjJDgz",
+  "name": "카이의원",
+  "from": "기타",
+  "to": "재활의학과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzExIyQxIyQzIyQ2MiQyNjEyMjIjNTEjJDEjJDYjJDgz",
+  "name": "더왈츠의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzIxIyQxIyQxIyQ2MiQzNjE0ODEjODEjJDEjJDIjJDgz",
+  "name": "셀리닉의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "스킨부스터",
+   "리프팅",
+   "필러",
+   "히알루론산",
+   "비만"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzIxIyQxIyQxIyQ3OSQzNjE4MzIjODEjJDEjJDIjJDgz",
+  "name": "제이드의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "울쎄라"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzExIyQxIyQ3IyQ3OSQ0NjEwMDIjNzEjJDEjJDgjJDgz",
+  "name": "압구정톡스앤필의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "슈링크",
+   "모공",
+   "보톡스",
+   "탄력",
+   "통증",
+   "스킨부스터",
+   "미백"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzIxIyQyIyQ1IyQwMCQzNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "에스씨301의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "SVF 줄기세포",
+   "가슴성형",
+   "생착률",
+   "신동진 원장",
+   "얼굴성형",
+   "지방이식",
+   "항노화",
+   "안티에이징"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ5IyQ3MiQyNjE4MzIjNjEjJDEjJDQjJDgz",
+  "name": "학아재의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "지방이식",
+   "거상",
+   "실리프팅",
+   "탄력",
+   "동안",
+   "안면거상",
+   "초음파"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNTgxOTYxIzIxIyQxIyQxIyQ4MiQyNjE0ODEjNjEjJDEjJDgjJDgz",
+  "name": "에스에이치의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "흉터",
+   "지방이식",
+   "리프팅",
+   "지방흡입",
+   "동안",
+   "스킨부스터",
+   "보형물",
+   "가슴성형"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxMTkxIzMxIyQxIyQzIyQ2MiQyNjEwMDIjNTEjJDEjJDIjJDgz",
+  "name": "티알트리니티라파엘로청담의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzUxIyQxIyQ1IyQxMyQzNjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "더신사의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzExIyQxIyQ3IyQwMyQzNjE0ODEjNjEjJDEjJDQjJDgz",
+  "name": "베스트원의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzUxIyQxIyQ1IyQ5OSQzNjEyMjIjODEjJDEjJDIjJDgz",
+  "name": "끌로에의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzIxIyQxIyQxIyQ5MiQzNjEwMDIjNzEjJDEjJDgjJDgz",
+  "name": "삼성밸런스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "관절",
+   "통증",
+   "척추",
+   "재활",
+   "초음파",
+   "도수",
+   "도수치료",
+   "무릎"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzMxIyQxIyQ3IyQxMyQyNjEwMDIjNjEjJDEjJDQjJDgz",
+  "name": "마디본의원",
+  "from": "기타",
+  "to": "정형외과",
+  "cosmetic": false,
+  "kw": [
+   "통증",
+   "물리치료",
+   "도수",
+   "주사치료",
+   "도수치료",
+   "재활",
+   "척추",
+   "무릎"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzMxIyQxIyQzIyQwMyQzNjEyMjIjNDEjJDEjJDQjJDgz",
+  "name": "더블유의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "필러",
+   "리프팅",
+   "제모",
+   "울쎄라",
+   "써마지",
+   "레이저제모",
+   "슈링크",
+   "동안"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzIxIyQyIyQxIyQwMCQyNjEwMDIjNjEjJDEjJDgjJDgz",
+  "name": "닥터망고의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "지방흡입"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzMxIyQxIyQ3IyQ4OSQyNjE4MzIjNDEjJDEjJDgjJDgz",
+  "name": "리프티의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzMxIyQyIyQ3IyQwMCQzNjE4MzIjNjEjJDEjJDQjJDgz",
+  "name": "리리유의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "초음파",
+   "갑상선"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzUxIyQxIyQxIyQ5MiQyNjEwMDIjNTEjJDEjJDYjJDgz",
+  "name": "벨로의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQxIyQ4OSQzNjEyMjIjODEjJDEjJDIjJDgz",
+  "name": "메디컬오의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzIxIyQxIyQxIyQ5OSQyNjE0ODEjNjEjJDEjJDAjJDgz",
+  "name": "연세루다의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "필러",
+   "지방흡입",
+   "흉터",
+   "어깨",
+   "통증",
+   "보톡스",
+   "히알루론산",
+   "체형"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzMxIyQxIyQzIyQ2MiQzNjEyMjIjODEjJDEjJDIjJDgz",
+  "name": "모텐셜의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzExIyQxIyQzIyQ3MiQzNjE0ODEjNzEjJDEjJDgjJDgz",
+  "name": "로렐의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "울쎄라",
+   "동안",
+   "탄력",
+   "써마지",
+   "수액",
+   "두피",
+   "필러"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzExIyQxIyQzIyQ4OSQ0NjE0ODEjNjEjJDEjJDAjJDgz",
+  "name": "아르뜨의원",
+  "from": "기타",
+  "to": "안과",
+  "cosmetic": false,
+  "kw": [
+   "동안",
+   "틱"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzMxIyQxIyQzIyQ3MiQ0NjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "신사넘버파이브의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzExIyQxIyQ3IyQ3OSQ0NjEwMDIjODEjJDEjJDIjJDgz",
+  "name": "로사의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "다이어트",
+   "광대",
+   "탄력",
+   "흉터",
+   "모공",
+   "리프팅",
+   "사마귀",
+   "허벅지"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzQxIyQxIyQ3IyQwMyQ0NjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "땡큐서울의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "갑상선",
+   "성대",
+   "인후",
+   "내분비",
+   "음성",
+   "후두",
+   "결절",
+   "초음파"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzMxIyQxIyQzIyQxMyQzNjE4MzIjNTEjJDEjJDYjJDgz",
+  "name": "알에이의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "스킨부스터",
+   "탄력",
+   "icl",
+   "알러지",
+   "수액",
+   "두피",
+   "영양"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ5IyQwMyQyNjE0ODEjNTEjJDEjJDIjJDgz",
+  "name": "라비체의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "지방흡입",
+   "비만",
+   "가슴성형",
+   "체형",
+   "지방이식",
+   "갑상선",
+   "초음파",
+   "흉터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzMxIyQxIyQ3IyQwMyQyNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "리파인의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "탄력",
+   "비만",
+   "근막",
+   "필러",
+   "틱"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzMxIyQxIyQzIyQ4MiQzNjEyMjIjNjEjJDEjJDgjJDgz",
+  "name": "삼대국민의원",
+  "from": "기타",
+  "to": "한의원",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzMxIyQxIyQ3IyQwMyQyNjEyMjIjNjEjJDEjJDgjJDgz",
+  "name": "치유의원",
+  "from": "기타",
+  "to": "내과",
+  "cosmetic": false,
+  "kw": [
+   "영양",
+   "다이어트",
+   "수액",
+   "여드름",
+   "발달",
+   "비만",
+   "콜레스테롤",
+   "건강검진"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzUxIyQyIyQ1IyQwMCQzNjEwMDIjODEjJDEjJDIjJDgz",
+  "name": "한나셀의원",
+  "from": "기타",
+  "to": "내과",
+  "cosmetic": false,
+  "kw": [
+   "모발",
+   "동안",
+   "스트레스",
+   "통증"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzExIyQyIyQzIyQwMCQ0NjEwMDIjNTEjJDEjJDYjJDgz",
+  "name": "고정아의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzQxIyQxIyQ3IyQ4OSQzNjEwMDIjNjEjJDEjJDAjJDgz",
+  "name": "스마트맨의원",
+  "from": "기타",
+  "to": "비뇨의학과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzExIyQxIyQ3IyQ3OSQzNjEwMDIjNDEjJDEjJDQjJDgz",
+  "name": "이지동안의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "동안",
+   "필러",
+   "리프팅",
+   "흉터",
+   "실리프팅",
+   "탄력",
+   "써마지",
+   "안면윤곽"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzExIyQxIyQ3IyQ3MiQyNjEwMDIjNzEjJDEjJDgjJDgz",
+  "name": "의료법인중앙의료재단 메디넷영동의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzMxIyQxIyQ3IyQwMyQzNjE0ODEjNzEjJDEjJDgjJDgz",
+  "name": "청담카민의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "여드름",
+   "필러",
+   "써마지",
+   "리프팅",
+   "울쎄라",
+   "통증",
+   "흉터",
+   "모공"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzMxIyQxIyQ3IyQ4MiQyNjE0ODEjNDEjJDEjJDQjJDgz",
+  "name": "스노우의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "지방흡입",
+   "지방이식",
+   "트임",
+   "팔뚝",
+   "동안",
+   "눈매교정",
+   "교정",
+   "IPL"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzMxIyQxIyQzIyQ5MiQzNjEyMjIjNDEjJDEjJDQjJDgz",
+  "name": "굿모나의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "탈모",
+   "모발",
+   "모발이식",
+   "두피",
+   "주사치료",
+   "헤어라인",
+   "요로",
+   "출산"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzUxIyQxIyQxIyQ3MiQyNjEwMDIjNTEjJDEjJDYjJDgz",
+  "name": "베이의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "수액",
+   "icl",
+   "감기",
+   "독감",
+   "백신",
+   "스트레스",
+   "기미",
+   "비만"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzUxIyQxIyQxIyQ4MiQyNjE4MzIjNDEjJDEjJDgjJDgz",
+  "name": "압구정세가지소원의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzMxIyQxIyQ3IyQ4OSQ0NjEwMDIjNzEjJDEjJDgjJDgz",
+  "name": "뷰티라운지의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "통증",
+   "토닝",
+   "모공",
+   "보톡스",
+   "필러",
+   "슈링크",
+   "인모드"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ1IyQwMyQ0NjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "세렌메르의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "울쎄라",
+   "써마지",
+   "리프팅",
+   "스킨부스터",
+   "성장",
+   "통증",
+   "동안",
+   "초음파"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzIxIyQxIyQ1IyQxMyQzNjE0ODEjNjEjJDEjJDQjJDgz",
+  "name": "서울36의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "스포츠",
+   "소화기",
+   "만성질환",
+   "근관",
+   "체질",
+   "성대",
+   "내시경",
+   "심장"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzQxIyQxIyQ3IyQ5OSQ0NjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "청담밴스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "비만",
+   "필러",
+   "리프팅",
+   "모발",
+   "색소",
+   "틱",
+   "여드름",
+   "기미"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ5IyQ5MiQ0NjEwMDIjODEjJDEjJDYjJDgz",
+  "name": "페슈의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "여드름",
+   "흉터",
+   "모공",
+   "색소",
+   "패인흉터",
+   "기미",
+   "잡티",
+   "주근깨"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzExIyQxIyQzIyQwMyQzNjE0ODEjODEjJDEjJDYjJDgz",
+  "name": "청담디어의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "탄력",
+   "통증",
+   "비만",
+   "리프팅",
+   "체형",
+   "모발",
+   "필러",
+   "울쎄라"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxOTYxIzIxIyQxIyQ1IyQ3MiQyNjE4MzIjNDEjJDEjJDQjJDgz",
+  "name": "김봉수의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "성장",
+   "중독",
+   "심장",
+   "불안",
+   "강박",
+   "만성질환",
+   "동안",
+   "고혈압"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzIxIyQxIyQ1IyQxMyQyNjEwMDIjODEjJDEjJDYjJDgz",
+  "name": "주앤의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMSMkMCMkOTkkMzgxMzUxIzQxIyQyIyQ3IyQwMCQzNjEwMDIjNTEjJDEjJDYjJDgz",
+  "name": "강남지인병원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzUxIyQxIyQxIyQ3OSQyNjE4MzIjNzEjJDEjJDgjJDgz",
+  "name": "디마레의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "지방흡입",
+   "광대",
+   "지방이식",
+   "초음파",
+   "탄력",
+   "리프팅",
+   "안면윤곽",
+   "체형"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzQxIyQxIyQ3IyQ2MiQzNjEwMDIjODEjJDEjJDIjJDgz",
+  "name": "김송이의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "필러",
+   "리프팅",
+   "탄력",
+   "모발",
+   "동안",
+   "써마지",
+   "스킨부스터",
+   "비만"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzExIyQxIyQzIyQxMyQyNjEwMDIjNzEjJDEjJDgjJDgz",
+  "name": "뷰테스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "필러",
+   "리프팅",
+   "보톡스",
+   "스킨보톡스",
+   "스킨부스터",
+   "울쎄라",
+   "틱",
+   "동안"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxNzAyIzUxIyQxIyQxIyQ2MiQzNjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "세림의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzExIyQxIyQ3IyQ4MiQyNjEyMjIjNTEjJDEjJDYjJDgz",
+  "name": "강남연세라인의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "실리프팅",
+   "필러",
+   "탄력",
+   "스킨부스터",
+   "보톡스",
+   "윤곽주사",
+   "울쎄라"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzMxIyQxIyQzIyQ5OSQzNjEyMjIjNjEjJDEjJDgjJDgz",
+  "name": "청담엔샤인의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzUxIyQxIyQ1IyQ4OSQzNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "썸의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "필러",
+   "틱",
+   "탄력",
+   "비만",
+   "동안"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzQxIyQxIyQ3IyQ2MiQyNjE4MzIjNDEjJDEjJDgjJDgz",
+  "name": "아이에이치의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "필러",
+   "보톡스",
+   "리프팅",
+   "제모",
+   "흉터",
+   "어깨",
+   "울쎄라",
+   "탄력"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzExIyQxIyQzIyQxMyQzNjE4MzIjNDEjJDEjJDgjJDgz",
+  "name": "리브의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxOTYxIzExIyQxIyQzIyQ4OSQ0NjEwMDIjODEjJDEjJDYjJDgz",
+  "name": "청담이상동의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzMxIyQxIyQ3IyQ4OSQzNjE4MzIjNjEjJDEjJDAjJDgz",
+  "name": "강남피어리의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "탄력",
+   "리프팅",
+   "흉터",
+   "모공",
+   "초음파",
+   "색소",
+   "울쎄라",
+   "슈링크"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzMxIyQxIyQzIyQwMyQyNjEwMDIjNjEjJDEjJDQjJDgz",
+  "name": "순백의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "지방흡입",
+   "허벅지",
+   "안검",
+   "부유방",
+   "하안검",
+   "상안검",
+   "다이어트",
+   "팔뚝"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMSMkMCMkOTkkMzgxMzUxIzUxIyQxIyQxIyQ3OSQ0NjE0ODEjNTEjJDEjJDIjJDgz",
+  "name": "하병원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "무릎",
+   "동안",
+   "관절",
+   "연골",
+   "재활",
+   "성장",
+   "통증"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzIxIyQxIyQxIyQ4MiQ0NjEwMDIjNTEjJDEjJDIjJDgz",
+  "name": "디에스의원",
+  "from": "기타",
+  "to": "한의원",
+  "cosmetic": false,
+  "kw": [
+   "동안",
+   "색소"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzUxIyQxIyQ1IyQwMyQzNjEwMDIjNTEjJDEjJDIjJDgz",
+  "name": "닥터크리미의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ1IyQ4OSQzNjE0ODEjODEjJDEjJDIjJDgz",
+  "name": "셀리데이의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "동안",
+   "써마지",
+   "비만",
+   "체형",
+   "보톡스",
+   "리프팅",
+   "울쎄라"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxOTYxIzIxIyQyIyQ5IyQwMCQ0NjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "클린유의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "통증"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMSMkMCMkOTkkMzgxMzUxIzMxIyQxIyQ3IyQ2MiQzNjEyMjIjNTEjJDEjJDIjJDgz",
+  "name": "비에비스나무병원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "내시경",
+   "소화기",
+   "용종",
+   "초음파",
+   "대장내시경",
+   "비만",
+   "당뇨",
+   "갑상선"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNTgxOTYxIzExIyQxIyQzIyQ5OSQ0NjEwMDIjODEjJDEjJDIjJDgz",
+  "name": "(의)미래의료재단리드림의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzIxIyQxIyQ1IyQxMyQyNjEwMDIjNjEjJDEjJDQjJDgz",
+  "name": "세곡달빛의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "독감",
+   "예방접종",
+   "백신",
+   "접종"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzExIyQxIyQzIyQ3OSQyNjEyMjIjNjEjJDEjJDAjJDgz",
+  "name": "플레이트의원",
+  "from": "기타",
+  "to": "한의원",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzExIyQxIyQ3IyQxMyQzNjE4MzIjODEjJDEjJDIjJDgz",
+  "name": "청담미닛의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzQxIyQyIyQ3IyQwMCQyNjE4MzIjNDEjJDEjJDQjJDgz",
+  "name": "아트너의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "지방흡입",
+   "팔뚝",
+   "비만",
+   "다이어트",
+   "지방분해",
+   "비만클리닉",
+   "동안"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzMxIyQxIyQ3IyQ5MiQzNjEyMjIjNjEjJDEjJDgjJDgz",
+  "name": "이유의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMSMkMCMkOTkkMzgxMzUxIzIxIyQxIyQxIyQ5OSQzNjEwMDIjNjEjJDEjJDAjJDgz",
+  "name": "윤호병원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "임신",
+   "요실금",
+   "자궁",
+   "트임",
+   "쌍꺼풀",
+   "교정",
+   "여성성형",
+   "분만"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxMTkxIzUxIyQxIyQxIyQ3MiQzNjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "청담세란의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "여드름",
+   "리프팅",
+   "모공",
+   "토닝",
+   "레이저토닝",
+   "미백",
+   "보톡스",
+   "필러"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzIxIyQxIyQ1IyQ5OSQyNjE0ODEjNDEjJDEjJDQjJDgz",
+  "name": "세이예스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "거상",
+   "지방흡입",
+   "지방이식",
+   "보톡스",
+   "필러",
+   "안검",
+   "실리프팅"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzMxIyQxIyQzIyQ3MiQzNjE0ODEjNjEjJDEjJDAjJDgz",
+  "name": "청담에스에스640의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzExIyQxIyQ3IyQwMyQyNjEyMjIjNjEjJDEjJDAjJDgz",
+  "name": "모프로의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "모발",
+   "모발이식",
+   "헤어라인",
+   "교정",
+   "탈모",
+   "흉터",
+   "M자",
+   "두피"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzMxIyQxIyQzIyQxMyQyNjEwMDIjNTEjJDEjJDIjJDgz",
+  "name": "노드의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzMxIyQxIyQ3IyQ4MiQyNjE0ODEjNTEjJDEjJDYjJDgz",
+  "name": "지아인의원",
+  "from": "기타",
+  "to": "내과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzExIyQxIyQ3IyQ3MiQyNjE0ODEjNjEjJDEjJDAjJDgz",
+  "name": "오큐라의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "실리프팅",
+   "토닝",
+   "레이저토닝",
+   "보톡스",
+   "필러",
+   "슈링크"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzUxIyQxIyQ1IyQ3MiQzNjEwMDIjODEjJDEjJDIjJDgz",
+  "name": "신논현톡스앤필의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "보톡스",
+   "써마지",
+   "울쎄라",
+   "필러",
+   "슈링크",
+   "여드름",
+   "스킨보톡스"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzExIyQxIyQzIyQ4OSQyNjEyMjIjODEjJDEjJDYjJDgz",
+  "name": "본라인의원",
+  "from": "기타",
+  "to": "정형외과",
+  "cosmetic": false,
+  "kw": [
+   "통증",
+   "도수",
+   "도수치료",
+   "성장",
+   "척추",
+   "디스크",
+   "관절",
+   "스포츠"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ1IyQ5OSQyNjE0ODEjNTEjJDEjJDIjJDgz",
+  "name": "청담아이우의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzIxIyQxIyQ1IyQ4OSQyNjEwMDIjNjEjJDEjJDgjJDgz",
+  "name": "비타민의원",
+  "from": "기타",
+  "to": "내과",
+  "cosmetic": false,
+  "kw": [
+   "비만",
+   "인후",
+   "당뇨",
+   "비만클리닉",
+   "예방접종",
+   "접종",
+   "영양",
+   "콜레스테롤"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzIxIyQxIyQ1IyQwMyQzNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "젬마의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": [
+   "모발",
+   "모발이식",
+   "동안",
+   "탈모",
+   "implant",
+   "자보",
+   "스트레스",
+   "통증"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzQxIyQxIyQ3IyQ2MiQyNjE4MzIjNzEjJDEjJDgjJDgz",
+  "name": "코르디아의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "탈모",
+   "보톡스",
+   "두피",
+   "스킨부스터",
+   "M자",
+   "통증",
+   "수액"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzExIyQxIyQzIyQ5OSQyNjEwMDIjNjEjJDEjJDgjJDgz",
+  "name": "청담차오름의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "스킨부스터",
+   "수액",
+   "필러"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNTgxMzUxIzUxIyQxIyQxIyQxMyQyNjE4MzIjNjEjJDEjJDQjJDgz",
+  "name": "강남연세신통의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzExIyQxIyQ3IyQ2MiQzNjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "원셀의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "통증",
+   "척추",
+   "필러",
+   "보톡스",
+   "모발",
+   "코성형",
+   "비만",
+   "관절"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzQxIyQxIyQ3IyQ5MiQyNjE4MzIjNTEjJDEjJDYjJDgz",
+  "name": "하프의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "비만",
+   "다이어트",
+   "리프팅",
+   "비만클리닉",
+   "체형",
+   "지방분해",
+   "동안",
+   "허벅지"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMzUxIzExIyQxIyQ3IyQwMyQ0NjEwMDIjNTEjJDEjJDIjJDgz",
+  "name": "포이즌의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzUxIyQxIyQ1IyQxMyQyNjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "엔슬림의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "지방흡입",
+   "팔뚝",
+   "지방이식",
+   "부유방",
+   "체형",
+   "허벅지",
+   "다이어트",
+   "어깨"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzMxIyQxIyQzIyQ4OSQyNjE0ODEjNTEjJDEjJDIjJDgz",
+  "name": "닥터퀸스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "흉터",
+   "필러",
+   "리프팅",
+   "교정"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzExIyQxIyQ3IyQxMyQyNjE0ODEjNjEjJDEjJDQjJDgz",
+  "name": "슬림에디션의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "지방흡입",
+   "체형",
+   "리프팅",
+   "모발",
+   "허벅지",
+   "팔뚝",
+   "비만"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ1IyQ5OSQyNjE4MzIjNzEjJDEjJDgjJDgz",
+  "name": "연세라미슈의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "탄력",
+   "리프팅",
+   "보톡스",
+   "필러",
+   "통증",
+   "윤곽주사",
+   "스킨부스터",
+   "허벅지"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzQxIyQxIyQ3IyQ5OSQzNjE0ODEjNjEjJDEjJDAjJDgz",
+  "name": "타토아의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxOTYxIzMxIyQxIyQzIyQ4MiQyNjEwMDIjNTEjJDEjJDYjJDgz",
+  "name": "(의)성광의료재단차움건진의원",
+  "from": "기타",
+  "to": "내과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzExIyQxIyQzIyQwMyQzNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "에이스타의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "필러",
+   "보톡스",
+   "스킨부스터",
+   "탄력",
+   "어깨",
+   "수액",
+   "지방흡입"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxOTYxIzUxIyQxIyQxIyQ5OSQzNjEyMjIjNjEjJDEjJDAjJDgz",
+  "name": "청담성모의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzExIyQxIyQ3IyQ3MiQyNjEwMDIjODEjJDEjJDIjJDgz",
+  "name": "뮤즈의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "여드름",
+   "연하",
+   "트러블",
+   "흉터",
+   "동안",
+   "스트레스",
+   "성장"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzExIyQxIyQ3IyQ3MiQ0NjEwMDIjODEjJDEjJDYjJDgz",
+  "name": "보셀르의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "필러",
+   "어깨",
+   "리프팅",
+   "탄력",
+   "광대",
+   "체형",
+   "트러블",
+   "보톡스"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzMxIyQxIyQzIyQ5OSQyNjE0ODEjNjEjJDEjJDQjJDgz",
+  "name": "루센느의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzMxIyQxIyQ3IyQ3MiQzNjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "디캐럿의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "동안",
+   "필러",
+   "리프팅",
+   "실리프팅",
+   "울쎄라",
+   "써마지",
+   "슈링크",
+   "거상"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzExIyQxIyQzIyQ4OSQyNjE0ODEjNjEjJDEjJDgjJDgz",
+  "name": "청담셀팅의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "실리프팅",
+   "스킨부스터",
+   "탄력",
+   "색소",
+   "울쎄라",
+   "지방흡입",
+   "요로"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzExIyQxIyQ3IyQwMyQ0NjEwMDIjNjEjJDEjJDgjJDgz",
+  "name": "오빗의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzUxIyQxIyQxIyQ3MiQyNjEyMjIjNzEjJDEjJDgjJDgz",
+  "name": "청담란셀의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "색소",
+   "탄력",
+   "써마지",
+   "울쎄라",
+   "흉터",
+   "여드름",
+   "모공"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzUxIyQyIyQ1IyQwMCQyNjE0ODEjNTEjJDEjJDIjJDgz",
+  "name": "라이프의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "다이어트",
+   "통증",
+   "프롤로",
+   "소화기",
+   "미백",
+   "리프팅",
+   "알레르기",
+   "내분비"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzExIyQxIyQ3IyQ3MiQzNjEyMjIjNjEjJDEjJDQjJDgz",
+  "name": "로얄라인의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "지방흡입",
+   "지방이식",
+   "허벅지",
+   "보톡스",
+   "필러",
+   "리프팅",
+   "스킨부스터",
+   "실리프팅"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzUxIyQxIyQxIyQ5MiQzNjEwMDIjNjEjJDEjJDgjJDgz",
+  "name": "홀드의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "기미"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzQxIyQxIyQ3IyQ3OSQzNjE4MzIjNjEjJDEjJDQjJDgz",
+  "name": "에스엔브이의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "영양",
+   "스트레스",
+   "탄력",
+   "흉터",
+   "모발",
+   "비만",
+   "동안",
+   "인후"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzMxIyQyIyQzIyQwMCQyNjE4MzIjNzEjJDEjJDgjJDgz",
+  "name": "피치셀의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "색소",
+   "리프팅",
+   "탄력",
+   "기미",
+   "필러",
+   "정관",
+   "통증"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzUxIyQxIyQ1IyQ5OSQyNjEwMDIjNjEjJDEjJDgjJDgz",
+  "name": "청담이든의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "수액",
+   "비만",
+   "스트레스",
+   "영양",
+   "탄력",
+   "알레르기",
+   "심장",
+   "치매"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxOTYxIzUxIyQxIyQ1IyQxMyQzNjE4MzIjNDEjJDEjJDQjJDgz",
+  "name": "아이유의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "여드름",
+   "윤곽주사",
+   "여드름흉터",
+   "흉터",
+   "비만",
+   "보톡스",
+   "지방분해",
+   "기미"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzUxIyQxIyQ1IyQ3OSQzNjEwMDIjNTEjJDEjJDYjJDgz",
+  "name": "유(U)스타일9의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzUxIyQxIyQxIyQ5OSQzNjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "선릉디온의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "동안",
+   "자보",
+   "울쎄라",
+   "초음파",
+   "색소",
+   "잡티",
+   "필러"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzIxIyQxIyQ1IyQ5MiQzNjEwMDIjNzEjJDEjJDgjJDgz",
+  "name": "콜나움의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "필러",
+   "탄력",
+   "보톡스",
+   "리프팅",
+   "스킨부스터",
+   "다이어트",
+   "통증"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzUxIyQxIyQ1IyQ3OSQyNjEyMjIjNzEjJDEjJDgjJDgz",
+  "name": "미드나잇의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "색소",
+   "여드름",
+   "비만",
+   "흉터",
+   "탄력",
+   "통증",
+   "모공",
+   "보톡스"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzIxIyQxIyQ1IyQ4OSQzNjE0ODEjNzEjJDEjJDgjJDgz",
+  "name": "에이엘의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzExIyQyIyQ3IyQwMCQzNjE0ODEjODEjJDEjJDYjJDgz",
+  "name": "청담아르티의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "탄력",
+   "비만",
+   "성장",
+   "모발",
+   "틱",
+   "필러",
+   "히알루론산"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzExIyQxIyQ3IyQ4OSQ0NjEwMDIjODEjJDEjJDIjJDgz",
+  "name": "멘토의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "탈모",
+   "색소",
+   "미백",
+   "리프팅",
+   "탄력",
+   "성장",
+   "여드름",
+   "토닝"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzMxIyQxIyQzIyQ3OSQ0NjEwMDIjNzEjJDEjJDgjJDgz",
+  "name": "아크네마인드의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzIxIyQxIyQ1IyQ4OSQ0NjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "필로스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ5IyQwMyQyNjEyMjIjODEjJDEjJDYjJDgz",
+  "name": "제이엔비의원",
+  "from": "기타",
+  "to": "이비인후과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzQxIyQxIyQ3IyQ5MiQzNjEyMjIjNjEjJDEjJDgjJDgz",
+  "name": "상상의원",
+  "from": "기타",
+  "to": "내과",
+  "cosmetic": false,
+  "kw": [
+   "다이어트",
+   "사상",
+   "지방분해",
+   "허벅지",
+   "팔뚝",
+   "비만"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzMxIyQyIyQ3IyQwMCQzNjEwMDIjNjEjJDEjJDAjJDgz",
+  "name": "셀루오의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "필러",
+   "지방이식",
+   "보형물",
+   "리프팅",
+   "지방흡입",
+   "초음파",
+   "스킨부스터",
+   "실리프팅"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzQxIyQxIyQ3IyQxMyQyNjEwMDIjNjEjJDEjJDgjJDgz",
+  "name": "모우다의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "모발",
+   "모발이식",
+   "탈모",
+   "두피",
+   "헤어라인",
+   "통증",
+   "후두",
+   "보톡스"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzExIyQxIyQzIyQ3MiQyNjE4MzIjODEjJDEjJDIjJDgz",
+  "name": "리뉴아의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "탄력",
+   "리프팅",
+   "비만",
+   "모공",
+   "체형",
+   "스킨부스터",
+   "초음파",
+   "흉터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzExIyQxIyQzIyQ4OSQ0NjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "레픽의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "통증",
+   "필러",
+   "리프팅",
+   "모발",
+   "여드름",
+   "흉터",
+   "모공",
+   "피부톤"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMSMkMCMkOTkkMzgxMzUxIzMxIyQxIyQ3IyQwMyQyNjEyMjIjODEjJDEjJDYjJDgz",
+  "name": "담소유병원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "부유방",
+   "흉터",
+   "전립선",
+   "출산",
+   "기미",
+   "유두",
+   "동안",
+   "갑상선"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzQxIyQxIyQ3IyQ4OSQyNjEyMjIjNjEjJDEjJDgjJDgz",
+  "name": "닥터스키니의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzExIyQxIyQ3IyQ5OSQyNjE4MzIjODEjJDEjJDYjJDgz",
+  "name": "유에이치셀의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "인모드",
+   "써마지",
+   "보톡스",
+   "스킨보톡스",
+   "리프팅",
+   "울쎄라",
+   "슈링크",
+   "탄력"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ5IyQ3OSQ0NjEwMDIjODEjJDEjJDIjJDgz",
+  "name": "하이미의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzMxIyQxIyQzIyQxMyQ0NjEwMDIjNjEjJDEjJDAjJDgz",
+  "name": "닥터뉴셀의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "필러",
+   "비만",
+   "흉터",
+   "탄력",
+   "동안",
+   "피부톤",
+   "히알루론산"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzQxIyQxIyQ3IyQ4OSQzNjE0ODEjODEjJDEjJDIjJDgz",
+  "name": "샤인유의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "슈링크",
+   "여드름",
+   "지방분해",
+   "울쎄라",
+   "비만",
+   "여드름흉터",
+   "흉터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQyIyQxIyQwMCQ0NjE0ODEjODEjJDEjJDYjJDgz",
+  "name": "피데스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "필러",
+   "실리프팅",
+   "써마지",
+   "탄력",
+   "물광",
+   "모공",
+   "스킨부스터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzExIyQxIyQ3IyQ5OSQ0NjEwMDIjNjEjJDEjJDQjJDgz",
+  "name": "린의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "통증",
+   "다이어트",
+   "체외충격파",
+   "충격파",
+   "리프팅",
+   "체형",
+   "교정"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzUxIyQxIyQ1IyQ5OSQzNjE4MzIjNjEjJDEjJDAjJDgz",
+  "name": "아름라인의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzQxIyQxIyQ3IyQ3MiQyNjEwMDIjNzEjJDEjJDgjJDgz",
+  "name": "유스앤영의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "눈밑지방",
+   "모발",
+   "틱",
+   "통증"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxNzAyIzIxIyQxIyQ5IyQ3MiQ0NjEwMDIjNjEjJDEjJDAjJDgz",
+  "name": "나도균의원",
+  "from": "기타",
+  "to": "내과",
+  "cosmetic": false,
+  "kw": [
+   "심장",
+   "협심증",
+   "부정맥",
+   "불안",
+   "통증",
+   "우울",
+   "공황"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzMxIyQxIyQzIyQ5MiQ0NjE0ODEjNjEjJDEjJDQjJDgz",
+  "name": "청담쟈스민라인의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "울쎄라",
+   "슈링크",
+   "실리프팅"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzIxIyQxIyQ1IyQ4OSQzNjEwMDIjNjEjJDEjJDgjJDgz",
+  "name": "닥터디자이너의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzMxIyQxIyQ3IyQwMyQzNjEyMjIjODEjJDEjJDYjJDgz",
+  "name": "뚜뚜의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "필러",
+   "보톡스",
+   "모공",
+   "통증",
+   "보툴리눔",
+   "지방흡입",
+   "지방분해",
+   "토닝"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxMzUxIzIxIyQxIyQ5IyQ2MiQ0NjE0ODEjNTEjJDEjJDIjJDgz",
+  "name": "백세의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "1차병원"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzExIyQxIyQ3IyQ4OSQzNjEyMjIjNjEjJDEjJDgjJDgz",
+  "name": "자곡365의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "동안",
+   "폐렴",
+   "통증",
+   "재채기",
+   "무릎",
+   "인후",
+   "감기",
+   "독감"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNDgxNzAyIzExIyQxIyQ3IyQ5MiQyNjE0ODEjNjEjJDEjJDgjJDgz",
+  "name": "연세에스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "불안",
+   "디스크",
+   "오십견",
+   "손목",
+   "터널증후군",
+   "어지럼",
+   "메니에르",
+   "당뇨"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzIxIyQxIyQ5IyQxMyQyNjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "청담제이더마의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzIxIyQxIyQxIyQ3OSQzNjEyMjIjNDEjJDEjJDQjJDgz",
+  "name": "동안중심의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "동안",
+   "써마지",
+   "여드름",
+   "토닝",
+   "틱",
+   "흉터",
+   "울쎄라"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzExIyQxIyQzIyQ5MiQyNjEwMDIjNzEjJDEjJDgjJDgz",
+  "name": "청담에스민의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "써마지",
+   "스킨부스터",
+   "비만",
+   "리프팅",
+   "미백",
+   "울쎄라",
+   "인모드",
+   "탄력"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzIxIyQxIyQxIyQ3MiQ0NjEwMDIjNDEjJDEjJDQjJDgz",
+  "name": "모아만의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "모발",
+   "동안",
+   "모발이식",
+   "헤어라인",
+   "교정",
+   "두피",
+   "탈모",
+   "통증"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzMxIyQxIyQ3IyQxMyQyNjE4MzIjNDEjJDEjJDgjJDgz",
+  "name": "시즈의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMzUxIzMxIyQxIyQ3IyQ4MiQ0NjEwMDIjNDEjJDEjJDQjJDgz",
+  "name": "에이지의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "통증",
+   "성장",
+   "도수",
+   "보약",
+   "비만",
+   "도수치료",
+   "허리",
+   "추간판"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzIxIyQxIyQxIyQ3OSQ0NjEwMDIjNjEjJDEjJDAjJDgz",
+  "name": "차소연의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzExIyQyIyQ3IyQwMCQ0NjEwMDIjNDEjJDEjJDQjJDgz",
+  "name": "브이에스라인의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "미용",
+   "레이저",
+   "필러",
+   "리프팅",
+   "모발",
+   "보톡스",
+   "여드름",
+   "손"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzExIyQxIyQzIyQwMyQ0NjEwMDIjNTEjJDEjJDYjJDgz",
+  "name": "블리비의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "제모",
+   "보톡스",
+   "색소",
+   "비만",
+   "필러",
+   "탄력",
+   "기미"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzMxIyQxIyQzIyQ5OSQzNjEwMDIjODEjJDEjJDIjJDgz",
+  "name": "365코이의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMzUxIzIxIyQxIyQ1IyQ4MiQzNjE0ODEjNDEjJDEjJDQjJDgz",
+  "name": "탐의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "여드름",
+   "양악",
+   "비만",
+   "써마지",
+   "슈링크",
+   "인모드",
+   "여드름흉터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzExIyQxIyQ3IyQxMyQzNjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "삼성밴스의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "보톡스",
+   "제모",
+   "필러",
+   "모공",
+   "기미",
+   "색소",
+   "실리프팅"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzMxIyQxIyQ3IyQ4MiQyNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "서울하이케어의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzMxIyQxIyQ3IyQwMyQzNjE0ODEjNjEjJDEjJDAjJDgz",
+  "name": "연세거평의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "건강검진",
+   "예방접종",
+   "접종",
+   "미백",
+   "피부톤",
+   "콜레스테롤",
+   "통증"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzExIyQxIyQ3IyQ4OSQzNjE4MzIjNDEjJDEjJDQjJDgz",
+  "name": "사르티네의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "필러",
+   "모발",
+   "비만"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzIxIyQxIyQxIyQ5OSQzNjEyMjIjNTEjJDEjJDYjJDgz",
+  "name": "청미의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "안면윤곽",
+   "수액",
+   "지방이식",
+   "보톡스",
+   "색소",
+   "필러",
+   "실리프팅"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzIxIyQxIyQ1IyQxMyQzNjEwMDIjNjEjJDEjJDgjJDgz",
+  "name": "BLS(비엘에스)의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "써마지",
+   "탄력",
+   "울쎄라",
+   "통증",
+   "스킨부스터",
+   "모공",
+   "슈링크"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzUxIyQyIyQ1IyQwMCQzNjEyMjIjODEjJDEjJDYjJDgz",
+  "name": "오로라의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "지방흡입",
+   "교정",
+   "흉터",
+   "지방이식",
+   "리프팅",
+   "눈매교정",
+   "보톡스",
+   "필러"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzUxIyQxIyQxIyQ3OSQyNjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "닥터베이직의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "동안",
+   "틱"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxNzAyIzMxIyQxIyQ3IyQ2MiQyNjEwMDIjODEjJDEjJDIjJDgz",
+  "name": "레이첼의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "제모",
+   "실리프팅",
+   "사상"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzMxIyQyIyQ3IyQwMCQ0NjEwMDIjNTEjJDEjJDIjJDgz",
+  "name": "파스칼의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMSMkMCMkOTkkMzgxMzUxIzIxIyQxIyQ1IyQ5OSQ0NjE0ODEjNjEjJDEjJDQjJDgz",
+  "name": "우리들병원",
+  "from": "기타",
+  "to": "정형외과",
+  "cosmetic": false,
+  "kw": [
+   "척추",
+   "디스크",
+   "내시경",
+   "허리",
+   "협착",
+   "인대",
+   "목디스크",
+   "통증"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzIxIyQxIyQxIyQ4MiQ0NjE0ODEjNzEjJDEjJDgjJDgz",
+  "name": "청담메자닌의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzUxIyQxIyQ1IyQ2MiQyNjE0ODEjNzEjJDEjJDgjJDgz",
+  "name": "더클래식의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "광대",
+   "코성형",
+   "가슴성형",
+   "체형"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzMxIyQxIyQ3IyQ5OSQzNjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "올핏의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMzUxIzUxIyQxIyQ1IyQwMyQyNjEyMjIjODEjJDEjJDIjJDgz",
+  "name": "연세새봄의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "다이어트",
+   "영양",
+   "동안",
+   "아토피",
+   "비만",
+   "비만클리닉",
+   "우울",
+   "수면제"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxNzAyIzIxIyQxIyQ5IyQ3OSQzNjE4MzIjNTEjJDEjJDYjJDgz",
+  "name": "오엘의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "리프팅",
+   "실리프팅",
+   "코성형",
+   "필러",
+   "인후",
+   "보톡스",
+   "탄력",
+   "초음파"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzMxIyQxIyQzIyQwMyQzNjE4MzIjNTEjJDEjJDIjJDgz",
+  "name": "연세라헨느의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "탄력",
+   "슈링크",
+   "색소",
+   "여드름",
+   "모공",
+   "흉터",
+   "기미"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzUxIyQyIyQxIyQwMCQzNjE0ODEjNTEjJDEjJDYjJDgz",
+  "name": "튼튼하지의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzUxIyQxIyQ1IyQ2MiQzNjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "올리미의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "거상",
+   "쌍꺼풀",
+   "트임",
+   "안면거상",
+   "리프팅",
+   "여드름",
+   "잡티",
+   "물광"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzIxIyQxIyQxIyQ3MiQzNjEyMjIjNjEjJDEjJDgjJDgz",
+  "name": "본앤미의원",
+  "from": "기타",
+  "to": "정형외과",
+  "cosmetic": false,
+  "kw": [
+   "통증",
+   "척추",
+   "관절",
+   "물리치료",
+   "인대",
+   "동안",
+   "신경차단",
+   "디스크"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxMTkxIzIxIyQxIyQxIyQ5MiQyNjEyMjIjNzEjJDEjJDgjJDgz",
+  "name": "청담큐비큐의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMTkxIzMxIyQyIyQzIyQwMCQzNjEyMjIjNDEjJDEjJDgjJDgz",
+  "name": "청담비포앤애프터의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzUxIyQxIyQxIyQ5MiQyNjE4MzIjNjEjJDEjJDAjJDgz",
+  "name": "전앤후의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "지방흡입",
+   "지방이식",
+   "허벅지",
+   "허리",
+   "리프팅",
+   "흉터",
+   "부유방",
+   "체형"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzUxIyQxIyQxIyQ3OSQzNjEyMjIjNTEjJDEjJDYjJDgz",
+  "name": "청담이음엘의원",
+  "from": "기타",
+  "to": "피부과",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzMxIyQxIyQ3IyQ5OSQyNjEyMjIjNzEjJDEjJDgjJDgz",
+  "name": "유브의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzIxIyQxIyQxIyQ4OSQyNjE0ODEjNjEjJDEjJDQjJDgz",
+  "name": "체인지의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "비만",
+   "체형",
+   "리프팅",
+   "필러",
+   "지방흡입",
+   "모발",
+   "흉터",
+   "지방이식"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkMCMkMDAkNTgxOTYxIzQxIyQxIyQ3IyQ4MiQyNjEyMjIjNjEjJDEjJDAjJDgz",
+  "name": "와세다의원",
+  "from": "기타",
+  "to": "정형외과",
+  "cosmetic": false,
+  "kw": [
+   "디스크",
+   "목디스크",
+   "관절",
+   "퇴행성관절염",
+   "오십견",
+   "프롤로",
+   "주사치료",
+   "허리"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzExIyQxIyQzIyQ2MiQzNjEwMDIjNTEjJDEjJDYjJDgz",
+  "name": "청담봄온의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "필러",
+   "리프팅",
+   "인모드",
+   "울쎄라",
+   "실리프팅",
+   "여드름",
+   "색소",
+   "탄력"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzMxIyQxIyQ3IyQ3OSQzNjE4MzIjODEjJDEjJDYjJDgz",
+  "name": "안티에이징의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "필러",
+   "울쎄라",
+   "슈링크",
+   "스킨부스터",
+   "탄력",
+   "실리프팅"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkMzgxMTkxIzQxIyQyIyQ3IyQwMCQyNjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "리앤채움의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": false,
+  "kw": [
+   "두피",
+   "비만",
+   "헤어라인",
+   "색소",
+   "체형",
+   "이석",
+   "리프팅",
+   "스킨부스터"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxMzUxIzUxIyQyIyQxIyQwMCQyNjEwMDIjODEjJDEjJDYjJDgz",
+  "name": "서울연세21세기의원",
+  "from": "기타",
+  "to": "정형외과",
+  "cosmetic": false,
+  "kw": [
+   "관절",
+   "연골",
+   "무릎",
+   "통증",
+   "충격파",
+   "척추",
+   "인대",
+   "건강검진"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzQxIyQxIyQ3IyQxMyQzNjE4MzIjNjEjJDEjJDQjJDgz",
+  "name": "바로그의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "리프팅",
+   "스킨부스터",
+   "제모",
+   "울쎄라",
+   "써마지",
+   "체형",
+   "실리프팅"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzExIyQxIyQ3IyQ5OSQzNjE4MzIjNDEjJDEjJDQjJDgz",
+  "name": "노블라인의원",
+  "from": "기타",
+  "to": "치과",
+  "cosmetic": false,
+  "kw": [
+   "모발",
+   "모발이식",
+   "M자",
+   "헤어라인",
+   "교정"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxMzUxIzExIyQxIyQ3IyQwMyQyNjE4MzIjNzEjJDEjJDgjJDgz",
+  "name": "유로스메디컬의원",
+  "from": "기타",
+  "to": "비뇨의학과",
+  "cosmetic": false,
+  "kw": [
+   "전립선",
+   "임플란트",
+   "발기부전"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNDgxOTYxIzMxIyQxIyQzIyQwMyQ0NjEwMDIjNjEjJDEjJDQjJDgz",
+  "name": "하늘의원",
+  "from": "기타",
+  "to": "기타",
+  "cosmetic": true,
+  "kw": [
+   "토닝",
+   "리프팅",
+   "여드름",
+   "물광",
+   "필러",
+   "보톡스"
+  ]
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkNCMkMDAkNTgxOTYxIzExIyQyIyQzIyQwMCQ0NjE0ODEjNDEjJDEjJDgjJDgz",
+  "name": "리우라인의원",
+  "from": "기타",
+  "to": "한의원",
+  "cosmetic": false,
+  "kw": []
+ },
+ {
+  "hospital_id": "JDQ4MTg4MSM1MSMkMiMkOCMkMDAkMzgxOTYxIzUxIyQxIyQxIyQ3MiQzNjEwMDIjNDEjJDEjJDgjJDgz",
+  "name": "드림수면의원",
+  "from": "기타",
+  "to": "이비인후과",
+  "cosmetic": false,
+  "kw": [
+   "코골이",
+   "수면무호흡",
+   "불면",
+   "동안",
+   "수면장애",
+   "교정",
+   "수면다원",
+   "우울"
+  ]
+ }
+]
