@@ -1,0 +1,8 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="clinic-focus 마크">
+  <rect width="32" height="32" rx="8" fill="hsl(217 91% 41%)"/>
+  <path d="M11 11v3.2a5 5 0 0 0 10 0V11" stroke="hsl(210 40% 99%)" stroke-width="2" stroke-linecap="round"/>
+  <path d="M16 19.2v2.1a4 4 0 0 0 4 4 4 4 0 0 0 4-4V20" stroke="hsl(210 40% 99%)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <circle cx="24" cy="18" r="2.4" fill="none" stroke="hsl(210 40% 99%)" stroke-width="2"/>
+  <circle cx="11" cy="10" r="1.6" fill="hsl(151 81% 55%)"/>
+  <circle cx="21" cy="10" r="1.6" fill="hsl(151 81% 55%)"/>
+</svg>

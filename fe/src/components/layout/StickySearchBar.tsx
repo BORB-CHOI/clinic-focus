@@ -28,6 +28,9 @@ export function StickySearchBar({
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const isSearchPage = location.pathname.startsWith("/search");
+  // 지도 페이지도 검색바 제자리에서 동작 (이탈 금지)
+  const isMapPage = location.pathname.startsWith("/map");
+  const isInPageSearch = isSearchPage || isMapPage;
 
   // 입력 컨트롤은 로컬 상태로 두고, /search 에서는 디바운스로 URL 에 반영
   // (다른 페이지에서는 Enter/버튼 클릭 시점에 /search 로 navigate)
@@ -45,9 +48,9 @@ export function StickySearchBar({
     }
   }, [searchParams]);
 
-  // /search 에서만 디바운스로 URL q 업데이트 (다른 페이지는 navigate 시점에 처리)
+  // /search, /map 에서 디바운스로 URL q 업데이트 (다른 페이지는 navigate 시점에 처리)
   useEffect(() => {
-    if (!isSearchPage) return;
+    if (!isInPageSearch) return;
     const id = window.setTimeout(() => {
       const trimmed = value.trim();
       const current = searchParams.get("q") ?? "";
@@ -60,18 +63,19 @@ export function StickySearchBar({
     }, debounceMs);
     return () => window.clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value, isSearchPage, debounceMs]);
+  }, [value, isInPageSearch, debounceMs]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmed = value.trim();
-    if (isSearchPage) {
+    if (isInPageSearch) {
+      // /search, /map: URL ?q= 만 갱신, 페이지 이동 없음
       const next = new URLSearchParams(searchParams);
       if (trimmed) next.set("q", trimmed);
       else next.delete("q");
       setSearchParams(next, { replace: false });
     } else {
-      // 다른 페이지(/map, /hospitals/:id)에서 검색 → 검색 페이지로 진입
+      // /hospitals/:id 등 그 외 → 검색 페이지로 이동
       const next = new URLSearchParams();
       if (trimmed) next.set("q", trimmed);
       navigate(`/search?${next.toString()}`);
@@ -81,7 +85,7 @@ export function StickySearchBar({
   return (
     <div
       className={cn(
-        "sticky top-14 z-20 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75",
+        "sticky top-[6.5rem] z-20 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75",
         className,
       )}
     >

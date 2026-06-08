@@ -387,6 +387,19 @@ class FeedbackEntry(BaseModel):
     primary_focus: str
     verdict: Literal["agree", "disagree"]
     received_at: datetime
+    review_text: str | None = None
+    age_bucket: str | None = None
+    gender_bucket: str | None = None
+
+
+class ReviewItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    verdict: Literal["agree", "disagree"]
+    review_text: str
+    age_bucket: str | None = None
+    gender_bucket: str | None = None
+    received_at: datetime
 
 
 class FeedbackStats(BaseModel):
@@ -397,6 +410,7 @@ class FeedbackStats(BaseModel):
     disagree_count: int
     agree_ratio: float
     last_feedback_at: datetime | None = None
+    recent_reviews: list["ReviewItem"] = []
 
 
 # ---------------------------------------------------------------------------
@@ -546,3 +560,32 @@ class DataMetadata(BaseModel):
 # ---------------------------------------------------------------------------
 
 ChangeRecord: TypeAlias = ClassificationChange
+
+
+# ---------------------------------------------------------------------------
+# 검색 이벤트 (데이터 해자 — 사용자 행동 신호)
+# ---------------------------------------------------------------------------
+
+class SearchEvent(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    event_id: str
+    event_type: Literal["impression", "click", "select"]
+    session_id: str          # 익명 식별자 (localStorage UUID)
+    hospital_id: str
+    query: str | None = None  # 검색어 (지도 탐색 시 null)
+    position: int | None = None  # 검색 결과 내 순위 (0-based)
+    created_at: datetime
+
+
+class SearchEventStats(BaseModel):
+    """병원별 이벤트 집계 — compute_event_scores.py 스크립트가 생성."""
+    model_config = ConfigDict(extra="forbid")
+
+    hospital_id: str
+    impressions: int = 0
+    clicks: int = 0
+    selects: int = 0
+    ctr: float = 0.0   # clicks / impressions
+    scr: float = 0.0   # selects / clicks (방문 전환율)
+    updated_at: datetime

@@ -16,6 +16,7 @@ export const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: "relevance", label: "관련도순" },
   { value: "distance", label: "거리순" },
   { value: "confidence", label: "근거 많은 순" },
+  { value: "popular", label: "인기순" },
 ];
 
 interface SearchFiltersProps {

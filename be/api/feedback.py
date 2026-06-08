@@ -32,6 +32,9 @@ class FeedbackRequest(BaseModel):
     device_id: str
     primary_focus: str
     verdict: Literal["agree", "disagree"]  # 잘못된 값은 FastAPI 가 422 (명세 INVALID_PARAMETER)
+    review_text: str | None = None          # 선택적 한 줄 후기 (최대 200자)
+    age_bucket: str | None = None           # 제출 시점 사용자 연령대
+    gender_bucket: str | None = None        # 제출 시점 사용자 성별
 
 
 def _maybe_recompute_confidence(hospital_id: str) -> None:
@@ -77,6 +80,9 @@ def submit_feedback(req: FeedbackRequest):
             content={"error": {"code": "DUPLICATE_FEEDBACK", "message": "이 디바이스에서 해당 병원에 이미 피드백을 제출했습니다"}},
         )
 
+    # 후기 텍스트 길이 제한 (200자)
+    review_text = (req.review_text or "").strip()[:200] or None
+
     # 피드백 저장
     entry = FeedbackEntry(
         feedback_id=str(uuid.uuid4()),
@@ -85,6 +91,9 @@ def submit_feedback(req: FeedbackRequest):
         primary_focus=req.primary_focus,
         verdict=req.verdict,
         received_at=datetime.now(tz=timezone.utc),
+        review_text=review_text,
+        age_bucket=req.age_bucket,
+        gender_bucket=req.gender_bucket,
     )
     db.save_feedback(entry)
 

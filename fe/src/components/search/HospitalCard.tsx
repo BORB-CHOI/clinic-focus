@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { MapPin } from "lucide-react";
+import { trackAnalyticsClick } from "@/lib/events";
 
 import { Badge } from "@/components/ui/badge";
 import { ConfidenceBadge } from "@/components/common/ConfidenceBadge";
@@ -15,6 +16,11 @@ interface HospitalCardProps {
    */
   compact?: boolean;
   className?: string;
+  /**
+   * 제공 시 Link 기본 페이지 이동 대신 이 핸들러를 호출한다.
+   * 지도 페이지에서 카드 클릭 → 지도 이동 용도.
+   */
+  onClick?: (item: SearchResultItem) => void;
 }
 
 // 검색 결과 카드 — 정보 위계
@@ -34,6 +40,7 @@ export function HospitalCard({
   item,
   compact = false,
   className,
+  onClick,
 }: HospitalCardProps) {
   // 미분류(confidence=null) 병원도 카테고리·지도엔 노출된다 → null 안전 처리.
   const isLowConfidence = !item.confidence || item.confidence.level === "정보 부족";
@@ -49,6 +56,18 @@ export function HospitalCard({
     <Link
       to={`/hospitals/${item.hospital_id}`}
       aria-label={`${item.name} 상세 페이지로 이동`}
+      onClick={onClick
+        ? (e) => { e.preventDefault(); onClick(item); }
+        : () => {
+            // 병원 좌표를 날씨 조회에 활용 (GPS 권한 불필요)
+            trackAnalyticsClick(
+              { hospitalId: item.hospital_id, hospitalName: item.name,
+                standardSpecialty: item.standard_specialty ?? item.etc_subcategory ?? "",
+                sigungu: item.location.sigungu },
+              { lat: item.location.lat, lng: item.location.lng },
+            );
+          }
+      }
       className={cn(
         // 카드 내부 본문 사이즈는 컨테이너 폭에 맞춰 분기:
         //   - 일반(검색 페이지 max-w-screen-md): 0.8em
@@ -68,7 +87,7 @@ export function HospitalCard({
         />
 
         <div className="min-w-0 flex-1">
-          {/* 1) 분류 태그 — 표준 진료과목 + 주력 분야 */}
+          {/* 1) 분류 태그 — 표준 진료과목 + 주력 분야 + 랭킹 이유 배지 */}
           <div className="flex flex-wrap items-center gap-1">
             <Badge variant="outline" className="font-normal">
               {categoryLabel}
@@ -96,6 +115,17 @@ export function HospitalCard({
                     주력 미확정
                   </Badge>
                 )}
+            {/* 랭킹 이유 배지 — 인기(CTR 기반) or 분야 일치(NL 매칭) */}
+            {item.ctr >= 0.25 && (
+              <Badge className="border-orange-200 bg-orange-50 font-normal text-orange-700 hover:bg-orange-50">
+                인기
+              </Badge>
+            )}
+            {!compact && item.matched_focus?.length > 0 && (
+              <Badge variant="outline" className="font-normal text-muted-foreground">
+                {item.matched_focus[0]} 일치
+              </Badge>
+            )}
           </div>
 
           {/* 2) 병원명 + 신뢰도 배지 */}

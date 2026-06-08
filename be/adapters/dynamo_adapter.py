@@ -32,6 +32,8 @@ from shared.models import (
     HospitalDescription,
     HospitalMeta,
     RelatedHospital,
+    SearchEvent,
+    SearchEventStats,
     ServicesAndDoctors,
 )
 
@@ -45,6 +47,7 @@ E_SERVICES       = "SERVICES"
 E_RELATED        = "RELATED"
 E_FEEDBACK       = "FEEDBACK"
 E_HISTORY        = "HISTORY"
+E_EVENT          = "EVENT"
 
 
 def _float_to_decimal(obj: Any) -> Any:
@@ -247,23 +250,24 @@ class DynamoAdapter:
         sigungu: str,
         standard_specialty: str,
     ) -> list[dict]:
-        """sigungu + specialty 경량 목록. sigungu-specialty-index GSI 사용.
+        """sigungu + specialty 경량 목록. sigungu_specialty 필드 Scan 사용.
 
-        GSI 에 등록된(분류 완료) 병원만 반환된다(의도된 동작).
-        confidence_score 내림차순 정렬은 GSI ScanIndexForward=False 로 수행.
+        sigungu-specialty-index GSI 대신 FilterExpression Scan으로 동작.
+        분류 완료 병원(sigungu_specialty 필드 존재)만 반환.
         """
         composite = f"{sigungu}#{standard_specialty}"
         kwargs: dict[str, Any] = {
-            "IndexName": "sigungu-specialty-index",
-            "KeyConditionExpression": Key("sigungu_specialty").eq(composite),
-            "ScanIndexForward": False,  # confidence_score 내림차순
+            "FilterExpression": (
+                Attr("entity").eq(E_META) &
+                Attr("sigungu_specialty").eq(composite)
+            ),
             "ProjectionExpression": "hospital_id, #nm, confidence_score, standard_specialty",
             "ExpressionAttributeNames": {"#nm": "name"},
         }
 
         results: list[dict] = []
         while True:
-            resp = self._table.query(**kwargs)
+            resp = self._table.scan(**kwargs)
             for item in resp.get("Items", []):
                 results.append({
                     "hospital_id": item.get("hospital_id", ""),
@@ -275,6 +279,7 @@ class DynamoAdapter:
             if "LastEvaluatedKey" not in resp:
                 break
             kwargs["ExclusiveStartKey"] = resp["LastEvaluatedKey"]
+        results.sort(key=lambda x: x["confidence_score"], reverse=True)
         return results
 
     def list_specialty_counts(self, sigungu: str) -> tuple[list[dict], int]:
@@ -406,21 +411,25 @@ class DynamoAdapter:
         """sigungu + 표준 진료과목 복합 검색. confidence_score 내림차순 정렬됨."""
         composite = f"{sigungu}#{standard_specialty}"
         kwargs: dict[str, Any] = {
-            "IndexName": "sigungu-specialty-index",
-            "KeyConditionExpression": Key("sigungu_specialty").eq(composite),
-            "ScanIndexForward": False,  # confidence_score 내림차순
+            "FilterExpression": (
+                Attr("entity").eq(E_META) &
+                Attr("sigungu_specialty").eq(composite)
+            ),
         }
-        if limit is not None:
-            kwargs["Limit"] = limit
 
-        results: list[HospitalMeta] = []
+        raw_items: list[dict] = []
         while True:
-            resp = self._table.query(**kwargs)
-            for item in resp.get("Items", []):
-                results.append(HospitalMeta(**_strip_meta_attrs(item)))
-            if "LastEvaluatedKey" not in resp or (limit is not None and len(results) >= limit):
+            resp = self._table.scan(**kwargs)
+            raw_items.extend(resp.get("Items", []))
+            if "LastEvaluatedKey" not in resp:
                 break
             kwargs["ExclusiveStartKey"] = resp["LastEvaluatedKey"]
+
+        raw_items.sort(
+            key=lambda x: float(x.get("confidence_score", 0)),
+            reverse=True,
+        )
+        results = [HospitalMeta(**_strip_meta_attrs(item)) for item in raw_items]
         return results[:limit] if limit is not None else results
 
     def update_website_url(self, hospital_id: str, url: str) -> None:
@@ -627,6 +636,28 @@ class DynamoAdapter:
             item.pop("entity", None)
             results.append(ChangeRecord(**item))
         return results
+
+    # ── 검색 이벤트 (데이터 해자) ────────────────────────────────────────────
+
+    def save_search_event(self, event: SearchEvent) -> None:
+        """클릭/노출/선택 이벤트를 EVENT#{type}#{ts} entity로 저장."""
+        item = _float_to_decimal(event.model_dump(mode="json"))
+        item["entity"] = f"{E_EVENT}#{event.event_type}#{event.created_at.isoformat()}"
+        self._table.put_item(Item=item)
+
+    def get_event_stats_for_hospital(self, hospital_id: str) -> SearchEventStats | None:
+        """병원별 집계 통계 조회 (compute_event_scores.py 가 생성한 EVENT#STATS entity)."""
+        raw = self.get_entity(hospital_id, f"{E_EVENT}#STATS")
+        if not raw:
+            return None
+        raw.pop("entity", None)
+        return SearchEventStats(**raw)
+
+    def save_event_stats(self, stats: SearchEventStats) -> None:
+        """집계 스크립트가 계산한 통계를 EVENT#STATS entity로 저장."""
+        item = _float_to_decimal(stats.model_dump(mode="json"))
+        item["entity"] = f"{E_EVENT}#STATS"
+        self._table.put_item(Item=item)
 
     # ── 병원 상세 전체 한 번에 조회 (single-table-design 핵심) ───────────────
 
