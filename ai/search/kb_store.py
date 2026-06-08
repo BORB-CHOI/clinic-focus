@@ -1043,6 +1043,42 @@ def _is_disease_intent(inferred_focus: "list[str] | None") -> bool:
     return False
 
 
+# thin-signal 의도 감지용 focus 라벨 프리픽스·키워드.
+# 호흡기·감염·예방·소아·비뇨·수부·족부·두경부 등 내과·소아·비뇨·이비인후 특화 토픽이 대상.
+# 이 토픽들은 병원 텍스트가 빈약해 코사인이 ~0.41로 낮게 나와 기본 min-sim(0.42) 컷에 막힌다.
+# '미용 시술' 같은 고-임베딩 토픽은 포함하지 않는다 — 컷 완화 부작용(무관 미용 병원 노출) 방지.
+_THIN_SIGNAL_FOCUS_KEYWORDS: frozenset[str] = frozenset({
+    "감염", "호흡기", "예방", "일차진료", "소화기", "요로", "수부", "족부",
+    "두경부", "소아비뇨", "소아 정형", "소아외과", "소아재활",
+})
+
+
+def _is_thin_signal_intent(inferred_focus: "list[str] | None") -> bool:
+    """쿼리가 thin-signal 의도(호흡기·감염·예방·소아·비뇨 특화)인가.
+
+    KB 코사인 ~0.41 수준으로 기본 min-sim(0.42) 컷에 막히는 토픽들을 식별한다.
+    inferred_focus 라벨에 _THIN_SIGNAL_FOCUS_KEYWORDS 중 하나가 포함되면 True.
+
+    미용·성형·임플란트 같은 고-임베딩 토픽은 절대 해당 안 됨 —
+    컷 완화의 부작용(무관 미용 병원 노출)을 막는 핵심 조건.
+
+    THIN_SIGNAL_BOOST=off 환경 변수로 전체 기능을 비활성화할 수 있다.
+
+    Args:
+        inferred_focus: ``process_query`` 가 반환한 inferred_focus 리스트.
+
+    Returns:
+        thin-signal 의도면 True, 아니면 False.
+    """
+    if os.environ.get("THIN_SIGNAL_BOOST", "on").lower() == "off":
+        return False
+    for f in (inferred_focus or []):
+        for kw in _THIN_SIGNAL_FOCUS_KEYWORDS:
+            if kw in f:
+                return True
+    return False
+
+
 def _relevance_with_intent(g: dict, disease_intent: bool) -> float:
     """주력 강도에 의도-카테고리 강등을 합친 최종 relevance.
 
@@ -1202,6 +1238,23 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
     #          NDCG@10 0.835→0.913·P@5 0.674→0.802 (강남 84토픽, Nova Lite). 0.30 은 노이즈 과다.
     # env(KB_MIN_SCORE)로 명시 오버라이드 가능, 0 이면 비활성.
     min_score = float(os.environ.get("KB_MIN_SCORE", "0.35" if rerank_mode == "llm" else "0.42"))
+
+    # thin-signal 동적 임계 완화 — RERANK_MODE=off 일 때 retrieval recall 개선.
+    # 호흡기·감염·예방·소아·비뇨 특화 토픽은 병원 텍스트 빈약 → 코사인 ~0.41 → 기본 컷(0.42) 통과 못함.
+    # KB_MIN_SCORE 가 env 로 명시된 경우에는 사용자 의도 오버라이드라 동적 완화 안 함.
+    # THIN_SIGNAL_BOOST=off 로 비활성화 가능(A/B·무회귀 검증용).
+    _env_min_score_set = "KB_MIN_SCORE" in os.environ
+    _thin_signal = _is_thin_signal_intent(processed.inferred_focus) if not _env_min_score_set else False
+    if _thin_signal:
+        thin_min_score = float(os.environ.get("THIN_SIGNAL_MIN_SCORE", "0.37"))
+        if thin_min_score < min_score:
+            logger.info(
+                "retrieve_hospital: thin-signal 의도 감지(focus=%s) → min_score %.2f → %.2f",
+                processed.inferred_focus,
+                min_score,
+                thin_min_score,
+            )
+            min_score = thin_min_score
 
     has_location = query.lat is not None and query.lng is not None
 

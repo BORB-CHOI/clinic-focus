@@ -38,9 +38,11 @@ from shared.models import (
 )
 from ai.search.kb_store import (
     _COSMETIC_FOCUS,
+    _THIN_SIGNAL_FOCUS_KEYWORDS,
     _compute_nonpay_ratio,
     _cosmetic_ratio,
     _effective_cosmetic_ratio,
+    _is_thin_signal_intent,
     build_blog_chunk,
     build_ingest_metadata,
     build_reviews_chunk,
@@ -1129,3 +1131,190 @@ class TestEffectiveCosmeticRatio:
         assert _cosmetic_ratio(g) < 1.0
         # soft 강등: _effective_cosmetic_ratio 는 nonpay_ratio 0.9 사용
         assert _effective_cosmetic_ratio(g) == pytest.approx(0.9)
+
+
+# ---------------------------------------------------------------------------
+# thin-signal 동적 임계 완화 — _is_thin_signal_intent
+# ---------------------------------------------------------------------------
+
+class TestIsThinSignalIntent:
+    """_is_thin_signal_intent 단위 테스트.
+
+    thin-signal 의도(호흡기·감염·예방·소아·비뇨 특화)면 True,
+    미용·성형·임플란트 같은 고-임베딩 토픽이면 False 를 반환해야 한다.
+    """
+
+    def test_infection_focus_is_thin(self):
+        """감염 focus → thin-signal."""
+        assert _is_thin_signal_intent(["감염내과", "호흡기 감염"]) is True
+
+    def test_respiratory_focus_is_thin(self):
+        """호흡기 focus → thin-signal."""
+        assert _is_thin_signal_intent(["호흡기", "급성 일차진료"]) is True
+
+    def test_prevention_focus_is_thin(self):
+        """예방접종 focus → thin-signal."""
+        assert _is_thin_signal_intent(["건강검진·예방", "예방접종"]) is True
+
+    def test_urological_focus_is_thin(self):
+        """요로 focus → thin-signal."""
+        assert _is_thin_signal_intent(["요로결석", "신장내과"]) is True
+
+    def test_hand_surgery_focus_is_thin(self):
+        """수부 focus → thin-signal."""
+        assert _is_thin_signal_intent(["수부·재건"]) is True
+
+    def test_foot_surgery_focus_is_thin(self):
+        """족부 focus → thin-signal."""
+        assert _is_thin_signal_intent(["족부"]) is True
+
+    def test_cosmetic_focus_is_not_thin(self):
+        """미용 focus → thin-signal 아님."""
+        assert _is_thin_signal_intent(["미용 시술", "미용주사"]) is False
+
+    def test_dental_focus_is_not_thin(self):
+        """치과 임플란트 focus → thin-signal 아님."""
+        assert _is_thin_signal_intent(["임플란트"]) is False
+
+    def test_orthopedic_spine_not_thin(self):
+        """척추 focus → thin-signal 아님 (고-임베딩 토픽)."""
+        assert _is_thin_signal_intent(["척추", "척추·통증"]) is False
+
+    def test_empty_focus_returns_false(self):
+        """빈 focus → False."""
+        assert _is_thin_signal_intent([]) is False
+        assert _is_thin_signal_intent(None) is False
+
+    def test_disabled_by_env(self, monkeypatch):
+        """THIN_SIGNAL_BOOST=off 면 항상 False."""
+        monkeypatch.setenv("THIN_SIGNAL_BOOST", "off")
+        assert _is_thin_signal_intent(["감염내과", "호흡기 감염"]) is False
+
+    def test_enabled_by_default(self, monkeypatch):
+        """THIN_SIGNAL_BOOST 미설정(기본 on) → thin-signal 의도 감지."""
+        monkeypatch.delenv("THIN_SIGNAL_BOOST", raising=False)
+        assert _is_thin_signal_intent(["호흡기"]) is True
+
+    def test_thin_signal_focus_keywords_not_empty(self):
+        """_THIN_SIGNAL_FOCUS_KEYWORDS 는 비어있지 않아야 한다."""
+        assert len(_THIN_SIGNAL_FOCUS_KEYWORDS) > 0
+
+
+class TestRetrieveHospitalThinSignalMinScore:
+    """retrieve_hospital 의 thin-signal 동적 임계 완화 로직을 mock 으로 검증.
+
+    실제 KB Retrieve 는 mock 처리하고, min_score 가 thin-signal 의도일 때
+    THIN_SIGNAL_MIN_SCORE(기본 0.37)로 낮아지는지 확인한다.
+    Bedrock 실 호출 비용 발생 0건.
+    """
+
+    def _make_retrieve_resp(self, scores: list[float]) -> dict:
+        """KB Retrieve 응답 mock — 각 score 에 대한 결과를 반환."""
+        results = []
+        for i, s in enumerate(scores):
+            results.append({
+                "score": s,
+                "metadata": {
+                    "hospital_id": f"h_{i:03d}",
+                    "name": f"병원{i}",
+                    "team_id": "clinic-focus",
+                    "primary_focus": ["호흡기"],
+                    "standard_specialty": "내과",
+                    "sigungu": "강남구",
+                    "confidence_score": 70,
+                },
+                "content": {"text": "호흡기 내과 진료"},
+            })
+        return {"retrievalResults": results}
+
+    @patch("boto3.client")
+    def test_thin_signal_lowers_min_score(self, mock_boto, monkeypatch):
+        """thin-signal 의도(호흡기) → min_score 0.42 → 0.37 로 완화, 코사인 0.39 결과가 살아남아야 함."""
+        monkeypatch.delenv("KB_MIN_SCORE", raising=False)
+        monkeypatch.delenv("THIN_SIGNAL_BOOST", raising=False)
+        monkeypatch.setenv("KB_ID", "test-kb-id")
+        monkeypatch.setenv("RERANK_MODE", "off")
+
+        from shared.models import SearchQuery
+
+        mock_client = MagicMock()
+        mock_boto.return_value = mock_client
+        # 코사인 0.39 결과 1개 — 기본 min_score(0.42)면 컷되고, 0.37이면 살아남아야 함
+        mock_client.retrieve.return_value = self._make_retrieve_resp([0.39])
+
+        results = retrieve_hospital(SearchQuery(query_text="호흡기 내과", sigungu="강남구", limit=5))
+        # thin-signal 완화 덕분에 결과가 있어야 함
+        assert len(results) >= 1
+
+    @patch("boto3.client")
+    def test_normal_query_uses_default_min_score(self, mock_boto, monkeypatch):
+        """미용 쿼리(보톡스) → thin-signal 아님 → min_score 기본(0.42) 유지, 코사인 0.39 결과 컷."""
+        monkeypatch.delenv("KB_MIN_SCORE", raising=False)
+        monkeypatch.delenv("THIN_SIGNAL_BOOST", raising=False)
+        monkeypatch.setenv("KB_ID", "test-kb-id")
+        monkeypatch.setenv("RERANK_MODE", "off")
+
+        from shared.models import SearchQuery
+
+        mock_client = MagicMock()
+        mock_boto.return_value = mock_client
+        # 코사인 0.39 결과 — 기본 min_score(0.42)면 컷되어야 함
+        mock_client.retrieve.return_value = self._make_retrieve_resp([0.39])
+
+        results = retrieve_hospital(SearchQuery(query_text="보톡스 필러", sigungu="강남구", limit=5))
+        # thin-signal 아님 → 기본 컷(0.42) 유지 → 0.39 결과 제거 → 빈 결과
+        assert len(results) == 0
+
+    @patch("boto3.client")
+    def test_env_min_score_overrides_thin_signal(self, mock_boto, monkeypatch):
+        """KB_MIN_SCORE env 가 명시되면 thin-signal 완화를 하지 않는다."""
+        monkeypatch.setenv("KB_MIN_SCORE", "0.42")
+        monkeypatch.delenv("THIN_SIGNAL_BOOST", raising=False)
+        monkeypatch.setenv("KB_ID", "test-kb-id")
+        monkeypatch.setenv("RERANK_MODE", "off")
+
+        from shared.models import SearchQuery
+
+        mock_client = MagicMock()
+        mock_boto.return_value = mock_client
+        # 코사인 0.39 결과 — KB_MIN_SCORE=0.42 명시이므로 컷돼야 함(thin-signal 완화 안 됨)
+        mock_client.retrieve.return_value = self._make_retrieve_resp([0.39])
+
+        results = retrieve_hospital(SearchQuery(query_text="호흡기 내과", sigungu="강남구", limit=5))
+        assert len(results) == 0
+
+    @patch("boto3.client")
+    def test_thin_signal_boost_off_disables_relaxation(self, mock_boto, monkeypatch):
+        """THIN_SIGNAL_BOOST=off 면 thin-signal 의도여도 min_score 완화 안 함."""
+        monkeypatch.delenv("KB_MIN_SCORE", raising=False)
+        monkeypatch.setenv("THIN_SIGNAL_BOOST", "off")
+        monkeypatch.setenv("KB_ID", "test-kb-id")
+        monkeypatch.setenv("RERANK_MODE", "off")
+
+        from shared.models import SearchQuery
+
+        mock_client = MagicMock()
+        mock_boto.return_value = mock_client
+        mock_client.retrieve.return_value = self._make_retrieve_resp([0.39])
+
+        results = retrieve_hospital(SearchQuery(query_text="호흡기 내과", sigungu="강남구", limit=5))
+        # THIN_SIGNAL_BOOST=off → 완화 없음 → 0.39 컷
+        assert len(results) == 0
+
+    @patch("boto3.client")
+    def test_unrelated_query_still_returns_empty(self, mock_boto, monkeypatch):
+        """무관 쿼리(자동차 수리) → thin-signal 아님, 낮은 점수 결과 컷 유지."""
+        monkeypatch.delenv("KB_MIN_SCORE", raising=False)
+        monkeypatch.delenv("THIN_SIGNAL_BOOST", raising=False)
+        monkeypatch.setenv("KB_ID", "test-kb-id")
+        monkeypatch.setenv("RERANK_MODE", "off")
+
+        from shared.models import SearchQuery
+
+        mock_client = MagicMock()
+        mock_boto.return_value = mock_client
+        mock_client.retrieve.return_value = self._make_retrieve_resp([0.35, 0.38, 0.41])
+
+        results = retrieve_hospital(SearchQuery(query_text="자동차 수리", limit=5))
+        # 무관 쿼리 → thin-signal 아님 → 기본 컷(0.42) → 모두 컷 → 빈 결과
+        assert len(results) == 0
