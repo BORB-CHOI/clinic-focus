@@ -94,6 +94,8 @@ export default function HospitalDetailPage() {
                 one_line_summary={hospital.one_line_summary}
                 name={hospital.name}
                 thumbnail_url={hospital.thumbnail_url}
+                standard_specialty={hospital.standard_specialty}
+                primary_focus={hospital.primary_focus}
               />
               <BasicInfoSection
                 hospitalId={hospital.hospital_id}
