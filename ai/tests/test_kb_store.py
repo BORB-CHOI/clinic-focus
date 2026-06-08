@@ -29,12 +29,18 @@ from shared.models import (
     DetailedSignals,
     HospitalMeta,
     Location,
+    NonPayItem,
+    PublicData,
     ReviewSignal,
     BlogSignal,
     SelfClaimSignal,
     SignalContributions,
 )
 from ai.search.kb_store import (
+    _COSMETIC_FOCUS,
+    _compute_nonpay_ratio,
+    _cosmetic_ratio,
+    _effective_cosmetic_ratio,
     build_blog_chunk,
     build_ingest_metadata,
     build_reviews_chunk,
@@ -955,3 +961,171 @@ class TestRetrieveHospital:
         results = retrieve_hospital(query)
 
         assert len(results) <= 3
+
+
+# ===========================================================================
+# 8. 심평원 공공데이터 — build_ingest_metadata(public_data) 테스트
+# ===========================================================================
+
+def _make_public_data(
+    specialists_by_dept: dict[str, int] | None = None,
+    total_doctors: int | None = None,
+    nonpay_items: list | None = None,
+) -> PublicData:
+    return PublicData(
+        license_number="TEST-001",
+        specialists=[],
+        registered_devices=[],
+        specialists_by_dept=specialists_by_dept or {},
+        total_doctors=total_doctors,
+        nonpay_items=nonpay_items or [],
+    )
+
+
+class TestBuildIngestMetadataPublicData:
+    """build_ingest_metadata(public_data=...) 심평원 신호 확장 테스트."""
+
+    def test_no_public_data_returns_baseline(self):
+        """public_data=None 이면 기존 필드만 반환 — has_specialist·nonpay_ratio·specialist_depts 없음."""
+        meta = _make_meta()
+        cls = _make_classification()
+        md = build_ingest_metadata(meta, cls, public_data=None)
+        assert "nonpay_ratio" not in md
+        assert "has_specialist" not in md
+        assert "specialist_depts" not in md
+
+    def test_public_data_with_specialist_adds_fields(self):
+        """전문의 있으면 has_specialist='true', specialist_depts 포함."""
+        pd = _make_public_data(specialists_by_dept={"피부과": 1, "가정의학과": 0})
+        meta = _make_meta()
+        cls = _make_classification()
+        md = build_ingest_metadata(meta, cls, public_data=pd)
+        assert md["has_specialist"] == "true"
+        # 전문의≥1 과목만 포함 (가정의학과 0 제외)
+        assert "피부과" in md["specialist_depts"]
+        assert "가정의학과" not in md["specialist_depts"]
+
+    def test_public_data_no_specialist_has_specialist_false(self):
+        """전문의 0명인 경우 has_specialist='false', specialist_depts 키 없음."""
+        pd = _make_public_data(specialists_by_dept={"피부과": 0})
+        meta = _make_meta()
+        cls = _make_classification()
+        md = build_ingest_metadata(meta, cls, public_data=pd)
+        assert md["has_specialist"] == "false"
+        assert "specialist_depts" not in md
+
+    def test_public_data_empty_specialists_by_dept(self):
+        """specialists_by_dept 빈 dict 이면 has_specialist='false', specialist_depts 없음."""
+        pd = _make_public_data(specialists_by_dept={})
+        meta = _make_meta()
+        cls = _make_classification()
+        md = build_ingest_metadata(meta, cls, public_data=pd)
+        assert md["has_specialist"] == "false"
+        assert "specialist_depts" not in md
+
+    def test_nonpay_ratio_cosmetic_items(self):
+        """미용성 비급여 항목이 2개 중 1개면 nonpay_ratio ≈ 0.5."""
+        items = [
+            NonPayItem(item_name="보톡스", category="미용"),
+            NonPayItem(item_name="혈액검사", category="검사료"),
+        ]
+        pd = _make_public_data(nonpay_items=items)
+        meta = _make_meta()
+        cls = _make_classification()
+        md = build_ingest_metadata(meta, cls, public_data=pd)
+        assert md["nonpay_ratio"] == pytest.approx(0.5, abs=0.01)
+
+    def test_nonpay_ratio_all_cosmetic(self):
+        """모두 미용성이면 nonpay_ratio=1.0."""
+        items = [
+            NonPayItem(item_name="라식수술", category="시력교정"),
+            NonPayItem(item_name="지방흡입", category="미용"),
+        ]
+        pd = _make_public_data(nonpay_items=items)
+        meta = _make_meta()
+        cls = _make_classification()
+        md = build_ingest_metadata(meta, cls, public_data=pd)
+        assert md["nonpay_ratio"] == pytest.approx(1.0)
+
+    def test_nonpay_ratio_no_items_is_zero(self):
+        """비급여 항목 없으면 nonpay_ratio=0.0."""
+        pd = _make_public_data(nonpay_items=[])
+        meta = _make_meta()
+        cls = _make_classification()
+        md = build_ingest_metadata(meta, cls, public_data=pd)
+        assert md["nonpay_ratio"] == pytest.approx(0.0)
+
+    def test_dochim_therapy_not_hard_excluded(self):
+        """도수치료는 _NONPAY_COSMETIC_KEYWORDS 에 없어 미용성으로 분류되지 않는다."""
+        items = [NonPayItem(item_name="도수치료", category="처치 및 수술료 등")]
+        ratio = _compute_nonpay_ratio(_make_public_data(nonpay_items=items))
+        assert ratio == pytest.approx(0.0), "도수치료는 미용성 hard 제외 대상 아님"
+
+    def test_specialist_depts_pipe_separated(self):
+        """specialist_depts 는 '|' 구분자 문자열로 평탄화된다 (list KB 거절 방어)."""
+        pd = _make_public_data(specialists_by_dept={"피부과": 2, "내과": 1})
+        meta = _make_meta()
+        cls = _make_classification()
+        md = build_ingest_metadata(meta, cls, public_data=pd)
+        assert isinstance(md["specialist_depts"], str)
+        depts = md["specialist_depts"].split("|")
+        assert "피부과" in depts
+        assert "내과" in depts
+
+
+# ===========================================================================
+# 9. _effective_cosmetic_ratio 의도 정렬 — nonpay_ratio 있을 때/없을 때 fallback 테스트
+# ===========================================================================
+
+class TestEffectiveCosmeticRatio:
+    """_effective_cosmetic_ratio: 심평원 nonpay_ratio 우선, 없으면 하드코딩 fallback."""
+
+    def _make_group(self, pf: list[str], nonpay_ratio: float | None = None) -> dict:
+        md = {"hospital_id": "h_test"}
+        if nonpay_ratio is not None:
+            md["nonpay_ratio"] = nonpay_ratio
+        return {
+            "best": {"metadata": md, "content": {"text": ""}},
+            "pf": pf,
+            "max_score": 0.8,
+            "confidence": 0.7,
+        }
+
+    def test_uses_nonpay_ratio_when_present(self):
+        """metadata 에 nonpay_ratio 가 있으면 그 값을 사용한다."""
+        g = self._make_group(["보톡스·필러"], nonpay_ratio=0.6)
+        ratio = _effective_cosmetic_ratio(g)
+        assert ratio == pytest.approx(0.6)
+
+    def test_falls_back_to_cosmetic_ratio_when_absent(self):
+        """nonpay_ratio 가 없으면 _cosmetic_ratio(하드코딩)로 fallback."""
+        g = self._make_group(["보톡스·필러", "리프팅·탄력"])  # 2/2 = 1.0
+        ratio = _effective_cosmetic_ratio(g)
+        # _cosmetic_ratio: pf 2개 모두 _COSMETIC_FOCUS → 1.0
+        assert ratio == pytest.approx(1.0)
+
+    def test_falls_back_for_non_cosmetic_pf(self):
+        """nonpay_ratio 없고 일반 pf → fallback ratio 0.0."""
+        g = self._make_group(["척추 디스크", "어깨 관절"])
+        ratio = _effective_cosmetic_ratio(g)
+        assert ratio == pytest.approx(0.0)
+
+    def test_invalid_nonpay_ratio_falls_back(self):
+        """nonpay_ratio 가 유효 범위 밖이거나 파싱 불가면 fallback."""
+        g = self._make_group(["척추 디스크"], nonpay_ratio=None)
+        # None → fallback
+        g["best"]["metadata"]["nonpay_ratio"] = "invalid_string"
+        ratio = _effective_cosmetic_ratio(g)
+        # "척추 디스크"는 _COSMETIC_FOCUS 미포함 → fallback 0.0
+        assert ratio == pytest.approx(0.0)
+
+    def test_hard_exclude_uses_cosmetic_ratio_not_nonpay(self):
+        """hard 제외 판정(_cosmetic_ratio)과 soft 강등(_effective_cosmetic_ratio)이 독립적.
+
+        nonpay_ratio 0.9 여도 primary_focus 가 비미용이면 hard 제외(cosmetic_ratio<1.0)를 통과.
+        """
+        g = self._make_group(["척추 디스크"], nonpay_ratio=0.9)
+        # hard 제외: _cosmetic_ratio < 1.0 → 통과(제외 안 됨)
+        assert _cosmetic_ratio(g) < 1.0
+        # soft 강등: _effective_cosmetic_ratio 는 nonpay_ratio 0.9 사용
+        assert _effective_cosmetic_ratio(g) == pytest.approx(0.9)
