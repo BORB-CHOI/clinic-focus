@@ -126,9 +126,16 @@ def get_hospital_detail(hospital_id: str):
             # ④ 신뢰도·근거
             "detailed_signals": _adapt_detailed_signals(classification, meta.contact.website_url if meta.contact else None),
 
-            # ⑤ 기본 운영 정보 — operating_hours 는 구조화 미보유라 null(FE 가 "정보 없음")
-            "operating_hours": None,
-            "contact": _adapt_contact(meta.contact),
+            # ⑤ 기본 운영 정보 — operating_hours: PUBLIC#DOCTORS 에 적재된 getDtlInfo2.8 파싱본.
+            # 없으면 None(FE "정보 없음"). 추가 DDB read 없이 load_public_doctors 에서 얻는다(N+1 회피).
+            "operating_hours": (
+                public_doctors["operating_hours"].model_dump(exclude_none=True)
+                if public_doctors.get("operating_hours")
+                else None
+            ),
+            # 주차: operating_hours.parking_note 에서도 파악 가능하나 HospitalMeta.parking(bool) 이 권위.
+            # parking_note 가 있으면 contact.parking_available 에 반영.
+            "contact": _adapt_contact(meta.contact, public_doctors.get("operating_hours")),
 
             # ⑥ 사용자 피드백
             "feedback_stats": feedback_stats.model_dump(),
@@ -227,7 +234,7 @@ def _adapt_doctor(d) -> dict:
     }
 
 
-def _adapt_contact(c) -> dict | None:
+def _adapt_contact(c, operating_hours=None) -> dict | None:
     if not c:
         return None
     methods: list[str] = []
@@ -235,10 +242,16 @@ def _adapt_contact(c) -> dict | None:
         methods.append("online")
     if c.phone:
         methods.append("phone")
+    # 주차 가용: operating_hours.parking_note 가 있고 "무료주차" 또는 "유료주차" 포함 시 True
+    parking_available = False
+    if operating_hours and operating_hours.parking_note:
+        note_lower = operating_hours.parking_note.lower()
+        if "주차" in note_lower:
+            parking_available = True
     return {
         "phone": c.phone or "",
         "homepage_url": c.website_url,
-        "parking_available": False,
+        "parking_available": parking_available,
         "appointment_methods": methods,
     }
 

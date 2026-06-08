@@ -8,7 +8,7 @@ from typing import Any
 
 import httpx
 
-from shared.models import Contact, HospitalMeta, Location, NonPayItem, PublicData
+from shared.models import Contact, HospitalMeta, Location, NonPayItem, OperatingHours, PublicData
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +93,115 @@ def _extract_item_list(data: dict) -> list[dict]:
     if isinstance(item, list):
         return item
     return []
+
+
+def _hhmm_to_str(raw) -> str | None:
+    """심평원 getDtlInfo2.8 시간 필드(HHMM 정수 또는 문자열) → 'HH:MM' 문자열.
+
+    - 930  → '09:30'
+    - 1830 → '18:30'
+    - '0930' → '09:30'
+    - None/''/0 → None
+    """
+    if raw is None:
+        return None
+    s = str(raw).strip().lstrip("0") or "0"  # 선행 0 제거 후 순수 숫자
+    try:
+        n = int(s)
+    except (ValueError, TypeError):
+        return None
+    if n == 0:
+        return None
+    h, m = divmod(n, 100)
+    return f"{h:02d}:{m:02d}"
+
+
+def _build_time_range(start_raw, end_raw) -> str | None:
+    """시작·종료 HHMM → 'HH:MM ~ HH:MM' 문자열. 어느 한쪽이라도 없으면 None."""
+    s = _hhmm_to_str(start_raw)
+    e = _hhmm_to_str(end_raw)
+    if not s and not e:
+        return None
+    if s and e:
+        return f"{s} ~ {e}"
+    return s or e  # 한쪽만 있는 희귀 케이스
+
+
+def _parse_operating_hours(item: dict) -> OperatingHours | None:
+    """getDtlInfo2.8 item dict → OperatingHours.
+
+    평일(Mon~Fri) 범위가 하나라도 있어야 weekday 를 구성한다.
+    토/일/공휴일은 noTrmtSun·noTrmtHoli 휴진 문구 또는 trmtSat*/trmtSun* 시간 범위.
+    주차 안내는 parkEtc 텍스트 + parkXpnsYn(Y=유료/N=무료) + parkQty(대수) 조합.
+    """
+    # ── 평일 시간 (월~금 중 가장 이른 시작·늦은 종료를 대표값으로) ─────────
+    weekday_ranges: list[str] = []
+    for day in ("Mon", "Tue", "Wed", "Thu", "Fri"):
+        rng = _build_time_range(item.get(f"trmt{day}Start"), item.get(f"trmt{day}End"))
+        if rng:
+            weekday_ranges.append(rng)
+    # 동일 범위가 다수이면 첫 번째 채택(대부분 의원은 통일)
+    # 서로 다르면 ","로 나열 (예: 월목=09:00~18:30, 수금=09:00~13:00)
+    weekday: str | None = None
+    if weekday_ranges:
+        uniq = list(dict.fromkeys(weekday_ranges))  # 순서 유지 dedup
+        weekday = uniq[0] if len(uniq) == 1 else ", ".join(uniq)
+
+    # ── 토요일 ────────────────────────────────────────────────────────────
+    sat_rng = _build_time_range(item.get("trmtSatStart"), item.get("trmtSatEnd"))
+    saturday: str | None = sat_rng  # None 이면 휴진(별도 필드 없음)
+
+    # ── 일요일 ────────────────────────────────────────────────────────────
+    no_trmt_sun = (item.get("noTrmtSun") or "").strip()
+    sun_rng = _build_time_range(item.get("trmtSunStart"), item.get("trmtSunEnd"))
+    if no_trmt_sun:
+        sunday = no_trmt_sun      # 예: '휴진'
+    elif sun_rng:
+        sunday = sun_rng
+    else:
+        sunday = None
+
+    # ── 공휴일 ────────────────────────────────────────────────────────────
+    no_trmt_holi = (item.get("noTrmtHoli") or "").strip()
+    holiday: str | None = no_trmt_holi if no_trmt_holi else None
+
+    # ── 점심 ──────────────────────────────────────────────────────────────
+    lunch_week = (item.get("lunchWeek") or "").strip()
+    lunch_sat = (item.get("lunchSat") or "").strip()
+    lunch_parts: list[str] = []
+    if lunch_week and lunch_week.lower() not in ("없음", "없슴", "-", ""):
+        lunch_parts.append(f"평일 {lunch_week}")
+    if lunch_sat and lunch_sat.lower() not in ("없음", "없슴", "-", ""):
+        lunch_parts.append(f"토 {lunch_sat}")
+    lunch_break: str | None = ", ".join(lunch_parts) if lunch_parts else None
+
+    # ── 주차 안내 ─────────────────────────────────────────────────────────
+    park_etc = (item.get("parkEtc") or "").strip()
+    park_xpns_yn = (item.get("parkXpnsYn") or "").strip().upper()
+    park_qty = item.get("parkQty")
+    parking_parts: list[str] = []
+    if park_xpns_yn == "N":
+        qty_str = f"{park_qty}대 " if park_qty else ""
+        parking_parts.append(f"무료주차 {qty_str}가능".strip())
+    elif park_xpns_yn == "Y":
+        qty_str = f"{park_qty}대 " if park_qty else ""
+        parking_parts.append(f"유료주차 {qty_str}가능".strip())
+    if park_etc:
+        parking_parts.append(park_etc)
+    parking_note: str | None = "; ".join(parking_parts) if parking_parts else None
+
+    # 전부 None 이면 DtlInfo2.8 에서 유의미한 데이터 없음
+    if not any([weekday, saturday, sunday, holiday, lunch_break, parking_note]):
+        return None
+
+    return OperatingHours(
+        weekday=weekday,
+        saturday=saturday,
+        sunday=sunday,
+        holiday=holiday,
+        lunch_break=lunch_break,
+        parking_note=parking_note,
+    )
 
 
 class HiraAdapter:
@@ -337,6 +446,47 @@ class HiraAdapter:
         """[레거시 호환] 전문의 과목명 list 반환. 내부는 _get_specialists_by_dept 위임."""
         _, specialists = self._get_specialists_by_dept(hospital_id)
         return specialists
+
+    def get_operating_hours(self, hospital_id: str) -> OperatingHours | None:
+        """getDtlInfo2.8 → OperatingHours 파싱 반환.
+
+        심평원 운영정보 서비스(MadmDtlInfoService2.8/getDtlInfo2.8).
+        - 정규 영업시간: trmtMonStart~trmtSunEnd (숫자 HHMM, 예: 930=09:30, 1830=18:30)
+        - 점심: lunchWeek·lunchSat (텍스트, 예: '13:30~14:30'·'없음')
+        - 휴진: noTrmtSun·noTrmtHoli (텍스트, 예: '휴진')
+        - 주차: parkEtc (텍스트), parkXpnsYn (Y/N 무료/유료), parkQty (대수)
+        - 응급: emyDayYn·emyNgtYn (Y/N)
+
+        의원급은 거의 1건, 종합병원·상급종합은 items="" → None 반환.
+        403 / 빈값 / 예외 → None graceful degrade.
+        """
+        params = {
+            "serviceKey": HIRA_API_KEY,
+            "ykiho": hospital_id,
+            "pageNo": "1",
+            "numOfRows": "1",
+            "_type": "json",
+        }
+        try:
+            resp = self._client.get(
+                f"{HIRA_DETAIL_BASE_URL}/getDtlInfo2.8",
+                params=params,
+            )
+            if resp.status_code == 403:
+                logger.warning(
+                    "HIRA 15001699(getDtlInfo2.8) 미승인(403) — None degrade. ykiho=%s", hospital_id
+                )
+                return None
+            resp.raise_for_status()
+            data = resp.json()
+            items = _extract_item_list(data)
+            if not items:
+                return None
+            item = items[0]
+            return _parse_operating_hours(item)
+        except Exception as exc:
+            logger.warning("HIRA getDtlInfo2.8 호출 실패 (ykiho=%s): %s", hospital_id, exc)
+            return None
 
     def _get_registered_devices(self, hospital_id: str) -> list[str]:
         """getMedOftInfo2.8 → 신고된 의료장비명 목록(oftCdNm).

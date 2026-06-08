@@ -32,6 +32,7 @@ from shared.models import (
     HospitalDescription,
     HospitalMeta,
     NonPayItem,
+    OperatingHours,
     PublicData,
     RelatedHospital,
     SearchEvent,
@@ -666,12 +667,18 @@ class DynamoAdapter:
     # ── 심평원 공공 데이터 (PUBLIC#DOCTORS / PUBLIC#NONPAY) ─────────────────
     # SafeRole 권한: PutItem/GetItem 만. CreateTable/DeleteTable 없음.
 
-    def save_public_doctors(self, hospital_id: str, public_data: PublicData) -> None:
-        """PUBLIC#DOCTORS entity 저장 — 전문의 수·총 의사 수·신고 의료장비.
+    def save_public_doctors(
+        self,
+        hospital_id: str,
+        public_data: PublicData,
+        operating_hours: OperatingHours | None = None,
+    ) -> None:
+        """PUBLIC#DOCTORS entity 저장 — 전문의 수·총 의사 수·신고 의료장비·운영시간.
 
         specialists_by_dept / total_doctors / specialists / registered_devices 를 한
         entity 에 저장한다(상세 API 가 이 entity 1회 조회로 전문의+장비 모두 얻어 N+1 회피).
         registered_devices 는 getMedOftInfo2.8 의 신고 의료장비명.
+        operating_hours 는 getDtlInfo2.8 파싱 결과(OperatingHours). None 이면 저장 안 함(기존값 유지).
         """
         payload: dict = {
             "specialists_by_dept": public_data.specialists_by_dept or {},
@@ -680,13 +687,18 @@ class DynamoAdapter:
         }
         if public_data.total_doctors is not None:
             payload["total_doctors"] = public_data.total_doctors
+        if operating_hours is not None:
+            payload["operating_hours"] = operating_hours.model_dump(mode="json", exclude_none=True)
         self.put_entity(hospital_id, E_PUBLIC_DOCTORS, payload)
 
     def load_public_doctors(self, hospital_id: str) -> dict:
         """PUBLIC#DOCTORS entity 조회.
 
-        반환 dict 키: specialists_by_dept(dict[str,int]), specialists(list[str]),
-        total_doctors(int|None), registered_devices(list[str]). entity 없으면 빈 dict.
+        반환 dict 키:
+          specialists_by_dept(dict[str,int]), specialists(list[str]),
+          total_doctors(int|None), registered_devices(list[str]),
+          operating_hours(OperatingHours|None).
+        entity 없으면 빈 dict.
         """
         raw = self.get_entity(hospital_id, E_PUBLIC_DOCTORS)
         if not raw:
@@ -697,11 +709,22 @@ class DynamoAdapter:
         by_dept = raw.get("specialists_by_dept") or {}
         by_dept_int = {k: int(v) for k, v in by_dept.items()}
         total = raw.get("total_doctors")
+
+        # operating_hours: dict 이면 OperatingHours 로 파싱. 없거나 파싱 실패 → None
+        oh_raw = raw.get("operating_hours")
+        operating_hours: OperatingHours | None = None
+        if isinstance(oh_raw, dict):
+            try:
+                operating_hours = OperatingHours(**oh_raw)
+            except Exception:
+                operating_hours = None
+
         return {
             "specialists_by_dept": by_dept_int,
             "specialists": list(raw.get("specialists") or []),
             "total_doctors": int(total) if total is not None else None,
             "registered_devices": list(raw.get("registered_devices") or []),
+            "operating_hours": operating_hours,
         }
 
     def save_public_nonpay(self, hospital_id: str, nonpay_items: list[NonPayItem]) -> None:

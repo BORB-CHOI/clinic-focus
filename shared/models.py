@@ -499,6 +499,8 @@ class OperatingHours(BaseModel):
     sunday: str | None = None
     holiday: str | None = None
     lunch_break: str | None = None
+    # 심평원 getDtlInfo2.8 parkEtc — 주차 안내 텍스트 (예: "외래진료 30분 무료"). additive.
+    parking_note: str | None = None
 
 
 class Contact(BaseModel):
