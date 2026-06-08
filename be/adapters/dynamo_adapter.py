@@ -31,6 +31,8 @@ from shared.models import (
     FeedbackEntry,
     HospitalDescription,
     HospitalMeta,
+    NonPayItem,
+    PublicData,
     RelatedHospital,
     SearchEvent,
     SearchEventStats,
@@ -48,6 +50,8 @@ E_RELATED        = "RELATED"
 E_FEEDBACK       = "FEEDBACK"
 E_HISTORY        = "HISTORY"
 E_EVENT          = "EVENT"
+E_PUBLIC_DOCTORS = "PUBLIC#DOCTORS"   # 심평원 전문의 수(specialists_by_dept, total_doctors)
+E_PUBLIC_NONPAY  = "PUBLIC#NONPAY"    # 심평원 비급여 신고항목(nonpay_items)
 
 
 def _float_to_decimal(obj: Any) -> Any:
@@ -658,6 +662,74 @@ class DynamoAdapter:
         item = _float_to_decimal(stats.model_dump(mode="json"))
         item["entity"] = f"{E_EVENT}#STATS"
         self._table.put_item(Item=item)
+
+    # ── 심평원 공공 데이터 (PUBLIC#DOCTORS / PUBLIC#NONPAY) ─────────────────
+    # SafeRole 권한: PutItem/GetItem 만. CreateTable/DeleteTable 없음.
+
+    def save_public_doctors(self, hospital_id: str, public_data: PublicData) -> None:
+        """PUBLIC#DOCTORS entity 저장 — 전문의 수·총 의사 수.
+
+        specialists_by_dept / total_doctors / specialists 를 모두 저장해
+        향후 필터·표시에 활용 가능하게 한다. registered_devices 는 PUBLIC#DEVICES 에
+        따로 관리(기존 스키마 유지)하므로 여기서는 제외.
+        """
+        payload: dict = {
+            "specialists_by_dept": public_data.specialists_by_dept or {},
+            "specialists": list(public_data.specialists or []),
+        }
+        if public_data.total_doctors is not None:
+            payload["total_doctors"] = public_data.total_doctors
+        self.put_entity(hospital_id, E_PUBLIC_DOCTORS, payload)
+
+    def load_public_doctors(self, hospital_id: str) -> dict:
+        """PUBLIC#DOCTORS entity 조회.
+
+        반환 dict 키: specialists_by_dept(dict[str,int]), specialists(list[str]),
+        total_doctors(int|None). entity 없으면 빈 dict.
+        """
+        raw = self.get_entity(hospital_id, E_PUBLIC_DOCTORS)
+        if not raw:
+            return {}
+        raw.pop("hospital_id", None)
+        raw.pop("entity", None)
+        # DynamoDB Decimal → int 변환
+        by_dept = raw.get("specialists_by_dept") or {}
+        by_dept_int = {k: int(v) for k, v in by_dept.items()}
+        total = raw.get("total_doctors")
+        return {
+            "specialists_by_dept": by_dept_int,
+            "specialists": list(raw.get("specialists") or []),
+            "total_doctors": int(total) if total is not None else None,
+        }
+
+    def save_public_nonpay(self, hospital_id: str, nonpay_items: list[NonPayItem]) -> None:
+        """PUBLIC#NONPAY entity 저장 — 비급여 신고 항목 목록.
+
+        심평원 의료법 제45조의2 비급여 신고 사실 그대로 저장(주체 명시 원칙).
+        """
+        payload = {
+            "nonpay_items": [item.model_dump(mode="json") for item in nonpay_items],
+        }
+        self.put_entity(hospital_id, E_PUBLIC_NONPAY, payload)
+
+    def load_public_nonpay(self, hospital_id: str) -> list[NonPayItem]:
+        """PUBLIC#NONPAY entity 조회 → list[NonPayItem]. entity 없으면 []."""
+        raw = self.get_entity(hospital_id, E_PUBLIC_NONPAY)
+        if not raw:
+            return []
+        items_raw = raw.get("nonpay_items") or []
+        result: list[NonPayItem] = []
+        for item in items_raw:
+            if isinstance(item, dict):
+                try:
+                    # DynamoDB Decimal → int 변환 (amount 필드)
+                    if "amount" in item and item["amount"] is not None:
+                        item = dict(item)
+                        item["amount"] = int(item["amount"])
+                    result.append(NonPayItem(**item))
+                except Exception:
+                    pass
+        return result
 
     # ── 병원 상세 전체 한 번에 조회 (single-table-design 핵심) ───────────────
 

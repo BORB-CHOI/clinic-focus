@@ -2,15 +2,22 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from typing import Any
 
 import httpx
 
-from shared.models import Contact, HospitalMeta, Location, PublicData
+from shared.models import Contact, HospitalMeta, Location, NonPayItem, PublicData
+
+logger = logging.getLogger(__name__)
 
 # 심평원 공공 데이터 포털 API
 HIRA_BASE_URL = "https://apis.data.go.kr/B551182/hospInfoServicev2"
+# 진료과목별 전문의 수 (getDgsbjtInfo2.7) — 서비스 코드 15001699
+HIRA_DETAIL_BASE_URL = "https://apis.data.go.kr/B551182/MadmDtlInfoService2.7"
+# 비급여진료비 정보 (getNonPaymentItemHospDtlList) — 서비스 코드 15001700
+HIRA_NONPAY_BASE_URL = "https://apis.data.go.kr/B551182/nonPaymentDamtInfoService"
 HIRA_API_KEY = os.environ.get("HIRA_API_KEY", "")
 
 # 종별(clCdNm) → 22 standard_specialty 직접 매핑 (평탄화/기타 종별).
@@ -153,36 +160,214 @@ class HiraAdapter:
         )
 
     def get_public_data(self, hospital_id: str) -> PublicData:
-        """개별 병원의 전문의·의료기기 정보 조회."""
-        specialists = self._get_specialists(hospital_id)
+        """개별 병원의 전문의·비급여 정보를 공공 API에서 조회해 PublicData 로 반환.
+
+        - getDgsbjtInfo2.7 → specialists_by_dept (과목별 전문의 수) + specialists (과목명 list)
+        - getDtlInfo2.7   → total_doctors (총 의사 수, 선택)
+        - getNonPaymentItemHospDtlList → nonpay_items
+
+        키 승인 전(403 Forbidden)에는 각 항목이 빈값으로 graceful degrade.
+        코드 변경 없이 키 승인 즉시 동작.
+        """
+        specialists_by_dept, specialists = self._get_specialists_by_dept(hospital_id)
+        total_doctors = self._get_total_doctors(hospital_id)
+        nonpay_items = self._get_nonpay_items(hospital_id)
         devices = self._get_registered_devices(hospital_id)
 
         return PublicData(
             license_number=hospital_id,
             specialists=specialists,
             registered_devices=devices,
+            specialists_by_dept=specialists_by_dept,
+            total_doctors=total_doctors,
+            nonpay_items=nonpay_items,
         )
 
-    def _get_specialists(self, hospital_id: str) -> list[str]:
-        """전문의 자격 목록 조회."""
+    def _get_specialists_by_dept(self, hospital_id: str) -> tuple[dict[str, int], list[str]]:
+        """getDgsbjtInfo2.7 → (specialists_by_dept dict, specialists list).
+
+        - specialists_by_dept: {"피부과": 2, "내과": 1, ...}
+          dgsbjtPrSdrCnt(과목별 전문의 수) 기준. 필드 누락 시 대체 키(dtlSdrCnt) 시도 후 0.
+        - specialists: 전문의 1명 이상인 과목명만 추린 list
+          (기존 _get_specialists 호환 — 검색 필터·표시용).
+        403 또는 임의 오류 → ({},[]) graceful degrade.
+        """
         params = {
             "serviceKey": HIRA_API_KEY,
             "ykiho": hospital_id,
-            "pageNo": 1,
-            "numOfRows": 50,
+            "pageNo": "1",
+            "numOfRows": "100",
             "_type": "json",
         }
         try:
-            resp = self._client.get(f"{HIRA_BASE_URL}/getHospBasisList", params=params)
+            resp = self._client.get(
+                f"{HIRA_DETAIL_BASE_URL}/getDgsbjtInfo2.7",
+                params=params,
+            )
+            if resp.status_code == 403:
+                logger.warning(
+                    "HIRA 15001699(getDgsbjtInfo2.7) 미승인(403) — 빈값 degrade. ykiho=%s", hospital_id
+                )
+                return {}, []
             resp.raise_for_status()
             data = resp.json()
-            items = data.get("response", {}).get("body", {}).get("items", {}).get("item", [])
+            items = (
+                data.get("response", {})
+                    .get("body", {})
+                    .get("items", {})
+                    .get("item", [])
+            )
+            if not items:
+                return {}, []
             if isinstance(items, dict):
                 items = [items]
-            return [item.get("dgsbjtCdNm", "") for item in items if item.get("dgsbjtCdNm")]
-        except Exception:
-            return []
+
+            by_dept: dict[str, int] = {}
+            for item in items:
+                dept_name: str = (item.get("dgsbjtCdNm") or "").strip()
+                if not dept_name:
+                    continue
+                # dgsbjtPrSdrCnt 우선, 없으면 dtlSdrCnt, 없으면 0
+                raw_cnt = item.get("dgsbjtPrSdrCnt") or item.get("dtlSdrCnt") or 0
+                try:
+                    cnt = int(raw_cnt)
+                except (ValueError, TypeError):
+                    cnt = 0
+                by_dept[dept_name] = by_dept.get(dept_name, 0) + cnt
+
+            specialists = [dept for dept, cnt in by_dept.items() if cnt >= 1]
+            return by_dept, specialists
+
+        except Exception as exc:
+            logger.warning(
+                "HIRA getDgsbjtInfo2.7 호출 실패 (ykiho=%s): %s", hospital_id, exc
+            )
+            return {}, []
+
+    def _get_total_doctors(self, hospital_id: str) -> int | None:
+        """getDtlInfo2.7 → 총 의사 수 (선택 항목).
+
+        getDtlInfo2.7 의 drTotCnt 필드를 파싱한다.
+        실패·403·필드 없음 → None graceful degrade.
+        """
+        params = {
+            "serviceKey": HIRA_API_KEY,
+            "ykiho": hospital_id,
+            "_type": "json",
+        }
+        try:
+            resp = self._client.get(
+                f"{HIRA_DETAIL_BASE_URL}/getDtlInfo2.7",
+                params=params,
+            )
+            if resp.status_code == 403:
+                logger.warning(
+                    "HIRA 15001699(getDtlInfo2.7) 미승인(403) — 빈값 degrade. ykiho=%s", hospital_id
+                )
+                return None
+            resp.raise_for_status()
+            data = resp.json()
+            item = (
+                data.get("response", {})
+                    .get("body", {})
+                    .get("items", {})
+                    .get("item")
+            )
+            if not item:
+                return None
+            if isinstance(item, list):
+                item = item[0]
+            raw = item.get("drTotCnt")
+            if raw is None:
+                return None
+            return int(raw)
+        except Exception as exc:
+            logger.warning(
+                "HIRA getDtlInfo2.7 호출 실패 (ykiho=%s): %s", hospital_id, exc
+            )
+            return None
+
+    def _get_nonpay_items(self, hospital_id: str) -> list[NonPayItem]:
+        """getNonPaymentItemHospDtlList → 비급여 신고 항목 목록.
+
+        페이지네이션 처리. 403 → [] graceful degrade.
+        amount(curAmt): 숫자 파싱 가능하면 int, 범위·문자면 None.
+        """
+        params = {
+            "serviceKey": HIRA_API_KEY,
+            "ykiho": hospital_id,
+            "pageNo": "1",
+            "numOfRows": "100",
+            "_type": "json",
+        }
+        all_items: list[NonPayItem] = []
+        page = 1
+
+        try:
+            while True:
+                params["pageNo"] = str(page)
+                resp = self._client.get(
+                    f"{HIRA_NONPAY_BASE_URL}/getNonPaymentItemHospDtlList",
+                    params=params,
+                )
+                if resp.status_code == 403:
+                    logger.warning(
+                        "HIRA 15001700(getNonPaymentItemHospDtlList) 미승인(403) — 빈값 degrade. ykiho=%s",
+                        hospital_id,
+                    )
+                    return []
+                resp.raise_for_status()
+                data = resp.json()
+                body = data.get("response", {}).get("body", {})
+                raw_items = body.get("items", {}).get("item", [])
+                if not raw_items:
+                    break
+                if isinstance(raw_items, dict):
+                    raw_items = [raw_items]
+
+                for raw in raw_items:
+                    item_name: str = (
+                        raw.get("npayKorNm") or raw.get("itemNm") or ""
+                    ).strip()
+                    if not item_name:
+                        continue
+                    category: str | None = (
+                        raw.get("clauseCdNm") or raw.get("itemCdNm") or None
+                    )
+                    # curAmt 파싱: 숫자 문자열("50000")→int, 범위("50000~80000")·문자→None
+                    raw_amt = raw.get("curAmt")
+                    amount: int | None = None
+                    if raw_amt is not None:
+                        try:
+                            amount = int(str(raw_amt).replace(",", "").strip())
+                        except (ValueError, TypeError):
+                            amount = None
+
+                    all_items.append(
+                        NonPayItem(
+                            item_name=item_name,
+                            category=category if category else None,
+                            amount=amount,
+                        )
+                    )
+
+                total_count = int(body.get("totalCount", 0))
+                if len(all_items) >= total_count:
+                    break
+                page += 1
+
+        except Exception as exc:
+            logger.warning(
+                "HIRA getNonPaymentItemHospDtlList 호출 실패 (ykiho=%s): %s", hospital_id, exc
+            )
+
+        return all_items
+
+    def _get_specialists(self, hospital_id: str) -> list[str]:
+        """[레거시 호환] 전문의 과목명 list 반환. 내부는 _get_specialists_by_dept 위임."""
+        _, specialists = self._get_specialists_by_dept(hospital_id)
+        return specialists
 
     def _get_registered_devices(self, hospital_id: str) -> list[str]:
-        """신고된 의료기기 목록 조회."""
+        """신고된 의료기기 목록 조회. 현재 빈 list 반환(미구현)."""
         return []

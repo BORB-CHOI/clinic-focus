@@ -119,7 +119,22 @@ def main(argv: list[str] | None = None):
             # 시그널 0 인 placeholder 병원은 KB 미적재(검색은 시군구 GSI 로 노출).
             signal_chunks = build_signal_chunks(crawl_data=crawl_data, **external)
             if signal_chunks:
-                metadata = build_ingest_metadata(hospital_meta, classification)
+                # PUBLIC#DOCTORS 에서 공공 데이터 로드 (적재된 경우에만 활용).
+                # ai-engineer 가 build_ingest_metadata(meta, classification, public_data=...)
+                # 로 확장하면 KB 메타에 전문의 수·비급여 유무를 추가 필터로 반영할 수 있다.
+                public_doctors = db.load_public_doctors(hospital_id)
+                from shared.models import PublicData as _PD
+                _pd = _PD(
+                    license_number=hospital_id,
+                    specialists=public_doctors.get("specialists", []),
+                    registered_devices=[],
+                    specialists_by_dept=public_doctors.get("specialists_by_dept", {}),
+                    total_doctors=public_doctors.get("total_doctors"),
+                    nonpay_items=db.load_public_nonpay(hospital_id),
+                ) if public_doctors else None
+                metadata = build_ingest_metadata(
+                    hospital_meta, classification, public_data=_pd
+                )
                 # prune_absent: 자칭이 URL 오매칭으로 비워졌을 때 옛 self_claim 청크(stale 메타)가
                 # S3 에 잔존해 검색을 오염시키지 않도록, 이번에 안 만든 시그널의 옛 파일을 삭제.
                 # build_signal_chunks 가 전체 시그널을 한 번에 채워 넘기므로 안전.

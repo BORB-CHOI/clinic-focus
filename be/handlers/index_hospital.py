@@ -18,7 +18,7 @@ from be.adapters.dynamo_adapter import DynamoAdapter
 from be.adapters.s3_adapter import S3Adapter
 
 if TYPE_CHECKING:
-    from shared.models import Classification, ImageAnalysisResult
+    from shared.models import Classification, ImageAnalysisResult, PublicData
 
 from ai import (
     classify_hospital,
@@ -28,6 +28,34 @@ from ai import (
     ingest_hospital,
 )
 from ai.search.kb_store import build_ingest_metadata, build_signal_chunks
+
+
+def _load_public_data(
+    db: DynamoAdapter,
+    hospital_id: str,
+    fallback: "PublicData | None",
+) -> "PublicData | None":
+    """PUBLIC#DOCTORS / PUBLIC#NONPAY entity 에서 PublicData 를 재조립한다.
+
+    심평원 키 승인 후 load_seoul_5gu(LOAD_PUBLIC_DATA=true) 가 적재한 별도 entity 를
+    읽어 전문의·비급여를 합친다. 두 entity 가 모두 비어 있으면(키 미승인·미적재)
+    crawl_data.public_data(빈값/None)를 그대로 반환해 기존 동작을 유지한다.
+    """
+    doctors = db.load_public_doctors(hospital_id)
+    nonpay = db.load_public_nonpay(hospital_id)
+    if not doctors and not nonpay:
+        return fallback
+
+    from shared.models import PublicData
+
+    return PublicData(
+        license_number=hospital_id,
+        specialists=doctors.get("specialists", []),
+        registered_devices=(fallback.registered_devices if fallback else []),
+        specialists_by_dept=doctors.get("specialists_by_dept", {}),
+        total_doctors=doctors.get("total_doctors"),
+        nonpay_items=nonpay,
+    )
 
 
 def _record_classification_change(
@@ -117,6 +145,12 @@ def run_index_pipeline(
     # 분류 변경 자동 기록 — primary_focus 가 이전과 다르면 HISTORY# 적재 (영역 ⑦)
     _record_classification_change(db, prev_classification, classification)
 
+    # 심평원 공공데이터(전문의·비급여) — PUBLIC#DOCTORS/NONPAY entity 에서 재조립.
+    # 키 미승인 시 별도 entity 가 비어 있어 crawl_data.public_data(빈값)로 폴백 →
+    # generate_description·build_ingest_metadata 가 None/빈값을 받아 기존 동작 그대로.
+    # 키 승인 후 load_seoul_5gu(LOAD_PUBLIC_DATA=true) 재적재만으로 코드 변경 없이 활성화.
+    public_data = _load_public_data(db, hospital_id, crawl_data.public_data)
+
     # 시연 약 500개만 — 진료항목·설명·관련병원 (LLM/Vision)
     if demo:
         # vision_results 가 있으면 extract_services_and_doctors 에도 전달
@@ -129,6 +163,7 @@ def run_index_pipeline(
             classification=classification,
             detailed_signals=classification.detailed_signals,
             hospital_meta=hospital_meta,
+            public_data=public_data,
         )
         related = find_related_hospitals(
             hospital_id=hospital_id,
@@ -147,7 +182,7 @@ def run_index_pipeline(
         vision_results=vision_results,
         **external,
     )
-    metadata = build_ingest_metadata(hospital_meta, classification)
+    metadata = build_ingest_metadata(hospital_meta, classification, public_data=public_data)
     ingest_hospital(
         hospital_id,
         signal_chunks,

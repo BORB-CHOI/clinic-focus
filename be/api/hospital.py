@@ -66,6 +66,10 @@ def get_hospital_detail(hospital_id: str):
     related = db.load_related_hospitals(hospital_id)
     recent_changes = db.load_recent_changes(hospital_id, limit=2)
 
+    # 심평원 공공 데이터 (③ 의료진 보강·비급여 신규 영역)
+    public_doctors = db.load_public_doctors(hospital_id)
+    public_nonpay = db.load_public_nonpay(hospital_id)
+
     # ⑥ 피드백 통계
     feedback_list = db.get_feedback_for_hospital(hospital_id)
     feedback_stats = compute_feedback_stats(feedback_list)
@@ -97,8 +101,17 @@ def get_hospital_detail(hospital_id: str):
             "equipment": [_adapt_equipment(e) for e in services_and_doctors.equipment] if services_and_doctors else [],
             "prices": [_adapt_price(p) for p in services_and_doctors.prices] if services_and_doctors else [],
 
-            # ③ 의료진 정보
+            # ③ 의료진 정보 + 심평원 신고 기준 전문의 수
             "doctors": [_adapt_doctor(d) for d in services_and_doctors.doctors] if services_and_doctors else [],
+            # 심평원 신고 기준 과목별 전문의 수 {"피부과": 2, ...}. 출처: 심평원 공식 신고(public_data).
+            # "이 병원이 잘 본다" 아닌 "심평원 신고 기준 N명" 형식으로 FE 렌더 필요(의료법 주체 명시).
+            "specialists_by_dept": public_doctors.get("specialists_by_dept", {}),
+            # 총 의사 수(getDtlInfo2.7). None 이면 미확인.
+            "total_doctors": public_doctors.get("total_doctors"),
+
+            # (신규) 심평원 신고 비급여 항목 — 의료법 제45조의2 공식 신고 사실 그대로 노출.
+            # "병원이 신고한 비급여 항목"(주체 명시). 분류 신호 편입 금지, 표시·필터 전용.
+            "nonpay_items": [item.model_dump() for item in public_nonpay],
 
             # ④ 신뢰도·근거
             "detailed_signals": _adapt_detailed_signals(classification, meta.contact.website_url if meta.contact else None),
