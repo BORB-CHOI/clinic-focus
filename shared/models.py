@@ -498,6 +498,10 @@ class HospitalMeta(BaseModel):
     parking: bool | None = None
     # HIRA 종별/병원명 기반 표준 진료과목 (22 후보 중 하나). 분류기가 추론 대신 이 값을 권위로 사용.
     standard_specialty: str | None = None
+    # 카드·상세 헤더 좌측 대표 이미지 URL. 카카오/네이버 대표사진(KAKAO#PLACE) 우선,
+    # 없으면 크롤한 사이트의 https 이미지 1장. backfill_thumbnails.py 가 채운다.
+    # None 이면 FE 가 그라데이션+이니셜 플레이스홀더(HospitalThumbnail). Vision 입력과 무관(표시 전용).
+    thumbnail_url: str | None = None
 
 
 class ServicesAndDoctors(BaseModel):

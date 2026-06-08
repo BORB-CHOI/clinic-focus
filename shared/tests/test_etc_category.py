@@ -8,11 +8,19 @@ def test_single_focus_maps_to_category():
     assert derive_etc_subcategory(["우울·불안"]) == "정신"
 
 
-def test_priority_specialist_beats_cosmetic():
-    # 미용 신호가 섞여도 특이성 높은 전문 신호가 이긴다(미용은 우선순위 최하위)
-    assert derive_etc_subcategory(["리프팅·탄력", "보톡스·필러", "모발·탈모"]) == "모발·탈모"
+def test_prominence_wins_over_priority():
+    # primary_focus 는 주력 강도 내림차순 — 주력 가중치가 높은 카테고리가 이긴다.
+    # 리프팅(미용)이 주력이고 탈모는 말단이면 '미용'. (예전 버그: 순위만 보고 '모발·탈모')
+    assert derive_etc_subcategory(["리프팅·탄력", "보톡스·필러", "모발·탈모"]) == "미용"
+    # 탈모가 주력이면 그대로 '모발·탈모' — 진짜 탈모 의원은 보존.
+    assert derive_etc_subcategory(["모발·탈모", "한방피부·미용"]) == "모발·탈모"
+    # 기미가 주력(가중치 2) > 우울(가중치 1) → '미용'.
+    assert derive_etc_subcategory(["기미·색소", "우울·불안"]) == "미용"
+
+
+def test_tie_breaks_to_specialist():
+    # 미용 3(보톡스 첫토큰) = 통증 3(통증재활 2 + 척추 1) 동점 → 특이성 높은 통증·근골격.
     assert derive_etc_subcategory(["보톡스·필러", "통증재활", "척추·디스크"]) == "통증·근골격"
-    assert derive_etc_subcategory(["기미·색소", "우울·불안"]) == "정신"
 
 
 def test_cosmetic_only_stays_cosmetic():

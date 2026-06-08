@@ -241,6 +241,30 @@ export interface SpecialtiesResponse {
   };
 }
 
+// ── 카테고리 트리 (GET /api/categories) ──────────────────────────────────
+// L1 노드: specialty(표준 진료과) 또는 etc(기타에서 승격된 버킷)
+// L2 sub: 세부 시술·증상 태그 (BE 에서 count 내림차순·최대 12개)
+export interface CategorySubItem {
+  label: string;
+  count: number;
+}
+
+export interface CategoryNode {
+  key: string;                   // L1 표시 라벨 (검색 파라미터 category= 로 그대로 사용)
+  origin: "specialty" | "etc";  // specialty=표준 진료과, etc=기타 승격 버킷
+  count: number;
+  sub: CategorySubItem[];        // L2 세부 시술·증상 (최대 12개, count 내림차순)
+}
+
+export interface CategoriesResponse {
+  data: CategoryNode[];
+  meta: {
+    sigungu: string;
+    total_hospitals: number;
+    total_categories: number;
+  };
+}
+
 export interface SearchResultItem {
   hospital_id: string;
   name: string;

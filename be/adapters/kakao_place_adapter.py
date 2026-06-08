@@ -5,7 +5,7 @@
 DDB 적재용 구조(KAKAO#PLACE / KAKAO#REVIEWS / KAKAO#BLOG)로 정제한다.
 
 ⚠️  회색지대 — `place-api.map.kakao.com` 은 robots.txt 자동화 금지 대상이고
-   카카오 약관도 비정상 접근을 금지한다. fetch_* 는 **시연 표본(10개) 한정**으로만
+   카카오 약관도 비정상 접근을 금지한다. fetch_* 는 **시연 표본(약 500개) 한정**으로만
    돌린다 (1만 풀커버 미적용 — rate-limit 미실측). 실측 근거·정책은
    `docs/plans/task-queue.md` "Phase B 후기 시그널 전략" 박스 사실 13~24 참조.
 

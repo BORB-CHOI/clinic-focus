@@ -7,13 +7,35 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import Response
 
 from be.adapters.dynamo_adapter import DynamoAdapter
+from be.adapters.s3_adapter import S3Adapter
 from be.core.feedback import compute_feedback_stats
 from shared.etc_category import display_specialty
 
 router = APIRouter(prefix="/api/hospitals", tags=["hospitals"])
 db = DynamoAdapter()
+s3 = S3Adapter()
+
+
+@router.get("/{hospital_id}/thumbnail")
+def get_hospital_thumbnail(hospital_id: str):
+    """병원 대표 이미지(홈페이지 스크린샷) 스트리밍.
+
+    S3 크롤 버킷이 public-access 차단이라 외부 직접노출이 안 돼 BE 가 중계한다.
+    카카오/네이버 대표사진은 외부 CDN URL 을 thumbnail_url 에 직접 넣으므로 이 경로를
+    안 탄다 — 이 엔드포인트는 우리가 찍어 S3 에 올린 스크린샷 전용. 없으면 404
+    (FE HospitalThumbnail 이 onError 로 회색 플레이스홀더 폴백).
+    """
+    data = s3.load_thumbnail(hospital_id)
+    if not data:
+        raise HTTPException(status_code=404, detail="thumbnail not found")
+    return Response(
+        content=data,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
 
 
 @router.get("/{hospital_id}")
@@ -60,6 +82,8 @@ def get_hospital_detail(hospital_id: str):
             ),
             "primary_focus": classification.primary_focus if classification else [],
             "confidence": classification.confidence.model_dump() if classification else None,
+            # 헤드라이너 히어로 + 카드 좌측 썸네일 동일 출처. None 이면 그라데이션 플레이스홀더.
+            "thumbnail_url": meta.thumbnail_url,
             "location": meta.location.model_dump() if meta.location else None,
             "website_url": meta.contact.website_url,
             "one_line_summary": description.one_line_summary if description else "",
@@ -113,7 +137,8 @@ def _adapt_detailed_signals(classification, website_url: str | None) -> dict | N
     if not classification:
         return None
     ds = classification.detailed_signals
-    sc, v, blog, rev = ds.self_claim, ds.vision, ds.blog, ds.reviews
+    # self_claim 은 아래에서 classification.primary_focus 로 대체 노출하므로 ds.self_claim 미사용.
+    v, blog, rev = ds.vision, ds.blog, ds.reviews
     return {
         "self_claim": {
             # 정제된 주력(primary_focus)을 자칭 컨셉으로 노출. raw sc.keywords 는 자기 사이트의
@@ -192,7 +217,22 @@ def _adapt_contact(c) -> dict | None:
 
 def _adapt_related(r) -> dict:
     d = r.model_dump()
-    d["thumbnail_url"] = None
+    # 관련 병원 카드 — 이름·대표 이미지를 META 에서 조인(≤5건). find_related_hospitals 는
+    # name="" 로 두고 "BE 가 조인"하기로 한 계약이라, 여기서 이름을 안 채우면 FE 가 빈 이름
+    # 대신 hospital_id(raw) 를 노출한다(관측된 'ID 가 왜 여기' 버그).
+    rel_meta = db.load_hospital_meta(r.hospital_id)
+    if rel_meta:
+        if not (d.get("name") or "").strip():
+            d["name"] = rel_meta.name
+        d["thumbnail_url"] = rel_meta.thumbnail_url
+    else:
+        d["thumbnail_url"] = None
+    # primary_focus literal 따옴표 정규화(적재 데이터 오염 방지).
+    if isinstance(d.get("primary_focus"), list):
+        d["primary_focus"] = [
+            str(f).strip().strip('"').strip("'").strip()
+            for f in d["primary_focus"] if str(f).strip()
+        ]
     return d
 
 

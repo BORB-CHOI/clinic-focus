@@ -5,6 +5,7 @@ import { HelpGuide } from "@/components/common/HelpGuide";
 
 import { CategoryGrid } from "@/components/search/CategoryGrid";
 import { EmptyState } from "@/components/common/EmptyState";
+import { FocusChipBar } from "@/components/search/FocusChipBar";
 import { RecommendSection } from "@/components/analytics/RecommendSection";
 import { AdCard } from "@/components/search/AdCard";
 import { HospitalCard } from "@/components/search/HospitalCard";
@@ -12,7 +13,7 @@ import { HospitalCardSkeleton } from "@/components/search/HospitalCardSkeleton";
 import { Pagination } from "@/components/search/Pagination";
 import { SearchFilters } from "@/components/search/SearchFilters";
 import { useSearch, PAGE_SIZE } from "@/hooks/useSearch";
-import { useSpecialties } from "@/hooks/useSpecialties";
+import { useCategories } from "@/hooks/useSpecialties";
 import { isEmergencyQuery } from "@/lib/emergency";
 import { getAds } from "@/lib/ads";
 import type { SortOption } from "@/types/domain";
@@ -20,8 +21,8 @@ import type { SortOption } from "@/types/domain";
 // 검색 결과 페이지 — BE /api/search 연동 (useSearch hook)
 //
 // 3가지 모드(URL 파라미터로 결정):
-//   - 둘러보기(browse): q·specialty·all 없음 → 진료과목 그리드 랜딩(닥터나우/모두닥/굿닥식)
-//   - 카테고리(category): specialty 또는 all=1 → 해당 진료과(또는 전체) 목록 + 필터·정렬·페이지
+//   - 둘러보기(browse): q·category·specialty·all 없음 → 계층형 카테고리 그리드 랜딩
+//   - 카테고리(category): category 또는 specialty 또는 all=1 → 목록 + L2 칩 바 + 필터·정렬·페이지
 //   - 자연어(search): q 있음 → KB 검색 결과 목록
 // 상태는 전부 URL 쿼리스트링에 묶어 새로고침·뒤로가기·공유에서 보존.
 
@@ -40,11 +41,16 @@ export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const query = searchParams.get("q") ?? "";
+  // category: 새 계층형 L1 키 (specialty·etc 버킷 공용)
+  const category = searchParams.get("category") ?? "";
+  // focus: L2 세부 시술·증상 태그
+  const focus = searchParams.get("focus") ?? "";
+  // specialty: 레거시 파라미터 — category 없을 때 하위 호환
   const specialty = searchParams.get("specialty") ?? "";
   const showAll = searchParams.get("all") === "1";
 
-  // 모드: 질의·진료과·전체 다 없으면 둘러보기(그리드 랜딩)
-  const isBrowse = !query && !specialty && !showAll;
+  // 모드: 질의·카테고리·진료과·전체 다 없으면 둘러보기(그리드 랜딩)
+  const isBrowse = !query && !category && !specialty && !showAll;
 
   const minConfidenceParam = Number.parseInt(
     searchParams.get("min_confidence") ?? "0",
@@ -80,25 +86,39 @@ export default function SearchPage() {
     setSearchParams(next, { replace: true });
   };
 
-  // 그리드 타일 선택 → 그 진료과로 드릴인 (""=전체 병원 보기)
+  // 그리드 타일 선택 → 그 카테고리로 드릴인 (""=전체 병원 보기)
   const selectCategory = (value: string) => {
     const next = new URLSearchParams(searchParams);
     next.delete("q");
     next.delete("page");
+    next.delete("focus");
+    next.delete("specialty"); // 레거시 파라미터 정리
     if (value === "") {
-      next.delete("specialty");
+      next.delete("category");
       next.set("all", "1");
     } else {
-      next.set("specialty", value);
+      next.set("category", value);
       next.delete("all");
     }
     setSearchParams(next, { replace: false });
   };
 
-  // 목록 → 그리드 랜딩으로 복귀 (질의·진료과·전체·페이지 해제)
+  // L2 세부 시술·증상 칩 선택 ("" = 전체, 즉 focus 해제)
+  const setFocus = (value: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (value === "") {
+      next.delete("focus");
+    } else {
+      next.set("focus", value);
+    }
+    next.delete("page");
+    setSearchParams(next, { replace: true });
+  };
+
+  // 목록 → 그리드 랜딩으로 복귀 (질의·카테고리·진료과·전체·페이지·focus 해제)
   const backToBrowse = () => {
     const next = new URLSearchParams(searchParams);
-    ["q", "specialty", "all", "page"].forEach((k) => next.delete(k));
+    ["q", "category", "specialty", "all", "page", "focus"].forEach((k) => next.delete(k));
     setSearchParams(next, { replace: false });
   };
 
@@ -110,23 +130,30 @@ export default function SearchPage() {
   };
 
   // ── 데이터 fetch ──────────────────────────────────────────────────────
-  // 둘러보기 모드에선 큰 카테고리 목록을 굳이 받지 않는다(enabled=false).
 
   const { data, isLoading, isError, error } = useSearch({
     q: query,
     minConfidence,
     sort,
     page,
-    specialty,
+    category,              // 새 L1 카테고리 파라미터
+    focus,                 // 새 L2 세부 시술·증상 파라미터
+    specialty,             // 레거시 하위 호환
     enabled: !isBrowse,
   });
 
-  const { data: specialtiesData, isLoading: specialtiesLoading } =
-    useSpecialties(POC_SIGUNGU);
+  // 계층형 카테고리 트리 — 둘러보기 랜딩과 L2 칩 바 모두에서 사용
+  const { data: categoriesData, isLoading: categoriesLoading } =
+    useCategories(POC_SIGUNGU);
 
   const items = data?.data ?? [];
   const meta = data?.meta;
   const total = meta?.total ?? 0;
+
+  // 현재 선택된 L1 카테고리 노드 — L2 칩 바 데이터 소스
+  const activeCategoryNode = category
+    ? (categoriesData?.data ?? []).find((n) => n.key === category)
+    : undefined;
 
   // 광고 슬롯 — 결과 목록 첫 페이지 상단에만 노출. 진료과 컨텍스트로 매칭.
   // 응급 쿼리에선 광고를 숨긴다 (응급 상황에 협찬 노출은 부적절).
@@ -137,10 +164,14 @@ export default function SearchPage() {
 
   // 목록 제목
   const listTitle = query
-    ? `“${query}” 검색 결과`
-    : specialty
-      ? specialty
-      : "강남구 전체 병원";
+    ? `"${query}" 검색 결과`
+    : category
+      ? focus
+        ? `${category} · ${focus}`
+        : category
+      : specialty
+        ? specialty
+        : "강남구 전체 병원";
 
   return (
     <section className="space-y-5">
@@ -185,17 +216,17 @@ export default function SearchPage() {
           <RecommendSection />
           <div className="flex items-baseline justify-between">
             <h2 className="text-base font-semibold tracking-tight">
-              진료과목으로 둘러보기
+              진료 분야로 둘러보기
             </h2>
             <p className="text-xs text-muted-foreground">
-              위 검색창에 증상·시술을 입력하거나, 진료과목을 골라보세요
+              위 검색창에 증상·시술을 입력하거나, 분야를 골라보세요
             </p>
           </div>
           <CategoryGrid
-            specialties={specialtiesData?.data ?? []}
-            totalHospitals={specialtiesData?.meta.total_hospitals ?? 0}
+            categories={categoriesData?.data ?? []}
+            totalHospitals={categoriesData?.meta.total_hospitals ?? 0}
             onSelect={selectCategory}
-            isLoading={specialtiesLoading}
+            isLoading={categoriesLoading}
           />
         </div>
       ) : (
@@ -209,7 +240,7 @@ export default function SearchPage() {
               className="flex items-center gap-0.5 rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
               <ChevronLeft className="h-4 w-4" aria-hidden />
-              진료과목
+              진료 분야
             </button>
             <h2 className="text-lg font-semibold tracking-tight">{listTitle}</h2>
             {!isLoading ? (
@@ -229,6 +260,15 @@ export default function SearchPage() {
               ) : null}
             </div>
           </div>
+
+          {/* L2 세부 시술·증상 칩 바 — category 선택 상태이고 sub 데이터가 있을 때만 표시 */}
+          {category && activeCategoryNode && activeCategoryNode.sub.length > 0 && (
+            <FocusChipBar
+              subItems={activeCategoryNode.sub}
+              activeFocus={focus}
+              onFocusChange={setFocus}
+            />
+          )}
 
           <SearchFilters
             minConfidence={minConfidence}
@@ -277,9 +317,13 @@ export default function SearchPage() {
               message={
                 query
                   ? `"${query}" 에 해당하는 결과가 없습니다`
-                  : specialty
-                    ? `"${specialty}" 진료과목에 해당하는 결과가 없습니다 — 필터를 변경해보세요`
-                    : "조건에 맞는 병원이 없습니다 — 근거 필터를 낮춰보세요"
+                  : category
+                    ? focus
+                      ? `"${category} · ${focus}" 에 해당하는 결과가 없습니다 — 다른 세부 항목을 선택하거나 필터를 변경해보세요`
+                      : `"${category}" 분야에 해당하는 결과가 없습니다 — 필터를 변경해보세요`
+                    : specialty
+                      ? `"${specialty}" 진료과목에 해당하는 결과가 없습니다 — 필터를 변경해보세요`
+                      : "조건에 맞는 병원이 없습니다 — 근거 필터를 낮춰보세요"
               }
             />
           ) : (

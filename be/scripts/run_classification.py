@@ -1,7 +1,7 @@
 """룰 기반 분류 배치 — 전체 병원 classify(use_llm=False) → DDB CLASSIFICATION 적재
 + 시그널 청크 KB ingest. LLM 0회 호출이라 전체 1만에 적용 가능 (트랙 A 베이스라인).
 
-DESCRIPTION·진료항목 등 LLM/Vision 산출물(시연 10개)은 이 배치가 아니라
+DESCRIPTION·진료항목 등 LLM/Vision 산출물(시연 약 500개)은 이 배치가 아니라
 demo 파이프라인(run_index_pipeline(demo=True))에서 따로 만든다 — 검색 임베딩이
 DESCRIPTION 이 아니라 시그널 청크로 구성되므로 배치에서 설명 생성이 불필요하다
 (docs/plans/task-queue.md Phase C 결정).

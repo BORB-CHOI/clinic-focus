@@ -18,9 +18,17 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from be.adapters.analytics_adapter import AnalyticsAdapter, EnvContext, HealthEvent, ProfileBucket
-
+# .env 를 어댑터 import 보다 먼저 로드한다 — analytics_adapter 의 TABLE_NAME 은
+# 모듈 import 시점에 os.environ 을 한 번 읽어 고정되므로, import 전에 환경변수를
+# 채우지 않으면 ANALYTICS_TABLE 이 무시되고 하드코딩 기본값으로 박힌다.
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+
+from be.adapters.analytics_adapter import (  # noqa: E402
+    AnalyticsAdapter,
+    EnvContext,
+    HealthEvent,
+    ProfileBucket,
+)
 
 QUERIES = ["비염", "감기", "여드름", "탈모", "무릎통증", "도수치료", "수면내시경"]
 SPECIALTIES = {

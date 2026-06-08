@@ -1197,7 +1197,7 @@ def classify_hospital(
             해당 진료과의 시술 taxonomy 로 primary_focus 를 통제 어휘로 채운다.
             None 이면 기존처럼 크롤 텍스트로 추론(fallback).
         vision_results: 사전 계산된 Vision 분석 결과(ImageAnalysisResult 리스트).
-            주어지면 이 값을 재사용하고 analyze_images 를 호출하지 않는다 — 시연 10개는
+            주어지면 이 값을 재사용하고 analyze_images 를 호출하지 않는다 — 시연 약 500개는
             run_vision_demo 가 DDB VISION#RESULTS 에 1회 적재하므로 분류기가 중복
             호출(비용 2배·결과 불일치)하지 않도록 호출자가 전달한다. None 이고
             use_llm·use_vision·이미지가 모두 있으면 analyze_images 로 직접 분석한다.
@@ -1254,7 +1254,7 @@ def classify_hospital(
         self_claim_signal.spam_score,
     )
 
-    # 3. Vision 분석 — use_llm=False 이면 무조건 건너뜀 (개인계정 Sonnet, 10개 한정)
+    # 3. Vision 분석 — use_llm=False 이면 무조건 건너뜀 (개인계정 Sonnet, 약 500개 시연)
     #                   use_vision=False 이면 건너뜀.
     #    vision_results 가 외부에서 주어지면(사전 계산된 VISION#RESULTS) 재사용해
     #    analyze_images 중복 호출(비용 2배·결과 불일치)을 피한다. 없을 때만 직접 분석.

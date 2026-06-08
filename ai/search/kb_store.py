@@ -505,7 +505,7 @@ def build_signal_chunks(
     청크 본문은 화면 미표시(임베딩 전용)라 광고·과장 표현만 스크럽한다. **동의어는
     문서-측에 주입하지 않는다** — 쿼리-side 확장(process_query)으로만 메운다(아래 주석 참조).
     reviews 청크는 키워드 빈도 + 후기 본문 원문을 포함한다.
-    vision 청크는 analyze_images() 결과가 있을 때만 추가된다(시연 10개 한정).
+    vision 청크는 analyze_images() 결과가 있을 때만 추가된다(시연 약 500개 한정).
 
     Args:
         vision_results: analyze_images() 결과 (ImageAnalysisResult 리스트 또는 dict 리스트).
@@ -851,14 +851,20 @@ def _dedup_by_hospital(raw_results: list[dict]) -> dict[str, dict]:
 
 
 def _parse_focus(md: dict) -> list[str]:
-    """metadata 의 primary_focus 를 list[str] 로 방어 파싱(따옴표/JSON 문자열 포함)."""
+    """metadata 의 primary_focus 를 list[str] 로 방어 파싱(따옴표/JSON 문자열 포함).
+
+    KB 적재 시 일부 메타에 라벨이 literal 따옴표로 감싸여 저장된 건(`"보톡스·필러"`)이
+    있어, 각 항목의 감싸는 따옴표·공백을 제거해 정규화한다(매칭·표시 양쪽 오염 방지).
+    """
     raw_focus = md.get("primary_focus") or []
     if isinstance(raw_focus, str):
         try:
             raw_focus = json.loads(raw_focus)
         except (json.JSONDecodeError, TypeError):
             raw_focus = []
-    return raw_focus if isinstance(raw_focus, list) else []
+    if not isinstance(raw_focus, list):
+        return []
+    return [str(f).strip().strip('"').strip("'").strip() for f in raw_focus if str(f).strip()]
 
 
 def _aggregate_by_hospital(raw_results: list[dict], query_terms: list[str]) -> dict[str, dict]:
@@ -890,6 +896,7 @@ def _aggregate_by_hospital(raw_results: list[dict], query_terms: list[str]) -> d
                 "max_score": score,
                 "mentions": 0,
                 "n_chunks": 0,
+                "pf": pf,  # 의도-카테고리 정렬(질병→미용 강등)용
                 "pf_match": any(t in str(p) for t in terms for p in pf),
                 "confidence": float(md.get("confidence_score") or 0.0),
             }
@@ -918,6 +925,47 @@ def _focus_intensity(g: dict) -> float:
         + wfreq * math.log1p(g["mentions"])
         + wchunk * math.log1p(max(0, g["n_chunks"] - 1))
     )
+
+
+# 미용·성형 주력 라벨 — 질병 쿼리에서 강등 대상 (강남 실측 top focus 기반).
+# 검색엔진의 의도-카테고리 정렬을 모사: "무좀/감기" 같은 질환 쿼리에 미용 클리닉이
+# 상위로 뜨지 않게 한다. 임베딩은 안 건드리고 메타데이터(primary_focus)만으로 재정렬.
+_COSMETIC_FOCUS = {
+    "보톡스·필러", "리프팅·탄력", "리프팅·거상", "기미·색소", "미백·피부톤", "제모",
+    "흉터·모공", "가슴성형", "눈성형", "코성형", "지방흡입·체형", "안면윤곽·양악",
+    "한방피부·미용", "비만·다이어트", "비만·영양", "모발·탈모", "동안",
+}
+
+
+def _cosmetic_ratio(g: dict) -> float:
+    pf = g.get("pf") or []
+    if not pf:
+        return 0.0
+    return sum(1 for f in pf if f in _COSMETIC_FOCUS) / len(pf)
+
+
+def _is_disease_intent(inferred_focus: "list[str] | None") -> bool:
+    """쿼리 의도가 '질환/질병'인가 — 사전 주력분야에 질환·감염·염증 신호가 있으면 질병.
+
+    무좀→'진균성 피부질환', 감기→'호흡기 감염' 처럼 사전이 이미 질환 카테고리를 부여한다.
+    여드름→'여드름·흉터'(미용계열)는 질병 의도가 아니라 강등을 적용하지 않는다.
+    """
+    for f in (inferred_focus or []):
+        if any(k in f for k in ("질환", "감염", "염증", "자가면역")):
+            return True
+    return False
+
+
+def _relevance_with_intent(g: dict, disease_intent: bool) -> float:
+    """주력 강도에 의도-카테고리 강등을 합친 최종 relevance.
+
+    질병 쿼리일 때만 미용비율에 비례해 강등(W_INTENT_COSMETIC). env 로 끄거나 튜닝 가능.
+    """
+    base = _focus_intensity(g)
+    if not disease_intent:
+        return base
+    w = float(os.environ.get("INTENT_COSMETIC_PENALTY", "0.08"))
+    return base - w * _cosmetic_ratio(g)
 
 
 def _agg_name(g: dict) -> str:
@@ -1103,8 +1151,13 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
     rank_mode = os.environ.get("RANK_MODE", "intensity")
     groups = _aggregate_by_hospital(raw, processed.medical_terms)
 
+    # 의도-카테고리 정렬: 질병 쿼리(무좀·감기 등)면 미용주력 병원을 강등한다.
+    disease_intent = _is_disease_intent(processed.inferred_focus)
+
     def _relevance_key(g: dict) -> float:
-        return g["max_score"] if rank_mode == "cosine" else _focus_intensity(g)
+        if rank_mode == "cosine":
+            return g["max_score"]
+        return _relevance_with_intent(g, disease_intent)
 
     # --- haversine 재필터링 (위치 있을 때) ---
     if has_location:
@@ -1145,6 +1198,11 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
 
     # --- 자연어 단독 검색: min-sim 컷 후 주력 강도 정렬 ---
     kept = [g for g in groups.values() if g["max_score"] >= min_score]
+    # 의도-카테고리 정렬(강): 질병 쿼리(무좀·감기)면 주력이 100% 미용·성형(질환 focus 0)인
+    # 병원은 제외한다 — 강등(nudge)만으론 코사인 우위를 못 이겨 미용이 상위에 남기 때문.
+    # 부분 미용(예: 아토피·피부질환 보유 피부과)은 남기고 _relevance_with_intent 로 순서만 보정.
+    if disease_intent:
+        kept = [g for g in kept if _cosmetic_ratio(g) < 1.0]
     if query.sort == "confidence":
         kept.sort(key=lambda g: (-g["confidence"], -_focus_intensity(g), _agg_name(g)))
     else:  # relevance (기본) — 주력 강도 (동점 → 코사인 → 이름)

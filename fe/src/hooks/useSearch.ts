@@ -18,7 +18,11 @@ export interface SearchArgs {
   minConfidence: number;
   sort: SortOption;
   page?: number;        // 1-base, 기본 1
-  specialty?: string;  // 진료과목 필터 (빈 문자열 = 전체)
+  specialty?: string;  // 진료과목 필터 (빈 문자열 = 전체) — 레거시, category 우선
+  /** 계층형 카테고리 L1 key (specialty·etc 버킷 공용). specialty 대신 이걸 씀 */
+  category?: string;
+  /** L2 세부 시술·증상 태그. category 가 있을 때만 의미 있음 */
+  focus?: string;
   /** 페이지 크기 오버라이드. 기본 PAGE_SIZE(20). 지도는 100으로 한 번에 마커 노출 */
   limit?: number;
   /** 지도 검색용. lat/lng/radius_km 모두 있어야 위치 검색으로 동작 */
@@ -35,6 +39,8 @@ export function useSearch({
   sort,
   page = 1,
   specialty,
+  category,
+  focus,
   limit = PAGE_SIZE,
   lat,
   lng,
@@ -45,18 +51,21 @@ export function useSearch({
 
   return useQuery<SearchResponse>({
     enabled,
-    queryKey: ["search", q, minConfidence, sort, page, specialty, limit, lat, lng, radius_km],
+    queryKey: ["search", q, minConfidence, sort, page, specialty, category, focus, limit, lat, lng, radius_km],
     queryFn: ({ signal }) =>
       apiGet<SearchResponse>(
         "/api/search",
         {
-          q: q || undefined,         // 비면 카테고리(시군구) 경로로
+          q: q || undefined,               // 비면 카테고리(시군구) 경로로
           sigungu: POC_SIGUNGU,
           min_confidence: minConfidence || undefined,
           sort,
           limit,
           offset,
-          specialty: specialty || undefined,
+          // category 가 있으면 category 우선; 없으면 레거시 specialty 사용
+          category: category || undefined,
+          focus: focus || undefined,       // L2 세부 시술·증상 필터
+          specialty: (!category && specialty) ? specialty : undefined,
           lat,
           lng,
           radius_km,

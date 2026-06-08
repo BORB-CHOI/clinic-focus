@@ -16,6 +16,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from be.api.analytics import router as analytics_router
+from be.api.categories import router as categories_router
 from be.api.events import router as events_router
 from be.api.feedback import router as feedback_router
 from be.api.history import router as history_router
@@ -51,6 +52,7 @@ app.include_router(events_router)
 app.include_router(history_router)
 app.include_router(feedback_router)
 app.include_router(specialties_router)
+app.include_router(categories_router)
 app.include_router(analytics_router)
 
 
