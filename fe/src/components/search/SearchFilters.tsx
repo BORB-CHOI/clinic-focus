@@ -102,7 +102,7 @@ export function SearchFilters({
       {minConfidence > 0 ? (
         <p className="mt-2 text-[0.8em] leading-relaxed text-muted-foreground">
           ⓘ 출처가 적은 병원이 빠져 결과가 줄어듭니다. '근거'는 병원 평가가 아니라 우리 분류를
-          뒷받침하는 독립 출처(자칭·Vision·블로그·후기) 수예요.
+          뒷받침하는 독립 출처(병원 사이트·이미지 분석·블로그·후기) 수예요.
         </p>
       ) : null}
 

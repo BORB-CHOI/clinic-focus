@@ -19,7 +19,7 @@ const ITEMS: { level: ConfidenceLevel; label: string; dotClass: string; ringClas
   },
   {
     level: "정보 부족",
-    label: "자칭만 확인",
+    label: "병원 사이트 정보만 확인",
     dotClass: "bg-confidence-low-500",
     ringClass: "ring-confidence-low-100",
   },

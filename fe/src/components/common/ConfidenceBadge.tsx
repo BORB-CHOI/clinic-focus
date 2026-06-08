@@ -13,12 +13,13 @@ const LEVEL_STYLE: Record<ConfidenceLevel, string> = {
 };
 
 // 표시 라벨 — "신뢰도"(병원 평가처럼 들림)가 아니라 *우리 분류가 몇 개 독립 출처로
-// 뒷받침되나*(근거 강도)를 직관적으로. 의료법 §56 검수 통과 카피(2026-06-01).
+// 뒷받침되나*(근거 강도)를 직관적으로. 의료법 §56 검수 통과 카피.
 // BE enum(확실/추정/정보 부족)은 그대로 두고 표시만 치환.
+// "자칭만 확인됨" → "병원 사이트 정보만 확인됨" (비전문가에게 더 명확)
 const LEVEL_LABEL: Record<ConfidenceLevel, string> = {
   확실: "여러 출처가 일치",
   추정: "일부 출처로 확인",
-  "정보 부족": "자칭만 확인됨",
+  "정보 부족": "병원 사이트 정보만 확인됨",
 };
 
 interface ConfidenceBadgeProps {
@@ -43,7 +44,11 @@ export function ConfidenceBadge({
       <span aria-hidden>●</span>
       <span>{LEVEL_LABEL[confidence.level]}</span>
       {showScore ? (
-        <span className="font-mono text-[11px] opacity-80">
+        <span
+          className="font-mono text-[11px] opacity-80"
+          title={`근거 점수 ${confidence.score} / 100 — 출처가 많을수록 높음`}
+          aria-label={`근거 점수 ${confidence.score}`}
+        >
           {confidence.score}
         </span>
       ) : null}

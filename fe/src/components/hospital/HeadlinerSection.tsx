@@ -146,9 +146,9 @@ export function HeadlinerSection({
           {/* 안내 문구 — 보조 역할, 주체 명시 원칙 준수 */}
           <p className="rounded-md bg-muted/40 px-3 py-2 text-[12px] leading-relaxed text-muted-foreground">
             AI 통합 설명은 시연 약 500개 병원에만 생성됩니다. 위 분류는 이
-            병원 공식 사이트에서 자동 수집한 자칭 정보를 기반으로 합니다.
+            병원 공식 사이트에서 자동 수집한 정보를 기반으로 합니다.
             아래 <span className="font-medium text-foreground">진료 정보</span>{" "}
-            탭에서 근거 시그널(자칭·후기·블로그)을 확인하세요.
+            탭에서 근거 시그널(병원 사이트·후기·블로그)을 확인하세요.
           </p>
         </div>
       )}
