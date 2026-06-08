@@ -176,7 +176,7 @@
 
 ### 해결 방향 (택1 또는 조합)
 
-1. **HIRA 진료과목 적재** — `MadmDtlInfoService2.7/getDgsbjtInfo2.7`(ykiho별)로 이름파싱 대체. 공식·권위
+1. **HIRA 진료과목 적재** — `MadmDtlInfoService2.8/getDgsbjtInfo2.8`(ykiho별)로 이름파싱 대체. 공식·권위
    있으나 **data.go.kr 세부정보서비스 활용신청 선행 필요**(현재 403 미인가). 덤: `getMedOftInfo`로 의료기기 갭도 채움.
 2. **LLM 기반 세부분류** — 공공데이터에만 의존 않고, 이미 가진 크롤 자칭 텍스트를 Haiku/Nova로 분류해
    `기타`를 정형·재활·마취통증 등으로 내림. 활용신청 대기 불필요. 옛 키워드 추론(_infer_standard_specialty)이

@@ -82,25 +82,26 @@
   태그 옆 숫자(= `confidence.score` 0~100 근거점수) 의미 명확화 또는 정리. ★ medical-language-reviewer 검수 필수.
 
 **★ 심평원 공공 신고 데이터 — code path 구현 완료(2026-06-08, `feat/hira-public-signals`), 키 승인+재적재만 남음.**
-엔드포인트 실측 확정(403=경로 정확·키 미승인): 전문의 `MadmDtlInfoService2.7/getDgsbjtInfo2.7`(`dgsbjtPrSdrCnt`),
+엔드포인트 실측 확정(403=경로 정확·키 미승인): 전문의 `MadmDtlInfoService2.8/getDgsbjtInfo2.8`(`dgsbjtPrSdrCnt`),
 비급여 `nonPaymentDamtInfoService/getNonPaymentItemHospDtlList`. 분류 스키마(M1 동결) 불변 — `PublicData`
 확장(`specialists_by_dept`·`total_doctors`·`nonpay_items`) + 상세표시·검색필터만으로 구현:
 - [x] ③ 의료진 — `PublicData.specialists_by_dept` 적재·상세응답·`DoctorsSection` "심평원 신고 기준 ○○과 전문의 N명"
   (간판-진실성: 0명도 사실 노출). 검색 필터 `has_specialist`/`specialist_dept`(GSI 경로). medical-language 검수 통과.
 - [x] ② 비급여 — `PublicData.nonpay_items` 적재·상세 비급여 영역(출처 `public_data`). AI 의도정렬 일반화
   (미용 하드코딩 `_COSMETIC_FOCUS` → 심평원 `nonpay_ratio` soft 강등, 하드코딩 fallback 유지·도수 hard제외 제외).
-**★승인 현황(2026-06-08 키 수령 후 실측)**: 비급여 15001700 **승인·동작 ✅** / 전문의 **15001699 여전히 403 미승인 ❌**
-(별도 데이터셋 — `data.go.kr/data/15001699` 활용신청 누락. 의료기관별상세정보서비스). **핵심: 전문의가 의원 타깃의
-간판진실성 절반인데 그게 막힘.** 사용자 결정 = **전문의 15001699 승인까지 보류 후 전문의+비급여 일괄 적재.**
-- [ ] **15001699(전문의) 활용신청 승인 대기** → 승인 시 `be/scripts/_verify_hira_detail.py` 로 getDgsbjtInfo2.7 403→200 확인.
-- [ ] **승인 후 일괄 적재**: `LOAD_PUBLIC_DATA=true .venv/bin/python be/scripts/load_seoul_5gu.py`(전문의+비급여 → PUBLIC#DOCTORS/NONPAY)
-  → `run_classification --sigungu 강남구`(룰, LLM0) 재ingest(nonpay_ratio·specialist 메타 KB 진입). 그 전까지 403/빈값 graceful.
-- **★실측 데이터 한계(우리가 못 고침)**: 비급여 **의원 커버리지 0%**(강남 의원 158/158 totalCount=0), 병원급↑ 100%
-  (광동병원 130·강남세브란스 764). 비급여 영역은 병원급에서만 채워짐 — 의원의 가치는 전문의(간판진실성)에서 나옴.
-  FE 는 빈 비급여 영역 graceful 숨김. (실측 파서 정합: `items=""` 빈문자열·category=npayKorNm 첫 세그먼트, 커밋 40cf5c0.)
+**★승인 현황(2026-06-08 키 수령+버전정정 후 실측 — 둘 다 동작 ✅)**: 전문의 15001699·비급여 15001700 모두 라이브 동작.
+★함정 = **상세 서비스 버전 2.7→2.8**(2.7 은 403/404, 2.8 이 현행). 키는 처음부터 승인돼 있었고 엔드포인트 버전만 틀렸던 것.
+- [x] 전문의 `MadmDtlInfoService2.8/getDgsbjtInfo2.8`(dgsbjtCdNm+dgsbjtPrSdrCnt) — **의원 간판진실성 라이브 확인**
+  (오스킨성형의원: 피부과 표기·전문의 0 / 리드림의원: 정형·성형·산부인과 등 표기 전부 전문의 0, 실제 내과5·외과1).
+- [x] 의료장비 `getMedOftInfo2.8`(oftCdNm) → `registered_devices`(삼성 CT·감마나이프 16건). 상세 equipment(source=public_data).
+- [x] 총 의사 수 = base `getHospBasisList` drTotCnt(상세 서비스엔 per-ykiho 의사수 없음 — getDtlInfo2.8=운영시간).
+- [x] 비급여 `getNonPaymentItemHospDtlList`(npayKorNm 계층·curAmt) — 단 **의원 커버리지 0%**(강남 의원 158/158 totalCount=0),
+  병원급↑ 100%(광동병원 130). 비급여 영역은 병원급만, 의원 가치는 전문의에서. FE 빈 영역 graceful 숨김.
+- [ ] **일괄 적재(이제 가능)**: `LOAD_PUBLIC_DATA=true .venv/bin/python be/scripts/load_seoul_5gu.py`(전문의+장비+비급여 →
+  PUBLIC#DOCTORS/NONPAY) → `run_classification --sigungu 강남구`(룰 LLM0) 재ingest(nonpay_ratio·specialist 메타 KB). 미적재 시 빈값 graceful.
 
-> 다음 세션 우선순위: 필수 ⑤·thumbnail(M) → 중요 ①·⑥. **★ 공공 신고: 비급여 승인됨(병원급만)·전문의 15001699
-> 신청 누락 → 승인 후 일괄.** 근거: 2026-06-08 9영역 감사 + 심평원 2종 연동·키 수령 실측.
+> 다음 세션 우선순위: 필수 ⑤·thumbnail(M) → 중요 ①·⑥. **★ 공공 신고: 전문의·장비·비급여 라이브 동작(2.8) — 강남 일괄
+> 적재만 남음(비급여는 병원급만).** 근거: 2026-06-08 심평원 연동·키 수령·버전 2.8 정정.
 
 ### D. 표본 확장 + 통합 검증 (Phase F)
 - [ ] 5개구 풀커버 → 풀크롤(자체+외부) → 룰 분류 일괄(트랙 A, LLM 0). 현재 분류·KB는 강남만.

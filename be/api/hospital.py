@@ -98,7 +98,14 @@ def get_hospital_detail(hospital_id: str):
             # ② 핵심 진료 정보 (스펙 형태로 어댑팅)
             "services": [s.model_dump() for s in services_and_doctors.services] if services_and_doctors else [],
             "excluded_services": [s.model_dump() for s in services_and_doctors.excluded_services] if services_and_doctors else [],
-            "equipment": [_adapt_equipment(e) for e in services_and_doctors.equipment] if services_and_doctors else [],
+            # 장비: Vision 추론분 + 심평원 신고 의료장비(getMedOftInfo2.8, source=public_data).
+            "equipment": (
+                ([_adapt_equipment(e) for e in services_and_doctors.equipment] if services_and_doctors else [])
+                + [
+                    {"name": d, "source": "public_data", "confidence": 1.0}
+                    for d in public_doctors.get("registered_devices", [])
+                ]
+            ),
             "prices": [_adapt_price(p) for p in services_and_doctors.prices] if services_and_doctors else [],
 
             # ③ 의료진 정보 + 심평원 신고 기준 전문의 수
@@ -106,7 +113,7 @@ def get_hospital_detail(hospital_id: str):
             # 심평원 신고 기준 과목별 전문의 수 {"피부과": 2, ...}. 출처: 심평원 공식 신고(public_data).
             # "이 병원이 잘 본다" 아닌 "심평원 신고 기준 N명" 형식으로 FE 렌더 필요(의료법 주체 명시).
             "specialists_by_dept": public_doctors.get("specialists_by_dept", {}),
-            # 총 의사 수(getDtlInfo2.7). None 이면 미확인.
+            # 총 의사 수(base getHospBasisList drTotCnt). None 이면 미확인.
             "total_doctors": public_doctors.get("total_doctors"),
 
             # (신규) 심평원 신고 비급여 항목 — 의료법 제45조의2 공식 신고 사실 그대로 노출.

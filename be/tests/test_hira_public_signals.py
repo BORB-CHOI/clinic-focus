@@ -36,7 +36,7 @@ def _mock_response(status_code: int, body: dict | None = None):
 
 
 def _specialists_body(items: list[dict]) -> dict:
-    """getDgsbjtInfo2.7 응답 골격."""
+    """getDgsbjtInfo2.8 응답 골격."""
     return {
         "response": {
             "body": {
@@ -138,38 +138,47 @@ class TestGetSpecialistsByDept:
 
 
 # ---------------------------------------------------------------------------
-# _get_total_doctors
+# _get_registered_devices (getMedOftInfo2.8 → 신고 의료장비)
 # ---------------------------------------------------------------------------
 
-class TestGetTotalDoctors:
+class TestGetRegisteredDevices:
     def setup_method(self):
         self.adapter = HiraAdapter()
 
-    def _total_doctors_body(self, dr_tot_cnt) -> dict:
+    def _devices_body(self, items) -> dict:
         return {
             "response": {
                 "body": {
-                    "items": {"item": {"drTotCnt": dr_tot_cnt}}
+                    "totalCount": len(items),
+                    "items": {"item": items} if len(items) != 1 else {"item": items[0]},
                 }
             }
         }
 
     def test_normal(self):
-        body = self._total_doctors_body("5")
+        body = self._devices_body([
+            {"oftCdNm": "CT", "oftCnt": 2},
+            {"oftCdNm": "초음파영상진단기", "oftCnt": 5},
+        ])
         with patch.object(self.adapter._client, "get", return_value=_mock_response(200, body)):
-            total = self.adapter._get_total_doctors("TEST010")
-        assert total == 5
+            devices = self.adapter._get_registered_devices("TEST010")
+        assert devices == ["CT", "초음파영상진단기"]  # oftCnt 미표시, 장비명만
+
+    def test_dedup(self):
+        body = self._devices_body([{"oftCdNm": "CT"}, {"oftCdNm": "CT"}, {"oftCdNm": "MRI"}])
+        with patch.object(self.adapter._client, "get", return_value=_mock_response(200, body)):
+            devices = self.adapter._get_registered_devices("TEST010D")
+        assert devices == ["CT", "MRI"]
 
     def test_403_graceful_degrade(self):
         with patch.object(self.adapter._client, "get", return_value=_mock_response(403)):
-            total = self.adapter._get_total_doctors("TEST011")
-        assert total is None
+            assert self.adapter._get_registered_devices("TEST011") == []
 
-    def test_missing_drTotCnt(self):
-        body = {"response": {"body": {"items": {"item": {}}}}}
+    def test_empty_string_items(self):
+        """장비 0건이면 items="" → [] (의원 다수)."""
+        body = {"response": {"body": {"totalCount": 0, "items": ""}}}
         with patch.object(self.adapter._client, "get", return_value=_mock_response(200, body)):
-            total = self.adapter._get_total_doctors("TEST012")
-        assert total is None
+            assert self.adapter._get_registered_devices("TEST012") == []
 
 
 # ---------------------------------------------------------------------------
@@ -308,18 +317,20 @@ class TestGetPublicData:
         assert pd.registered_devices == []
 
     def test_normal_data_assembled(self):
-        """정상 데이터 조합 — specialists_by_dept, nonpay_items 모두 채워짐."""
+        """정상 조합 — 전문의·의료장비·비급여 + dr_tot_cnt 로 받은 총 의사 수."""
         specialists_body = _specialists_body(
             [{"dgsbjtCdNm": "피부과", "dgsbjtPrSdrCnt": "1"}]
         )
-        total_body = {"response": {"body": {"items": {"item": {"drTotCnt": "3"}}}}}
+        devices_body = {
+            "response": {"body": {"totalCount": 1, "items": {"item": {"oftCdNm": "레이저치료기"}}}}
+        }
         nonpay_body_data = _nonpay_body(
-            [{"npayKorNm": "보톡스", "clauseCdNm": "주사료", "curAmt": "150000"}]
+            [{"npayKorNm": "주사료/보톡스", "curAmt": "150000"}]
         )
 
         call_map = {
-            "getDgsbjtInfo2.7": _mock_response(200, specialists_body),
-            "getDtlInfo2.7": _mock_response(200, total_body),
+            "getDgsbjtInfo2.8": _mock_response(200, specialists_body),
+            "getMedOftInfo2.8": _mock_response(200, devices_body),
             "getNonPaymentItemHospDtlList": _mock_response(200, nonpay_body_data),
         }
 
@@ -330,11 +341,13 @@ class TestGetPublicData:
             return _mock_response(404)
 
         with patch.object(self.adapter._client, "get", side_effect=_dispatch):
-            pd = self.adapter.get_public_data("TEST031")
+            pd = self.adapter.get_public_data("TEST031", dr_tot_cnt=3)
 
         assert pd.specialists_by_dept == {"피부과": 1}
         assert pd.specialists == ["피부과"]
-        assert pd.total_doctors == 3
+        assert pd.total_doctors == 3                      # dr_tot_cnt 파라미터
+        assert pd.registered_devices == ["레이저치료기"]   # getMedOftInfo2.8
         assert len(pd.nonpay_items) == 1
-        assert pd.nonpay_items[0].item_name == "보톡스"
+        assert pd.nonpay_items[0].item_name == "주사료/보톡스"
+        assert pd.nonpay_items[0].category == "주사료"     # npayKorNm 첫 세그먼트
         assert pd.nonpay_items[0].amount == 150000

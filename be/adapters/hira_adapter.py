@@ -14,8 +14,10 @@ logger = logging.getLogger(__name__)
 
 # 심평원 공공 데이터 포털 API
 HIRA_BASE_URL = "https://apis.data.go.kr/B551182/hospInfoServicev2"
-# 진료과목별 전문의 수 (getDgsbjtInfo2.7) — 서비스 코드 15001699
-HIRA_DETAIL_BASE_URL = "https://apis.data.go.kr/B551182/MadmDtlInfoService2.7"
+# 의료기관별상세정보서비스 — 서비스 코드 15001699. ★버전 2.8(2.7은 구버전→403/404).
+# getDgsbjtInfo2.8(진료과목별 전문의 수)·getMedOftInfo2.8(의료장비). getDtlInfo2.8 은
+# 운영시간·주차라 의사수 없음(총 의사 수는 base getHospBasisList 의 drTotCnt 사용).
+HIRA_DETAIL_BASE_URL = "https://apis.data.go.kr/B551182/MadmDtlInfoService2.8"
 # 비급여진료비 정보 (getNonPaymentItemHospDtlList) — 서비스 코드 15001700
 HIRA_NONPAY_BASE_URL = "https://apis.data.go.kr/B551182/nonPaymentDamtInfoService"
 HIRA_API_KEY = os.environ.get("HIRA_API_KEY", "")
@@ -178,18 +180,18 @@ class HiraAdapter:
             standard_specialty=map_standard_specialty(raw.get("clCdNm", ""), name),
         )
 
-    def get_public_data(self, hospital_id: str) -> PublicData:
-        """개별 병원의 전문의·비급여 정보를 공공 API에서 조회해 PublicData 로 반환.
+    def get_public_data(self, hospital_id: str, dr_tot_cnt: int | None = None) -> PublicData:
+        """개별 병원의 전문의·의료장비·비급여 정보를 공공 API에서 조회해 PublicData 로 반환.
 
-        - getDgsbjtInfo2.7 → specialists_by_dept (과목별 전문의 수) + specialists (과목명 list)
-        - getDtlInfo2.7   → total_doctors (총 의사 수, 선택)
+        - getDgsbjtInfo2.8 → specialists_by_dept(진료과목별 전문의 수)+specialists(과목명 list)
+        - getMedOftInfo2.8 → registered_devices(신고 의료장비명)
         - getNonPaymentItemHospDtlList → nonpay_items
 
-        키 승인 전(403 Forbidden)에는 각 항목이 빈값으로 graceful degrade.
-        코드 변경 없이 키 승인 즉시 동작.
+        total_doctors(총 의사 수)는 per-ykiho API 가 없어 호출자가 base getHospBasisList 의
+        ``drTotCnt`` 를 dr_tot_cnt 로 넘긴다(load_seoul_5gu). 미전달 시 None.
+        키/권한 문제(403)·항목 0건에는 각 항목이 빈값으로 graceful degrade.
         """
         specialists_by_dept, specialists = self._get_specialists_by_dept(hospital_id)
-        total_doctors = self._get_total_doctors(hospital_id)
         nonpay_items = self._get_nonpay_items(hospital_id)
         devices = self._get_registered_devices(hospital_id)
 
@@ -198,12 +200,12 @@ class HiraAdapter:
             specialists=specialists,
             registered_devices=devices,
             specialists_by_dept=specialists_by_dept,
-            total_doctors=total_doctors,
+            total_doctors=dr_tot_cnt,
             nonpay_items=nonpay_items,
         )
 
     def _get_specialists_by_dept(self, hospital_id: str) -> tuple[dict[str, int], list[str]]:
-        """getDgsbjtInfo2.7 → (specialists_by_dept dict, specialists list).
+        """getDgsbjtInfo2.8 → (specialists_by_dept dict, specialists list).
 
         - specialists_by_dept: {"피부과": 2, "내과": 1, ...}
           dgsbjtPrSdrCnt(과목별 전문의 수) 기준. 필드 누락 시 대체 키(dtlSdrCnt) 시도 후 0.
@@ -220,12 +222,12 @@ class HiraAdapter:
         }
         try:
             resp = self._client.get(
-                f"{HIRA_DETAIL_BASE_URL}/getDgsbjtInfo2.7",
+                f"{HIRA_DETAIL_BASE_URL}/getDgsbjtInfo2.8",
                 params=params,
             )
             if resp.status_code == 403:
                 logger.warning(
-                    "HIRA 15001699(getDgsbjtInfo2.7) 미승인(403) — 빈값 degrade. ykiho=%s", hospital_id
+                    "HIRA 15001699(getDgsbjtInfo2.8) 미승인(403) — 빈값 degrade. ykiho=%s", hospital_id
                 )
                 return {}, []
             resp.raise_for_status()
@@ -252,46 +254,9 @@ class HiraAdapter:
 
         except Exception as exc:
             logger.warning(
-                "HIRA getDgsbjtInfo2.7 호출 실패 (ykiho=%s): %s", hospital_id, exc
+                "HIRA getDgsbjtInfo2.8 호출 실패 (ykiho=%s): %s", hospital_id, exc
             )
             return {}, []
-
-    def _get_total_doctors(self, hospital_id: str) -> int | None:
-        """getDtlInfo2.7 → 총 의사 수 (선택 항목).
-
-        getDtlInfo2.7 의 drTotCnt 필드를 파싱한다.
-        실패·403·필드 없음 → None graceful degrade.
-        """
-        params = {
-            "serviceKey": HIRA_API_KEY,
-            "ykiho": hospital_id,
-            "_type": "json",
-        }
-        try:
-            resp = self._client.get(
-                f"{HIRA_DETAIL_BASE_URL}/getDtlInfo2.7",
-                params=params,
-            )
-            if resp.status_code == 403:
-                logger.warning(
-                    "HIRA 15001699(getDtlInfo2.7) 미승인(403) — 빈값 degrade. ykiho=%s", hospital_id
-                )
-                return None
-            resp.raise_for_status()
-            data = resp.json()
-            items = _extract_item_list(data)
-            if not items:
-                return None
-            item = items[0]
-            raw = item.get("drTotCnt")
-            if raw is None:
-                return None
-            return int(raw)
-        except Exception as exc:
-            logger.warning(
-                "HIRA getDtlInfo2.7 호출 실패 (ykiho=%s): %s", hospital_id, exc
-            )
-            return None
 
     def _get_nonpay_items(self, hospital_id: str) -> list[NonPayItem]:
         """getNonPaymentItemHospDtlList → 비급여 신고 항목 목록.
@@ -376,5 +341,40 @@ class HiraAdapter:
         return specialists
 
     def _get_registered_devices(self, hospital_id: str) -> list[str]:
-        """신고된 의료기기 목록 조회. 현재 빈 list 반환(미구현)."""
-        return []
+        """getMedOftInfo2.8 → 신고된 의료장비명 목록(oftCdNm).
+
+        예: ["CT", "초음파영상진단기", "종양치료기 (Gamma Knife)", "인공호흡기"].
+        oftCnt(대수)는 표시 안 하고 장비명만(주체 명시 = 심평원 신고 목록). 의원 등 신고
+        장비 0건이면 items="" → []. 403/오류 → [] graceful degrade.
+        """
+        params = {
+            "serviceKey": HIRA_API_KEY,
+            "ykiho": hospital_id,
+            "pageNo": "1",
+            "numOfRows": "100",
+            "_type": "json",
+        }
+        try:
+            resp = self._client.get(
+                f"{HIRA_DETAIL_BASE_URL}/getMedOftInfo2.8",
+                params=params,
+            )
+            if resp.status_code == 403:
+                logger.warning(
+                    "HIRA 15001699(getMedOftInfo2.8) 미승인(403) — 빈값 degrade. ykiho=%s", hospital_id
+                )
+                return []
+            resp.raise_for_status()
+            data = resp.json()
+            items = _extract_item_list(data)
+            devices: list[str] = []
+            for item in items:
+                name = (item.get("oftCdNm") or "").strip()
+                if name and name not in devices:
+                    devices.append(name)
+            return devices
+        except Exception as exc:
+            logger.warning(
+                "HIRA getMedOftInfo2.8 호출 실패 (ykiho=%s): %s", hospital_id, exc
+            )
+            return []

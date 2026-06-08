@@ -2,9 +2,10 @@
 
 키 승인 전후로 두 신규 서비스가 실제로 동작하는지 샘플 ykiho 1개로 확인하는 재검증 도구.
 엔드포인트는 2026-06-08 실측으로 확정됨(403=경로 정확·키 미승인 / 404=op만 오류 / 500=경로 오류):
-  - 전문의:  MadmDtlInfoService2.7/getDgsbjtInfo2.7  (dgsbjtCdNm + dgsbjtPrSdrCnt)
-  - 총의사:  MadmDtlInfoService2.7/getDtlInfo2.7
+  - 전문의:  MadmDtlInfoService2.8/getDgsbjtInfo2.8  (dgsbjtCdNm + dgsbjtPrSdrCnt)
+  - 의료장비: MadmDtlInfoService2.8/getMedOftInfo2.8  (oftCdNm)
   - 비급여:  nonPaymentDamtInfoService/getNonPaymentItemHospDtlList  (npayKorNm + curAmt)
+  ※ 총 의사 수는 base getHospBasisList 의 drTotCnt 사용(상세 서비스엔 per-ykiho 의사수 없음).
 
 사용: `.venv/bin/python be/scripts/_verify_hira_detail.py`
 판정: 403 → 아직 활용신청 미승인(계정주 발급 대기). 200+JSON → 승인됨, 필드 입도 출력.
@@ -30,7 +31,7 @@ if not KEY:
     sys.exit(1)
 
 BASE = "https://apis.data.go.kr/B551182/hospInfoServicev2"
-DETAIL = "https://apis.data.go.kr/B551182/MadmDtlInfoService2.7"
+DETAIL = "https://apis.data.go.kr/B551182/MadmDtlInfoService2.8"
 NONPAY = "https://apis.data.go.kr/B551182/nonPaymentDamtInfoService"
 
 client = httpx.Client(timeout=30.0)
@@ -64,9 +65,9 @@ items = r.json()["response"]["body"]["items"]["item"]
 sample = items[0]["ykiho"]
 print(f"base OK — 샘플 ykiho: {sample[:24]}... ({items[0].get('yadmNm')})")
 
-# 2) 확정 엔드포인트 3종 검증
-verdict("전문의 getDgsbjtInfo2.7", call(f"{DETAIL}/getDgsbjtInfo2.7", ykiho=sample, pageNo=1, numOfRows=100))
-verdict("총의사 getDtlInfo2.7", call(f"{DETAIL}/getDtlInfo2.7", ykiho=sample, pageNo=1, numOfRows=10))
+# 2) 확정 엔드포인트 검증 (★2.8 — getDtlInfo2.8 은 운영시간이라 의사수 없음, 제외)
+verdict("전문의 getDgsbjtInfo2.8", call(f"{DETAIL}/getDgsbjtInfo2.8", ykiho=sample, pageNo=1, numOfRows=100))
+verdict("의료장비 getMedOftInfo2.8", call(f"{DETAIL}/getMedOftInfo2.8", ykiho=sample, pageNo=1, numOfRows=50))
 verdict("비급여 getNonPaymentItemHospDtlList", call(f"{NONPAY}/getNonPaymentItemHospDtlList", ykiho=sample, pageNo=1, numOfRows=20))
 
 print("\n검증 종료. (403 이면 키 승인 후 재실행)")

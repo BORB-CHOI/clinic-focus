@@ -667,15 +667,16 @@ class DynamoAdapter:
     # SafeRole 권한: PutItem/GetItem 만. CreateTable/DeleteTable 없음.
 
     def save_public_doctors(self, hospital_id: str, public_data: PublicData) -> None:
-        """PUBLIC#DOCTORS entity 저장 — 전문의 수·총 의사 수.
+        """PUBLIC#DOCTORS entity 저장 — 전문의 수·총 의사 수·신고 의료장비.
 
-        specialists_by_dept / total_doctors / specialists 를 모두 저장해
-        향후 필터·표시에 활용 가능하게 한다. registered_devices 는 PUBLIC#DEVICES 에
-        따로 관리(기존 스키마 유지)하므로 여기서는 제외.
+        specialists_by_dept / total_doctors / specialists / registered_devices 를 한
+        entity 에 저장한다(상세 API 가 이 entity 1회 조회로 전문의+장비 모두 얻어 N+1 회피).
+        registered_devices 는 getMedOftInfo2.8 의 신고 의료장비명.
         """
         payload: dict = {
             "specialists_by_dept": public_data.specialists_by_dept or {},
             "specialists": list(public_data.specialists or []),
+            "registered_devices": list(public_data.registered_devices or []),
         }
         if public_data.total_doctors is not None:
             payload["total_doctors"] = public_data.total_doctors
@@ -685,7 +686,7 @@ class DynamoAdapter:
         """PUBLIC#DOCTORS entity 조회.
 
         반환 dict 키: specialists_by_dept(dict[str,int]), specialists(list[str]),
-        total_doctors(int|None). entity 없으면 빈 dict.
+        total_doctors(int|None), registered_devices(list[str]). entity 없으면 빈 dict.
         """
         raw = self.get_entity(hospital_id, E_PUBLIC_DOCTORS)
         if not raw:
@@ -700,6 +701,7 @@ class DynamoAdapter:
             "specialists_by_dept": by_dept_int,
             "specialists": list(raw.get("specialists") or []),
             "total_doctors": int(total) if total is not None else None,
+            "registered_devices": list(raw.get("registered_devices") or []),
         }
 
     def save_public_nonpay(self, hospital_id: str, nonpay_items: list[NonPayItem]) -> None:

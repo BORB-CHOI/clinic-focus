@@ -37,8 +37,8 @@ class NonPayItem(BaseModel):
     """
     model_config = ConfigDict(extra="forbid")
 
-    item_name: str                     # 비급여 항목명 (npayKorNm), 예: "도수치료"
-    category: str | None = None        # 분류(clauseCdNm 등), 예: "처치 및 수술료 등"
+    item_name: str                     # 비급여 항목명 (npayKorNm 신고명 그대로)
+    category: str | None = None        # 분류 = npayKorNm 계층 첫 세그먼트(예: "이학요법료")
     amount: int | None = None          # 신고 금액(curAmt). 범위/문자 신고분은 None
 
 
@@ -49,10 +49,10 @@ class PublicData(BaseModel):
     specialists: list[str]
     registered_devices: list[str]
     # ── 심평원 객관 신고데이터(전문의 교차검증·비급여 전향) — 전부 기본값(하위호환) ──
-    # 진료과목별 전문의 수 {진료과목명: 전문의수}. getDgsbjtInfo2.7 의 dgsbjtCdNm+dgsbjtPrSdrCnt.
+    # 진료과목별 전문의 수 {진료과목명: 전문의수}. getDgsbjtInfo2.8 의 dgsbjtCdNm+dgsbjtPrSdrCnt.
     # "진료과목 피부과로 표기하나 신고 기준 피부과 전문의 0명" 같은 간판-진실성 노출용.
     specialists_by_dept: dict[str, int] = {}
-    # 총 의사 수(getDtlInfo2.7, 선택). 일반의 단독 운영 추론 보조 — 전 과목 전문의 0명인데 의사 N명.
+    # 총 의사 수(base getHospBasisList drTotCnt, 선택). 일반의 단독 추론 — 전 과목 전문의 0명인데 의사 N명.
     total_doctors: int | None = None
     # 신고된 비급여 항목 목록(15001700). 급여 본질진료 → 비급여 전향 객관 신호.
     nonpay_items: list[NonPayItem] = []

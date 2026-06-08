@@ -67,8 +67,11 @@ def main():
                 # 키 미승인(403) 상태에선 빈값이지만 코드 경로 유효 확인용으로도 사용 가능.
                 if LOAD_PUBLIC_DATA:
                     try:
-                        public_data = hira.get_public_data(meta.hospital_id)
-                        # 전문의 데이터 적재 (specialists_by_dept, total_doctors)
+                        # 총 의사 수는 per-ykiho API 가 없어 base 목록의 drTotCnt 를 넘긴다
+                        # (전 과목 전문의 0명인데 의사 N명 = 일반의 단독 추론 보조).
+                        dr_tot = int(raw.get("drTotCnt") or 0) or None
+                        public_data = hira.get_public_data(meta.hospital_id, dr_tot_cnt=dr_tot)
+                        # 전문의·의료장비 적재 (specialists_by_dept, total_doctors, registered_devices)
                         db.save_public_doctors(meta.hospital_id, public_data)
                         # 비급여 데이터 적재 (nonpay_items)
                         if public_data.nonpay_items:

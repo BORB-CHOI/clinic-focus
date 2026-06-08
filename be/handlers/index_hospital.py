@@ -51,7 +51,8 @@ def _load_public_data(
     return PublicData(
         license_number=hospital_id,
         specialists=doctors.get("specialists", []),
-        registered_devices=(fallback.registered_devices if fallback else []),
+        registered_devices=doctors.get("registered_devices")
+        or (fallback.registered_devices if fallback else []),
         specialists_by_dept=doctors.get("specialists_by_dept", {}),
         total_doctors=doctors.get("total_doctors"),
         nonpay_items=nonpay,
