@@ -268,6 +268,150 @@ class TestSearchEndpoint:
             mock_retrieve.assert_not_called()  # KB 미경유
 
 
+class TestFeedbackStatsEndpoint:
+    """GET /api/feedback/{hospital_id}/stats 스펙 테스트."""
+
+    def test_stats_empty_hospital(self, client):
+        """피드백 없는 병원 → 200 + agree_ratio=0 + recent_reviews=[]."""
+        with patch("be.api.feedback.db") as mock_db:
+            mock_db.get_feedback_for_hospital.return_value = []
+            resp = client.get("/api/feedback/test_001/stats")
+            assert resp.status_code == 200
+            body = resp.json()
+            assert "data" in body
+            data = body["data"]
+            assert data["total_count"] == 0
+            assert data["agree_ratio"] == 0.0
+            assert data["agree_count"] == 0
+            assert data["disagree_count"] == 0
+            assert data["recent_reviews"] == []
+            assert data["last_feedback_at"] is None
+
+    def test_stats_with_feedbacks(self, client):
+        """피드백 있는 병원 → 집계값 올바르게 반환."""
+        from datetime import datetime, timezone
+        from shared.models import FeedbackEntry
+
+        def _entry(verdict: str, idx: int, review_text: str | None = None) -> FeedbackEntry:
+            return FeedbackEntry(
+                feedback_id=f"fb_{idx}",
+                hospital_id="test_001",
+                device_id=f"d_{idx}",
+                primary_focus="일반 진료",
+                verdict=verdict,
+                received_at=datetime(2026, 6, 1, 10, idx, tzinfo=timezone.utc),
+                review_text=review_text,
+                age_bucket="30s",
+                gender_bucket="female",
+            )
+
+        entries = [
+            _entry("agree", 0, "친절해요"),
+            _entry("agree", 1),
+            _entry("disagree", 2),
+        ]
+
+        with patch("be.api.feedback.db") as mock_db:
+            mock_db.get_feedback_for_hospital.return_value = entries
+            resp = client.get("/api/feedback/test_001/stats")
+            assert resp.status_code == 200
+            data = resp.json()["data"]
+
+            assert data["total_count"] == 3
+            assert data["agree_count"] == 2
+            assert data["disagree_count"] == 1
+            assert abs(data["agree_ratio"] - 0.667) < 0.001
+            # review_text 있는 것만 recent_reviews 에 포함
+            assert len(data["recent_reviews"]) == 1
+            review = data["recent_reviews"][0]
+            assert review["verdict"] == "agree"
+            assert review["review_text"] == "친절해요"
+            assert review["age_bucket"] == "30s"
+            assert review["gender_bucket"] == "female"
+            # last_feedback_at 직렬화 형식 — ISO 8601 문자열 (FE new Date() 파싱 가능)
+            assert isinstance(data["last_feedback_at"], str)
+            assert "2026" in data["last_feedback_at"]
+
+    def test_stats_data_envelope(self, client):
+        """응답이 {"data": ...} 봉투 형태임을 검증."""
+        with patch("be.api.feedback.db") as mock_db:
+            mock_db.get_feedback_for_hospital.return_value = []
+            resp = client.get("/api/feedback/test_001/stats")
+            body = resp.json()
+            # 최상위에 data 키만 있어야 함 (error 없어야 함)
+            assert "data" in body
+            assert "error" not in body
+
+
+class TestAnalyticsProfileEndpoint:
+    """GET /api/analytics/profile 스펙 테스트."""
+
+    def test_profile_not_found_returns_404(self, client):
+        """저장된 프로파일 없으면 404."""
+        with patch("be.api.analytics.db") as mock_db:
+            mock_db.get_user_profile.return_value = None
+            resp = client.get("/api/analytics/profile?device_id=d_unknown")
+            assert resp.status_code == 404
+
+    def test_profile_found_returns_buckets(self, client):
+        """프로파일 있으면 200 + gender/age/bmi_bucket 반환."""
+        from be.adapters.analytics_adapter import UserProfile
+        from datetime import datetime, timezone
+
+        profile = UserProfile(
+            device_id="d_test",
+            gender_bucket="female",
+            age_bucket="30s",
+            bmi_bucket="normal",
+            consented_at=datetime(2026, 6, 1, tzinfo=timezone.utc),
+        )
+        with patch("be.api.analytics.db") as mock_db:
+            mock_db.get_user_profile.return_value = profile
+            resp = client.get("/api/analytics/profile?device_id=d_test")
+            assert resp.status_code == 200
+            data = resp.json()["data"]
+            assert data["gender_bucket"] == "female"
+            assert data["age_bucket"] == "30s"
+            assert data["bmi_bucket"] == "normal"
+
+    def test_profile_missing_device_id_returns_422(self, client):
+        """device_id 파라미터 누락 → FastAPI 422."""
+        resp = client.get("/api/analytics/profile")
+        assert resp.status_code == 422
+
+    def test_profile_response_data_envelope(self, client):
+        """성공 응답이 {"data": {...}} 봉투 형태임을 검증."""
+        from be.adapters.analytics_adapter import UserProfile
+        from datetime import datetime, timezone
+
+        profile = UserProfile(
+            device_id="d_test",
+            gender_bucket="male",
+            age_bucket="20s",
+            bmi_bucket="underweight",
+            consented_at=datetime(2026, 6, 1, tzinfo=timezone.utc),
+        )
+        with patch("be.api.analytics.db") as mock_db:
+            mock_db.get_user_profile.return_value = profile
+            resp = client.get("/api/analytics/profile?device_id=d_test")
+            body = resp.json()
+            assert "data" in body
+            assert "error" not in body
+
+    def test_profile_404_fe_catch_pattern(self, client):
+        """404 응답 — FE의 .catch(()=>null) 패턴: apiGet이 !res.ok 시 throw → catch가 null로 처리.
+        BE 가 404 를 정상적으로 반환하면 FE 의 graceful null 처리가 동작함을 검증.
+        """
+        with patch("be.api.analytics.db") as mock_db:
+            mock_db.get_user_profile.return_value = None
+            resp = client.get("/api/analytics/profile?device_id=d_nobody")
+            # 404 여야 FE apiGet 이 throw 하고 .catch(()=>null) 이 null 을 반환
+            assert resp.status_code == 404
+            # {"data": null} 형태 — JSONResponse 로 반환
+            body = resp.json()
+            assert body.get("data") is None
+
+
 class TestFeedbackEndpoint:
     """POST /api/feedback 스펙 테스트."""
 
