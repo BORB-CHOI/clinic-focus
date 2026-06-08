@@ -186,7 +186,7 @@ class HiraAdapter:
         - getNonPaymentItemHospDtlList → nonpay_items
 
         total_doctors(총 의사 수)는 per-ykiho API 가 없어 호출자가 base getHospBasisList 의
-        ``drTotCnt`` 를 dr_tot_cnt 로 넘긴다(load_seoul_5gu). 미전달 시 None.
+        ``drTotCnt`` 를 dr_tot_cnt 로 넘긴다(load_gangnam). 미전달 시 None.
         키/권한 문제(403)·항목 0건에는 각 항목이 빈값으로 graceful degrade.
         """
         specialists_by_dept, specialists = self._get_specialists_by_dept(hospital_id)

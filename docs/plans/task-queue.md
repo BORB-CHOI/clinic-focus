@@ -11,8 +11,8 @@
 
 강남구 PoC. FE-BE 실연동·검색 랭킹(주력 강도)·페이지네이션·카테고리 탐색·지도 실연동까지 **as-built(main 머지 완료)**. 남은 건 thin-signal recall 개선과 표본 확장·통합 검증·인프라 마무리.
 
-**적재됨 (강남 기준):**
-- `META` 6117 (강남 3134 · 송파 1331 · 양천 705 · 중구 616 · 용산 331). **분류·KB 적재는 강남만.**
+**적재됨 (강남-only — 2026-06-01 비강남 전부 prune 완료):**
+- `META` **3134 (강남구만)**. 다른 구 0건(DDB·S3·KB 전부 강남-only 통일).
 - `CLASSIFICATION` 강남 분류완료 **~3098** (룰 기반, LLM 0회, 4시그널 교차검증 → 과목·주력·confidence).
 - 자체사이트 크롤 **정제본 2133** (S3 `kmuproj-10-clinic-focus-crawl`) — denoise + 페이지 단위 노이즈
   필터 적용(페이지 26,377→11,531 **56%↓**, blog RSS 79%↓). 재크롤 없이 기존 raw 재처리.
@@ -81,30 +81,22 @@
   일부 출처 확인/자칭만 확인" + "자칭 컨셉" 용어가 비전문가에 모호. 중립·직관 표현으로(예: "병원 정보만 확인") +
   태그 옆 숫자(= `confidence.score` 0~100 근거점수) 의미 명확화 또는 정리. ★ medical-language-reviewer 검수 필수.
 
-**★ 심평원 공공 신고 데이터 — code path 구현 완료(2026-06-08, `feat/hira-public-signals`), 키 승인+재적재만 남음.**
-엔드포인트 실측 확정(403=경로 정확·키 미승인): 전문의 `MadmDtlInfoService2.8/getDgsbjtInfo2.8`(`dgsbjtPrSdrCnt`),
-비급여 `nonPaymentDamtInfoService/getNonPaymentItemHospDtlList`. 분류 스키마(M1 동결) 불변 — `PublicData`
-확장(`specialists_by_dept`·`total_doctors`·`nonpay_items`) + 상세표시·검색필터만으로 구현:
-- [x] ③ 의료진 — `PublicData.specialists_by_dept` 적재·상세응답·`DoctorsSection` "심평원 신고 기준 ○○과 전문의 N명"
-  (간판-진실성: 0명도 사실 노출). 검색 필터 `has_specialist`/`specialist_dept`(GSI 경로). medical-language 검수 통과.
-- [x] ② 비급여 — `PublicData.nonpay_items` 적재·상세 비급여 영역(출처 `public_data`). AI 의도정렬 일반화
-  (미용 하드코딩 `_COSMETIC_FOCUS` → 심평원 `nonpay_ratio` soft 강등, 하드코딩 fallback 유지·도수 hard제외 제외).
-**★승인 현황(2026-06-08 키 수령+버전정정 후 실측 — 둘 다 동작 ✅)**: 전문의 15001699·비급여 15001700 모두 라이브 동작.
-★함정 = **상세 서비스 버전 2.7→2.8**(2.7 은 403/404, 2.8 이 현행). 키는 처음부터 승인돼 있었고 엔드포인트 버전만 틀렸던 것.
-- [x] 전문의 `MadmDtlInfoService2.8/getDgsbjtInfo2.8`(dgsbjtCdNm+dgsbjtPrSdrCnt) — **의원 간판진실성 라이브 확인**
-  (오스킨성형의원: 피부과 표기·전문의 0 / 리드림의원: 정형·성형·산부인과 등 표기 전부 전문의 0, 실제 내과5·외과1).
-- [x] 의료장비 `getMedOftInfo2.8`(oftCdNm) → `registered_devices`(삼성 CT·감마나이프 16건). 상세 equipment(source=public_data).
-- [x] 총 의사 수 = base `getHospBasisList` drTotCnt(상세 서비스엔 per-ykiho 의사수 없음 — getDtlInfo2.8=운영시간).
-- [x] 비급여 `getNonPaymentItemHospDtlList`(npayKorNm 계층·curAmt) — 단 **의원 커버리지 0%**(강남 의원 158/158 totalCount=0),
-  병원급↑ 100%(광동병원 130). 비급여 영역은 병원급만, 의원 가치는 전문의에서. FE 빈 영역 graceful 숨김.
-- [ ] **일괄 적재(이제 가능)**: `LOAD_PUBLIC_DATA=true .venv/bin/python be/scripts/load_seoul_5gu.py`(전문의+장비+비급여 →
-  PUBLIC#DOCTORS/NONPAY) → `run_classification --sigungu 강남구`(룰 LLM0) 재ingest(nonpay_ratio·specialist 메타 KB). 미적재 시 빈값 graceful.
+**★ 심평원 공공 신고 데이터 연동 — 2026-06-08 라이브 동작(`feat/hira-public-signals` PR #66).**
+키는 처음부터 승인돼 있었고 ★함정은 **상세 서비스 버전 2.7→2.8**(2.7=403/404, 2.8 이 현행)이었음. 분류 스키마(M1 동결)
+불변 — `PublicData` 확장(`specialists_by_dept`·`total_doctors`·`nonpay_items`·`registered_devices`) + 상세표시·검색필터만.
+- [x] **전문의** `MadmDtlInfoService2.8/getDgsbjtInfo2.8`(dgsbjtCdNm+dgsbjtPrSdrCnt, 0명 과목 포함) → 상세 "심평원 신고
+  기준 ○○과 전문의 N명"·검색필터 `has_specialist`/`specialist_dept`. **의원 간판진실성 라이브 확인**(오스킨성형의원: 피부과
+  표기·전문의 0 / 리드림의원: 정형·성형·산부인과 표기 전부 전문의 0, 실제 내과5·외과1). medical-language 검수 통과.
+- [x] **의료장비** `getMedOftInfo2.8`(oftCdNm) → `registered_devices` → 상세 equipment(source=public_data). **총의사**=base drTotCnt.
+- [x] **비급여** `getNonPaymentItemHospDtlList`(npayKorNm 계층·curAmt) → 상세 비급여 영역 + AI 의도정렬 일반화(`_COSMETIC_FOCUS`
+  → `nonpay_ratio` soft 강등, 하드코딩 fallback·도수 hard제외 제외). **단 의원 커버리지 0%**(강남 의원 158/158=0), 병원급↑만 100%.
+- [~] **강남 PUBLIC 일괄 적재** `backfill_public_data.py`(강남-only·additive, META 무손상) — 진행/완료. 상세·필터가 실데이터로 동작.
+- [ ] (선택) KB 재ingest `run_classification --sigungu 강남구`(룰 LLM0) → nonpay_ratio·specialist 메타 KB 진입(검색 랭킹용 보조).
 
-> 다음 세션 우선순위: 필수 ⑤·thumbnail(M) → 중요 ①·⑥. **★ 공공 신고: 전문의·장비·비급여 라이브 동작(2.8) — 강남 일괄
-> 적재만 남음(비급여는 병원급만).** 근거: 2026-06-08 심평원 연동·키 수령·버전 2.8 정정.
+> 다음 세션 우선순위: 필수 ⑤·thumbnail(M) → 중요 ①·⑥. **★ 공공 신고 = 전문의·장비·비급여 강남 라이브 동작(2.8).**
 
 ### D. 표본 확장 + 통합 검증 (Phase F)
-- [ ] 5개구 풀커버 → 풀크롤(자체+외부) → 룰 분류 일괄(트랙 A, LLM 0). 현재 분류·KB는 강남만.
+- [ ] (확장 시) 서울 전역 풀커버 → 풀크롤(자체+외부) → 룰 분류 일괄(트랙 A, LLM 0). **현재 PoC = 강남-only.**
 - [ ] LLM/Vision/`generate_description` 시연 약 500개(트랙 B·C) — 같은 약 500개로 룰 대비 차별 시연 (쿼터 동결 해제 후)
 - [ ] 자연어 검색 e2e 10건 / FE→BE→AI→KB→DDB 통합 E2E 5건
 - [ ] 의료법 표현 전수 검수(`medical-language-reviewer`) / 비용 측정 → overview 보정

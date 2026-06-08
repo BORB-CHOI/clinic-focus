@@ -94,7 +94,7 @@
   lat: number | null;
   lng: number | null;
   sido: string;                   // 시도 (예: "서울특별시")
-  sigungu: string;                // 시군구 (예: "마포구")
+  sigungu: string;                // 시군구 (예: "강남구")
 }
 ```
 
@@ -283,9 +283,9 @@ GET /api/search
       },
       "distance_km": 0.8,
       "location": {
-        "address": "서울특별시 마포구 ...",
+        "address": "서울특별시 강남구 ...",
         "sido": "서울특별시",
-        "sigungu": "마포구",
+        "sigungu": "강남구",
         "lat": 37.5443,
         "lng": 126.9510
       },

@@ -18,7 +18,7 @@ MOCK_HTML_MAIN = """
     <img src="/img/atopy.jpg" alt="아토피 치료">
     <a href="/about">소개</a>
     <a href="/service">진료안내</a>
-    <footer>주소: 서울시 성북구</footer>
+    <footer>주소: 서울시 강남구</footer>
 </body>
 </html>
 """
@@ -26,7 +26,7 @@ MOCK_HTML_MAIN = """
 MOCK_HTML_ABOUT = """
 <html><body>
     <h1>원장 인사말</h1>
-    <p>2010년 개원 이래 성북구 주민들의 피부 건강을 책임져 왔습니다.</p>
+    <p>2010년 개원 이래 강남구 주민들의 피부 건강을 책임져 왔습니다.</p>
 </body></html>
 """
 

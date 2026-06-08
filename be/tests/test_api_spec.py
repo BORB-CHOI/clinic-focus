@@ -34,11 +34,11 @@ def sample_hospital_meta():
         hospital_id="test_001",
         name="테스트의원",
         location=Location(
-            address="서울특별시 성북구 종암로 1",
+            address="서울특별시 강남구 종암로 1",
             lat=37.6,
             lng=127.0,
             sido="서울",
-            sigungu="성북구",
+            sigungu="강남구",
         ),
         contact=Contact(
             phone="02-1234-5678",
@@ -86,7 +86,7 @@ class TestHospitalDetailEndpoint:
             assert data["hospital_id"] == "test_001"
             assert data["name"] == "테스트의원"
             assert data["location"]["sido"] == "서울"
-            assert data["location"]["sigungu"] == "성북구"
+            assert data["location"]["sigungu"] == "강남구"
             assert "ai_description" in data
             assert "services" in data
             assert "excluded_services" in data
@@ -114,7 +114,7 @@ class TestSearchEndpoint:
         """시군구 단독(카테고리) 검색 → DDB GSI 직접 조회 → {"data": [...], "meta": {...}}."""
         with patch("be.api.search.db") as mock_db:
             mock_db.list_hospitals_by_sigungu_light.return_value = []
-            resp = client.get("/api/search?sigungu=성북구")
+            resp = client.get("/api/search?sigungu=강남구")
             assert resp.status_code == 200
             body = resp.json()
             assert "data" in body

@@ -1,6 +1,6 @@
 """심평원 공공데이터(전문의·의료장비·비급여) — 강남구 한정 추가 적재(backfill).
 
-★강남만. load_seoul_5gu(5개구+META 재기록)와 달리 이 스크립트는:
+★강남만·additive. load_gangnam(META 재기록 포함)과 달리 이 스크립트는:
   - 강남구(sgguCd=110001) base 목록만 조회
   - META 는 건드리지 않고 PUBLIC#DOCTORS / PUBLIC#NONPAY entity 만 추가(additive)
   - 재실행 가능(SKIP_EXISTING=true 기본 — 이미 적재된 PUBLIC#DOCTORS 는 건너뜀)

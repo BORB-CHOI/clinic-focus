@@ -1,6 +1,7 @@
-"""서울 5개 구 병원 데이터 심평원 → DynamoDB 적재.
+"""강남구 병원 데이터 심평원 → DynamoDB 적재 (PoC = 강남구 한정).
 
-PoC 목표: 서울 5개 구 약 1만 병원.
+★강남만. 다른 구를 넣으면 강남-only 로 정리된 데이터에 재유입되니 절대 추가 금지.
+공공데이터(전문의·장비·비급여) PUBLIC entity 만 추가 적재하려면 backfill_public_data.py.
 시군구 코드 참고: https://www.data.go.kr
 """
 
@@ -15,17 +16,13 @@ load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path
 from be.adapters.hira_adapter import HiraAdapter
 from be.adapters.dynamo_adapter import DynamoAdapter
 
-# 공공 데이터(전문의·비급여) 적재 여부 — 키 미승인 상태에서도 graceful degrade
+# 공공 데이터(전문의·장비·비급여) 적재 여부
 LOAD_PUBLIC_DATA = os.environ.get("LOAD_PUBLIC_DATA", "false").lower() == "true"
 
-# 서울 5개 구 시군구 코드
+# 강남구만 (PoC 데이터는 강남-only — 다른 구 추가 금지)
 SEOUL_SIDO_CODE = "110000"
 TARGET_SIGUNGU = {
-    "성북구": "110017",
     "강남구": "110001",
-    "마포구": "110014",
-    "서초구": "110018",
-    "송파구": "110020",
 }
 
 
@@ -34,7 +31,7 @@ def main():
     db = DynamoAdapter()
 
     print("=" * 60)
-    print("서울 5개 구 병원 데이터 적재")
+    print("강남구 병원 데이터 적재")
     print("=" * 60)
 
     total_success = 0

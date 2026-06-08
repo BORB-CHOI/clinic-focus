@@ -37,7 +37,7 @@ def _load_public_data(
 ) -> "PublicData | None":
     """PUBLIC#DOCTORS / PUBLIC#NONPAY entity 에서 PublicData 를 재조립한다.
 
-    심평원 키 승인 후 load_seoul_5gu(LOAD_PUBLIC_DATA=true) 가 적재한 별도 entity 를
+    심평원 키 승인 후 load_gangnam(LOAD_PUBLIC_DATA=true) 가 적재한 별도 entity 를
     읽어 전문의·비급여를 합친다. 두 entity 가 모두 비어 있으면(키 미승인·미적재)
     crawl_data.public_data(빈값/None)를 그대로 반환해 기존 동작을 유지한다.
     """
@@ -149,7 +149,7 @@ def run_index_pipeline(
     # 심평원 공공데이터(전문의·비급여) — PUBLIC#DOCTORS/NONPAY entity 에서 재조립.
     # 키 미승인 시 별도 entity 가 비어 있어 crawl_data.public_data(빈값)로 폴백 →
     # generate_description·build_ingest_metadata 가 None/빈값을 받아 기존 동작 그대로.
-    # 키 승인 후 load_seoul_5gu(LOAD_PUBLIC_DATA=true) 재적재만으로 코드 변경 없이 활성화.
+    # 키 승인 후 load_gangnam(LOAD_PUBLIC_DATA=true) 재적재만으로 코드 변경 없이 활성화.
     public_data = _load_public_data(db, hospital_id, crawl_data.public_data)
 
     # 시연 약 500개만 — 진료항목·설명·관련병원 (LLM/Vision)
