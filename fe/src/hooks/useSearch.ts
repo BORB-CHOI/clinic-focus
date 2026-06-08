@@ -31,6 +31,17 @@ export interface SearchArgs {
   radius_km?: number;
   /** false 면 fetch 안 함(예: 진료과 둘러보기 랜딩에선 큰 목록을 굳이 안 받음). 기본 true */
   enabled?: boolean;
+  // ── 심평원 필터 (카테고리/시군구 탐색 경로 전용) ──────────────────────
+  /**
+   * true 면 심평원 신고 기준 전문의 있는 병원만.
+   * 자연어 q 가 있으면 BE 가 무시함 — UI 에서 q 없는 category 모드일 때만 활성화.
+   */
+  has_specialist?: boolean;
+  /**
+   * 특정 진료과 전문의 1명 이상 병원만.
+   * has_specialist=true 와 병행 가능. 예: "피부과"
+   */
+  specialist_dept?: string;
 }
 
 export function useSearch({
@@ -46,12 +57,24 @@ export function useSearch({
   lng,
   radius_km,
   enabled = true,
+  has_specialist,
+  specialist_dept,
 }: SearchArgs) {
   const offset = (page - 1) * limit;
 
+  // 심평원 필터는 카테고리 모드(q 없음)에서만 BE 에 전달.
+  // q 있으면 BE 가 무시하지만, 불필요한 파라미터를 아예 보내지 않도록 프론트에서도 방어.
+  const isNaturalSearch = Boolean(q);
+  const hiraHasSpecialist = !isNaturalSearch ? has_specialist : undefined;
+  const hiraSpecialistDept = !isNaturalSearch ? specialist_dept : undefined;
+
   return useQuery<SearchResponse>({
     enabled,
-    queryKey: ["search", q, minConfidence, sort, page, specialty, category, focus, limit, lat, lng, radius_km],
+    queryKey: [
+      "search", q, minConfidence, sort, page, specialty, category, focus,
+      limit, lat, lng, radius_km,
+      hiraHasSpecialist, hiraSpecialistDept,
+    ],
     queryFn: ({ signal }) =>
       apiGet<SearchResponse>(
         "/api/search",
@@ -69,6 +92,9 @@ export function useSearch({
           lat,
           lng,
           radius_km,
+          // 심평원 필터 — 카테고리 모드에서만 전달
+          has_specialist: hiraHasSpecialist,
+          specialist_dept: hiraSpecialistDept || undefined,
         },
         signal,
       ),

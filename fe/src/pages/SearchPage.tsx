@@ -68,6 +68,10 @@ export default function SearchPage() {
   const pageParam = Number.parseInt(searchParams.get("page") ?? "1", 10);
   const page = Number.isFinite(pageParam) && pageParam >= 1 ? pageParam : 1;
 
+  // 심평원 전문의 필터 — 카테고리 탐색 모드에서만 활성.
+  // URL 파라미터로 관리하므로 새로고침·공유에서도 상태 보존.
+  const hasSpecialist = searchParams.get("has_specialist") === "1";
+
   // ── 파라미터 변경 핸들러 ──────────────────────────────────────────────
 
   const setMinConfidence = (value: number) => {
@@ -115,10 +119,19 @@ export default function SearchPage() {
     setSearchParams(next, { replace: true });
   };
 
-  // 목록 → 그리드 랜딩으로 복귀 (질의·카테고리·진료과·전체·페이지·focus 해제)
+  // 심평원 전문의 필터 토글
+  const setHasSpecialist = (value: boolean) => {
+    const next = new URLSearchParams(searchParams);
+    if (value) next.set("has_specialist", "1");
+    else next.delete("has_specialist");
+    next.delete("page"); // 필터 변경 시 첫 페이지로
+    setSearchParams(next, { replace: true });
+  };
+
+  // 목록 → 그리드 랜딩으로 복귀 (질의·카테고리·진료과·전체·페이지·focus·심평원 필터 해제)
   const backToBrowse = () => {
     const next = new URLSearchParams(searchParams);
-    ["q", "category", "specialty", "all", "page", "focus"].forEach((k) => next.delete(k));
+    ["q", "category", "specialty", "all", "page", "focus", "has_specialist"].forEach((k) => next.delete(k));
     setSearchParams(next, { replace: false });
   };
 
@@ -140,6 +153,8 @@ export default function SearchPage() {
     focus,                 // 새 L2 세부 시술·증상 파라미터
     specialty,             // 레거시 하위 호환
     enabled: !isBrowse,
+    // 심평원 필터 — 카테고리 모드에서만 유효 (useSearch 내부에서도 q 없을 때만 전달)
+    has_specialist: hasSpecialist || undefined,
   });
 
   // 계층형 카테고리 트리 — 둘러보기 랜딩과 L2 칩 바 모두에서 사용
@@ -275,6 +290,10 @@ export default function SearchPage() {
             sort={sort}
             onMinConfidenceChange={setMinConfidence}
             onSortChange={setSort}
+            // 심평원 전문의 필터: 자연어 q 없는 카테고리 탐색 맥락에서만 표시
+            showHiraFilter={!query}
+            hasSpecialist={hasSpecialist}
+            onHasSpecialistChange={setHasSpecialist}
           />
 
           {/* 광고(협찬) 슬롯 — 자연 검색 결과와 분리. "광고" 라벨 명시 */}
@@ -317,13 +336,15 @@ export default function SearchPage() {
               message={
                 query
                   ? `"${query}" 에 해당하는 결과가 없습니다`
-                  : category
-                    ? focus
-                      ? `"${category} · ${focus}" 에 해당하는 결과가 없습니다 — 다른 세부 항목을 선택하거나 필터를 변경해보세요`
-                      : `"${category}" 분야에 해당하는 결과가 없습니다 — 필터를 변경해보세요`
-                    : specialty
-                      ? `"${specialty}" 진료과목에 해당하는 결과가 없습니다 — 필터를 변경해보세요`
-                      : "조건에 맞는 병원이 없습니다 — 근거 필터를 낮춰보세요"
+                  : hasSpecialist
+                    ? "심평원 신고 기준 전문의 있는 병원이 현재 데이터에 없습니다 — 심평원 신고 데이터 연동 준비 중입니다. 필터를 해제하면 전체 병원을 볼 수 있습니다"
+                    : category
+                      ? focus
+                        ? `"${category} · ${focus}" 에 해당하는 결과가 없습니다 — 다른 세부 항목을 선택하거나 필터를 변경해보세요`
+                        : `"${category}" 분야에 해당하는 결과가 없습니다 — 필터를 변경해보세요`
+                      : specialty
+                        ? `"${specialty}" 진료과목에 해당하는 결과가 없습니다 — 필터를 변경해보세요`
+                        : "조건에 맞는 병원이 없습니다 — 근거 필터를 낮춰보세요"
               }
             />
           ) : (

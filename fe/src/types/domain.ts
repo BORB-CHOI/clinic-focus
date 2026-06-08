@@ -184,6 +184,23 @@ export interface DetailedSignals {
   };
 }
 
+// ── 심평원 공공 신고 데이터 타입 ────────────────────────────────────────
+// BE /api/hospitals/{id} 응답의 신규 필드. 키 미승인 시 빈값(빈 객체/빈 배열/null)으로 내려옴.
+// FE 는 "데이터 있으면 표시, 없으면 영역 숨김" 으로 graceful 처리.
+//
+// ★ 임시 수동 보강 — BE 기동 후 openapi-typescript 재생성으로 대체 예정.
+// 자동생성 명령: npx openapi-typescript http://localhost:8000/openapi.json -o src/types/api.ts
+
+/** 심평원 신고 비급여 항목 1건 */
+export interface NonPayItem {
+  /** 비급여 항목명. 예: "도수치료 30분" */
+  item_name: string;
+  /** 항목 분류. 예: "도수·물리치료". null 이면 미분류 */
+  category: string | null;
+  /** 심평원 신고 금액(원). null 이면 신고 금액 없음 */
+  amount: number | null;
+}
+
 export interface HospitalDetail {
   hospital_id: string;
   name: string;
@@ -216,6 +233,24 @@ export interface HospitalDetail {
   recent_changes: ClassificationChange[];
   related_hospitals: RelatedHospital[];
   metadata: DataMetadata;
+
+  // ── 심평원 공공 신고 데이터 (신규) ───────────────────────────────────
+  /**
+   * 심평원 신고 기준 과목별 전문의 수.
+   * 예: { "피부과": 0, "가정의학과": 1 }
+   * 키 미승인 시 빈 객체 {} 로 내려옴 → Object.keys 길이로 표시 여부 판단.
+   */
+  specialists_by_dept: Record<string, number>;
+  /**
+   * 심평원 신고 기준 총 의사 수.
+   * null 이면 신고 데이터 없음.
+   */
+  total_doctors: number | null;
+  /**
+   * 심평원 신고 비급여 항목 목록.
+   * 키 미승인 시 빈 배열 [] 로 내려옴 → length 로 표시 여부 판단.
+   */
+  nonpay_items: NonPayItem[];
 }
 
 // ── 검색 (GET /api/search) ───────────────────────────────────────────
@@ -287,6 +322,23 @@ export interface SearchResultItem {
   ctr: number;
   /** 누적 클릭 수 */
   click_count: number;
+}
+
+// ── 심평원 필터용 검색 파라미터 보강 ────────────────────────────────────
+// GET /api/search 신규 쿼리 파라미터 (카테고리/시군구 탐색 경로 전용).
+// ★ 임시 수동 보강 — BE openapi-typescript 재생성으로 대체 예정.
+export interface HiraSearchParams {
+  /**
+   * true 면 심평원 신고 기준 전문의 있는 병원만.
+   * 카테고리/시군구 탐색(q 없는 category 모드)에서만 유효.
+   * 자연어 q 있으면 BE 가 무시.
+   */
+  has_specialist?: boolean;
+  /**
+   * 특정 진료과 전문의 1명 이상 병원만.
+   * 예: "피부과"
+   */
+  specialist_dept?: string;
 }
 
 export interface SearchMeta {

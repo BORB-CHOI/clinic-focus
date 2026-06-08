@@ -25,16 +25,34 @@ interface SearchFiltersProps {
   onMinConfidenceChange: (value: number) => void;
   onSortChange: (value: SortOption) => void;
   className?: string;
+  // ── 심평원 전문의 필터 (카테고리 탐색 맥락에서만 노출) ─────────────────
+  /**
+   * true 면 심평원 전문의 필터 UI 를 표시.
+   * 자연어 q 있는 화면에서는 false 로 전달(토글 자체를 숨김).
+   * 기본값 false.
+   */
+  showHiraFilter?: boolean;
+  /** 현재 심평원 전문의 필터 상태 */
+  hasSpecialist?: boolean;
+  onHasSpecialistChange?: (value: boolean) => void;
 }
 
 // 검색 필터 — 카드 컨테이너 안에 신뢰도·정렬 두 그룹을 위계 있게 배치
 // 라벨 → 칩 한 줄 구조로 굿닥/모두닥 필터 패널 톤에 맞춤
+//
+// 심평원 전문의 필터 (showHiraFilter=true 일 때만 노출):
+//   - 카테고리/시군구 탐색 맥락에서만 표시.
+//   - 자연어 q 있는 화면에선 숨겨 혼동 방지(q 있으면 BE 가 무시).
+//   - 현재 키 미승인으로 has_specialist=true 시 결과 0건 가능 → 보조문구로 안내.
 export function SearchFilters({
   minConfidence,
   sort,
   onMinConfidenceChange,
   onSortChange,
   className,
+  showHiraFilter = false,
+  hasSpecialist = false,
+  onHasSpecialistChange,
 }: SearchFiltersProps) {
   return (
     <div
@@ -67,13 +85,34 @@ export function SearchFilters({
             </ToggleChip>
           ))}
         </FilterGroup>
+
+        {/* 심평원 전문의 필터 — 카테고리 탐색 맥락에서만 노출 */}
+        {showHiraFilter && onHasSpecialistChange && (
+          <FilterGroup label="심평원 신고">
+            <ToggleChip
+              active={hasSpecialist}
+              onClick={() => onHasSpecialistChange(!hasSpecialist)}
+            >
+              전문의 신고 있는 곳만
+            </ToggleChip>
+          </FilterGroup>
+        )}
       </div>
+
       {minConfidence > 0 ? (
         <p className="mt-2 text-[0.8em] leading-relaxed text-muted-foreground">
-          ⓘ 출처가 적은 병원이 빠져 결과가 줄어듭니다. ‘근거’는 병원 평가가 아니라 우리 분류를
+          ⓘ 출처가 적은 병원이 빠져 결과가 줄어듭니다. '근거'는 병원 평가가 아니라 우리 분류를
           뒷받침하는 독립 출처(자칭·Vision·블로그·후기) 수예요.
         </p>
       ) : null}
+
+      {/* 심평원 필터 활성 시 보조 안내 — 키 미승인으로 현재 결과가 줄어들 수 있음 */}
+      {showHiraFilter && hasSpecialist && (
+        <p className="mt-2 text-[0.8em] leading-relaxed text-muted-foreground">
+          ⓘ 심평원 신고 데이터 연동 준비 중으로, 현재 결과가 적게 나올 수 있습니다.
+          신고 데이터는 병원이 심평원에 제출한 수치를 기준으로 합니다.
+        </p>
+      )}
     </div>
   );
 }
