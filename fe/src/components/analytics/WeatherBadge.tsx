@@ -52,9 +52,9 @@ function formatNumber(value: number | null | undefined, unit: string): string | 
 
 // ── 컴포넌트 ────────────────────────────────────────────────────────────────
 
-// 서울 기본 좌표 — 헤더 날씨 기본값
-const DEFAULT_LAT = 37.5665;
-const DEFAULT_LNG = 126.9780;
+// 강남역 기본 좌표 — 데이터(강남구) 기준, 헤더 날씨 기본값
+const DEFAULT_LAT = 37.4979;
+const DEFAULT_LNG = 127.0276;
 
 interface Props {
   lat?: number;

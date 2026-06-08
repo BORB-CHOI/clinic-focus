@@ -10,8 +10,9 @@ import type { SearchResultItem } from "@/types/domain";
 
 // ── 상수 ────────────────────────────────────────────────────────────────────
 
-const DEFAULT_LAT = 37.5665;
-const DEFAULT_LNG = 126.978;
+// 강남역 — 데이터(강남구) 기준 기본 좌표 (날씨·추천 컨텍스트용)
+const DEFAULT_LAT = 37.4979;
+const DEFAULT_LNG = 127.0276;
 const POC_SIGUNGU = "강남구";
 
 const AGE_LABEL: Record<string, string> = {
