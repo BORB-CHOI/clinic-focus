@@ -71,7 +71,7 @@
 
 > 검색 카드는 `one_line_summary` 한 줄을 노출하고, 상세 페이지에서는 별도의 `ai_description` (다단락 자연어 설명) 필드를 사용한다 (아래 상세 API 참조).
 
-> ⚠️ 현 구현 상태 (2026-05-26): `shared/models.py`의 `HospitalMeta`·`Classification`·`HospitalDescription` 어느 곳에도 `thumbnail_url` 필드가 정의돼 있지 않다. `be/api/search.py`/`be/api/hospital.py` 응답에도 `thumbnail_url` 키 자체가 누락. `one_line_summary`는 `HospitalDescription`에만 있어 description 미생성 9990개에서는 `""` 빈 문자열로 떨어진다 (명세는 `string` non-null 가정). 상세 페이지 `RelatedHospital`의 `thumbnail_url`도 마찬가지로 모델에 없음. V2 sprint **Phase A/D** 에서 모델·어댑터·응답 동시 정렬 예정.
+> ⚠️ 현 구현 상태 (2026-05-26): `shared/models.py`의 `HospitalMeta`·`Classification`·`HospitalDescription` 어느 곳에도 `thumbnail_url` 필드가 정의돼 있지 않다. `be/api/search.py`/`be/api/hospital.py` 응답에도 `thumbnail_url` 키 자체가 누락. `one_line_summary`는 `HospitalDescription`에만 있어 description 미생성 나머지에서는 `""` 빈 문자열로 떨어진다 (명세는 `string` non-null 가정). 상세 페이지 `RelatedHospital`의 `thumbnail_url`도 마찬가지로 모델에 없음. V2 sprint **Phase A/D** 에서 모델·어댑터·응답 동시 정렬 예정.
 
 ### `Confidence`
 ```typescript
@@ -485,7 +485,7 @@ GET /api/hospitals/{hospital_id}
       "generated_at": "2026-04-12T08:00:00Z",
       "generator_model": "global.anthropic.claude-sonnet-4-6"
     },
-    // PoC 한도: 시연 10개 외 9990개 병원은 "ai_description": null 로 반환됨
+    // PoC: 시연 약 500개(DESCRIPTION 504) 외 나머지 병원은 "ai_description": null 로 반환됨
     // FE는 null이면 헤드라이너 영역을 태그 카드로 차등 렌더링 (아래 "프론트 렌더링 가이드" 참조)
 
     "services": [
@@ -678,23 +678,23 @@ detailed_signals: {
 | `generated_at` | 생성 시각. 시그널이 갱신되면 재생성 필요 |
 | `generator_model` | 생성에 사용된 LLM 모델 ID (재현성·감사용) |
 
-> **PoC 한도**: `ai_description`은 **시연 10개 병원만 값이 채워지고, 나머지는 `null`** 로 반환된다. 지원 계정 Bedrock 자원이 10개 한도라 `generate_description` LLM 호출도 10개 한정이기 때문 (자세한 건 `API-BE-AI.md` "2. `generate_description`" 참조). FE는 아래 차등 렌더링 로직을 따라야 한다.
+> **PoC 범위**: `ai_description`은 **시연 약 500개 병원만 값이 채워지고, 나머지는 `null`** 로 반환된다. `generate_description` LLM 호출을 시연 표본(실측 DESCRIPTION 504)에 한정했기 때문 (자세한 건 `API-BE-AI.md` "2. `generate_description`" 참조). FE는 아래 차등 렌더링 로직을 따라야 한다.
 
 #### 프론트 렌더링 가이드
 
-**`ai_description`이 있을 때 (시연 10개 병원)**:
+**`ai_description`이 있을 때 (시연 약 500개 병원)**:
 
 - `headline`은 상세 페이지 최상단에 강조 표시
 - 각 `paragraphs[].text` 옆 또는 끝에 `citations` 시그널을 작은 배지로 표시 (예: `[사이트]` `[Vision]` `[블로그]` `[후기]`)
 - 배지 클릭 시 `detailed_signals`의 해당 키 섹션으로 스크롤 또는 모달 오픈 → 사용자가 근거 자료를 직접 검토 가능
 - **주체 명시 원칙**: `ai_description.paragraphs[].text`는 "이 병원이 자기 사이트에서 ~를 메인으로 표시함" 같은 표현만 등장하도록 최비성의 프롬프트에서 통제. 프론트는 이를 그대로 신뢰해 렌더
 
-**`ai_description`이 `null`일 때 (9990개)**:
+**`ai_description`이 `null`일 때 (시연 표본 외)**:
 
 - 영역 ① 헤드라이너는 자연어 단락 대신 **태그 카드** 로 표시:
   - 표준 진료과목 + 룰 기반 자칭 컨셉 태그 (예: `피부과 · 미용 시술 · 아토피`)
   - 신뢰도 점수와 등급 ("추정 65%" / "정보 부족 45%")
-  - "AI 자연어 설명은 시연 대상 10개 병원에 한정" 안내 한 줄
+  - "AI 자연어 설명은 시연 대상 약 500개 병원에 한정" 안내 한 줄
 - 영역 ② 이하 다른 영역은 동일하게 렌더링 (룰 기반 데이터로도 다 채워짐)
 
 **공통**:

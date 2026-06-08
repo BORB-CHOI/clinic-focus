@@ -505,7 +505,7 @@ def build_signal_chunks(
     청크 본문은 화면 미표시(임베딩 전용)라 광고·과장 표현만 스크럽한다. **동의어는
     문서-측에 주입하지 않는다** — 쿼리-side 확장(process_query)으로만 메운다(아래 주석 참조).
     reviews 청크는 키워드 빈도 + 후기 본문 원문을 포함한다.
-    vision 청크는 analyze_images() 결과가 있을 때만 추가된다(시연 10개 한정).
+    vision 청크는 analyze_images() 결과가 있을 때만 추가된다(시연 약 500개 한정).
 
     Args:
         vision_results: analyze_images() 결과 (ImageAnalysisResult 리스트 또는 dict 리스트).

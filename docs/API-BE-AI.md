@@ -328,8 +328,8 @@ def classify_hospital(
 
 **파라미터 의미**:
 - 외부 시그널 인자(`kakao_place`·`kakao_reviews`·`kakao_blog`·`naver_reviews`·`naver_blog`·`google_reviews`) — 각각 dict 또는 대응 Pydantic 모델 둘 다 수용. 미적재면 None → self_claim 등 가용 시그널만으로 분류. `kakao_place.tags` 는 자칭 보강에, `naver_blog` 는 블로그 시그널에, 후기 3종은 후기 시그널에 흩어져 들어간다.
-- `vision_results` (keyword-only) — 사전 계산된 `ImageAnalysisResult` 리스트. 주어지면 `analyze_images` 를 재호출하지 않고 재사용한다(시연 10개는 `run_vision_demo` 가 DDB `VISION#RESULTS` 에 1회 적재하므로 중복 호출·비용 2배 방지). None 이고 `use_llm`·`use_vision`·이미지가 모두 있으면 `analyze_images` 로 직접 분석.
-- `use_llm=False` — 트랙 A 룰 기반(Bedrock 0회, 1만 풀커버). True 면 트랙 B/C(LLM/Vision 시연 10개).
+- `vision_results` (keyword-only) — 사전 계산된 `ImageAnalysisResult` 리스트. 주어지면 `analyze_images` 를 재호출하지 않고 재사용한다(시연 약 500개는 `run_vision_demo` 가 DDB `VISION#RESULTS` 에 1회 적재하므로 중복 호출·비용 2배 방지). None 이고 `use_llm`·`use_vision`·이미지가 모두 있으면 `analyze_images` 로 직접 분석.
+- `use_llm=False` — 트랙 A 룰 기반(Bedrock 0회, 1만 풀커버). True 면 트랙 B/C(LLM/Vision 시연 약 500개).
 - `use_vision=False` — 자칭 명확한 케이스(비용 절감). `use_llm=False` 면 이 값과 무관하게 Vision 생략.
 
 #### 동작 흐름
@@ -337,13 +337,13 @@ def classify_hospital(
 PoC에서는 **3트랙으로 분기**한다 (자세한 건 `../ai/CLAUDE.md` "AI 트랙 3트랙 구조" 참조):
 
 - **트랙 A (룰 기반, 서울 1만 풀커버)**: 정제된 텍스트의 키워드 빈도 + 페이지 타입별 강조도로 자칭 컨셉 추출. LLM 미사용. `use_llm=False` 분기.
-- **트랙 B (LLM 시연, 10개)**: 지원 계정 Haiku/Nova로 자칭 컨셉 추출 — 룰 결과보다 정밀.
-- **트랙 C (Vision 시연, 10개)**: 개인 계정 Sonnet 4.6 Vision (서울 리전, Global cross-region inference profile)으로 이미지 분석. `use_vision=True` 분기.
+- **트랙 B (LLM 시연 약 500개)**: 지원 계정 Haiku/Nova로 자칭 컨셉 추출 — 룰 결과보다 정밀.
+- **트랙 C (Vision 시연 약 500개)**: 개인 계정 Sonnet 4.6 Vision (서울 리전, Global cross-region inference profile)으로 이미지 분석. `use_vision=True` 분기.
 
 공통 흐름:
 
 1. 자칭 컨셉 추출 (트랙 A/B 중 하나)
-2. 이미지 분석 (트랙 C — `use_vision=False`면 생략, 시연 10개에만 True)
+2. 이미지 분석 (트랙 C — `use_vision=False`면 생략, 시연 약 500개에만 True)
 3. 블로그 페이지의 키워드 빈도 분석
 4. 후기 키워드 빈도 분석 (수집된 후기가 있을 때)
 5. 4 시그널 교차 검증 → 신뢰도 점수 계산. Vision 시그널 없으면 가중치 재정규화.
@@ -406,11 +406,11 @@ db.put_item(
 
 ---
 
-### 2. `generate_description` ⭐ **본 서비스의 핵심 함수** (시연 10개 한정)
+### 2. `generate_description` ⭐ **본 서비스의 핵심 함수** (시연 약 500개 한정)
 
 분류 결과 + 4 시그널 원본 데이터 전체를 받아 자연어 통합 상세 설명을 생성. **FE-BE `GET /api/hospitals/{id}` 응답의 `ai_description` 필드가 이 함수의 결과.**
 
-> **PoC 한도**: 지원 계정 Bedrock 자원이 10개 병원 한도이므로 시연 10개 병원에만 호출. 나머지 9990개 병원은 `ai_description = null` 로 반환되고 FE가 자연어 단락 대신 룰 기반 태그 카드를 렌더링한다. 어느 병원이 시연 대상인지는 DynamoDB single-table `DESCRIPTION` entity 존재 여부로 판별.
+> **PoC 범위**: `generate_description` LLM 호출을 시연 표본 약 500개 병원(실측 DESCRIPTION 504)에 한정했다. 그 외 병원은 `ai_description = null` 로 반환되고 FE가 자연어 단락 대신 룰 기반 태그 카드를 렌더링한다. 어느 병원이 시연 대상인지는 DynamoDB single-table `DESCRIPTION` entity 존재 여부로 판별.
 
 > **4 시그널은 `detailed_signals` 로 전달된다** — `classify_hospital` 이 외부 시그널(카카오/네이버/구글)을 이미 흡수해 `DetailedSignals`(self_claim·vision·blog·reviews)로 정제하므로, generate_description 은 `detailed_signals` 만 받으면 4 시그널 종합이 된다. 별도 `external_signals` 파라미터는 두지 않는다(원본 외부 dict 를 LLM 에 직접 넣지 않음 — 정제된 시그널만).
 
@@ -435,7 +435,7 @@ def generate_description(
 
 #### 동작 흐름
 
-**PoC에서는 시연 10개 병원에만 적용** (트랙 B). 나머지 9990개는 자연어 단락 없이 룰 기반 태그·메타데이터만 제공.
+**PoC에서는 시연 약 500개 병원에만 적용** (트랙 B). 그 외는 자연어 단락 없이 룰 기반 태그·메타데이터만 제공.
 
 1. 분류 결과·신뢰도·4 시그널 원본 데이터를 구조화된 컨텍스트로 정리
 2. 지원 계정 Bedrock Haiku/Nova에 전용 프롬프트 + 컨텍스트 입력
@@ -553,7 +553,7 @@ signal_chunks = build_signal_chunks(
     naver_reviews=naver_reviews,
     naver_blog=naver_blog,
     google_reviews=google_reviews,
-    vision_results=vision_results,   # analyze_images() 결과. 있으면 vision 청크 생성 (시연 10개)
+    vision_results=vision_results,   # analyze_images() 결과. 있으면 vision 청크 생성 (시연 약 500개)
 )
 metadata = build_ingest_metadata(hospital_meta, classification)
 ingest_hospital(hospital_id, signal_chunks, metadata, trigger_ingestion=False)
@@ -568,7 +568,7 @@ ingest_hospital(hospital_id, signal_chunks, metadata, trigger_ingestion=False)
 | `self_claim` | 자체 사이트 service/about/main 텍스트 + 카카오 자칭 키워드(tags·mystore_intro·HIRA) | `{prefix}{hospital_id}/self_claim.txt` |
 | `blog` | 자체 사이트 blog 페이지 + 카카오 블로그 seeds + 네이버 블로그 포스트 제목/발췌 | `{prefix}{hospital_id}/blog.txt` |
 | `reviews` | 카카오/네이버/구글 후기 키워드 빈도 요약 + 후기 본문 원문(임베딩 전용·화면 미표시, §56③ 면제) | `{prefix}{hospital_id}/reviews.txt` |
-| `vision` | 이 병원이 공개한 사진에서 식별된 장비·시술 장면 + 이미지 유형 분포 (시연 10개 한정) | `{prefix}{hospital_id}/vision.txt` |
+| `vision` | 이 병원이 공개한 사진에서 식별된 장비·시술 장면 + 이미지 유형 분포 (시연 약 500개 한정) | `{prefix}{hospital_id}/vision.txt` |
 
 각 .txt 옆에 `.txt.metadata.json` 사이드카 파일 동봉. 사이드카 포맷:
 ```json
@@ -826,7 +826,7 @@ relevance_score(병원) = max_chunk_cosine                              # 의미
 
 ### 6. `analyze_images`
 
-이미지 URL 리스트를 받아 Bedrock Vision으로 분석. **PoC에서는 시연 10개 병원에만 호출** (트랙 C). `classify_hospital` 내부에서 `use_vision=True`로 호출되거나, 별도 batch에서 직접 호출.
+이미지 URL 리스트를 받아 Bedrock Vision으로 분석. **PoC에서는 시연 약 500개 병원에만 호출** (트랙 C). `classify_hospital` 내부에서 `use_vision=True`로 호출되거나, 별도 batch에서 직접 호출.
 
 OCR(이미지 안 글자 추출)도 Bedrock Vision 한 번 호출로 같이 처리한다 — 한국어 미지원으로 Textract는 사용하지 않는다.
 
@@ -1111,7 +1111,7 @@ def run_index_pipeline(hospital_id: str, *, demo: bool = False, trigger_ingestio
     external = db.load_external_signals(hospital_id)
     #   external = {kakao_place, kakao_reviews, kakao_blog, naver_reviews, naver_blog, google_reviews}
 
-    # 1-a. Vision 결과 로드 — VISION#RESULTS 가 있으면(시연 10개) ImageAnalysisResult 로
+    # 1-a. Vision 결과 로드 — VISION#RESULTS 가 있으면(시연 약 500개) ImageAnalysisResult 로
     #      정규화. 분류·extract·KB 청크가 공유해 analyze_images 중복 호출을 피한다.
     vision_results_raw = db.get_entity(hospital_id, "VISION#RESULTS")
     vision_results = (
@@ -1120,7 +1120,7 @@ def run_index_pipeline(hospital_id: str, *, demo: bool = False, trigger_ingestio
     )
 
     # 2. AI 분류 (개별 외부 인자 전개 — 4 시그널 교차검증)
-    #    demo=False → 룰 단독(Bedrock 0회), demo=True → LLM/Vision 시연 10개
+    #    demo=False → 룰 단독(Bedrock 0회), demo=True → LLM/Vision 시연 약 500개
     #    vision_results 가 있으면 전달 → 재분석 없이 재사용
     prev_classification = db.load_classification(hospital_id)
     classification = classify_hospital(
@@ -1130,7 +1130,7 @@ def run_index_pipeline(hospital_id: str, *, demo: bool = False, trigger_ingestio
     # primary_focus 가 이전과 다르면 HISTORY# 변경 이력 적재 (영역 ⑦)
     _record_classification_change(db, prev_classification, classification)
 
-    # 3~5. 시연 10개만 — 진료항목·설명·관련병원 (LLM/Vision)
+    # 3~5. 시연 약 500개만 — 진료항목·설명·관련병원 (LLM/Vision)
     if demo:
         services_and_doctors = extract_services_and_doctors(
             crawl_data=crawl_data, classification=classification,
@@ -1302,8 +1302,8 @@ def test_classify_mocked(mock_invoke):
 PoC는 **3트랙 분리**로 비용 통제. 너희 카드 부담 거의 0.
 
 - **트랙 A (룰 기반, 서울 1만)**: 비용 0 (LLM 미사용)
-- **트랙 B (LLM 시연 10개)**: 지원 계정 Haiku/Nova — 강사 자원, 너희 카드 부담 0
-- **트랙 C (Vision 시연 10개)**: 개인 계정 Sonnet — 시행착오 3회 포함 **~$1.3**
+- **트랙 B (LLM 시연 약 500개)**: 지원 계정 Haiku/Nova — 강사 자원, 너희 카드 부담 0
+- **트랙 C (Vision 시연 약 500개)**: 개인 계정 Sonnet — 시행착오 3회 포함 **~$1.3**
 - **임베딩 (Titan v2, 1만 전체)**: 지원 계정 — 부담 0
 
 **PoC 총 비용 추정**: 개인 카드 ~$1~5 / 지원 계정 자원 한도 내 무료.

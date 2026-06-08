@@ -99,7 +99,7 @@ class BrowserManager:
     async def screenshot_page(self, url: str, full_page: bool = True) -> bytes | None:
         """URL을 렌더링해 풀페이지 스크린샷 PNG bytes 반환.
 
-        Vision 시연(10개 한정)용. 디스크 임시파일을 거치지 않고 bytes 로 직접 반환한다.
+        Vision 시연(약 500개 한정)용. 디스크 임시파일을 거치지 않고 bytes 로 직접 반환한다.
         타임아웃·에러·브라우저 크래시 시 None 반환.
 
         ⚠️ 메인 크롤 루프에 자동 연결하지 않는다 (비용·자격증명 이슈). 호출은 후속.
