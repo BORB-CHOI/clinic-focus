@@ -38,9 +38,9 @@ logger = logging.getLogger(__name__)
 _DEFAULT_TOP_N = 20
 # 후보당 발췌 길이(채점 입력용). 길수록 비용·지연↑, 너무 짧으면 판단 근거 부족.
 _EXCERPT_CHARS = 500
-# 지원 계정 on-demand 가용 모델(실측 2026-06-08). Haiku 4.5·Sonnet·inference profile 은
-# SafeRole 권한으로 막혀, Claude 3 Haiku 를 기본으로. RERANK_MODEL_ID env 로 교체 가능.
-_DEFAULT_RERANK_MODEL = "anthropic.claude-3-haiku-20240307-v1:0"
+# 지원 계정 on-demand 모델. A/B(강남 84토픽, temp0) 실측 Nova Lite 우위(P@1 0.810 >
+# Claude 3 Haiku 0.762·Nova Pro 0.774)라 기본값. RERANK_MODEL_ID env 로 교체 가능.
+_DEFAULT_RERANK_MODEL = "amazon.nova-lite-v1:0"
 
 _PROMPT_PATH = os.path.join(os.path.dirname(__file__), "..", "prompts", "rerank_relevance.md")
 

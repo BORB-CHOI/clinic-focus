@@ -7,7 +7,7 @@
 | 항목 | 선택 |
 |---|---|
 | 언어 | Python 3.11+ (BE와 동일 EC2 프로세스) |
-| 검색 재랭커 (런타임) — 지원 계정 | Bedrock **Claude 3 Haiku** `anthropic.claude-3-haiku-20240307-v1:0` (on-demand) / `RERANK_MODEL_ID` 로 Nova 교체. `RERANK_MODE=llm` 일 때만 |
+| 검색 재랭커 (런타임) — 지원 계정 | Bedrock **Nova Lite** `amazon.nova-lite-v1:0` (on-demand, A/B 우위) / `RERANK_MODEL_ID` 로 Claude 3 Haiku·Nova Pro 교체. `RERANK_MODE=llm` 일 때만 |
 | ~~LLM 텍스트 시연 (사전처리)~~ | ~~Haiku 4.5/Nova~~ — Haiku 4.5 막힘·개인 계정 데드 → DESCRIPTION 504 **기적재 정적**, 신규 생성 불가 |
 | ~~Vision 시연 (사전처리)~~ | ~~Sonnet 4.6 (개인 계정)~~ — **개인 계정 제거** → VISION 508 **기적재 정적**, 신규 생성 불가 |
 | OCR | Bedrock Vision으로 흡수 (한국어 미지원으로 Textract 제거) |
@@ -17,7 +17,7 @@
 | RAG 프레임워크 | **직접 구현** (LangChain 안 씀 — 4 시그널 교차 검증 로직 통제 위해) |
 | 데이터 모델 | Pydantic — `../shared/models.py` 단일 소스 |
 
-> Bedrock KB(Retrieve / StartIngestionJob) · Titan Embed · 텍스트 LLM(재랭커, Claude 3 Haiku
+> Bedrock KB(Retrieve / StartIngestionJob) · Titan Embed · 텍스트 LLM(재랭커, Nova Lite
 > on-demand) 전부 **지원 계정**(us-east-1) 인스턴스 프로파일로 자동 인증. **개인 계정은 제거됨** —
 > `_get_ai_session()`(AI_AWS_*) 은 데드 레거시. ★지원 계정 on-demand 만 호출 가능: Claude 3 Haiku·Nova ✅,
 > Haiku 4.5·Sonnet·모든 inference profile ❌(AccessDenied/Validation, 실측 2026-06-08). 사전처리 데모였던
@@ -46,14 +46,16 @@
 기본값(`RERANK_MODE=off`)에서 사용자 검색 시 도는 것: **KB Retrieve API 1회** (내부에서 Titan v2 임베딩 + 벡터 검색을 자동 수행) **+ DynamoDB 신뢰도 조회 1회**. Sonnet/Haiku 호출 0건. 응답 ~200~500ms, 검색당 비용 ~$0.00003. LLM은 사전 단계(자칭 추출·`generate_description`·Vision)에만 도는데, 한 번 처리하면 정적 데이터로 우려먹는다. 자세한 건 `../docs/overview.md` "4-5. 검색 동작 원리" 참조.
 
 > **2-stage RAG 재랭킹 (opt-in, `RERANK_MODE=llm`)**: 1차(임베딩+주력강도)로 회수된
-> 상위 후보를 검색 *런타임* 시점에 **지원 계정 on-demand LLM(Claude 3 Haiku 기본,
-> `RERANK_MODEL_ID` 로 Nova 교체)** 으로 한 번 더 정렬한다(`ai/search/reranker.py`,
+> 상위 후보를 검색 *런타임* 시점에 **지원 계정 on-demand LLM(Nova Lite 기본 `amazon.nova-lite-v1:0`,
+> temp=0, `RERANK_MODEL_ID` 로 교체)** 으로 한 번 더 정렬한다(`ai/search/reranker.py`,
 > `bedrock_client.invoke_text_support`). 회수된 결과가 노이즈로 1위를 차지하는 케이스를
-> 매칭도로 교정. **실측 A/B(강남 84토픽, Claude 3 Haiku)**: P@1 0.679→0.786(+0.119)·
-> NDCG@10 0.786→0.834(+0.060)·MRR 0.744→0.819. **기본 off**(검색 런타임 LLM 0건은
-> *기본값* 셀링포인트, 재랭킹은 품질용 opt-in. relevance 정렬에만, 결과 캐시로 반복쿼리
-> 방어). 출력은 순서만 바꿀 뿐 `SearchResult` 스키마·청크 본문 비노출(§56③) 불변.
-> ※ Haiku 4.5·Sonnet·inference profile 은 SafeRole 권한으로 막혀 Claude 3 Haiku 사용.
+> 매칭도로 교정. **2-tier 회수**: llm 이면 `KB_MIN_SCORE` 가 0.35 로 자동 결합(컷 낮춰 thin-signal
+> 더 회수 → 리랭커가 노이즈 필터). **실측 A/B(강남 84토픽, Nova Lite, 컷 0.35)**: NDCG@10
+> 0.786→0.90+·P@1 0.679→0.85·MRR 0.744→0.89·못 찾는 토픽 10→3개. 모델 A/B: Nova Lite(P@1
+> 0.81) > Claude 3 Haiku(0.76) > Nova Pro(0.77). **기본 off**(검색 런타임 LLM 0건은 *기본값*
+> 셀링포인트, 재랭킹은 품질용 opt-in. relevance 정렬에만, 결과 캐시로 반복쿼리·시연 프리워밍
+> 방어 — `be/scripts/prewarm_search.py`). 출력은 순서만 바꿀 뿐 `SearchResult` 스키마·청크 본문
+> 비노출(§56③) 불변. ※ Haiku 4.5·Sonnet·inference profile 은 SafeRole 권한으로 막힘.
 
 > **검색 경로 이원화**: AI 모듈(`retrieve_hospital`)은 **자연어 쿼리만** 책임진다. `sigungu=강남구 & specialty=피부과` 같은 메타 완전일치 전체 목록 조회는 BE가 DynamoDB GSI로 직접 처리하고 AI 미경유. KB Retrieve는 빈 쿼리 텍스트를 받지 못하고 `numberOfResults` 최대 100 제한이 있어 카테고리 탐색에 부적합.
 

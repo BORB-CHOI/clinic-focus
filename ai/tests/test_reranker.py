@@ -189,7 +189,7 @@ def test_uses_support_model_and_feeds_excerpt(mock_invoke):
     rerank_candidates("질의어", groups)
 
     args, kwargs = mock_invoke.call_args
-    assert "haiku" in kwargs["model_id"].lower()  # 지원 계정 on-demand Claude 3 Haiku 기본
+    assert "nova-lite" in kwargs["model_id"].lower()  # 지원 계정 on-demand Nova Lite 기본
     prompt = args[0]                   # invoke_text_support(prompt, model_id=...)
     assert "질의어" in prompt          # 사용자 질의 주입
     assert "발췌 본문 알파" in prompt   # 청크 본문이 채점 입력으로 사용됨
