@@ -89,11 +89,18 @@
   (간판-진실성: 0명도 사실 노출). 검색 필터 `has_specialist`/`specialist_dept`(GSI 경로). medical-language 검수 통과.
 - [x] ② 비급여 — `PublicData.nonpay_items` 적재·상세 비급여 영역(출처 `public_data`). AI 의도정렬 일반화
   (미용 하드코딩 `_COSMETIC_FOCUS` → 심평원 `nonpay_ratio` soft 강등, 하드코딩 fallback 유지·도수 hard제외 제외).
-- [ ] **남은 일 = data.go.kr 15001699·15001700 활용신청 키 승인 → `LOAD_PUBLIC_DATA=true` 로 `load_seoul_5gu`
-  재실행 → KB 재ingest.** 그 전까지 403→빈값 graceful degrade(현행 동작 무손상). 재검증: `be/scripts/_verify_hira_detail.py`.
+**★승인 현황(2026-06-08 키 수령 후 실측)**: 비급여 15001700 **승인·동작 ✅** / 전문의 **15001699 여전히 403 미승인 ❌**
+(별도 데이터셋 — `data.go.kr/data/15001699` 활용신청 누락. 의료기관별상세정보서비스). **핵심: 전문의가 의원 타깃의
+간판진실성 절반인데 그게 막힘.** 사용자 결정 = **전문의 15001699 승인까지 보류 후 전문의+비급여 일괄 적재.**
+- [ ] **15001699(전문의) 활용신청 승인 대기** → 승인 시 `be/scripts/_verify_hira_detail.py` 로 getDgsbjtInfo2.7 403→200 확인.
+- [ ] **승인 후 일괄 적재**: `LOAD_PUBLIC_DATA=true .venv/bin/python be/scripts/load_seoul_5gu.py`(전문의+비급여 → PUBLIC#DOCTORS/NONPAY)
+  → `run_classification --sigungu 강남구`(룰, LLM0) 재ingest(nonpay_ratio·specialist 메타 KB 진입). 그 전까지 403/빈값 graceful.
+- **★실측 데이터 한계(우리가 못 고침)**: 비급여 **의원 커버리지 0%**(강남 의원 158/158 totalCount=0), 병원급↑ 100%
+  (광동병원 130·강남세브란스 764). 비급여 영역은 병원급에서만 채워짐 — 의원의 가치는 전문의(간판진실성)에서 나옴.
+  FE 는 빈 비급여 영역 graceful 숨김. (실측 파서 정합: `items=""` 빈문자열·category=npayKorNm 첫 세그먼트, 커밋 40cf5c0.)
 
-> 다음 세션 우선순위: 필수 ⑤·thumbnail(M) → 중요 ①·⑥. **★ 공공 신고 데이터는 code path 완료 — 활용신청 키
-> 승인 후 재적재만.** 근거: 2026-06-08 9영역 감사 + 심평원 2종 연동.
+> 다음 세션 우선순위: 필수 ⑤·thumbnail(M) → 중요 ①·⑥. **★ 공공 신고: 비급여 승인됨(병원급만)·전문의 15001699
+> 신청 누락 → 승인 후 일괄.** 근거: 2026-06-08 9영역 감사 + 심평원 2종 연동·키 수령 실측.
 
 ### D. 표본 확장 + 통합 검증 (Phase F)
 - [ ] 5개구 풀커버 → 풀크롤(자체+외부) → 룰 분류 일괄(트랙 A, LLM 0). 현재 분류·KB는 강남만.
