@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { X, ShieldCheck } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   type AgeBucket,
@@ -11,6 +12,7 @@ import {
   getHealthProfile,
   saveHealthProfile,
 } from "@/lib/healthProfile";
+import { getDeviceId } from "@/lib/device";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -49,6 +51,8 @@ function Chip({
 
 export function HealthProfileModal({ open, onClose }: Props) {
   const saved = getHealthProfile();
+  const queryClient = useQueryClient();
+  const deviceId = getDeviceId();
 
   const [gender, setGender] = useState<GenderBucket>(saved.genderBucket);
   const [age, setAge]       = useState<AgeBucket>(saved.ageBucket);
@@ -68,6 +72,12 @@ export function HealthProfileModal({ open, onClose }: Props) {
       bmiBucket:    bmi,
     };
     await saveHealthProfile(profile);
+
+    // 프로필 변경 → 추천 관련 캐시 즉시 무효화
+    await queryClient.invalidateQueries({ queryKey: ["analytics-profile", deviceId] });
+    queryClient.invalidateQueries({ queryKey: ["analytics-insights-recommend"] });
+    queryClient.invalidateQueries({ queryKey: ["recommend-hospitals"] });
+
     setSaving(false);
     onClose();
   }
@@ -78,6 +88,9 @@ export function HealthProfileModal({ open, onClose }: Props) {
     setAge("unknown");
     setHeight("");
     setWeight("");
+    // 초기화도 캐시 무효화
+    queryClient.invalidateQueries({ queryKey: ["analytics-profile", deviceId] });
+    queryClient.invalidateQueries({ queryKey: ["recommend-hospitals"] });
     onClose();
   }
 

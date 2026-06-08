@@ -28,20 +28,6 @@ const AGE_KO: Record<string, string> = {
 const GENDER_KO: Record<string, string> = {
   male: "남성", female: "여성", other: "기타",
 };
-const SPECIALTY_PALETTE: Record<string, string> = {
-  "피부과":     "bg-rose-100 text-rose-700",
-  "이비인후과": "bg-sky-100 text-sky-700",
-  "성형외과":   "bg-purple-100 text-purple-700",
-  "내과":       "bg-emerald-100 text-emerald-700",
-  "정형외과":   "bg-amber-100 text-amber-700",
-  "기타":       "bg-slate-100 text-slate-600",
-};
-const FALLBACK_PALETTE = [
-  "bg-indigo-100 text-indigo-700",
-  "bg-teal-100 text-teal-700",
-  "bg-orange-100 text-orange-700",
-  "bg-pink-100 text-pink-700",
-];
 
 // ── 타입 ───────────────────────────────────────────────────────────────────
 
@@ -129,30 +115,6 @@ function RankedList({
   );
 }
 
-function SpecialtyPill({
-  label,
-  pct,
-  index,
-}: {
-  label: string;
-  pct: number;
-  index: number;
-}) {
-  const color =
-    SPECIALTY_PALETTE[label] ?? FALLBACK_PALETTE[index % FALLBACK_PALETTE.length];
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium",
-        color,
-      )}
-    >
-      {label}
-      <span className="opacity-60">{pct}%</span>
-    </span>
-  );
-}
-
 function EmptyRows() {
   return (
     <p className="py-6 text-center text-xs text-muted-foreground">
@@ -198,7 +160,6 @@ export default function InsightsPage() {
   const seasonRows = insights?.charts?.specialty_by_season ?? [];
   const currentSeasonRow = seasonRows.find((r) => r.label === currentSeason);
 
-  const ageRows = insights?.charts?.age_by_specialty ?? [];
   const ageGenderRows = insights?.charts?.age_gender_by_specialty ?? [];
 
   const profileKey = `${profile.ageBucket}#${profile.genderBucket}`;

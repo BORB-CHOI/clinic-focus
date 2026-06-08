@@ -128,3 +128,20 @@ export function trackAnalyticsSelect(
     lng:               opts?.lng,
   });
 }
+
+// ── 광고 이벤트 ─────────────────────────────────────────────────────────────
+// 광고(협찬) 슬롯 클릭 기록. BE 광고 엔드포인트 부재 단계라 fire-and-forget 로
+// /api/events 에 ad_click 으로 흘려보낸다 (서버가 무시해도 UX 영향 없음).
+
+export function trackAdClick(adId: string, hospitalId: string | null): void {
+  fetch(`${API_BASE}/api/events`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      event_type: "ad_click",
+      session_id: getDeviceId(),
+      ad_id: adId,
+      hospital_id: hospitalId ?? undefined,
+    }),
+  }).catch(() => {});
+}

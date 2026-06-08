@@ -1,8 +1,10 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import { apiGet } from "@/lib/api";
 import { getDeviceId } from "@/lib/device";
+import { getContextReason, sortHospitalsByAgefit } from "@/lib/recommendReason";
 import { HospitalCard } from "@/components/search/HospitalCard";
 import type { SearchResultItem } from "@/types/domain";
 
@@ -30,6 +32,7 @@ interface WeatherCtx {
   humidity_bucket: string;
   temp_diff_c: number | null;
   is_raining: boolean;
+  available?: boolean;
 }
 
 function getAdvisory(w: WeatherCtx): { icon: string; text: string } | null {
@@ -52,6 +55,7 @@ interface ProfileData { gender_bucket: string; age_bucket: string }
 interface SegmentRow  { label: string; count: number }
 interface CohortRow   { label: string; count: number; segments: SegmentRow[] }
 interface InsightsData {
+  current_season?: string;
   charts: {
     age_gender_by_specialty: CohortRow[];
     top_specialties: SegmentRow[];
@@ -94,16 +98,17 @@ export function RecommendSection() {
   // ── 코호트 계산 ────────────────────────────────────────────────────────
 
   const profile  = profileRes?.data ?? null;
-  const insights = insightsRes?.data?.charts;
-  const weather  = weatherRes?.data ?? null;
+  const insights = insightsRes?.data;
+  const weather  = weatherRes?.data?.available ? weatherRes.data : null;
+  const season   = insights?.current_season ?? null;
 
   // 프로필이 있으면 코호트 매칭, 없으면 전체 인기 순위 사용
   let specialties: SegmentRow[] = [];
   let cohortLabel: string | null = null;
 
-  if (profile && insights) {
+  if (profile && insights?.charts) {
     const key = `${profile.age_bucket}#${profile.gender_bucket}`;
-    const row  = insights.age_gender_by_specialty?.find((r) => r.label === key);
+    const row  = insights.charts.age_gender_by_specialty?.find((r) => r.label === key);
     if (row?.segments?.length) {
       specialties = row.segments.slice(0, 3);
       const age    = AGE_LABEL[profile.age_bucket]    ?? profile.age_bucket;
@@ -112,15 +117,21 @@ export function RecommendSection() {
     }
   }
 
-  if (specialties.length === 0 && insights) {
-    specialties = (insights.top_specialties ?? []).slice(0, 3);
+  if (specialties.length === 0 && insights?.charts) {
+    specialties = (insights.charts.top_specialties ?? []).slice(0, 3);
     cohortLabel = "요즘 강남구에서 많이 찾아요";
   }
 
-  const topSpecialty = specialties[0]?.label ?? null;
-  const advisory     = weather ? getAdvisory(weather) : null;
+  const topSpecialty  = specialties[0]?.label ?? null;
+  const advisory      = weather ? getAdvisory(weather) : null;
 
-  // 4) 추천 병원 3개 (top specialty 기준)
+  const reasonText = topSpecialty
+    ? profile
+      ? `내 프로필(${AGE_LABEL[profile.age_bucket] ?? profile.age_bucket} ${GENDER_LABEL[profile.gender_bucket] ?? ""})과 비슷한 분들이 강남구에서 ${topSpecialty}를 가장 많이 찾았어요!`
+      : `최근 강남구에서 사람들이 ${topSpecialty}를 가장 많이 검색했어요 🙂`
+    : null;
+
+  // 4) 추천 병원 (limit 6 받아서 연령 적합도 순 정렬 후 3개 사용)
   const { data: hospitalsRes } = useQuery<{ data: SearchResultItem[] }>({
     queryKey: ["recommend-hospitals", topSpecialty],
     queryFn: ({ signal }) =>
@@ -128,14 +139,20 @@ export function RecommendSection() {
         specialty: topSpecialty,
         sigungu:   POC_SIGUNGU,
         sort:      "confidence",
-        limit:     3,
+        limit:     6,
       }, signal),
     enabled: !!topSpecialty,
     staleTime: 5 * 60 * 1000,
     retry: false,
   });
 
-  const hospitals = hospitalsRes?.data ?? [];
+  const topFocus = (hospitalsRes?.data?.[0]?.primary_focus ?? []) as string[];
+  const contextReason = topSpecialty ? getContextReason(topSpecialty, season, weather, topFocus) : null;
+
+  const hospitals = useMemo(
+    () => sortHospitalsByAgefit(hospitalsRes?.data ?? [], profile?.age_bucket ?? null, 3),
+    [hospitalsRes, profile?.age_bucket],
+  );
 
   if (specialties.length === 0) return null;
 
@@ -175,6 +192,12 @@ export function RecommendSection() {
           <p className="text-xs font-medium text-muted-foreground">
             {topSpecialty} 추천 병원
           </p>
+          {reasonText && (
+            <p className="text-xs text-muted-foreground">{reasonText}</p>
+          )}
+          {contextReason && (
+            <p className="text-xs text-muted-foreground/80 border-l-2 border-primary/30 pl-2">{contextReason}</p>
+          )}
           <div className="space-y-2">
             {hospitals.map((item) => (
               <HospitalCard key={item.hospital_id} item={item} compact />

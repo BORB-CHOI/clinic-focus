@@ -92,16 +92,28 @@
   }
   html {
     /*
-      base 폰트 크기 = 24px (브라우저 기본 16px → 1.5배).
-      모든 Tailwind 사이즈 토큰이 rem 단위라 카드·검색바·필터·신뢰도 점수가
-      일관되게 따라온다. 헤드라이너 헤드라인(text-2xl = 1.5rem)은 36px,
-      본문(text-sm = 0.875rem)은 21px 로 떨어진다.
+      base 폰트 크기 — 뷰포트 반응형. 모든 Tailwind 사이즈 토큰이 rem 이라
+      이 한 곳이 카드·검색바·필터·신뢰도 점수·여백 전체 스케일을 좌우한다.
+        모바일(<640px)   = 16px  (좁은 폭에 카드·태그가 한 화면에 들어오게)
+        태블릿(≥640px)   = 20px
+        데스크톱(≥1024px) = 24px  (기존 톤 유지 — 시원한 위계)
+      데스크톱은 기존과 동일, 모바일·태블릿에서만 비율이 자동 축소된다.
     */
-    font-size: 24px;
+    font-size: 16px;
     font-family:
       "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
       system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo",
       "Noto Sans KR", "Malgun Gothic", sans-serif;
+  }
+  @media (min-width: 640px) {
+    html {
+      font-size: 20px;
+    }
+  }
+  @media (min-width: 1024px) {
+    html {
+      font-size: 24px;
+    }
   }
   body {
     @apply bg-background text-foreground antialiased;

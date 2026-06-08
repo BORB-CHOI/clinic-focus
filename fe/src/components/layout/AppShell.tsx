@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from "react-router-dom";
 
 import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
 import { StickySearchBar } from "@/components/layout/StickySearchBar";
 import { ViewModeToggle } from "@/components/layout/ViewModeToggle";
 import { BackHeader } from "@/components/layout/BackHeader";
@@ -18,23 +19,23 @@ export function AppShell() {
   const isMap = location.pathname.startsWith("/map");
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
       <Header />
 
       {isDetail ? (
         <BackHeader title="병원 상세" />
       ) : (
         <>
-          <StickySearchBar />
-          <div className="border-b">
+          <div className="sticky top-14 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75">
             <div className="container flex items-center justify-between py-2">
               <ViewModeToggle />
             </div>
           </div>
+          <StickySearchBar />
         </>
       )}
 
-      <main className={isMap ? "py-4" : "container py-6"}>
+      <main className={isMap ? "flex-1 py-4" : "flex-1 container py-6"}>
         {isMap ? (
           <div className="container">
             <Outlet />
@@ -45,6 +46,8 @@ export function AppShell() {
           </div>
         )}
       </main>
+
+      <Footer />
     </div>
   );
 }

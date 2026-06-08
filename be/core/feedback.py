@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from shared.models import FeedbackEntry, FeedbackStats
+from shared.models import FeedbackEntry, FeedbackStats, ReviewItem
 
 # 신뢰도 재계산 트리거 임계치
 RECOMPUTE_THRESHOLD = 10  # 피드백 N건 이상 누적 시
@@ -30,10 +30,24 @@ def compute_feedback_stats(feedback_list: list[FeedbackEntry]) -> FeedbackStats:
 
     sorted_by_time = sorted(feedback_list, key=lambda f: f.received_at, reverse=True)
 
+    # 텍스트 후기가 있는 것만 최근 5개
+    recent_reviews = [
+        ReviewItem(
+            verdict=f.verdict,
+            review_text=f.review_text,
+            age_bucket=f.age_bucket,
+            gender_bucket=f.gender_bucket,
+            received_at=f.received_at,
+        )
+        for f in sorted_by_time
+        if f.review_text
+    ][:5]
+
     return FeedbackStats(
         total_count=total,
         agree_count=agree,
         disagree_count=disagree,
         agree_ratio=round(agree / total, 3) if total > 0 else 0.0,
         last_feedback_at=sorted_by_time[0].received_at if sorted_by_time else None,
+        recent_reviews=recent_reviews,
     )

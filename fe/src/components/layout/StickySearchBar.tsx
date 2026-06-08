@@ -85,7 +85,7 @@ export function StickySearchBar({
   return (
     <div
       className={cn(
-        "sticky top-14 z-20 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75",
+        "sticky top-[6.5rem] z-20 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75",
         className,
       )}
     >

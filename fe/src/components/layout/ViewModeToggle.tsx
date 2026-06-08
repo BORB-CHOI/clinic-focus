@@ -20,11 +20,11 @@ export function ViewModeToggle({ className }: { className?: string }) {
         className,
       )}
     >
-      <ToggleLink to={`/search${search}`} active={onSearch} icon={<List />}>
-        리스트
-      </ToggleLink>
       <ToggleLink to={`/map${search}`} active={onMap} icon={<Map />}>
         지도
+      </ToggleLink>
+      <ToggleLink to={`/search${search}`} active={onSearch} icon={<List />}>
+        리스트
       </ToggleLink>
       <ToggleLink to="/insights" active={onInsights} icon={<BarChart3 />}>
         인사이트
