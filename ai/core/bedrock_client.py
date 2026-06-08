@@ -2,11 +2,19 @@ import json
 import os
 from typing import Any
 
-from ai.core.aws_clients import get_bedrock_runtime_client
+from ai.core.aws_clients import (
+    get_bedrock_runtime_client,
+    get_bedrock_runtime_client_support,
+)
 
 # 텍스트(지원 계정)와 Vision(개인 계정) 클라이언트를 각각 캐시.
 _text_client: Any | None = None
 _vision_client: Any | None = None
+_support_text_client: Any | None = None
+
+# 지원 계정 on-demand 가용 텍스트 모델 기본값(실측 2026-06-08). Haiku 4.5·Sonnet·
+# inference profile 은 SafeRole 권한으로 막혀 있어 Claude 3 Haiku 를 기본으로 쓴다.
+DEFAULT_SUPPORT_TEXT_MODEL = "anthropic.claude-3-haiku-20240307-v1:0"
 
 
 def get_bedrock_client(use_vision: bool = False) -> Any:
@@ -38,6 +46,42 @@ def invoke_model(prompt: str, model_id: str | None = None) -> dict:
     })
     response = client.invoke_model(modelId=model, body=body)
     return json.loads(response["body"].read())
+
+
+def invoke_text_support(prompt: str, model_id: str | None = None, max_tokens: int = 1024) -> str:
+    """지원 계정(인스턴스 프로파일, us-east-1) 텍스트 모델 호출 → 응답 **텍스트**.
+
+    개인 계정 제거 후 검색 런타임 LLM(재랭커)의 유일 경로. on-demand 가용 모델만
+    호출 가능 — 기본 Claude 3 Haiku, ``amazon.nova-*`` 면 Nova 포맷으로 분기.
+    Haiku 4.5·Sonnet·``us.``/``global.`` inference profile 은 SafeRole 권한으로 막혀
+    ValidationException/AccessDeniedException 이 난다(aws_clients 모듈 docstring 참조).
+    """
+    client = _support_text_client_cached()
+    model = model_id or os.getenv("RERANK_MODEL_ID", DEFAULT_SUPPORT_TEXT_MODEL)
+    if model.startswith("amazon.nova"):
+        body = json.dumps({
+            "messages": [{"role": "user", "content": [{"text": prompt}]}],
+            "inferenceConfig": {"maxTokens": max_tokens},
+        })
+        response = client.invoke_model(modelId=model, body=body)
+        out = json.loads(response["body"].read())
+        return out["output"]["message"]["content"][0]["text"]
+    # Anthropic Messages 포맷 (Claude 3 Haiku 등)
+    body = json.dumps({
+        "anthropic_version": "bedrock-2023-05-31",
+        "max_tokens": max_tokens,
+        "messages": [{"role": "user", "content": prompt}],
+    })
+    response = client.invoke_model(modelId=model, body=body)
+    out = json.loads(response["body"].read())
+    return "".join(b.get("text", "") for b in out.get("content", []) if b.get("type") == "text")
+
+
+def _support_text_client_cached() -> Any:
+    global _support_text_client
+    if _support_text_client is None:
+        _support_text_client = get_bedrock_runtime_client_support()
+    return _support_text_client
 
 
 def invoke_model_with_image(prompt: str, image_b64: str, media_type: str = "image/jpeg") -> dict:
