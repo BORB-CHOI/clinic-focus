@@ -88,6 +88,15 @@ export function CategoryGrid({
     );
   }
 
+  // '기타'는 의미 없는 포괄 카테고리라 count 가 커도 항상 맨 끝으로 내린다.
+  // 나머지는 BE 가 준 count 내림차순 순서를 그대로 보존.
+  const orderedSpecialties = [...specialties].sort((a, b) => {
+    const aEtc = a.specialty === "기타";
+    const bEtc = b.specialty === "기타";
+    if (aEtc !== bEtc) return aEtc ? 1 : -1;
+    return 0;
+  });
+
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
       {/* 전체 병원 타일 — 강조 톤 */}
@@ -100,7 +109,7 @@ export function CategoryGrid({
         primary
       />
 
-      {specialties.map((sp, i) => (
+      {orderedSpecialties.map((sp, i) => (
         <Tile
           key={sp.specialty}
           index={i + 1}

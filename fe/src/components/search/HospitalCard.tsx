@@ -80,7 +80,7 @@ export function HospitalCard({
         />
 
         <div className="min-w-0 flex-1">
-          {/* 1) 분류 태그 — 표준 진료과목 + 주력 분야 */}
+          {/* 1) 분류 태그 — 표준 진료과목 + 주력 분야 + 랭킹 이유 배지 */}
           <div className="flex flex-wrap items-center gap-1">
             <Badge variant="outline" className="font-normal">
               {item.etc_subcategory || item.standard_specialty}
@@ -104,6 +104,17 @@ export function HospitalCard({
                 className="border-dashed font-normal text-muted-foreground"
               >
                 주력 미확정
+              </Badge>
+            )}
+            {/* 랭킹 이유 배지 — 인기(CTR 기반) or 분야 일치(NL 매칭) */}
+            {item.ctr >= 0.25 && (
+              <Badge className="border-orange-200 bg-orange-50 font-normal text-orange-700 hover:bg-orange-50">
+                인기
+              </Badge>
+            )}
+            {!compact && item.matched_focus?.length > 0 && (
+              <Badge variant="outline" className="font-normal text-muted-foreground">
+                {item.matched_focus[0]} 일치
               </Badge>
             )}
           </div>

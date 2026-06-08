@@ -1,9 +1,12 @@
 import { useSearchParams } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 
+import { HelpGuide } from "@/components/common/HelpGuide";
+
 import { CategoryGrid } from "@/components/search/CategoryGrid";
 import { EmptyState } from "@/components/common/EmptyState";
-import { WeatherBadge } from "@/components/analytics/WeatherBadge";
+import { RecommendSection } from "@/components/analytics/RecommendSection";
+import { AdCard } from "@/components/search/AdCard";
 import { HospitalCard } from "@/components/search/HospitalCard";
 import { HospitalCardSkeleton } from "@/components/search/HospitalCardSkeleton";
 import { Pagination } from "@/components/search/Pagination";
@@ -11,6 +14,7 @@ import { SearchFilters } from "@/components/search/SearchFilters";
 import { useSearch, PAGE_SIZE } from "@/hooks/useSearch";
 import { useSpecialties } from "@/hooks/useSpecialties";
 import { isEmergencyQuery } from "@/lib/emergency";
+import { getAds } from "@/lib/ads";
 import type { SortOption } from "@/types/domain";
 
 // 검색 결과 페이지 — BE /api/search 연동 (useSearch hook)
@@ -30,7 +34,7 @@ const SEARCH_MODE_LABEL: Record<string, string> = {
   category: "카테고리",
 };
 
-const VALID_SORTS: SortOption[] = ["distance", "confidence", "relevance"];
+const VALID_SORTS: SortOption[] = ["distance", "confidence", "relevance", "popular"];
 
 export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -124,6 +128,13 @@ export default function SearchPage() {
   const meta = data?.meta;
   const total = meta?.total ?? 0;
 
+  // 광고 슬롯 — 결과 목록 첫 페이지 상단에만 노출. 진료과 컨텍스트로 매칭.
+  // 응급 쿼리에선 광고를 숨긴다 (응급 상황에 협찬 노출은 부적절).
+  const ads =
+    page === 1 && !isEmergencyQuery(query)
+      ? getAds({ specialty, limit: 1 })
+      : [];
+
   // 목록 제목
   const listTitle = query
     ? `“${query}” 검색 결과`
@@ -134,15 +145,24 @@ export default function SearchPage() {
   return (
     <section className="space-y-5">
       <div className="animate-in fade-in slide-in-from-top-1 duration-300">
-        <h1 className="text-2xl font-bold tracking-tight">병원 검색</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          표준 진료과목 너머, 이 병원이 자기 사이트에서 무엇을 메인으로
-          표시하는지를 보여줍니다.
-        </p>
-      </div>
-
-      <div className="animate-in fade-in slide-in-from-top-1 duration-300 rounded-md border bg-muted/25 px-3 py-2">
-        <WeatherBadge />
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">병원 검색</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              표준 진료과목 너머, 이 병원이 자기 사이트에서 무엇을 메인으로
+              표시하는지를 보여줍니다.
+            </p>
+          </div>
+          <HelpGuide
+            align="right"
+            steps={[
+              { icon: "👤", label: "프로필 설정", text: "오른쪽 상단 버튼에서 나이·성별을 입력하면 내 연령대 맞춤 병원을 추천해 드려요." },
+              { icon: "📍", label: "내 위치", text: "상단 검색창에 내 위치를 입력하면 가까운 병원 순서로 볼 수 있어요." },
+              { icon: "🔍", label: "증상·시술 검색", text: "\"무릎 통증\", \"여드름 레이저\" 처럼 검색하면 실제로 그 분야를 주력하는 병원을 보여줘요." },
+              { icon: "📋", label: "진료과목 탐색", text: "진료과목 그리드를 클릭하면 해당 과목 병원 전체 목록을 볼 수 있어요." },
+            ]}
+          />
+        </div>
       </div>
 
       {isEmergencyQuery(query) ? (
@@ -160,8 +180,9 @@ export default function SearchPage() {
       ) : null}
 
       {isBrowse ? (
-        /* ── 둘러보기: 진료과목 그리드 랜딩 ── */
-        <div className="space-y-3">
+        /* ── 둘러보기: 트렌딩 + 진료과목 그리드 랜딩 ── */
+        <div className="space-y-5">
+          <RecommendSection />
           <div className="flex items-baseline justify-between">
             <h2 className="text-base font-semibold tracking-tight">
               진료과목으로 둘러보기
@@ -215,6 +236,22 @@ export default function SearchPage() {
             onMinConfidenceChange={setMinConfidence}
             onSortChange={setSort}
           />
+
+          {/* 광고(협찬) 슬롯 — 자연 검색 결과와 분리. "광고" 라벨 명시 */}
+          {ads.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                스폰서
+              </p>
+              <ul className="grid gap-3">
+                {ads.map((ad) => (
+                  <li key={ad.ad_id}>
+                    <AdCard ad={ad} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
 
           {/* 카드 목록 */}
           {isError ? (

@@ -387,6 +387,19 @@ class FeedbackEntry(BaseModel):
     primary_focus: str
     verdict: Literal["agree", "disagree"]
     received_at: datetime
+    review_text: str | None = None
+    age_bucket: str | None = None
+    gender_bucket: str | None = None
+
+
+class ReviewItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    verdict: Literal["agree", "disagree"]
+    review_text: str
+    age_bucket: str | None = None
+    gender_bucket: str | None = None
+    received_at: datetime
 
 
 class FeedbackStats(BaseModel):
@@ -397,6 +410,7 @@ class FeedbackStats(BaseModel):
     disagree_count: int
     agree_ratio: float
     last_feedback_at: datetime | None = None
+    recent_reviews: list["ReviewItem"] = []
 
 
 # ---------------------------------------------------------------------------

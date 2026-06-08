@@ -236,6 +236,19 @@ const CONFIDENCE_HEX: Record<ConfidenceLevel, string> = {
   "정보 부족": "#48536a", // hsl(215 19% 35%) ≈ 짙은 슬레이트
 };
 
+/** 사용자 위치 표시용 빨간 원형 마커 */
+export function buildUserLocationMarkerImage(maps: KakaoMapsApi): KakaoMarkerImage {
+  const R = 10;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${R * 2}" height="${R * 2}">
+    <circle cx="${R}" cy="${R}" r="${R - 1}" fill="#ef4444" stroke="white" stroke-width="2.5"/>
+    <circle cx="${R}" cy="${R}" r="${R / 3}" fill="white"/>
+  </svg>`.trim();
+  const dataUri = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  const size = new maps.Size(R * 2, R * 2);
+  const offset = new maps.Point(R, R);
+  return new maps.MarkerImage(dataUri, size, { offset });
+}
+
 const MARKER_W = 28;
 const MARKER_H = 36;
 const SELECTED_W = 40;

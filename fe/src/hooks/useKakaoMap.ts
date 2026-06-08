@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import {
   buildMarkerImage,
+  buildUserLocationMarkerImage,
   loadKakaoMaps,
   type KakaoMap,
   type KakaoMapsApi,
@@ -28,6 +29,8 @@ interface UseKakaoMapOptions {
   onIdle?: (center: { lat: number; lng: number }, radiusKm: number) => void;
   /** 선택된 병원 ID — 해당 마커를 크게/강조 표시 */
   selectedId?: string | null;
+  /** 사용자가 설정한 위치 — 빨간 점으로 표시. null이면 마커 없음 */
+  userLocation?: { lat: number; lng: number } | null;
 }
 
 interface UseKakaoMapResult {
@@ -58,12 +61,14 @@ export function useKakaoMap({
   onMarkerClick,
   onIdle,
   selectedId,
+  userLocation = null,
 }: UseKakaoMapOptions): UseKakaoMapResult {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapsApiRef = useRef<KakaoMapsApi | null>(null);
   const mapInstanceRef = useRef<KakaoMap | null>(null);
   // hospital_id → { marker, item } — setImage 로 이미지만 교체하기 위해 item 보존
   const markersRef = useRef<Map<string, { marker: KakaoMarker; item: SearchResultItem }>>(new Map());
+  const userMarkerRef = useRef<KakaoMarker | null>(null);
 
   const [status, setStatus] = useState<UseKakaoMapResult["status"]>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -87,11 +92,17 @@ export function useKakaoMap({
       .then((maps) => {
         if (cancelled || !mapRef.current) return;
         mapsApiRef.current = maps;
-        const map = new maps.Map(mapRef.current, {
+        const mapEl = mapRef.current;
+        const map = new maps.Map(mapEl, {
           center: new maps.LatLng(center.lat, center.lng),
           level,
         });
         mapInstanceRef.current = map;
+
+        // 모바일 드래그: touchmove 기본 동작(페이지 스크롤)을 막아 카카오맵이 터치를 온전히 처리.
+        // passive:false 필수 — 기본값 passive:true 에서는 preventDefault() 가 무시됨.
+        const blockScroll = (e: TouchEvent) => { e.preventDefault(); };
+        mapEl.addEventListener("touchmove", blockScroll, { passive: false });
 
         // 이동·줌이 멈추면(idle) 현재 보이는 구역을 호출부에 알린다.
         // 보이는 영역을 덮도록 반경 = 중심 → 화면 모서리(NE) 거리.
@@ -106,6 +117,7 @@ export function useKakaoMap({
         });
 
         setStatus("ready");
+        return () => { mapEl.removeEventListener("touchmove", blockScroll); };
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -167,6 +179,28 @@ export function useKakaoMap({
       marker.setImage(buildMarkerImage(maps, item.confidence?.level, isSelected));
     });
   }, [selectedId, status]);
+
+  // ─ 사용자 위치 빨간 점 마커 ──────────────────────────────────────
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const maps = mapsApiRef.current;
+    if (!map || !maps || status !== "ready") return;
+
+    if (userMarkerRef.current) {
+      userMarkerRef.current.setMap(null);
+      userMarkerRef.current = null;
+    }
+
+    if (userLocation) {
+      const position = new maps.LatLng(userLocation.lat, userLocation.lng);
+      const image = buildUserLocationMarkerImage(maps);
+      userMarkerRef.current = new maps.Marker({ position, map, image, title: "내 위치" });
+    }
+
+    return () => {
+      userMarkerRef.current?.setMap(null);
+    };
+  }, [userLocation, status]);
 
   const panTo = (lat: number, lng: number) => {
     const map = mapInstanceRef.current;

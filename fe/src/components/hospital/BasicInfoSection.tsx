@@ -1,4 +1,4 @@
-import { MapPin, Phone, ExternalLink, Calendar, Clock } from "lucide-react";
+import { MapPin, Phone, ExternalLink, Calendar, Clock, Navigation } from "lucide-react";
 import { trackAnalyticsSelect, trackAnalyticsClick } from "@/lib/events";
 
 import { Section } from "@/components/common/Section";
@@ -95,7 +95,7 @@ export function BasicInfoSection({
         </span>
       }
     >
-      {/* 핵심 액션: 전화 + 홈페이지 */}
+      {/* 핵심 액션: 전화 + 길 안내 + 홈페이지 */}
       <div className="grid gap-2 sm:grid-cols-2">
         <a
           href={`tel:${contact.phone}`}
@@ -110,6 +110,21 @@ export function BasicInfoSection({
             {contact.phone}
           </span>
         </a>
+        {location.lat && location.lng ? (
+          <a
+            href={`https://map.kakao.com/link/to/${encodeURIComponent(hospitalName)},${location.lat},${location.lng}`}
+            target="_blank"
+            rel="noreferrer"
+            onClick={() => trackAnalyticsSelect(ctx, { lat: location.lat, lng: location.lng })}
+            className="group flex items-center justify-between gap-3 rounded-md border bg-background px-3 py-2.5 text-sm transition-colors hover:border-primary/40 hover:bg-accent"
+          >
+            <span className="flex items-center gap-2">
+              <Navigation className="h-4 w-4 text-muted-foreground group-hover:text-primary" aria-hidden />
+              <span className="font-medium">길 안내</span>
+            </span>
+            <span className="text-xs text-muted-foreground">↗</span>
+          </a>
+        ) : null}
         {contact.homepage_url ? (
           <a
             href={contact.homepage_url}

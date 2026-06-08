@@ -74,6 +74,7 @@ def _sort_nl_results(
 
     score_map: hospital_id → similarity_score (NL 경로에서만 유의미).
     카드의 confidence 는 dict 형태 {"score": N, ...} 이거나 None.
+    popular: ctr(클릭률) 내림차순. _inject_event_stats() 선행 필요.
     """
     score_map = score_map or {}
 
@@ -97,6 +98,8 @@ def _sort_nl_results(
         items.sort(key=lambda c: (-_confidence(c), -_sim(c), _name(c)))
     elif sort == "distance":
         items.sort(key=lambda c: (_dist(c), -_confidence(c), _name(c)))
+    elif sort == "popular":
+        items.sort(key=lambda c: (-c.get("ctr", 0.0), -_confidence(c), _name(c)))
     else:
         # relevance(기본): retrieve_hospital 이 이미 '주력 강도'(언급 빈도 + primary_focus
         # 일치 + 코사인)로 정렬해 돌려준다. 여기서 similarity(코사인) 로 재정렬하면 그 주력
@@ -104,6 +107,14 @@ def _sort_nl_results(
         pass
 
     return items
+
+
+def _inject_event_stats(cards: list[dict]) -> None:
+    """카드 목록에 이벤트 통계(ctr, click_count)를 주입. 데이터 없으면 0."""
+    for card in cards:
+        stats = db.get_event_stats_for_hospital(card["hospital_id"])
+        card["ctr"] = stats.ctr if stats else 0.0
+        card["click_count"] = stats.clicks if stats else 0
 
 
 @router.get("")
@@ -207,6 +218,9 @@ def search_hospitals(
             if sr.query_interpretation:
                 query_interpretation = sr.query_interpretation
 
+        # popular 정렬은 ctr 선행 주입 필요 (모든 카드 대상)
+        if sort == "popular":
+            _inject_event_stats(all_cards)
         # 보조정렬 적용 (retrieve_hospital 이 1순위 정렬 해왔지만 2·3순위 보강)
         all_cards = _sort_nl_results(all_cards, sort, score_map=score_map)
 
@@ -236,6 +250,8 @@ def search_hospitals(
             card = _hospital_card(it["hospital_id"], distance_km=dist)
             if card:
                 all_cards.append(card)
+
+        _inject_event_stats(all_cards)
 
         return {
             "data": all_cards,
@@ -281,6 +297,8 @@ def search_hospitals(
             if card:
                 all_cards.append(card)
 
+        _inject_event_stats(all_cards)
+
         # 카테고리 경로는 total 을 미리 계산했으므로 별도 처리
         return {
             "data": all_cards,
@@ -300,6 +318,10 @@ def search_hospitals(
     # NL/위치 경로: total = 전체 카드 수, data = 슬라이스
     total = len(all_cards)
     page_data = all_cards[offset: offset + limit]
+
+    # popular 는 이미 전체 주입됨. 다른 정렬은 페이지 슬라이스에만 주입 (DDB 호출 최소화)
+    if sort != "popular":
+        _inject_event_stats(page_data)
 
     return {
         "data": page_data,
