@@ -74,6 +74,25 @@ def map_standard_specialty(cl_cd_nm: str, name: str) -> str:
     return "기타"
 
 
+def _extract_item_list(data: dict) -> list[dict]:
+    """HIRA 응답에서 items.item 을 안전하게 list[dict] 로 추출.
+
+    ★실측 함정(2026-06-08): 항목이 0건이면 HIRA 는 items 를 ``{}`` 가 아니라 **빈
+    문자열("")** 로 준다. `body.get("items", {}).get(...)` 가정은 이때 AttributeError
+    를 던져(거짓 "호출 실패" 경고) — 타입을 확인해 [] 로 정규화한다.
+    """
+    body = data.get("response", {}).get("body", {})
+    items = body.get("items")
+    if not isinstance(items, dict):  # "" 또는 None → 항목 없음
+        return []
+    item = items.get("item")
+    if isinstance(item, dict):
+        return [item]
+    if isinstance(item, list):
+        return item
+    return []
+
+
 class HiraAdapter:
     def __init__(self):
         self._client = httpx.Client(timeout=30.0)
@@ -211,16 +230,9 @@ class HiraAdapter:
                 return {}, []
             resp.raise_for_status()
             data = resp.json()
-            items = (
-                data.get("response", {})
-                    .get("body", {})
-                    .get("items", {})
-                    .get("item", [])
-            )
+            items = _extract_item_list(data)
             if not items:
                 return {}, []
-            if isinstance(items, dict):
-                items = [items]
 
             by_dept: dict[str, int] = {}
             for item in items:
@@ -267,16 +279,10 @@ class HiraAdapter:
                 return None
             resp.raise_for_status()
             data = resp.json()
-            item = (
-                data.get("response", {})
-                    .get("body", {})
-                    .get("items", {})
-                    .get("item")
-            )
-            if not item:
+            items = _extract_item_list(data)
+            if not items:
                 return None
-            if isinstance(item, list):
-                item = item[0]
+            item = items[0]
             raw = item.get("drTotCnt")
             if raw is None:
                 return None
@@ -319,11 +325,9 @@ class HiraAdapter:
                 resp.raise_for_status()
                 data = resp.json()
                 body = data.get("response", {}).get("body", {})
-                raw_items = body.get("items", {}).get("item", [])
+                raw_items = _extract_item_list(data)
                 if not raw_items:
                     break
-                if isinstance(raw_items, dict):
-                    raw_items = [raw_items]
 
                 for raw in raw_items:
                     item_name: str = (
@@ -331,8 +335,11 @@ class HiraAdapter:
                     ).strip()
                     if not item_name:
                         continue
+                    # ★실측: getNonPaymentItemHospDtlList 에 분류 전용 필드는 없고
+                    # npayKorNm 이 "대분류/중분류/소분류" 계층 문자열이다(예: "초음파검사료
+                    # (진단초음파)/임산부 초음파/제1삼분기 -일반"). 첫 세그먼트를 분류로 쓴다.
                     category: str | None = (
-                        raw.get("clauseCdNm") or raw.get("itemCdNm") or None
+                        item_name.split("/", 1)[0].strip() if "/" in item_name else None
                     )
                     # curAmt 파싱: 숫자 문자열("50000")→int, 범위("50000~80000")·문자→None
                     raw_amt = raw.get("curAmt")

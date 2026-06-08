@@ -181,10 +181,14 @@ class TestGetNonpayItems:
         self.adapter = HiraAdapter()
 
     def test_normal_parsing(self):
-        """정상 비급여 항목 파싱 — item_name, category, amount."""
+        """정상 비급여 파싱 — 실측 필드: npayKorNm(계층 "대분류/중분류/소분류")·curAmt.
+
+        ★분류 전용 필드는 응답에 없다(clauseCdNm 등 부재). category 는 npayKorNm 의
+        첫 세그먼트에서 파생한다(예: "이학요법료/증식치료/척추부위" → "이학요법료").
+        """
         items = [
-            {"npayKorNm": "도수치료", "clauseCdNm": "처치 및 수술료 등", "curAmt": "80000"},
-            {"npayKorNm": "체외충격파치료", "clauseCdNm": "처치 및 수술료 등", "curAmt": "50000"},
+            {"npayKorNm": "이학요법료/증식치료/척추부위", "curAmt": "400000"},
+            {"npayKorNm": "초음파검사료(진단초음파)/복부-남성생식기 초음파", "curAmt": "60000"},
         ]
         body = _nonpay_body(items)
 
@@ -192,10 +196,21 @@ class TestGetNonpayItems:
             result = self.adapter._get_nonpay_items("TEST020")
 
         assert len(result) == 2
+        assert result[0].item_name == "이학요법료/증식치료/척추부위"  # 신고명 그대로(주체명시)
+        assert result[0].category == "이학요법료"                    # 첫 세그먼트 파생
+        assert result[0].amount == 400000
+        assert result[1].category == "초음파검사료(진단초음파)"
+        assert result[1].amount == 60000
+
+    def test_flat_name_has_no_category(self):
+        """계층 구분자("/") 없는 신고명 → category=None."""
+        items = [{"npayKorNm": "도수치료", "curAmt": "80000"}]
+        body = _nonpay_body(items)
+        with patch.object(self.adapter._client, "get", return_value=_mock_response(200, body)):
+            result = self.adapter._get_nonpay_items("TEST020F")
         assert result[0].item_name == "도수치료"
-        assert result[0].category == "처치 및 수술료 등"
+        assert result[0].category is None
         assert result[0].amount == 80000
-        assert result[1].amount == 50000
 
     def test_range_amount_becomes_none(self):
         """범위 금액("50000~80000") → amount=None."""
@@ -254,10 +269,21 @@ class TestGetNonpayItems:
         assert call_count == 1  # 1페이지에서 멈춤
 
     def test_empty_items_returns_empty(self):
-        """items 빈 응답 → []."""
+        """items 빈 응답({}) → []."""
         body = {"response": {"body": {"totalCount": 0, "items": {}}}}
         with patch.object(self.adapter._client, "get", return_value=_mock_response(200, body)):
             result = self.adapter._get_nonpay_items("TEST026")
+        assert result == []
+
+    def test_empty_items_string_returns_empty(self):
+        """★실측 함정: 항목 0건이면 HIRA 가 items 를 빈 문자열("")로 준다.
+
+        이전엔 `items.get(...)` 가 AttributeError → except 로 거짓 "호출 실패" 경고.
+        의원급은 비급여 신고가 0건이라 이 경로를 항상 타므로 회귀 가드 필수.
+        """
+        body = {"response": {"body": {"totalCount": 0, "items": ""}}}
+        with patch.object(self.adapter._client, "get", return_value=_mock_response(200, body)):
+            result = self.adapter._get_nonpay_items("TEST027")
         assert result == []
 
 
