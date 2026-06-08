@@ -68,8 +68,10 @@
 9영역 컴포넌트(`fe/src/components/hospital/`)는 대부분 구현됨 — ② 핵심진료·③ 의료진·
 ④ 신뢰도(4시그널 분해)·⑥ 피드백UI·⑦ 변경이력·⑧ 관련병원·⑨ 메타 = as-built. 단 ②·③은 크롤/LLM 추출분만 채워지고 심평원 공공 신고
 데이터(전문의 수·비급여 항목)는 미연동 — 아래 ★ 참조. 남은 갭(작업량 S/M/L):
-- [ ] **⑤ 운영시간(operating_hours)** [M] — `be/api/hospital.py:106` null 반환(구조화 미보유). 크롤
-  파싱 → `HospitalMeta.operating_hours`(shared/models.py:472) 적재 + FE `BasicInfoSection` null 가드 해제.
+- [ ] **⑤ 운영시간(operating_hours)** [M] *(다음 개발 — 사용자 결정 2026-06-08)* — `be/api/hospital.py:106`
+  null 반환(구조화 미보유). **출처 우선순위: 네이버/카카오 플레이스(병원이 직접 적은 값 = 가장 정확) 1순위,
+  없으면 HIRA `getDtlInfo2.8` 폴백**(점심 lunchWeek·lunchSat·휴진 noTrmtHoli·noTrmtSun·주차 parkEtc 보유 — 키 동작 확인됨).
+  → `HospitalMeta.operating_hours`(shared/models.py:472) 적재 + FE `BasicInfoSection` null 가드 해제.
   ⚠️ FE 타입(`domain.ts:89` DayHours: open/close…)과 BE 모델(weekday/saturday…) **구조 불일치 — 한쪽 정렬 필요**.
 - [ ] **thumbnail_url 스크린샷 적재** [M] — `be/api/hospital.py:22` 스트리밍 엔드포인트는 있으나
   S3 `thumbnails/{id}.jpg` 적재가 일부만(카카오/네이버 외부 URL은 동작). 미수집 병원은 플레이스홀더 폴백.
