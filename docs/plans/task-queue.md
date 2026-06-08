@@ -66,7 +66,8 @@
 ### C. FE 상세 페이지 — 9영역 대부분 as-built, 남은 갭만 (2026-06-08 감사)
 
 9영역 컴포넌트(`fe/src/components/hospital/`)는 대부분 구현됨 — ② 핵심진료·③ 의료진·
-④ 신뢰도(4시그널 분해)·⑥ 피드백UI·⑦ 변경이력·⑧ 관련병원·⑨ 메타 = as-built. 남은 갭(작업량 S/M/L):
+④ 신뢰도(4시그널 분해)·⑥ 피드백UI·⑦ 변경이력·⑧ 관련병원·⑨ 메타 = as-built. 단 ②·③은 크롤/LLM 추출분만 채워지고 심평원 공공 신고
+데이터(전문의 수·비급여 항목)는 미연동 — 아래 ★ 참조. 남은 갭(작업량 S/M/L):
 - [ ] **⑤ 운영시간(operating_hours)** [M] — `be/api/hospital.py:106` null 반환(구조화 미보유). 크롤
   파싱 → `HospitalMeta.operating_hours`(shared/models.py:472) 적재 + FE `BasicInfoSection` null 가드 해제.
   ⚠️ FE 타입(`domain.ts:89` DayHours: open/close…)과 BE 모델(weekday/saturday…) **구조 불일치 — 한쪽 정렬 필요**.
@@ -80,7 +81,19 @@
   일부 출처 확인/자칭만 확인" + "자칭 컨셉" 용어가 비전문가에 모호. 중립·직관 표현으로(예: "병원 정보만 확인") +
   태그 옆 숫자(= `confidence.score` 0~100 근거점수) 의미 명확화 또는 정리. ★ medical-language-reviewer 검수 필수.
 
-> 다음 세션 우선순위: 필수 ⑤·thumbnail(M) → 중요 ①·⑥·② → 최적화 ⑨·라벨(S). 근거: 2026-06-08 9영역 감사.
+**★ 심평원 공공 신고 데이터 — code path 구현 완료(2026-06-08, `feat/hira-public-signals`), 키 승인+재적재만 남음.**
+엔드포인트 실측 확정(403=경로 정확·키 미승인): 전문의 `MadmDtlInfoService2.7/getDgsbjtInfo2.7`(`dgsbjtPrSdrCnt`),
+비급여 `nonPaymentDamtInfoService/getNonPaymentItemHospDtlList`. 분류 스키마(M1 동결) 불변 — `PublicData`
+확장(`specialists_by_dept`·`total_doctors`·`nonpay_items`) + 상세표시·검색필터만으로 구현:
+- [x] ③ 의료진 — `PublicData.specialists_by_dept` 적재·상세응답·`DoctorsSection` "심평원 신고 기준 ○○과 전문의 N명"
+  (간판-진실성: 0명도 사실 노출). 검색 필터 `has_specialist`/`specialist_dept`(GSI 경로). medical-language 검수 통과.
+- [x] ② 비급여 — `PublicData.nonpay_items` 적재·상세 비급여 영역(출처 `public_data`). AI 의도정렬 일반화
+  (미용 하드코딩 `_COSMETIC_FOCUS` → 심평원 `nonpay_ratio` soft 강등, 하드코딩 fallback 유지·도수 hard제외 제외).
+- [ ] **남은 일 = data.go.kr 15001699·15001700 활용신청 키 승인 → `LOAD_PUBLIC_DATA=true` 로 `load_seoul_5gu`
+  재실행 → KB 재ingest.** 그 전까지 403→빈값 graceful degrade(현행 동작 무손상). 재검증: `be/scripts/_verify_hira_detail.py`.
+
+> 다음 세션 우선순위: 필수 ⑤·thumbnail(M) → 중요 ①·⑥. **★ 공공 신고 데이터는 code path 완료 — 활용신청 키
+> 승인 후 재적재만.** 근거: 2026-06-08 9영역 감사 + 심평원 2종 연동.
 
 ### D. 표본 확장 + 통합 검증 (Phase F)
 - [ ] 5개구 풀커버 → 풀크롤(자체+외부) → 룰 분류 일괄(트랙 A, LLM 0). 현재 분류·KB는 강남만.
