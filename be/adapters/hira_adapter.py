@@ -95,7 +95,7 @@ def _extract_item_list(data: dict) -> list[dict]:
     return []
 
 
-def _hhmm_to_str(raw) -> str | None:
+def _hhmm_to_str(raw: int | str | None) -> str | None:
     """심평원 getDtlInfo2.8 시간 필드(HHMM 정수 또는 문자열) → 'HH:MM' 문자열.
 
     - 930  → '09:30'
@@ -116,7 +116,7 @@ def _hhmm_to_str(raw) -> str | None:
     return f"{h:02d}:{m:02d}"
 
 
-def _build_time_range(start_raw, end_raw) -> str | None:
+def _build_time_range(start_raw: int | str | None, end_raw: int | str | None) -> str | None:
     """시작·종료 HHMM → 'HH:MM ~ HH:MM' 문자열. 어느 한쪽이라도 없으면 None."""
     s = _hhmm_to_str(start_raw)
     e = _hhmm_to_str(end_raw)
@@ -361,7 +361,7 @@ class HiraAdapter:
 
         except Exception as exc:
             logger.warning(
-                "HIRA getDgsbjtInfo2.8 호출 실패 (ykiho=%s): %s", hospital_id, exc
+                "HIRA getDgsbjtInfo2.8 호출 실패 (ykiho=%s): %s", hospital_id, type(exc).__name__
             )
             return {}, []
 
@@ -437,7 +437,7 @@ class HiraAdapter:
 
         except Exception as exc:
             logger.warning(
-                "HIRA getNonPaymentItemHospDtlList 호출 실패 (ykiho=%s): %s", hospital_id, exc
+                "HIRA getNonPaymentItemHospDtlList 호출 실패 (ykiho=%s): %s", hospital_id, type(exc).__name__
             )
 
         return all_items
@@ -485,7 +485,7 @@ class HiraAdapter:
             item = items[0]
             return _parse_operating_hours(item)
         except Exception as exc:
-            logger.warning("HIRA getDtlInfo2.8 호출 실패 (ykiho=%s): %s", hospital_id, exc)
+            logger.warning("HIRA getDtlInfo2.8 호출 실패 (ykiho=%s): %s", hospital_id, type(exc).__name__)
             return None
 
     def _get_registered_devices(self, hospital_id: str) -> list[str]:
@@ -523,6 +523,6 @@ class HiraAdapter:
             return devices
         except Exception as exc:
             logger.warning(
-                "HIRA getMedOftInfo2.8 호출 실패 (ykiho=%s): %s", hospital_id, exc
+                "HIRA getMedOftInfo2.8 호출 실패 (ykiho=%s): %s", hospital_id, type(exc).__name__
             )
             return []

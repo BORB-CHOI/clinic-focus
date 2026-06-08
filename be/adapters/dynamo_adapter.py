@@ -24,6 +24,7 @@ from typing import Any
 
 import boto3
 from boto3.dynamodb.conditions import Attr, Key
+from pydantic import ValidationError
 
 from shared.models import (
     ChangeRecord,
@@ -716,7 +717,7 @@ class DynamoAdapter:
         if isinstance(oh_raw, dict):
             try:
                 operating_hours = OperatingHours(**oh_raw)
-            except Exception:
+            except (ValidationError, ValueError, TypeError):
                 operating_hours = None
 
         return {
@@ -752,7 +753,7 @@ class DynamoAdapter:
                         item = dict(item)
                         item["amount"] = int(item["amount"])
                     result.append(NonPayItem(**item))
-                except Exception:
+                except (ValidationError, ValueError, TypeError):
                     pass
         return result
 

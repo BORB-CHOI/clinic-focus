@@ -148,7 +148,7 @@ def search_hospitals(
         ),
     ),
     specialist_dept: str | None = Query(
-        None,
+        None, max_length=20,
         description=(
             "심평원 신고 기준으로 특정 진료과(예: 피부과) 전문의 1명 이상인 병원만 필터. "
             "카테고리/시군구 경로 전용. 자연어 쿼리(q)가 있으면 무시."

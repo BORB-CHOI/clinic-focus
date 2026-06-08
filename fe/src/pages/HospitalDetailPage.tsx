@@ -131,7 +131,7 @@ export default function HospitalDetailPage() {
               />
               {/* 심평원 비급여 신고항목 — 빈 배열이면 숨김(graceful) */}
               {(hospital.nonpay_items ?? []).length > 0 && (
-                <NonPayItemsSection nonpay_items={hospital.nonpay_items} />
+                <NonPayItemsSection nonpay_items={hospital.nonpay_items ?? []} />
               )}
               <ConfidenceSection
                 confidence={hospital.confidence}
