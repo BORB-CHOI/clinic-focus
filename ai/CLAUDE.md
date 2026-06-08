@@ -7,8 +7,9 @@
 | 항목 | 선택 |
 |---|---|
 | 언어 | Python 3.11+ (BE와 동일 EC2 프로세스) |
-| LLM/Vision (시연 약 500개) — 지원 계정 | Bedrock Haiku 4.5 또는 Nova (강사 제공 자원, 모델 제한) |
-| Vision 고품질 시연 (약 500개) — 개인 계정 | Bedrock Claude Sonnet 4.6 (`global.anthropic.claude-sonnet-4-6`, Global cross-region inference profile, 서울 리전 `ap-northeast-2`) |
+| 검색 재랭커 (런타임) — 지원 계정 | Bedrock **Nova Lite** `amazon.nova-lite-v1:0` (on-demand, A/B 우위) / `RERANK_MODEL_ID` 로 Claude 3 Haiku·Nova Pro 교체. `RERANK_MODE=llm` 일 때만 |
+| ~~LLM 텍스트 시연 (사전처리)~~ | ~~Haiku 4.5/Nova~~ — Haiku 4.5 막힘·개인 계정 데드 → DESCRIPTION 504 **기적재 정적**, 신규 생성 불가 |
+| ~~Vision 시연 (사전처리)~~ | ~~Sonnet 4.6 (개인 계정)~~ — **개인 계정 제거** → VISION 508 **기적재 정적**, 신규 생성 불가 |
 | OCR | Bedrock Vision으로 흡수 (한국어 미지원으로 Textract 제거) |
 | Embedding | Bedrock Titan Embed Text v2 (`amazon.titan-embed-text-v2:0`, 1024 dim, 지원 계정 — KB가 자동 호출, `embed_text`는 실험·디버깅용으로만 직접 호출) |
 | Vector store | **Bedrock Knowledge Base 경유** — 강사 제공 KB `kmuproj-team-03` (ID `GTBJ6HLFDK`, 지원 계정). 내부 storage는 S3 Vectors 버킷 `bedrock-knowledge-base-1tvot3`이지만 우리는 KB API(`bedrock-agent-runtime:Retrieve`, `bedrock-agent:StartIngestionJob`)만 호출. S3 Vectors 직접 호출 ❌ (`SafeRole-kmuproj-10`에 `s3vectors:*` 권한 없음 + 강사가 KB로 셋팅함) |
@@ -16,9 +17,11 @@
 | RAG 프레임워크 | **직접 구현** (LangChain 안 씀 — 4 시그널 교차 검증 로직 통제 위해) |
 | 데이터 모델 | Pydantic — `../shared/models.py` 단일 소스 |
 
-> Bedrock KB(Retrieve / StartIngestionJob) · Titan Embed · Haiku/Nova 는 **지원 계정**(us-east-1) 자원으로 EC2 인스턴스
-> 프로파일로 자동 인증. Sonnet 4.6(Vision 시연용)만 **개인 계정**(서울 리전 `ap-northeast-2`) 자격증명으로 boto3
-> 클라이언트를 따로 생성한다. Global cross-region inference profile (`global.anthropic.claude-sonnet-4-6`)이라 IAM 정책에 3-ARN(inference-profile + regional FM + global FM) 필수. 자세한 건 `../CLAUDE.md`의 "AWS 계정·인프라 구조" 참조.
+> Bedrock KB(Retrieve / StartIngestionJob) · Titan Embed · 텍스트 LLM(재랭커, Nova Lite
+> on-demand) 전부 **지원 계정**(us-east-1) 인스턴스 프로파일로 자동 인증. **개인 계정은 제거됨** —
+> `_get_ai_session()`(AI_AWS_*) 은 데드 레거시. ★지원 계정 on-demand 만 호출 가능: Claude 3 Haiku·Nova ✅,
+> Haiku 4.5·Sonnet·모든 inference profile ❌(AccessDenied/Validation, 실측 2026-06-08). 사전처리 데모였던
+> `generate_description`·Vision(개인 Sonnet/Haiku4.5)은 신규 생성 불가(기적재 504/508 정적). 자세한 건 `../CLAUDE.md`의 "AWS 계정·인프라 구조" 참조.
 
 ## AI 트랙 3트랙 구조
 
@@ -36,11 +39,23 @@
 - 정제·크롤링은 **전부 BE 책임** — `be/core/crawler.py`의 페이지 간 중복 단락 제거 + 의료 사이트 공통 잡음 블랙리스트 (modoo 안내, 개인정보취급방침, 환자권리장전, 이용약관, 404 등). AI는 BE가 적재한 깨끗한 텍스트를 읽어서 분류만 한다.
 - 시연 약 500개(DESCRIPTION 504) 외 나머지는 `HospitalDescription` 생성 안 함 → API 응답에 `ai_description = null`. FE는 이 경우 자연어 단락 대신 룰 기반 태그 카드로 차등 렌더링 (`../docs/API-FE-BE.md` "프론트 렌더링 가이드" 참조).
 
-## 검색 시점 동작 — **LLM 호출 0건**
+## 검색 시점 동작 — 기본 **LLM 호출 0건** (재랭킹은 opt-in)
 
-본 시스템은 통상 "RAG"라 부르지만 엄밀히는 **Semantic Search**다. 사용자에게 자연어 답변이 아니라 정렬된 병원 목록을 돌려주기 때문에 LLM Generation 단계가 없다.
+본 시스템은 통상 "RAG"라 부르지만 기본 동작은 엄밀히 **Semantic Search**다. 사용자에게 자연어 답변이 아니라 정렬된 병원 목록을 돌려주기 때문에 LLM Generation 단계가 없다.
 
-사용자 검색 시 도는 것: **KB Retrieve API 1회** (내부에서 Titan v2 임베딩 + 벡터 검색을 자동 수행) **+ DynamoDB 신뢰도 조회 1회**. Sonnet/Haiku 호출 0건. 응답 ~200~500ms, 검색당 비용 ~$0.00003. LLM은 사전 단계(자칭 추출·`generate_description`·Vision)에만 도는데, 한 번 처리하면 정적 데이터로 우려먹는다. 자세한 건 `../docs/overview.md` "4-5. 검색 동작 원리" 참조.
+기본값(`RERANK_MODE=off`)에서 사용자 검색 시 도는 것: **KB Retrieve API 1회** (내부에서 Titan v2 임베딩 + 벡터 검색을 자동 수행) **+ DynamoDB 신뢰도 조회 1회**. Sonnet/Haiku 호출 0건. 응답 ~200~500ms, 검색당 비용 ~$0.00003. LLM은 사전 단계(자칭 추출·`generate_description`·Vision)에만 도는데, 한 번 처리하면 정적 데이터로 우려먹는다. 자세한 건 `../docs/overview.md` "4-5. 검색 동작 원리" 참조.
+
+> **2-stage RAG 재랭킹 (opt-in, `RERANK_MODE=llm`)**: 1차(임베딩+주력강도)로 회수된
+> 상위 후보를 검색 *런타임* 시점에 **지원 계정 on-demand LLM(Nova Lite 기본 `amazon.nova-lite-v1:0`,
+> temp=0, `RERANK_MODEL_ID` 로 교체)** 으로 한 번 더 정렬한다(`ai/search/reranker.py`,
+> `bedrock_client.invoke_text_support`). 회수된 결과가 노이즈로 1위를 차지하는 케이스를
+> 매칭도로 교정. **2-tier 회수**: llm 이면 `KB_MIN_SCORE` 가 0.35 로 자동 결합(컷 낮춰 thin-signal
+> 더 회수 → 리랭커가 노이즈 필터). **실측 A/B(강남 84토픽, Nova Lite, 컷 0.35)**: NDCG@10
+> 0.786→0.90+·P@1 0.679→0.85·MRR 0.744→0.89·못 찾는 토픽 10→3개. 모델 A/B: Nova Lite(P@1
+> 0.81) > Claude 3 Haiku(0.76) > Nova Pro(0.77). **기본 off**(검색 런타임 LLM 0건은 *기본값*
+> 셀링포인트, 재랭킹은 품질용 opt-in. relevance 정렬에만, 결과 캐시로 반복쿼리·시연 프리워밍
+> 방어 — `be/scripts/prewarm_search.py`). 출력은 순서만 바꿀 뿐 `SearchResult` 스키마·청크 본문
+> 비노출(§56③) 불변. ※ Haiku 4.5·Sonnet·inference profile 은 SafeRole 권한으로 막힘.
 
 > **검색 경로 이원화**: AI 모듈(`retrieve_hospital`)은 **자연어 쿼리만** 책임진다. `sigungu=강남구 & specialty=피부과` 같은 메타 완전일치 전체 목록 조회는 BE가 DynamoDB GSI로 직접 처리하고 AI 미경유. KB Retrieve는 빈 쿼리 텍스트를 받지 못하고 `numberOfResults` 최대 100 제한이 있어 카테고리 탐색에 부적합.
 

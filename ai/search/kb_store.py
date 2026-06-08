@@ -1099,11 +1099,18 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
 
     client = boto3.client("bedrock-agent-runtime", region_name=region)
 
+    # 2-stage RAG 2단계 재랭킹(opt-in). off(기본)면 검색 런타임 LLM 0건 유지.
+    # confidence/distance 모드는 별도 정렬키라 재랭킹 대상이 아님.
+    rerank_mode = os.environ.get("RERANK_MODE", "off")
+
     # min-sim 임계 — 유사도가 너무 낮은(관련 없는) 결과를 컷해 "검색 결과 없음"이 구조적으로
-    # 가능하게 한다(무관한 쿼리에 억지 매칭 금지). 0.42 = 92쿼리 eval 실측 sweet spot:
-    # 임상 쿼리 거의 유지(P@5 0.857→0.848), 무관 쿼리(자동차/우주여행)는 0건(빈 결과).
-    # 0.45 이상은 임상 쿼리(탈모 등)까지 깎여 과다. env(KB_MIN_SCORE)로 튜닝, 0 이면 비활성.
-    min_score = float(os.environ.get("KB_MIN_SCORE", "0.42"))
+    # 가능하게 한다(무관한 쿼리에 억지 매칭 금지). 컷 기본값은 재랭킹 여부에 결합한다:
+    #  - off:  0.42 — 92쿼리 eval sweet spot. 무관 쿼리(자동차/우주여행) 0건 보장. 필터가 곧 정밀도.
+    #  - llm:  0.35 — 리랭커가 노이즈를 거르므로 컷을 낮춰 thin-signal 토픽을 더 회수한다
+    #          (2-tier: 넓게 회수 → 리랭커 필터). 실측: 0.42→0.35 로 못 찾던 토픽 10→3개,
+    #          NDCG@10 0.835→0.913·P@5 0.674→0.802 (강남 84토픽, Nova Lite). 0.30 은 노이즈 과다.
+    # env(KB_MIN_SCORE)로 명시 오버라이드 가능, 0 이면 비활성.
+    min_score = float(os.environ.get("KB_MIN_SCORE", "0.35" if rerank_mode == "llm" else "0.42"))
 
     has_location = query.lat is not None and query.lng is not None
 
@@ -1148,7 +1155,7 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
     # 랭킹 기본(relevance)은 최고 청크 코사인 1개가 아니라 '주력 강도'(_focus_intensity).
     # 코사인은 의미 근접도일 뿐 '이 병원이 이 토픽을 얼마나 주력/주장하나'를 못 보여줘서다.
     # RANK_MODE=cosine 이면 옛 코사인-only 동작(대규모 A/B eval 비교용).
-    rank_mode = os.environ.get("RANK_MODE", "intensity")
+    rank_mode = os.environ.get("RANK_MODE", "intensity")  # rerank_mode 는 위(min_score)에서 읽음
     groups = _aggregate_by_hospital(raw, processed.medical_terms)
 
     # 의도-카테고리 정렬: 질병 쿼리(무좀·감기 등)면 미용주력 병원을 강등한다.
@@ -1183,6 +1190,10 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
             cands.sort(key=lambda g: (-g["confidence"], -_focus_intensity(g), _agg_name(g)))
         else:  # relevance (기본) — 주력 강도
             cands.sort(key=lambda g: (-_relevance_key(g), -g["confidence"], _agg_name(g)))
+            if rerank_mode == "llm":
+                from ai.search.reranker import rerank_candidates  # opt-in lazy import
+                # 같은 dict 객체를 재배치 → g['dist'] 보존, 아래 distance_km 정상.
+                cands = rerank_candidates(q_text, cands)
 
         results: list["SearchResult"] = []
         for g in cands[: query.limit]:
@@ -1207,6 +1218,9 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
         kept.sort(key=lambda g: (-g["confidence"], -_focus_intensity(g), _agg_name(g)))
     else:  # relevance (기본) — 주력 강도 (동점 → 코사인 → 이름)
         kept.sort(key=lambda g: (-_relevance_key(g), -g["max_score"], _agg_name(g)))
+        if rerank_mode == "llm":
+            from ai.search.reranker import rerank_candidates  # opt-in lazy import
+            kept = rerank_candidates(q_text, kept)  # 상위 RERANK_TOP_N 만 채점, 아래서 limit 슬라이스
 
     results = []
     for g in kept[: query.limit]:

@@ -417,6 +417,7 @@ a, an, are, around, best, good, how, is, near, nearby, the, top, was, were, what
 | 편도염 | tonsillitis, 급성 편도염, acute tonsillitis, 구개편도, 편도비대, tonsillar hypertrophy, 편도절제술, tonsillectomy | 두경부 |
 | 아데노이드 | 인두편도, adenoid, 아데노이드 비대, adenoid hypertrophy, 아데노이드 절제술, adenoidectomy | 두경부 |
 | 편도결석 | tonsillolith, tonsil stone, 편도와, 편도음와, 편도결석 제거, 구취 | 두경부 |
+| 편도 | 편도선, 편도염, tonsil, 편도비대, 편도결석 | 두경부 |
 | 인후통 | 인두염, pharyngitis, 급성 인두염, acute pharyngitis, 후두인두염, 목 통증 | 두경부 |
 | 쉰목소리 | 애성, hoarseness, 발성장애, dysphonia, 성대결절, vocal nodule, 성대폴립, vocal polyp, 후두미세수술, laryngomicrosurgery | 음성후두 |
 | 후두염 | laryngitis, 급성 후두염, acute laryngitis, 만성 후두염, 역류성 후두염, laryngopharyngeal reflux, LPR | 음성후두 |
@@ -617,6 +618,9 @@ a, an, are, around, best, good, how, is, near, nearby, the, top, was, were, what
 | 요로감염 | urinary tract infection, UTI, 방광염, cystitis, 신우신염, pyelonephritis | 감염내과 |
 | 패혈증 | sepsis, 균혈증, bacteremia, 혈액 배양, blood culture | 감염내과 |
 | 예방접종 | 백신, vaccination, vaccine, 면역, immunization, 성인 예방접종 | 감염내과 |
+| 호흡기 | 호흡기 질환, 호흡기내과, 기관지, 기도, 기침, 가래 | 호흡기 |
+| 플루 | 독감, 인플루엔자, influenza, flu, 독감 예방접종 | 감염내과 |
+| 예방주사 | 예방접종, 백신, vaccination, vaccine, 백신주사 | 감염내과 |
 | 알레르기 비염 | allergic rhinitis, 비염, 재채기, 코막힘, 알레르기 검사, allergy test | 알레르기내과 |
 | 두드러기 | urticaria, 만성 두드러기, chronic urticaria, 혈관부종, angioedema | 알레르기내과 |
 | 아나필락시스 | anaphylaxis, 과민반응, hypersensitivity, 에피네프린, epinephrine | 알레르기내과 |

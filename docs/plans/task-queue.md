@@ -63,12 +63,24 @@
 - [ ] hash diff 부분 재처리 — entity `content_hash` 비교, 재크롤 동일 시 KB re-ingest 스킵
 - [ ] Vision 활성화 — 개인계정 Sonnet 쿼터 복구 대기(사용자 트랙) → `analyze_images` → `classify_hospital` 연결 (현재 동결)
 
-### C. FE 상세 페이지 (검색·카테고리·지도는 as-built, 상세는 남음)
-- [ ] `HospitalDetailPage.tsx` 9영역 컴포넌트 (`fe/src/components/hospital/`)
-  - Headline(ai_description+출처배지) / CoreServices / Doctors / **Confidence(4시그널 분해 + `null`=회색 "수집 안 됨" 배지, `0`%=엇갈림 구분)**
-  - Operating / Feedback(1-tap+localStorage device_id) / HistoryPreview / Related(same_focus + **gap_fill "안 다루는 분야"**) / Meta
-- [ ] `ai_description==null` 차등 렌더(태그 카드 fallback) / `data_completeness<0.6` 경고 배너
-- [ ] device_id 유틸(`fe/src/lib/device.ts`) / 변경 이력 전체 페이지 / 카카오맵 신뢰도 색 마커(확실=초록·추정=노랑·부족=회색)
+### C. FE 상세 페이지 — 9영역 대부분 as-built, 남은 갭만 (2026-06-08 감사)
+
+9영역 컴포넌트(`fe/src/components/hospital/`)는 대부분 구현됨 — ② 핵심진료·③ 의료진·
+④ 신뢰도(4시그널 분해)·⑥ 피드백UI·⑦ 변경이력·⑧ 관련병원·⑨ 메타 = as-built. 남은 갭(작업량 S/M/L):
+- [ ] **⑤ 운영시간(operating_hours)** [M] — `be/api/hospital.py:106` null 반환(구조화 미보유). 크롤
+  파싱 → `HospitalMeta.operating_hours`(shared/models.py:472) 적재 + FE `BasicInfoSection` null 가드 해제.
+  ⚠️ FE 타입(`domain.ts:89` DayHours: open/close…)과 BE 모델(weekday/saturday…) **구조 불일치 — 한쪽 정렬 필요**.
+- [ ] **thumbnail_url 스크린샷 적재** [M] — `be/api/hospital.py:22` 스트리밍 엔드포인트는 있으나
+  S3 `thumbnails/{id}.jpg` 적재가 일부만(카카오/네이버 외부 URL은 동작). 미수집 병원은 플레이스홀더 폴백.
+- [ ] **① ai_description==null 차등 렌더 강화** [S] — 현재 안내 텍스트만 → 표준과목+주력태그 카드 모드(`HeadlinerSection`).
+- [ ] **② Vision 샘플이미지 갤러리** [L] — `sample_image_urls` 항상 `[]`. Vision 이미지 URL 저장 + `CoreServicesSection` 갤러리 활성화.
+- [ ] **⑥ 피드백/프로필 엔드포인트 BE** [L] — `/api/feedback/{id}/stats`·`/api/analytics/profile` 미구현(FE는 try-catch로 무시 중).
+- [ ] **⑨ data_sources 동적 산출** [S] — `hospital.py` 현재 `["public_registry"]` 하드코딩 → 실제 시그널 출처 탐지.
+- [ ] **신뢰도 라벨·'자칭'·태그 숫자 카피 개선** [S] (UX, 같은 FE 묶음) — `ConfidenceBadge`의 "여러 출처 일치/
+  일부 출처 확인/자칭만 확인" + "자칭 컨셉" 용어가 비전문가에 모호. 중립·직관 표현으로(예: "병원 정보만 확인") +
+  태그 옆 숫자(= `confidence.score` 0~100 근거점수) 의미 명확화 또는 정리. ★ medical-language-reviewer 검수 필수.
+
+> 다음 세션 우선순위: 필수 ⑤·thumbnail(M) → 중요 ①·⑥·② → 최적화 ⑨·라벨(S). 근거: 2026-06-08 9영역 감사.
 
 ### D. 표본 확장 + 통합 검증 (Phase F)
 - [ ] 5개구 풀커버 → 풀크롤(자체+외부) → 룰 분류 일괄(트랙 A, LLM 0). 현재 분류·KB는 강남만.
