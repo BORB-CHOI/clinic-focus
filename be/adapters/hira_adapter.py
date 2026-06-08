@@ -124,20 +124,18 @@ class HiraAdapter:
 
         while True:
             params["pageNo"] = page
-            query_parts = "&".join(f"{k}={v}" for k, v in params.items())
-            url = f"{HIRA_BASE_URL}/getHospBasisList?{query_parts}"
-            resp = self._client.get(url)
+            # ★httpx params= 로 전달해 serviceKey 를 URL-encode 한다. 수동 f"{k}={v}"
+            # 조립은 Decoding 키(+, /, = 포함)를 인코딩 안 해 +→공백으로 깨져 401 난다
+            # (다른 상세/비급여 메서드는 이미 params= 사용). _extract_item_list 로 빈응답 방어.
+            resp = self._client.get(f"{HIRA_BASE_URL}/getHospBasisList", params=params)
             resp.raise_for_status()
             data = resp.json()
 
             body = data.get("response", {}).get("body", {})
-            items = body.get("items", {}).get("item", [])
+            items = _extract_item_list(data)
 
             if not items:
                 break
-
-            if isinstance(items, dict):
-                items = [items]
 
             all_items.extend(items)
 
