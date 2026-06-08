@@ -125,13 +125,19 @@ FastAPI 미들웨어에서 CloudFront 도메인 + `http://localhost:5173` 허용
 | 변수 | 기본값 |
 |---|---|
 | `AWS_REGION` | `us-east-1` |
-| `BEDROCK_LLM_MODEL_ID` | (지원) `anthropic.claude-haiku-4-5-...` / (개인 Vision) `global.anthropic.claude-sonnet-4-6` |
-| `BEDROCK_EMBED_MODEL_ID` | `amazon.titan-embed-text-v2:0` |
+| `RERANK_MODE` | `off`. `llm` 이면 검색당 지원계정 on-demand LLM 1회(2-stage RAG 재랭킹) |
+| `RERANK_MODEL_ID` | `amazon.nova-lite-v1:0` (on-demand, A/B 우위). Claude 3 Haiku·Nova Pro 교체 가능 |
+| `KB_MIN_SCORE` | 미설정 시 `RERANK_MODE` 결합 — off=0.42 / llm=0.35(2-tier 회수) |
+| `BEDROCK_EMBED_MODEL_ID` | `amazon.titan-embed-text-v2:0` (KB 내부 호출) |
 | `KB_ID` / `KB_DATA_SOURCE_ID` | `GTBJ6HLFDK` / `PLC6QYALDU` (강사 제공 `kmuproj-team-03`) |
 | `KB_DATASOURCE_S3_BUCKET` / `KB_DATASOURCE_S3_PREFIX` | (강사 제공) — `get-data-source`로 확인 |
+| ~~`BEDROCK_LLM_MODEL_ID`~~ | 레거시(데드) — 개인 계정 `generate_description`·Vision 용이었으나 신규 생성 불가 |
 
-> Bedrock KB · Bedrock(Haiku/Nova) · Titan · DynamoDB · S3는 **지원 계정**, Sonnet 4.6(Vision 시연)만
-> **개인 계정** (서울 리전 `ap-northeast-2`)에 있다. 자세한 건 `../CLAUDE.md`의 "AWS 계정·인프라 구조" 참조.
+> Bedrock KB · Titan · DynamoDB · S3 · **검색 런타임 LLM(재랭커, Nova Lite on-demand)** 전부
+> **지원 계정**(us-east-1) 인스턴스 프로파일로 자동 인증. **개인 계정은 제거됐다** — 사전처리
+> 데모였던 `generate_description`·Vision(개인 Sonnet 4.6)은 신규 생성 불가(기존 적재분 정적).
+> ★지원 계정 on-demand 만 호출: Claude 3 Haiku·Nova ✅ / Haiku 4.5·Sonnet·inference profile ❌.
+> 자세한 건 `../CLAUDE.md`의 "AWS 계정·인프라 구조" 참조.
 
 ## 작업 원칙
 
