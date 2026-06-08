@@ -1149,6 +1149,9 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
     # 코사인은 의미 근접도일 뿐 '이 병원이 이 토픽을 얼마나 주력/주장하나'를 못 보여줘서다.
     # RANK_MODE=cosine 이면 옛 코사인-only 동작(대규모 A/B eval 비교용).
     rank_mode = os.environ.get("RANK_MODE", "intensity")
+    # 2-stage RAG 2단계: relevance 정렬 후 LLM 재랭킹(opt-in). off(기본)면 검색 런타임
+    # LLM 0건 유지. confidence/distance 모드는 별도 정렬키라 재랭킹 대상이 아님.
+    rerank_mode = os.environ.get("RERANK_MODE", "off")
     groups = _aggregate_by_hospital(raw, processed.medical_terms)
 
     # 의도-카테고리 정렬: 질병 쿼리(무좀·감기 등)면 미용주력 병원을 강등한다.
@@ -1183,6 +1186,10 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
             cands.sort(key=lambda g: (-g["confidence"], -_focus_intensity(g), _agg_name(g)))
         else:  # relevance (기본) — 주력 강도
             cands.sort(key=lambda g: (-_relevance_key(g), -g["confidence"], _agg_name(g)))
+            if rerank_mode == "llm":
+                from ai.search.reranker import rerank_candidates  # opt-in lazy import
+                # 같은 dict 객체를 재배치 → g['dist'] 보존, 아래 distance_km 정상.
+                cands = rerank_candidates(q_text, cands)
 
         results: list["SearchResult"] = []
         for g in cands[: query.limit]:
@@ -1207,6 +1214,9 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
         kept.sort(key=lambda g: (-g["confidence"], -_focus_intensity(g), _agg_name(g)))
     else:  # relevance (기본) — 주력 강도 (동점 → 코사인 → 이름)
         kept.sort(key=lambda g: (-_relevance_key(g), -g["max_score"], _agg_name(g)))
+        if rerank_mode == "llm":
+            from ai.search.reranker import rerank_candidates  # opt-in lazy import
+            kept = rerank_candidates(q_text, kept)  # 상위 RERANK_TOP_N 만 채점, 아래서 limit 슬라이스
 
     results = []
     for g in kept[: query.limit]:

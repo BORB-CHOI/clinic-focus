@@ -36,11 +36,19 @@
 - 정제·크롤링은 **전부 BE 책임** — `be/core/crawler.py`의 페이지 간 중복 단락 제거 + 의료 사이트 공통 잡음 블랙리스트 (modoo 안내, 개인정보취급방침, 환자권리장전, 이용약관, 404 등). AI는 BE가 적재한 깨끗한 텍스트를 읽어서 분류만 한다.
 - 시연 약 500개(DESCRIPTION 504) 외 나머지는 `HospitalDescription` 생성 안 함 → API 응답에 `ai_description = null`. FE는 이 경우 자연어 단락 대신 룰 기반 태그 카드로 차등 렌더링 (`../docs/API-FE-BE.md` "프론트 렌더링 가이드" 참조).
 
-## 검색 시점 동작 — **LLM 호출 0건**
+## 검색 시점 동작 — 기본 **LLM 호출 0건** (재랭킹은 opt-in)
 
-본 시스템은 통상 "RAG"라 부르지만 엄밀히는 **Semantic Search**다. 사용자에게 자연어 답변이 아니라 정렬된 병원 목록을 돌려주기 때문에 LLM Generation 단계가 없다.
+본 시스템은 통상 "RAG"라 부르지만 기본 동작은 엄밀히 **Semantic Search**다. 사용자에게 자연어 답변이 아니라 정렬된 병원 목록을 돌려주기 때문에 LLM Generation 단계가 없다.
 
-사용자 검색 시 도는 것: **KB Retrieve API 1회** (내부에서 Titan v2 임베딩 + 벡터 검색을 자동 수행) **+ DynamoDB 신뢰도 조회 1회**. Sonnet/Haiku 호출 0건. 응답 ~200~500ms, 검색당 비용 ~$0.00003. LLM은 사전 단계(자칭 추출·`generate_description`·Vision)에만 도는데, 한 번 처리하면 정적 데이터로 우려먹는다. 자세한 건 `../docs/overview.md` "4-5. 검색 동작 원리" 참조.
+기본값(`RERANK_MODE=off`)에서 사용자 검색 시 도는 것: **KB Retrieve API 1회** (내부에서 Titan v2 임베딩 + 벡터 검색을 자동 수행) **+ DynamoDB 신뢰도 조회 1회**. Sonnet/Haiku 호출 0건. 응답 ~200~500ms, 검색당 비용 ~$0.00003. LLM은 사전 단계(자칭 추출·`generate_description`·Vision)에만 도는데, 한 번 처리하면 정적 데이터로 우려먹는다. 자세한 건 `../docs/overview.md` "4-5. 검색 동작 원리" 참조.
+
+> **2-stage RAG 재랭킹 (opt-in, `RERANK_MODE=llm`)**: 1차(임베딩+주력강도)로 회수된
+> 상위 후보를 검색 *런타임* 시점에 LLM(개인 계정 Haiku)으로 한 번 더 정렬한다
+> (`ai/search/reranker.py`). 회수된 결과가 노이즈로 1위를 차지하는 케이스(NDCG baseline
+> 분해상 P@1 여지 +0.202)를 의도-부합 판단으로 교정. **검색당 Haiku 1회**라 개인 계정
+> 일일 토큰 쿼터를 의식해 **기본 off** — "검색 런타임 LLM 0건"은 *기본값*의 셀링포인트이고,
+> 재랭킹은 품질을 위해 의식적으로 켜는 모드다(relevance 정렬에만 적용, 결과 캐시로 반복쿼리
+> 방어). 출력은 순서만 바꿀 뿐 `SearchResult` 스키마·청크 본문 비노출(§56③) 불변.
 
 > **검색 경로 이원화**: AI 모듈(`retrieve_hospital`)은 **자연어 쿼리만** 책임진다. `sigungu=강남구 & specialty=피부과` 같은 메타 완전일치 전체 목록 조회는 BE가 DynamoDB GSI로 직접 처리하고 AI 미경유. KB Retrieve는 빈 쿼리 텍스트를 받지 못하고 `numberOfResults` 최대 100 제한이 있어 카테고리 탐색에 부적합.
 
