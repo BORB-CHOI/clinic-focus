@@ -81,7 +81,7 @@ export function FeedbackSection({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const displayStats = freshStats?.data ?? stats;
-  const recentReviews: ReviewItem[] = (freshStats?.data as any)?.recent_reviews ?? [];
+  const recentReviews: ReviewItem[] = (freshStats?.data as { recent_reviews?: ReviewItem[] } | undefined)?.recent_reviews ?? [];
   const ratioPct = Math.round(displayStats.agree_ratio * 100);
   const target = primary_focus[0] ?? "현재 분류";
 

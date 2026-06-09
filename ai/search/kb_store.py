@@ -53,6 +53,7 @@ if TYPE_CHECKING:
         KakaoReviews,
         NaverBlog,
         NaverPlace,
+        PublicData,
         SearchQuery,
         SearchResult,
     )
@@ -550,9 +551,30 @@ def build_signal_chunks(
 # B. metadata 빌더
 # ---------------------------------------------------------------------------
 
+def _compute_nonpay_ratio(public_data: "PublicData") -> float:
+    """심평원 비급여 항목 중 선택/미용성 비율을 산출한다.
+
+    category 또는 item_name 에 _NONPAY_COSMETIC_KEYWORDS 키워드가 하나라도 포함되면
+    미용성 항목으로 간주한다. 항목이 없으면 0.0 반환.
+
+    도수치료는 _NONPAY_COSMETIC_KEYWORDS 에 의도적으로 포함하지 않는다 — 디스크·
+    재활 치료와 경계가 모호해 오분류 위험이 있기 때문. hard 제외 대신 soft 강등만 적용.
+    """
+    items = public_data.nonpay_items
+    if not items:
+        return 0.0
+    cosmetic_count = 0
+    for item in items:
+        text = " ".join(filter(None, [item.item_name, item.category or ""]))
+        if any(kw in text for kw in _NONPAY_COSMETIC_KEYWORDS):
+            cosmetic_count += 1
+    return cosmetic_count / len(items)
+
+
 def build_ingest_metadata(
     meta: "HospitalMeta",
     classification: "Classification",
+    public_data: "PublicData | None" = None,
 ) -> dict:
     """KB Retrieve filter 용 metadataAttributes dict (평탄).
 
@@ -561,9 +583,19 @@ def build_ingest_metadata(
     - 빈 primary_focus → 키 제외 (빈 리스트 KB 거절 실측 함정)
     - lat/lng None → 키 제외 (null 값 KB 거절 실측 함정)
 
+    심평원 public_data 가 있으면 다음 메타를 추가:
+    - nonpay_ratio (float 0~1): 비급여 항목 중 선택/미용성 비율.
+    - has_specialist (bool → string "true"/"false"): 전문의≥1 과목 존재 여부.
+      KB 메타필터는 bool 타입을 지원하나 실측 함정(None/False 혼동)이 있어 string 평탄화.
+    - specialist_depts (str): 전문의≥1 과목명 "|" 구분자 join. list 타입 KB 거절 실측 함정.
+
+    public_data=None 이면 위 세 필드를 메타에 추가하지 않아 기존 동작 그대로 유지.
+    (심평원 키 승인 전/reingest 전 하위호환 fallback)
+
     Args:
         meta: HospitalMeta 인스턴스.
         classification: Classification 인스턴스.
+        public_data: 심평원 공공데이터. None 이면 신규 메타 필드 미포함(하위호환).
 
     Returns:
         metadataAttributes 안쪽 평탄 dict. {"metadataAttributes": ...} 래핑은 포함하지 않음.
@@ -585,6 +617,24 @@ def build_ingest_metadata(
         md["lat"] = meta.location.lat
     if meta.location.lng is not None:
         md["lng"] = meta.location.lng
+
+    # 심평원 공공데이터 신호 — public_data=None 이면 완전 스킵(하위호환 유지).
+    if public_data is not None:
+        # 비급여 신고 기반 미용성 비율 (0.0~1.0 float)
+        md["nonpay_ratio"] = round(_compute_nonpay_ratio(public_data), 4)
+
+        # 전문의 존재 여부 — KB bool 필터 실측 함정 회피: "true"/"false" 문자열로 평탄화
+        has_spec = any(cnt >= 1 for cnt in public_data.specialists_by_dept.values())
+        md["has_specialist"] = "true" if has_spec else "false"
+
+        # 전문의≥1 과목명 — list KB 거절 실측 함정: "|" 구분자 문자열로 평탄화
+        spec_depts = [
+            dept for dept, cnt in public_data.specialists_by_dept.items() if cnt >= 1
+        ]
+        if spec_depts:
+            md["specialist_depts"] = "|".join(spec_depts)
+        # spec_depts 가 빈 리스트면 키 자체 제외 (KB 거절 방어)
+
     return md
 
 
@@ -936,12 +986,49 @@ _COSMETIC_FOCUS = {
     "한방피부·미용", "비만·다이어트", "비만·영양", "모발·탈모", "동안",
 }
 
+# 비급여 신고항목 중 선택/미용성 판별 키워드 — 도수치료는 제외(치료/미용 경계 모호).
+# 심평원 비급여 category(clauseCdNm) / item_name(npayKorNm)을 단순 키워드 매칭으로 분류.
+_NONPAY_COSMETIC_KEYWORDS = frozenset({
+    "미용", "성형", "라식", "라섹", "시력교정", "보톡스", "필러", "리프팅", "탈모",
+    "비만", "다이어트", "체형", "지방흡입", "흉터", "색소", "기미", "제모",
+    "수액주사", "비타민주사", "영양주사", "피부관리",
+})
+
 
 def _cosmetic_ratio(g: dict) -> float:
+    """primary_focus 기반 미용 비율 (하드코딩 fallback — nonpay_ratio 없을 때 사용).
+
+    reingest 전 / public_data 미수신 시점에 기존 동작을 완전히 보존하는 fallback.
+    _COSMETIC_FOCUS 셋과 primary_focus 교집합 비율을 반환한다.
+    """
     pf = g.get("pf") or []
     if not pf:
         return 0.0
     return sum(1 for f in pf if f in _COSMETIC_FOCUS) / len(pf)
+
+
+def _effective_cosmetic_ratio(g: dict) -> float:
+    """비급여 신호 우선·하드코딩 fallback 결합 미용 비율.
+
+    우선순위:
+    1. 심평원 nonpay_ratio (ingest 시 build_ingest_metadata 가 메타에 박음) — 객관신호.
+    2. 없으면 기존 primary_focus 기반 _cosmetic_ratio (하드코딩 셋) — fallback.
+
+    키 승인 전(reingest 전)에는 nonpay_ratio 메타가 없어 항상 fallback 경로.
+    키 승인 후 reingest 완료되면 nonpay_ratio 가 더 객관적인 신호로 교체된다.
+    """
+    # best 안의 metadata 에서 nonpay_ratio 를 꺼낸다.
+    md = (g.get("best") or {}).get("metadata") or {}
+    raw = md.get("nonpay_ratio")
+    if raw is not None:
+        try:
+            ratio = float(raw)
+            if 0.0 <= ratio <= 1.0:
+                return ratio
+        except (TypeError, ValueError):
+            pass
+    # fallback: 기존 하드코딩 primary_focus 기반
+    return _cosmetic_ratio(g)
 
 
 def _is_disease_intent(inferred_focus: "list[str] | None") -> bool:
@@ -956,16 +1043,56 @@ def _is_disease_intent(inferred_focus: "list[str] | None") -> bool:
     return False
 
 
+# thin-signal 의도 감지용 focus 라벨 프리픽스·키워드.
+# 호흡기·감염·예방·소아·비뇨·수부·족부·두경부 등 내과·소아·비뇨·이비인후 특화 토픽이 대상.
+# 이 토픽들은 병원 텍스트가 빈약해 코사인이 ~0.41로 낮게 나와 기본 min-sim(0.42) 컷에 막힌다.
+# '미용 시술' 같은 고-임베딩 토픽은 포함하지 않는다 — 컷 완화 부작용(무관 미용 병원 노출) 방지.
+_THIN_SIGNAL_FOCUS_KEYWORDS: frozenset[str] = frozenset({
+    "감염", "호흡기", "예방", "일차진료", "소화기", "요로", "수부", "족부",
+    "두경부", "소아비뇨", "소아 정형", "소아외과", "소아재활",
+})
+
+
+def _is_thin_signal_intent(inferred_focus: "list[str] | None") -> bool:
+    """쿼리가 thin-signal 의도(호흡기·감염·예방·소아·비뇨 특화)인가.
+
+    KB 코사인 ~0.41 수준으로 기본 min-sim(0.42) 컷에 막히는 토픽들을 식별한다.
+    inferred_focus 라벨에 _THIN_SIGNAL_FOCUS_KEYWORDS 중 하나가 포함되면 True.
+
+    미용·성형·임플란트 같은 고-임베딩 토픽은 절대 해당 안 됨 —
+    컷 완화의 부작용(무관 미용 병원 노출)을 막는 핵심 조건.
+
+    THIN_SIGNAL_BOOST=off 환경 변수로 전체 기능을 비활성화할 수 있다.
+
+    Args:
+        inferred_focus: ``process_query`` 가 반환한 inferred_focus 리스트.
+
+    Returns:
+        thin-signal 의도면 True, 아니면 False.
+    """
+    if os.environ.get("THIN_SIGNAL_BOOST", "on").lower() == "off":
+        return False
+    for f in (inferred_focus or []):
+        for kw in _THIN_SIGNAL_FOCUS_KEYWORDS:
+            if kw in f:
+                return True
+    return False
+
+
 def _relevance_with_intent(g: dict, disease_intent: bool) -> float:
     """주력 강도에 의도-카테고리 강등을 합친 최종 relevance.
 
     질병 쿼리일 때만 미용비율에 비례해 강등(W_INTENT_COSMETIC). env 로 끄거나 튜닝 가능.
+    soft 강등에는 _effective_cosmetic_ratio 를 써서 심평원 신호가 있으면 우선 사용한다.
+    hard 제외(disease_intent 시 ratio == 1.0)는 _cosmetic_ratio(하드코딩)만 기준으로 유지:
+    nonpay_ratio 가 1.0 이어도 도수치료 경계 등 오제외 위험 항목이 있어 hard 제외 대상이
+    아니다. hard 제외는 명백한 _COSMETIC_FOCUS 100% 케이스에만 한정한다(retrieve_hospital 참조).
     """
     base = _focus_intensity(g)
     if not disease_intent:
         return base
     w = float(os.environ.get("INTENT_COSMETIC_PENALTY", "0.08"))
-    return base - w * _cosmetic_ratio(g)
+    return base - w * _effective_cosmetic_ratio(g)
 
 
 def _agg_name(g: dict) -> str:
@@ -1112,6 +1239,23 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
     # env(KB_MIN_SCORE)로 명시 오버라이드 가능, 0 이면 비활성.
     min_score = float(os.environ.get("KB_MIN_SCORE", "0.35" if rerank_mode == "llm" else "0.42"))
 
+    # thin-signal 동적 임계 완화 — RERANK_MODE=off 일 때 retrieval recall 개선.
+    # 호흡기·감염·예방·소아·비뇨 특화 토픽은 병원 텍스트 빈약 → 코사인 ~0.41 → 기본 컷(0.42) 통과 못함.
+    # KB_MIN_SCORE 가 env 로 명시된 경우에는 사용자 의도 오버라이드라 동적 완화 안 함.
+    # THIN_SIGNAL_BOOST=off 로 비활성화 가능(A/B·무회귀 검증용).
+    _env_min_score_set = "KB_MIN_SCORE" in os.environ
+    _thin_signal = _is_thin_signal_intent(processed.inferred_focus) if not _env_min_score_set else False
+    if _thin_signal:
+        thin_min_score = float(os.environ.get("THIN_SIGNAL_MIN_SCORE", "0.37"))
+        if thin_min_score < min_score:
+            logger.info(
+                "retrieve_hospital: thin-signal 의도 감지(focus=%s) → min_score %.2f → %.2f",
+                processed.inferred_focus,
+                min_score,
+                thin_min_score,
+            )
+            min_score = thin_min_score
+
     has_location = query.lat is not None and query.lng is not None
 
     # --- bounding box 계산 (위치 있을 때) ---
@@ -1212,6 +1356,10 @@ def retrieve_hospital(query: "SearchQuery") -> "list[SearchResult]":
     # 의도-카테고리 정렬(강): 질병 쿼리(무좀·감기)면 주력이 100% 미용·성형(질환 focus 0)인
     # 병원은 제외한다 — 강등(nudge)만으론 코사인 우위를 못 이겨 미용이 상위에 남기 때문.
     # 부분 미용(예: 아토피·피부질환 보유 피부과)은 남기고 _relevance_with_intent 로 순서만 보정.
+    # hard 제외 기준: 반드시 _cosmetic_ratio(하드코딩 _COSMETIC_FOCUS 셋) 만 사용.
+    # nonpay_ratio 는 soft 강등(_effective_cosmetic_ratio)에만 쓰이고 hard 제외에는 쓰지 않는다.
+    # 이유: 도수치료 등 치료/미용 경계 항목이 nonpay_ratio 1.0 가까이 나올 수 있어
+    # 오제외 위험이 있다. 명백한 미용 셋(_COSMETIC_FOCUS 100%) 케이스만 hard 제외.
     if disease_intent:
         kept = [g for g in kept if _cosmetic_ratio(g) < 1.0]
     if query.sort == "confidence":

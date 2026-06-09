@@ -99,11 +99,11 @@ def _build_sample_meta():
         hospital_id="h_smoke_001",
         name="○○피부과",
         location=Location(
-            address="서울특별시 성북구 동소문로 123",
+            address="서울특별시 강남구 동소문로 123",
             lat=37.5894,
             lng=127.0167,
             sido="서울특별시",
-            sigungu="성북구",
+            sigungu="강남구",
         ),
         contact=Contact(phone="02-1234-5678", website_url="https://example-derma.kr"),
     )
@@ -142,7 +142,7 @@ def main() -> int:
     def _t_embed():
         import ai
 
-        vec = ai.embed_text("아토피 잘 보는 성북구 피부과")
+        vec = ai.embed_text("아토피 잘 보는 강남구 피부과")
         assert len(vec) == 1024, f"벡터 차원이 1024가 아님: {len(vec)}"
         print(f"  → 1024차원 벡터 반환 (앞 3개: {[round(x, 4) for x in vec[:3]]})")
         return vec

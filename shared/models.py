@@ -28,12 +28,34 @@ class CrawledImage(BaseModel):
     alt_text: str | None = None
 
 
+class NonPayItem(BaseModel):
+    """심평원 비급여진료비정보(15001700) 1건 — 병원이 *공식 신고*한 비급여 항목.
+
+    의료법 제45조의2(비급여 진료비용 보고·공개)에 따른 공공 신고 사실이다. 우리가
+    "이 병원이 미용/도수에 편중됐다"고 평가하는 게 아니라, 병원이 심평원에 신고한
+    항목 그대로를 옮긴다(주체 명시 원칙). 가격(amount)은 신고 당시 원문 금액.
+    """
+    model_config = ConfigDict(extra="forbid")
+
+    item_name: str                     # 비급여 항목명 (npayKorNm 신고명 그대로)
+    category: str | None = None        # 분류 = npayKorNm 계층 첫 세그먼트(예: "이학요법료")
+    amount: int | None = None          # 신고 금액(curAmt). 범위/문자 신고분은 None
+
+
 class PublicData(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     license_number: str
     specialists: list[str]
     registered_devices: list[str]
+    # ── 심평원 객관 신고데이터(전문의 교차검증·비급여 전향) — 전부 기본값(하위호환) ──
+    # 진료과목별 전문의 수 {진료과목명: 전문의수}. getDgsbjtInfo2.8 의 dgsbjtCdNm+dgsbjtPrSdrCnt.
+    # "진료과목 피부과로 표기하나 신고 기준 피부과 전문의 0명" 같은 간판-진실성 노출용.
+    specialists_by_dept: dict[str, int] = {}
+    # 총 의사 수(base getHospBasisList drTotCnt, 선택). 일반의 단독 추론 — 전 과목 전문의 0명인데 의사 N명.
+    total_doctors: int | None = None
+    # 신고된 비급여 항목 목록(15001700). 급여 본질진료 → 비급여 전향 객관 신호.
+    nonpay_items: list[NonPayItem] = []
 
 
 class CrawlData(BaseModel):
@@ -477,6 +499,8 @@ class OperatingHours(BaseModel):
     sunday: str | None = None
     holiday: str | None = None
     lunch_break: str | None = None
+    # 심평원 getDtlInfo2.8 parkEtc — 주차 안내 텍스트 (예: "외래진료 30분 무료"). additive.
+    parking_note: str | None = None
 
 
 class Contact(BaseModel):

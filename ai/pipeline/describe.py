@@ -26,6 +26,7 @@ from shared.models import (
     DetailedSignals,
     HospitalDescription,
     HospitalMeta,
+    PublicData,
 )
 
 # 최대 재시도 횟수 (검증 실패 시 포함해서 최초 1회 + 재시도 2회 = 총 3회 시도)
@@ -94,10 +95,53 @@ def _serialize_review_summary(signals: DetailedSignals) -> str:
     )
 
 
+def _serialize_specialists(public_data: "PublicData | None") -> str:
+    """심평원 신고 기준 전문의 정보를 사람이 읽기 좋은 문자열로 직렬화.
+
+    public_data 없으면 "확인된 항목 없음" 반환(하위호환).
+    주체 명시 원칙 준수: "심평원 신고 기준 ~" 형태로 출처를 명시한다.
+    """
+    if public_data is None:
+        return "확인된 항목 없음"
+    by_dept = public_data.specialists_by_dept
+    if not by_dept:
+        if public_data.total_doctors is not None:
+            return (
+                f"심평원 신고 기준 전문의 정보 없음 "
+                f"(신고 의사 수: {public_data.total_doctors}명)"
+            )
+        return "심평원 신고 기준 전문의 정보 없음"
+    parts = [f"{dept} {cnt}명" for dept, cnt in by_dept.items()]
+    total_line = (
+        f" / 총 의사 수: {public_data.total_doctors}명"
+        if public_data.total_doctors is not None
+        else ""
+    )
+    return "심평원 신고 기준 " + " / ".join(parts) + total_line
+
+
+def _serialize_nonpay_items(public_data: "PublicData | None") -> str:
+    """심평원 신고 비급여 항목을 사람이 읽기 좋은 문자열로 직렬화.
+
+    public_data 없거나 항목 없으면 빈 문자열 반환.
+    주체 명시 원칙 준수: "병원이 심평원에 신고한 비급여 항목" 형태.
+    """
+    if public_data is None or not public_data.nonpay_items:
+        return ""
+    items = public_data.nonpay_items[:10]  # 최대 10개만 나열 (프롬프트 길이 제어)
+    lines = []
+    for item in items:
+        price = f" ({item.amount:,}원)" if item.amount is not None else ""
+        cat = f" [{item.category}]" if item.category else ""
+        lines.append(f"{item.item_name}{cat}{price}")
+    return "병원이 심평원에 신고한 비급여 항목: " + ", ".join(lines)
+
+
 def _build_prompt(
     classification: Classification,
     detailed_signals: DetailedSignals,
     hospital_meta: HospitalMeta,
+    public_data: "PublicData | None" = None,
     extra_instruction: str = "",
 ) -> str:
     """템플릿에 컨텍스트를 채워 완성된 프롬프트를 반환."""
@@ -106,15 +150,17 @@ def _build_prompt(
     sc = detailed_signals.self_claim
     self_claim_keywords = ", ".join(sc.keywords) if sc.keywords else "없음"
 
-    # registered_devices: 이 함수의 시그니처에 CrawlData가 없으므로
-    # vision의 detected_devices를 출처로 사용하고, public_data는 호출자가 전달한
-    # classification.detailed_signals 범위 내 데이터만 활용한다.
+    # registered_devices: vision detected_devices 우선, 없으면 "확인된 항목 없음"
     if detailed_signals.vision and detailed_signals.vision.detected_devices:
         registered_devices_text = ", ".join(detailed_signals.vision.detected_devices)
     else:
         registered_devices_text = "확인된 항목 없음"
 
-    specialists_text = "확인된 항목 없음"  # HospitalMeta에 전문의 필드 없음 — public_data는 상위에서 전달
+    # 전문의: 심평원 public_data 가 있으면 신고 기준으로 렌더, 없으면 기존 문구
+    specialists_text = _serialize_specialists(public_data)
+
+    # 비급여 항목: public_data 있으면 추가, 없으면 빈 문자열
+    nonpay_text = _serialize_nonpay_items(public_data)
 
     context = {
         "hospital_id": classification.hospital_id,
@@ -129,6 +175,7 @@ def _build_prompt(
         "review_summary": _serialize_review_summary(detailed_signals),
         "registered_devices": registered_devices_text,
         "specialists": specialists_text,
+        "nonpay_items": nonpay_text,
     }
 
     # 템플릿에는 출력 JSON 스키마 예시가 그대로 들어 있어 리터럴 중괄호가 많다.
@@ -241,6 +288,7 @@ def generate_description(
     classification: Classification,
     detailed_signals: DetailedSignals,
     hospital_meta: HospitalMeta,
+    public_data: "PublicData | None" = None,
 ) -> HospitalDescription:
     """
     분류 결과 + 4 시그널 + 병원 기본 정보를 받아 자연어 통합 상세 설명을 생성.
@@ -249,6 +297,8 @@ def generate_description(
         classification: classify_hospital()의 반환값.
         detailed_signals: 4 시그널 세부 데이터.
         hospital_meta: 병원명·주소 등 기본 정보.
+        public_data: 심평원 공공데이터(전문의·비급여). None 이면 기존 동작 그대로(하위호환).
+                     키 승인 후 BE 핸들러가 CrawlData.public_data 를 넘기면 프롬프트에 주입.
 
     Returns:
         HospitalDescription: 의료법 5규칙을 통과한 구조화된 설명.
@@ -271,6 +321,7 @@ def generate_description(
             classification=classification,
             detailed_signals=detailed_signals,
             hospital_meta=hospital_meta,
+            public_data=public_data,
             extra_instruction=extra_instruction,
         )
 

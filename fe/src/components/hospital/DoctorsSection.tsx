@@ -1,4 +1,4 @@
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Info } from "lucide-react";
 
 import { Section } from "@/components/common/Section";
 import { EmptyState } from "@/components/common/EmptyState";
@@ -8,6 +8,15 @@ import type { Doctor } from "@/types/domain";
 
 interface DoctorsSectionProps {
   doctors: Doctor[];
+  /**
+   * 심평원 신고 기준 과목별 전문의 수.
+   * { "피부과": 0, "가정의학과": 1 } 형태. 빈 객체면 심평원 데이터 없음.
+   */
+  specialists_by_dept: Record<string, number>;
+  /** 심평원 신고 기준 총 의사 수. null 이면 신고 데이터 없음 */
+  total_doctors: number | null;
+  /** 병원이 자기 사이트에서 표시하는 표준 진료과목 */
+  standard_specialty: string;
 }
 
 // ③ 의료진 정보
@@ -17,7 +26,20 @@ interface DoctorsSectionProps {
 //   - 우측: 이름·직위 한 줄 + 자격 배지 + 세부 전공 / primary_focus + 경력
 //   - 의사별 primary_focus 가 있는 경우만 강조 노출 (API 명세상 의사별 다른 케이스만 채움)
 //   - source_url 이 있으면 우상단에 외부 링크 아이콘
-export function DoctorsSection({ doctors }: DoctorsSectionProps) {
+//
+// ③-보강: 의사 목록 아래에 심평원 신고 기준 전문의 수 블록 추가.
+//   - specialists_by_dept 빈 객체면 전체 보강 블록 숨김 (graceful 처리).
+//   - specialists_by_dept["피부과"] === 0 이고 standard_specialty 에 피부과가 포함되면
+//     "진료과목으로 피부과를 표시하나 심평원 신고 기준 피부과 전문의 0명" 식 사실 노출.
+//   - 단정·평가·추천 표현 금지. "심평원 신고 기준" + 수치 사실만.
+export function DoctorsSection({
+  doctors,
+  specialists_by_dept,
+  total_doctors,
+  standard_specialty,
+}: DoctorsSectionProps) {
+  const hasDeptData = Object.keys(specialists_by_dept).length > 0;
+
   return (
     <Section
       id="section-doctors"
@@ -36,7 +58,91 @@ export function DoctorsSection({ doctors }: DoctorsSectionProps) {
           ))}
         </ul>
       )}
+
+      {/* 심평원 신고 기준 전문의 수 보강 블록 — 데이터 있을 때만 렌더 */}
+      {hasDeptData && (
+        <HiraSpecialistBlock
+          specialists_by_dept={specialists_by_dept}
+          total_doctors={total_doctors}
+          standard_specialty={standard_specialty}
+        />
+      )}
     </Section>
+  );
+}
+
+// 심평원 신고 기준 전문의 수 블록
+// 출처 명시: "병원이 심평원에 신고한 기준" — 주체 = 병원, 근거 = 심평원 신고.
+function HiraSpecialistBlock({
+  specialists_by_dept,
+  total_doctors,
+  standard_specialty,
+}: {
+  specialists_by_dept: Record<string, number>;
+  total_doctors: number | null;
+  standard_specialty: string;
+}) {
+  const entries = Object.entries(specialists_by_dept);
+
+  return (
+    <div className="mt-4 rounded-md border border-blue-200 bg-blue-50/60 p-3">
+      <div className="mb-2 flex items-center gap-1.5">
+        <Info className="h-3.5 w-3.5 shrink-0 text-blue-600" aria-hidden />
+        <span className="text-xs font-semibold text-blue-700">
+          심평원 신고 기준 의사 현황
+        </span>
+        <Badge
+          variant="outline"
+          className="ml-auto border-blue-300 bg-white text-blue-700 text-[10px] px-1.5 py-0"
+        >
+          심평원 신고
+        </Badge>
+      </div>
+
+      {total_doctors !== null && (
+        <p className="mb-2 text-xs text-blue-800">
+          병원이 심평원에 신고한 총 의사 수:{" "}
+          <span className="font-semibold">{total_doctors}명</span>
+        </p>
+      )}
+
+      <ul className="space-y-1">
+        {entries.map(([dept, count]) => {
+          // 간판-진실성 대조: 병원이 standard_specialty 로 해당 과를 표시하나 심평원 신고 전문의 0명인 경우
+          const isSignboardMismatch =
+            count === 0 &&
+            standard_specialty.length > 0 &&
+            (standard_specialty === dept ||
+              standard_specialty.includes(dept) ||
+              dept.includes(standard_specialty));
+
+          return (
+            <li key={dept} className="flex flex-wrap items-center gap-1.5 text-xs">
+              {isSignboardMismatch ? (
+                // 간판-진실성 불일치: 사실 노출 (대조 톤 배제 — 순차 서술로 중립화)
+                <span className="text-amber-700">
+                  진료과목으로{" "}
+                  <span className="font-semibold">{dept}</span> 표시됨.
+                  심평원 신고 기준 해당 과 전문의{" "}
+                  <span className="font-semibold">0명</span>
+                </span>
+              ) : (
+                // 일반 전문의 수 표시
+                <span className="text-blue-800">
+                  심평원 신고 기준{" "}
+                  <span className="font-semibold">{dept}</span> 전문의{" "}
+                  <span className="font-semibold">{count}명</span>
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+
+      <p className="mt-2 text-[10px] leading-relaxed text-blue-600/70">
+        병원이 심평원에 신고한 수치를 그대로 표시합니다. 실제 진료 여부와 다를 수 있으므로 병원에 직접 확인하세요.
+      </p>
+    </div>
   );
 }
 

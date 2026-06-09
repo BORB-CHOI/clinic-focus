@@ -44,7 +44,7 @@ cd ..
 
 **B. 처음부터 적재**
 ```bash
-python be/scripts/load_seoul_5gu.py                       # 심평원 → DDB META
+python be/scripts/load_gangnam.py                       # 심평원 → DDB META
 python be/scripts/enrich_urls.py                          # 홈페이지 URL 보강
 python be/scripts/crawl_all.py                            # 자체사이트 크롤 → S3
 python be/scripts/run_classification.py --sigungu 강남구   # 룰 분류 + KB ingest

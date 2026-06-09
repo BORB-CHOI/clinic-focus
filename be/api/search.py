@@ -137,6 +137,23 @@ def search_hospitals(
     sort: str = Query("relevance"),
     limit: int = Query(20, le=100),  # 상향: le=50 → le=100
     offset: int = Query(0),
+    # 심평원 전문의 필터 — 카테고리/시군구 탐색(GSI 경로)에서만 적용. KB(자연어) 경로는 AI 트랙 처리.
+    # has_specialist=true: 어떤 과든 전문의 1명 이상 신고된 병원만.
+    # specialist_dept=피부과: 해당 진료과 전문의 1명 이상 신고된 병원만.
+    has_specialist: bool | None = Query(
+        None,
+        description=(
+            "true=심평원 신고 기준 전문의 있는 곳만 필터(카테고리/시군구 경로 전용). "
+            "자연어 쿼리(q)가 있으면 무시 — AI 트랙 KB 경로 처리."
+        ),
+    ),
+    specialist_dept: str | None = Query(
+        None, max_length=20,
+        description=(
+            "심평원 신고 기준으로 특정 진료과(예: 피부과) 전문의 1명 이상인 병원만 필터. "
+            "카테고리/시군구 경로 전용. 자연어 쿼리(q)가 있으면 무시."
+        ),
+    ),
 ):
     """자연어 + 위치 복합 검색. q·lat/lng·sigungu 중 최소 하나 필수.
 
@@ -311,6 +328,26 @@ def search_hospitals(
             light_items = [
                 it for it in light_items
                 if float(it.get("confidence_score") or 0) >= min_confidence
+            ]
+
+        # 2-b) 심평원 전문의 필터 (카테고리/시군구 경로 전용, q 없을 때만).
+        # PUBLIC#DOCTORS 에서 specialists_by_dept 를 읽어 적용.
+        # N+1 이지만 슬라이스 전이라 전체 대상에 적용 — 강남 PoC 규모(~3,000)에서 허용.
+        if has_specialist or specialist_dept:
+            def _has_specialist_filter(hospital_id: str) -> bool:
+                doctors = db.load_public_doctors(hospital_id)
+                by_dept: dict = doctors.get("specialists_by_dept", {})
+                if not by_dept:
+                    return False
+                if specialist_dept:
+                    # 특정 과목 전문의 1명 이상
+                    return int(by_dept.get(specialist_dept, 0)) >= 1
+                # has_specialist=true: 어떤 과든 전문의 1명 이상
+                return any(int(v) >= 1 for v in by_dept.values())
+
+            light_items = [
+                it for it in light_items
+                if _has_specialist_filter(it["hospital_id"])
             ]
 
         # 3) 카테고리 정렬: confidence_score desc → name asc (relevance/distance 무의미)

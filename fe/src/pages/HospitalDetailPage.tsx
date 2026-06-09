@@ -13,6 +13,7 @@ import { FeedbackSection } from "@/components/hospital/FeedbackSection";
 import { RecentChangesSection } from "@/components/hospital/RecentChangesSection";
 import { RelatedHospitalsSection } from "@/components/hospital/RelatedHospitalsSection";
 import { MetadataSection } from "@/components/hospital/MetadataSection";
+import { NonPayItemsSection } from "@/components/hospital/NonPayItemsSection";
 import { useHospitalDetail } from "@/hooks/useHospitalDetail";
 import { trackSelect, trackAnalyticsSelect } from "@/lib/events";
 
@@ -93,6 +94,8 @@ export default function HospitalDetailPage() {
                 one_line_summary={hospital.one_line_summary}
                 name={hospital.name}
                 thumbnail_url={hospital.thumbnail_url}
+                standard_specialty={hospital.standard_specialty}
+                primary_focus={hospital.primary_focus}
               />
               <BasicInfoSection
                 hospitalId={hospital.hospital_id}
@@ -120,7 +123,16 @@ export default function HospitalDetailPage() {
                 }
                 hospital_name={hospital.name}
               />
-              <DoctorsSection doctors={hospital.doctors} />
+              <DoctorsSection
+                doctors={hospital.doctors}
+                specialists_by_dept={hospital.specialists_by_dept ?? {}}
+                total_doctors={hospital.total_doctors ?? null}
+                standard_specialty={hospital.standard_specialty}
+              />
+              {/* 심평원 비급여 신고항목 — 빈 배열이면 숨김(graceful) */}
+              {(hospital.nonpay_items ?? []).length > 0 && (
+                <NonPayItemsSection nonpay_items={hospital.nonpay_items ?? []} />
+              )}
               <ConfidenceSection
                 confidence={hospital.confidence}
                 detailed_signals={hospital.detailed_signals}

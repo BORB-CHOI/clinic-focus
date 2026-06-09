@@ -66,6 +66,13 @@ def get_hospital_detail(hospital_id: str):
     related = db.load_related_hospitals(hospital_id)
     recent_changes = db.load_recent_changes(hospital_id, limit=2)
 
+    # 심평원 공공 데이터 (③ 의료진 보강·비급여 신규 영역)
+    public_doctors = db.load_public_doctors(hospital_id)
+    public_nonpay = db.load_public_nonpay(hospital_id)
+
+    # ⑨ data_sources 산출용 — SITE#PAGES 존재 여부(GetItem 단건, 비용 최소)
+    site_pages = db.get_entity(hospital_id, "SITE#PAGES")
+
     # ⑥ 피드백 통계
     feedback_list = db.get_feedback_for_hospital(hospital_id)
     feedback_stats = compute_feedback_stats(feedback_list)
@@ -94,18 +101,41 @@ def get_hospital_detail(hospital_id: str):
             # ② 핵심 진료 정보 (스펙 형태로 어댑팅)
             "services": [s.model_dump() for s in services_and_doctors.services] if services_and_doctors else [],
             "excluded_services": [s.model_dump() for s in services_and_doctors.excluded_services] if services_and_doctors else [],
-            "equipment": [_adapt_equipment(e) for e in services_and_doctors.equipment] if services_and_doctors else [],
+            # 장비: Vision 추론분 + 심평원 신고 의료장비(getMedOftInfo2.8, source=public_data).
+            "equipment": (
+                ([_adapt_equipment(e) for e in services_and_doctors.equipment] if services_and_doctors else [])
+                + [
+                    {"name": d, "source": "public_data", "confidence": 1.0}
+                    for d in public_doctors.get("registered_devices", [])
+                ]
+            ),
             "prices": [_adapt_price(p) for p in services_and_doctors.prices] if services_and_doctors else [],
 
-            # ③ 의료진 정보
+            # ③ 의료진 정보 + 심평원 신고 기준 전문의 수
             "doctors": [_adapt_doctor(d) for d in services_and_doctors.doctors] if services_and_doctors else [],
+            # 심평원 신고 기준 과목별 전문의 수 {"피부과": 2, ...}. 출처: 심평원 공식 신고(public_data).
+            # "이 병원이 잘 본다" 아닌 "심평원 신고 기준 N명" 형식으로 FE 렌더 필요(의료법 주체 명시).
+            "specialists_by_dept": public_doctors.get("specialists_by_dept", {}),
+            # 총 의사 수(base getHospBasisList drTotCnt). None 이면 미확인.
+            "total_doctors": public_doctors.get("total_doctors"),
+
+            # (신규) 심평원 신고 비급여 항목 — 의료법 제45조의2 공식 신고 사실 그대로 노출.
+            # "병원이 신고한 비급여 항목"(주체 명시). 분류 신호 편입 금지, 표시·필터 전용.
+            "nonpay_items": [item.model_dump() for item in public_nonpay],
 
             # ④ 신뢰도·근거
             "detailed_signals": _adapt_detailed_signals(classification, meta.contact.website_url if meta.contact else None),
 
-            # ⑤ 기본 운영 정보 — operating_hours 는 구조화 미보유라 null(FE 가 "정보 없음")
-            "operating_hours": None,
-            "contact": _adapt_contact(meta.contact),
+            # ⑤ 기본 운영 정보 — operating_hours: PUBLIC#DOCTORS 에 적재된 getDtlInfo2.8 파싱본.
+            # 없으면 None(FE "정보 없음"). 추가 DDB read 없이 load_public_doctors 에서 얻는다(N+1 회피).
+            "operating_hours": (
+                public_doctors["operating_hours"].model_dump(exclude_none=True)
+                if public_doctors.get("operating_hours")
+                else None
+            ),
+            # 주차: operating_hours.parking_note 에서도 파악 가능하나 HospitalMeta.parking(bool) 이 권위.
+            # parking_note 가 있으면 contact.parking_available 에 반영.
+            "contact": _adapt_contact(meta.contact, public_doctors.get("operating_hours")),
 
             # ⑥ 사용자 피드백
             "feedback_stats": feedback_stats.model_dump(),
@@ -119,7 +149,12 @@ def get_hospital_detail(hospital_id: str):
             # ⑨ 메타 정보
             "metadata": {
                 "last_updated_at": classification.classified_at.isoformat() if classification else None,
-                "data_sources": ["public_registry"],
+                "data_sources": _build_data_sources(
+                    classification=classification,
+                    public_doctors=public_doctors,
+                    public_nonpay=public_nonpay,
+                    site_pages=site_pages,
+                ),
                 "data_completeness": _calc_completeness(classification, description, services_and_doctors),
                 "warning": "정보 부족 — 직접 병원에 문의 권장" if not classification else None,
             },
@@ -199,7 +234,7 @@ def _adapt_doctor(d) -> dict:
     }
 
 
-def _adapt_contact(c) -> dict | None:
+def _adapt_contact(c, operating_hours=None) -> dict | None:
     if not c:
         return None
     methods: list[str] = []
@@ -207,10 +242,16 @@ def _adapt_contact(c) -> dict | None:
         methods.append("online")
     if c.phone:
         methods.append("phone")
+    # 주차 가용: operating_hours.parking_note 가 있고 "무료주차" 또는 "유료주차" 포함 시 True
+    parking_available = False
+    if operating_hours and operating_hours.parking_note:
+        note_lower = operating_hours.parking_note.lower()
+        if "주차" in note_lower:
+            parking_available = True
     return {
         "phone": c.phone or "",
         "homepage_url": c.website_url,
-        "parking_available": False,
+        "parking_available": parking_available,
         "appointment_methods": methods,
     }
 
@@ -234,6 +275,52 @@ def _adapt_related(r) -> dict:
             for f in d["primary_focus"] if str(f).strip()
         ]
     return d
+
+
+def _build_data_sources(
+    classification,
+    public_doctors: dict,
+    public_nonpay: list,
+    site_pages: dict | None,
+) -> list[str]:
+    """실제로 존재하는 데이터 출처만 동적 산출.
+
+    규약(API-FE-BE.md DataMetadata.data_sources):
+      "public_registry" — 심평원 기본정보(META 항상) + 심평원 공공 시그널(PUBLIC#DOCTORS·PUBLIC#NONPAY)
+      "self_site"       — 자체 사이트 크롤(SITE#PAGES 있을 때)
+      "user_reviews"    — 카카오·네이버·구글 리뷰 집계(detailed_signals.reviews.total_reviews > 0)
+      "blog"            — 카카오·네이버 블로그 집계(detailed_signals.blog.total_posts > 0)
+
+    규약 enum 외 추가 식별자(태스크 지시 — 규약에 없으면 아래 값으로):
+      "vision"          — Vision 분석 결과(detailed_signals.vision 존재 시)
+      "public_data"     — 심평원 공공 신호를 이미 "public_registry" 에 통합하므로 미사용
+                          (PUBLIC#DOCTORS / PUBLIC#NONPAY 는 public_registry 로 처리)
+
+    추가 DDB 호출 없음 — 모두 이미 로드된 객체에서 판단.
+    """
+    sources: list[str] = ["public_registry"]  # META + 심평원 공공 데이터 → 항상 포함
+
+    # SITE#PAGES 존재 → 자체 사이트 크롤 결과 있음
+    if site_pages:
+        sources.append("self_site")
+
+    # classification.detailed_signals 에서 리뷰·블로그·Vision 여부 판단
+    if classification:
+        ds = classification.detailed_signals
+        if ds:
+            rev = ds.reviews
+            if rev and (rev.total_reviews or 0) > 0:
+                sources.append("user_reviews")
+
+            blog = ds.blog
+            if blog and (blog.total_posts or 0) > 0:
+                sources.append("blog")
+
+            # Vision 분석 결과가 있으면 — 규약 외 식별자이나 태스크 지시에 따라 포함
+            if ds.vision:
+                sources.append("vision")
+
+    return sources
 
 
 def _calc_completeness(classification, description, services_and_doctors) -> float:

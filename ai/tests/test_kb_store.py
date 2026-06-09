@@ -29,12 +29,20 @@ from shared.models import (
     DetailedSignals,
     HospitalMeta,
     Location,
+    NonPayItem,
+    PublicData,
     ReviewSignal,
     BlogSignal,
     SelfClaimSignal,
     SignalContributions,
 )
 from ai.search.kb_store import (
+    _COSMETIC_FOCUS,
+    _THIN_SIGNAL_FOCUS_KEYWORDS,
+    _compute_nonpay_ratio,
+    _cosmetic_ratio,
+    _effective_cosmetic_ratio,
+    _is_thin_signal_intent,
     build_blog_chunk,
     build_ingest_metadata,
     build_reviews_chunk,
@@ -955,3 +963,358 @@ class TestRetrieveHospital:
         results = retrieve_hospital(query)
 
         assert len(results) <= 3
+
+
+# ===========================================================================
+# 8. 심평원 공공데이터 — build_ingest_metadata(public_data) 테스트
+# ===========================================================================
+
+def _make_public_data(
+    specialists_by_dept: dict[str, int] | None = None,
+    total_doctors: int | None = None,
+    nonpay_items: list | None = None,
+) -> PublicData:
+    return PublicData(
+        license_number="TEST-001",
+        specialists=[],
+        registered_devices=[],
+        specialists_by_dept=specialists_by_dept or {},
+        total_doctors=total_doctors,
+        nonpay_items=nonpay_items or [],
+    )
+
+
+class TestBuildIngestMetadataPublicData:
+    """build_ingest_metadata(public_data=...) 심평원 신호 확장 테스트."""
+
+    def test_no_public_data_returns_baseline(self):
+        """public_data=None 이면 기존 필드만 반환 — has_specialist·nonpay_ratio·specialist_depts 없음."""
+        meta = _make_meta()
+        cls = _make_classification()
+        md = build_ingest_metadata(meta, cls, public_data=None)
+        assert "nonpay_ratio" not in md
+        assert "has_specialist" not in md
+        assert "specialist_depts" not in md
+
+    def test_public_data_with_specialist_adds_fields(self):
+        """전문의 있으면 has_specialist='true', specialist_depts 포함."""
+        pd = _make_public_data(specialists_by_dept={"피부과": 1, "가정의학과": 0})
+        meta = _make_meta()
+        cls = _make_classification()
+        md = build_ingest_metadata(meta, cls, public_data=pd)
+        assert md["has_specialist"] == "true"
+        # 전문의≥1 과목만 포함 (가정의학과 0 제외)
+        assert "피부과" in md["specialist_depts"]
+        assert "가정의학과" not in md["specialist_depts"]
+
+    def test_public_data_no_specialist_has_specialist_false(self):
+        """전문의 0명인 경우 has_specialist='false', specialist_depts 키 없음."""
+        pd = _make_public_data(specialists_by_dept={"피부과": 0})
+        meta = _make_meta()
+        cls = _make_classification()
+        md = build_ingest_metadata(meta, cls, public_data=pd)
+        assert md["has_specialist"] == "false"
+        assert "specialist_depts" not in md
+
+    def test_public_data_empty_specialists_by_dept(self):
+        """specialists_by_dept 빈 dict 이면 has_specialist='false', specialist_depts 없음."""
+        pd = _make_public_data(specialists_by_dept={})
+        meta = _make_meta()
+        cls = _make_classification()
+        md = build_ingest_metadata(meta, cls, public_data=pd)
+        assert md["has_specialist"] == "false"
+        assert "specialist_depts" not in md
+
+    def test_nonpay_ratio_cosmetic_items(self):
+        """미용성 비급여 항목이 2개 중 1개면 nonpay_ratio ≈ 0.5."""
+        items = [
+            NonPayItem(item_name="보톡스", category="미용"),
+            NonPayItem(item_name="혈액검사", category="검사료"),
+        ]
+        pd = _make_public_data(nonpay_items=items)
+        meta = _make_meta()
+        cls = _make_classification()
+        md = build_ingest_metadata(meta, cls, public_data=pd)
+        assert md["nonpay_ratio"] == pytest.approx(0.5, abs=0.01)
+
+    def test_nonpay_ratio_all_cosmetic(self):
+        """모두 미용성이면 nonpay_ratio=1.0."""
+        items = [
+            NonPayItem(item_name="라식수술", category="시력교정"),
+            NonPayItem(item_name="지방흡입", category="미용"),
+        ]
+        pd = _make_public_data(nonpay_items=items)
+        meta = _make_meta()
+        cls = _make_classification()
+        md = build_ingest_metadata(meta, cls, public_data=pd)
+        assert md["nonpay_ratio"] == pytest.approx(1.0)
+
+    def test_nonpay_ratio_no_items_is_zero(self):
+        """비급여 항목 없으면 nonpay_ratio=0.0."""
+        pd = _make_public_data(nonpay_items=[])
+        meta = _make_meta()
+        cls = _make_classification()
+        md = build_ingest_metadata(meta, cls, public_data=pd)
+        assert md["nonpay_ratio"] == pytest.approx(0.0)
+
+    def test_dochim_therapy_not_hard_excluded(self):
+        """도수치료는 _NONPAY_COSMETIC_KEYWORDS 에 없어 미용성으로 분류되지 않는다."""
+        items = [NonPayItem(item_name="도수치료", category="처치 및 수술료 등")]
+        ratio = _compute_nonpay_ratio(_make_public_data(nonpay_items=items))
+        assert ratio == pytest.approx(0.0), "도수치료는 미용성 hard 제외 대상 아님"
+
+    def test_specialist_depts_pipe_separated(self):
+        """specialist_depts 는 '|' 구분자 문자열로 평탄화된다 (list KB 거절 방어)."""
+        pd = _make_public_data(specialists_by_dept={"피부과": 2, "내과": 1})
+        meta = _make_meta()
+        cls = _make_classification()
+        md = build_ingest_metadata(meta, cls, public_data=pd)
+        assert isinstance(md["specialist_depts"], str)
+        depts = md["specialist_depts"].split("|")
+        assert "피부과" in depts
+        assert "내과" in depts
+
+
+# ===========================================================================
+# 9. _effective_cosmetic_ratio 의도 정렬 — nonpay_ratio 있을 때/없을 때 fallback 테스트
+# ===========================================================================
+
+class TestEffectiveCosmeticRatio:
+    """_effective_cosmetic_ratio: 심평원 nonpay_ratio 우선, 없으면 하드코딩 fallback."""
+
+    def _make_group(self, pf: list[str], nonpay_ratio: float | None = None) -> dict:
+        md = {"hospital_id": "h_test"}
+        if nonpay_ratio is not None:
+            md["nonpay_ratio"] = nonpay_ratio
+        return {
+            "best": {"metadata": md, "content": {"text": ""}},
+            "pf": pf,
+            "max_score": 0.8,
+            "confidence": 0.7,
+        }
+
+    def test_uses_nonpay_ratio_when_present(self):
+        """metadata 에 nonpay_ratio 가 있으면 그 값을 사용한다."""
+        g = self._make_group(["보톡스·필러"], nonpay_ratio=0.6)
+        ratio = _effective_cosmetic_ratio(g)
+        assert ratio == pytest.approx(0.6)
+
+    def test_falls_back_to_cosmetic_ratio_when_absent(self):
+        """nonpay_ratio 가 없으면 _cosmetic_ratio(하드코딩)로 fallback."""
+        g = self._make_group(["보톡스·필러", "리프팅·탄력"])  # 2/2 = 1.0
+        ratio = _effective_cosmetic_ratio(g)
+        # _cosmetic_ratio: pf 2개 모두 _COSMETIC_FOCUS → 1.0
+        assert ratio == pytest.approx(1.0)
+
+    def test_falls_back_for_non_cosmetic_pf(self):
+        """nonpay_ratio 없고 일반 pf → fallback ratio 0.0."""
+        g = self._make_group(["척추 디스크", "어깨 관절"])
+        ratio = _effective_cosmetic_ratio(g)
+        assert ratio == pytest.approx(0.0)
+
+    def test_invalid_nonpay_ratio_falls_back(self):
+        """nonpay_ratio 가 유효 범위 밖이거나 파싱 불가면 fallback."""
+        g = self._make_group(["척추 디스크"], nonpay_ratio=None)
+        # None → fallback
+        g["best"]["metadata"]["nonpay_ratio"] = "invalid_string"
+        ratio = _effective_cosmetic_ratio(g)
+        # "척추 디스크"는 _COSMETIC_FOCUS 미포함 → fallback 0.0
+        assert ratio == pytest.approx(0.0)
+
+    def test_hard_exclude_uses_cosmetic_ratio_not_nonpay(self):
+        """hard 제외 판정(_cosmetic_ratio)과 soft 강등(_effective_cosmetic_ratio)이 독립적.
+
+        nonpay_ratio 0.9 여도 primary_focus 가 비미용이면 hard 제외(cosmetic_ratio<1.0)를 통과.
+        """
+        g = self._make_group(["척추 디스크"], nonpay_ratio=0.9)
+        # hard 제외: _cosmetic_ratio < 1.0 → 통과(제외 안 됨)
+        assert _cosmetic_ratio(g) < 1.0
+        # soft 강등: _effective_cosmetic_ratio 는 nonpay_ratio 0.9 사용
+        assert _effective_cosmetic_ratio(g) == pytest.approx(0.9)
+
+
+# ---------------------------------------------------------------------------
+# thin-signal 동적 임계 완화 — _is_thin_signal_intent
+# ---------------------------------------------------------------------------
+
+class TestIsThinSignalIntent:
+    """_is_thin_signal_intent 단위 테스트.
+
+    thin-signal 의도(호흡기·감염·예방·소아·비뇨 특화)면 True,
+    미용·성형·임플란트 같은 고-임베딩 토픽이면 False 를 반환해야 한다.
+    """
+
+    def test_infection_focus_is_thin(self):
+        """감염 focus → thin-signal."""
+        assert _is_thin_signal_intent(["감염내과", "호흡기 감염"]) is True
+
+    def test_respiratory_focus_is_thin(self):
+        """호흡기 focus → thin-signal."""
+        assert _is_thin_signal_intent(["호흡기", "급성 일차진료"]) is True
+
+    def test_prevention_focus_is_thin(self):
+        """예방접종 focus → thin-signal."""
+        assert _is_thin_signal_intent(["건강검진·예방", "예방접종"]) is True
+
+    def test_urological_focus_is_thin(self):
+        """요로 focus → thin-signal."""
+        assert _is_thin_signal_intent(["요로결석", "신장내과"]) is True
+
+    def test_hand_surgery_focus_is_thin(self):
+        """수부 focus → thin-signal."""
+        assert _is_thin_signal_intent(["수부·재건"]) is True
+
+    def test_foot_surgery_focus_is_thin(self):
+        """족부 focus → thin-signal."""
+        assert _is_thin_signal_intent(["족부"]) is True
+
+    def test_cosmetic_focus_is_not_thin(self):
+        """미용 focus → thin-signal 아님."""
+        assert _is_thin_signal_intent(["미용 시술", "미용주사"]) is False
+
+    def test_dental_focus_is_not_thin(self):
+        """치과 임플란트 focus → thin-signal 아님."""
+        assert _is_thin_signal_intent(["임플란트"]) is False
+
+    def test_orthopedic_spine_not_thin(self):
+        """척추 focus → thin-signal 아님 (고-임베딩 토픽)."""
+        assert _is_thin_signal_intent(["척추", "척추·통증"]) is False
+
+    def test_empty_focus_returns_false(self):
+        """빈 focus → False."""
+        assert _is_thin_signal_intent([]) is False
+        assert _is_thin_signal_intent(None) is False
+
+    def test_disabled_by_env(self, monkeypatch):
+        """THIN_SIGNAL_BOOST=off 면 항상 False."""
+        monkeypatch.setenv("THIN_SIGNAL_BOOST", "off")
+        assert _is_thin_signal_intent(["감염내과", "호흡기 감염"]) is False
+
+    def test_enabled_by_default(self, monkeypatch):
+        """THIN_SIGNAL_BOOST 미설정(기본 on) → thin-signal 의도 감지."""
+        monkeypatch.delenv("THIN_SIGNAL_BOOST", raising=False)
+        assert _is_thin_signal_intent(["호흡기"]) is True
+
+    def test_thin_signal_focus_keywords_not_empty(self):
+        """_THIN_SIGNAL_FOCUS_KEYWORDS 는 비어있지 않아야 한다."""
+        assert len(_THIN_SIGNAL_FOCUS_KEYWORDS) > 0
+
+
+class TestRetrieveHospitalThinSignalMinScore:
+    """retrieve_hospital 의 thin-signal 동적 임계 완화 로직을 mock 으로 검증.
+
+    실제 KB Retrieve 는 mock 처리하고, min_score 가 thin-signal 의도일 때
+    THIN_SIGNAL_MIN_SCORE(기본 0.37)로 낮아지는지 확인한다.
+    Bedrock 실 호출 비용 발생 0건.
+    """
+
+    def _make_retrieve_resp(self, scores: list[float]) -> dict:
+        """KB Retrieve 응답 mock — 각 score 에 대한 결과를 반환."""
+        results = []
+        for i, s in enumerate(scores):
+            results.append({
+                "score": s,
+                "metadata": {
+                    "hospital_id": f"h_{i:03d}",
+                    "name": f"병원{i}",
+                    "team_id": "clinic-focus",
+                    "primary_focus": ["호흡기"],
+                    "standard_specialty": "내과",
+                    "sigungu": "강남구",
+                    "confidence_score": 70,
+                },
+                "content": {"text": "호흡기 내과 진료"},
+            })
+        return {"retrievalResults": results}
+
+    @patch("boto3.client")
+    def test_thin_signal_lowers_min_score(self, mock_boto, monkeypatch):
+        """thin-signal 의도(호흡기) → min_score 0.42 → 0.37 로 완화, 코사인 0.39 결과가 살아남아야 함."""
+        monkeypatch.delenv("KB_MIN_SCORE", raising=False)
+        monkeypatch.delenv("THIN_SIGNAL_BOOST", raising=False)
+        monkeypatch.setenv("KB_ID", "test-kb-id")
+        monkeypatch.setenv("RERANK_MODE", "off")
+
+        from shared.models import SearchQuery
+
+        mock_client = MagicMock()
+        mock_boto.return_value = mock_client
+        # 코사인 0.39 결과 1개 — 기본 min_score(0.42)면 컷되고, 0.37이면 살아남아야 함
+        mock_client.retrieve.return_value = self._make_retrieve_resp([0.39])
+
+        results = retrieve_hospital(SearchQuery(query_text="호흡기 내과", sigungu="강남구", limit=5))
+        # thin-signal 완화 덕분에 결과가 있어야 함
+        assert len(results) >= 1
+
+    @patch("boto3.client")
+    def test_normal_query_uses_default_min_score(self, mock_boto, monkeypatch):
+        """미용 쿼리(보톡스) → thin-signal 아님 → min_score 기본(0.42) 유지, 코사인 0.39 결과 컷."""
+        monkeypatch.delenv("KB_MIN_SCORE", raising=False)
+        monkeypatch.delenv("THIN_SIGNAL_BOOST", raising=False)
+        monkeypatch.setenv("KB_ID", "test-kb-id")
+        monkeypatch.setenv("RERANK_MODE", "off")
+
+        from shared.models import SearchQuery
+
+        mock_client = MagicMock()
+        mock_boto.return_value = mock_client
+        # 코사인 0.39 결과 — 기본 min_score(0.42)면 컷되어야 함
+        mock_client.retrieve.return_value = self._make_retrieve_resp([0.39])
+
+        results = retrieve_hospital(SearchQuery(query_text="보톡스 필러", sigungu="강남구", limit=5))
+        # thin-signal 아님 → 기본 컷(0.42) 유지 → 0.39 결과 제거 → 빈 결과
+        assert len(results) == 0
+
+    @patch("boto3.client")
+    def test_env_min_score_overrides_thin_signal(self, mock_boto, monkeypatch):
+        """KB_MIN_SCORE env 가 명시되면 thin-signal 완화를 하지 않는다."""
+        monkeypatch.setenv("KB_MIN_SCORE", "0.42")
+        monkeypatch.delenv("THIN_SIGNAL_BOOST", raising=False)
+        monkeypatch.setenv("KB_ID", "test-kb-id")
+        monkeypatch.setenv("RERANK_MODE", "off")
+
+        from shared.models import SearchQuery
+
+        mock_client = MagicMock()
+        mock_boto.return_value = mock_client
+        # 코사인 0.39 결과 — KB_MIN_SCORE=0.42 명시이므로 컷돼야 함(thin-signal 완화 안 됨)
+        mock_client.retrieve.return_value = self._make_retrieve_resp([0.39])
+
+        results = retrieve_hospital(SearchQuery(query_text="호흡기 내과", sigungu="강남구", limit=5))
+        assert len(results) == 0
+
+    @patch("boto3.client")
+    def test_thin_signal_boost_off_disables_relaxation(self, mock_boto, monkeypatch):
+        """THIN_SIGNAL_BOOST=off 면 thin-signal 의도여도 min_score 완화 안 함."""
+        monkeypatch.delenv("KB_MIN_SCORE", raising=False)
+        monkeypatch.setenv("THIN_SIGNAL_BOOST", "off")
+        monkeypatch.setenv("KB_ID", "test-kb-id")
+        monkeypatch.setenv("RERANK_MODE", "off")
+
+        from shared.models import SearchQuery
+
+        mock_client = MagicMock()
+        mock_boto.return_value = mock_client
+        mock_client.retrieve.return_value = self._make_retrieve_resp([0.39])
+
+        results = retrieve_hospital(SearchQuery(query_text="호흡기 내과", sigungu="강남구", limit=5))
+        # THIN_SIGNAL_BOOST=off → 완화 없음 → 0.39 컷
+        assert len(results) == 0
+
+    @patch("boto3.client")
+    def test_unrelated_query_still_returns_empty(self, mock_boto, monkeypatch):
+        """무관 쿼리(자동차 수리) → thin-signal 아님, 낮은 점수 결과 컷 유지."""
+        monkeypatch.delenv("KB_MIN_SCORE", raising=False)
+        monkeypatch.delenv("THIN_SIGNAL_BOOST", raising=False)
+        monkeypatch.setenv("KB_ID", "test-kb-id")
+        monkeypatch.setenv("RERANK_MODE", "off")
+
+        from shared.models import SearchQuery
+
+        mock_client = MagicMock()
+        mock_boto.return_value = mock_client
+        mock_client.retrieve.return_value = self._make_retrieve_resp([0.35, 0.38, 0.41])
+
+        results = retrieve_hospital(SearchQuery(query_text="자동차 수리", limit=5))
+        # 무관 쿼리 → thin-signal 아님 → 기본 컷(0.42) → 모두 컷 → 빈 결과
+        assert len(results) == 0

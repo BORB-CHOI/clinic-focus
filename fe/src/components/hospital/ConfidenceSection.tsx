@@ -67,7 +67,13 @@ function SignalBar({
         <span className={cn("font-medium", style.label)}>
           {SIGNAL_LABEL[signal]}
         </span>
-        <span className="font-mono text-muted-foreground">{value}</span>
+        <span
+          className="font-mono text-muted-foreground"
+          title={`근거 점수 ${value} / 100`}
+          aria-label={`근거 점수 ${value}`}
+        >
+          {value}
+        </span>
       </div>
       <div className={cn("h-2 w-full overflow-hidden rounded-full", style.track)}>
         <div
@@ -112,7 +118,7 @@ export function ConfidenceSection({
 
       <DetailBlock
         signal="self_claim"
-        title="자칭 컨셉"
+        title="병원이 사이트에서 강조한 분야"
         sourceUrl={detailed_signals.self_claim.source_url}
       >
         <div className="flex flex-wrap gap-1">

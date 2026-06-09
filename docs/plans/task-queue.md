@@ -11,8 +11,8 @@
 
 강남구 PoC. FE-BE 실연동·검색 랭킹(주력 강도)·페이지네이션·카테고리 탐색·지도 실연동까지 **as-built(main 머지 완료)**. 남은 건 thin-signal recall 개선과 표본 확장·통합 검증·인프라 마무리.
 
-**적재됨 (강남 기준):**
-- `META` 6117 (강남 3134 · 송파 1331 · 양천 705 · 중구 616 · 용산 331). **분류·KB 적재는 강남만.**
+**적재됨 (강남-only — 2026-06-01 비강남 전부 prune 완료):**
+- `META` **3134 (강남구만)**. 다른 구 0건(DDB·S3·KB 전부 강남-only 통일).
 - `CLASSIFICATION` 강남 분류완료 **~3098** (룰 기반, LLM 0회, 4시그널 교차검증 → 과목·주력·confidence).
 - 자체사이트 크롤 **정제본 2133** (S3 `kmuproj-10-clinic-focus-crawl`) — denoise + 페이지 단위 노이즈
   필터 적용(페이지 26,377→11,531 **56%↓**, blog RSS 79%↓). 재크롤 없이 기존 raw 재처리.
@@ -51,46 +51,55 @@
 ### A. thin-signal retrieval recall 개선 (랭킹 아님 — recall 후속 과제)
 
 주력 강도 랭킹은 as-built(검증 완료, 아래 표 참조). 남은 한계는 **랭킹이 아니라 retrieval recall**이다.
-- [ ] 호흡기·감기/예방접종/알레르기 등 **내과·소아 thin-signal 토픽** recall 개선. 이 토픽들은 병원 텍스트가
-  빈약 → 임베딩 약함(코사인 ~0.41) → `KB_MIN_SCORE`(0.42) 컷에 막혀 top5 미진입. **주력 강도로도 안
-  고쳐짐**(컷라인을 못 넘어서 애초에 후보에 안 들어옴). 접근 후보: 토픽별 동적 임계, 메타·과목 신호 보강,
-  thin-signal 토픽 쿼리 확장.
+- [x] 호흡기·편도·중이염 등 thin-signal 토픽 recall — 토픽별 동적 컷 완화(0.42→0.37, `THIN_SIGNAL_BOOST`)
+  구현. 실측 P@5 0.889→0.900·MRR 무변동(무회귀). 남은 미스(요로결석·금연)는 KB에 문서 없음 → 컷으로 불가.
 - [ ] (선택) 자칭 도배 페널티 등 신호 보정 — 컷라인 진입 후 정밀도 영향 재측정.
 
 ### B. 데이터 마무리 (강남구, 네이버 제외)
 - [ ] URL 발굴 재실행 `enrich_urls.py` — 카카오 1순위·`--sigungu`, 강남 website 보유율 ↑ → 재크롤·재분류
 - [ ] `discover_official_blogs.py --confirm` — 자체운영 블로그(blog.naver.com/ID) 발굴 → website_url 승격 → 자칭 흡수
 - [ ] hash diff 부분 재처리 — entity `content_hash` 비교, 재크롤 동일 시 KB re-ingest 스킵
-- [ ] Vision 활성화 — 개인계정 Sonnet 쿼터 복구 대기(사용자 트랙) → `analyze_images` → `classify_hospital` 연결 (현재 동결)
 
 ### C. FE 상세 페이지 — 9영역 대부분 as-built, 남은 갭만 (2026-06-08 감사)
 
 9영역 컴포넌트(`fe/src/components/hospital/`)는 대부분 구현됨 — ② 핵심진료·③ 의료진·
-④ 신뢰도(4시그널 분해)·⑥ 피드백UI·⑦ 변경이력·⑧ 관련병원·⑨ 메타 = as-built. 남은 갭(작업량 S/M/L):
-- [ ] **⑤ 운영시간(operating_hours)** [M] — `be/api/hospital.py:106` null 반환(구조화 미보유). 크롤
-  파싱 → `HospitalMeta.operating_hours`(shared/models.py:472) 적재 + FE `BasicInfoSection` null 가드 해제.
-  ⚠️ FE 타입(`domain.ts:89` DayHours: open/close…)과 BE 모델(weekday/saturday…) **구조 불일치 — 한쪽 정렬 필요**.
-- [ ] **thumbnail_url 스크린샷 적재** [M] — `be/api/hospital.py:22` 스트리밍 엔드포인트는 있으나
+④ 신뢰도(4시그널 분해)·⑥ 피드백UI·⑦ 변경이력·⑧ 관련병원·⑨ 메타 = as-built. 단 ②·③은 크롤/LLM 추출분만 채워지고 심평원 공공 신고
+데이터(전문의 수·비급여 항목)는 미연동 — 아래 ★ 참조. 남은 갭(작업량 S/M/L):
+- [ ] **⑤ 운영시간(operating_hours)** [M] *(이 세션 진행)* — `be/api/hospital.py` operating_hours=None.
+  **출처 우선순위: 네이버/카카오 플레이스(병원이 직접 적은 값 = 가장 정확) 1순위, 없으면 HIRA `getDtlInfo2.8` 폴백**
+  (점심 lunchWeek·lunchSat·휴진 noTrmtHoli·noTrmtSun·주차 parkEtc — 키 동작 확인). ★우리 DDB KAKAO#PLACE 엔 시간
+  없음(어댑터 미파싱) → 카카오 1순위는 어댑터 확장+재크롤 필요. → `HospitalMeta.operating_hours` 적재 + FE
+  `BasicInfoSection` null 가드 해제. ⚠️ FE 타입(DayHours open/close)과 BE 모델(weekday/saturday…) **구조 정렬 필요**.
+- [ ] **thumbnail_url 스크린샷 적재** [M] — `be/api/hospital.py` 스트리밍 엔드포인트는 있으나
   S3 `thumbnails/{id}.jpg` 적재가 일부만(카카오/네이버 외부 URL은 동작). 미수집 병원은 플레이스홀더 폴백.
-- [ ] **① ai_description==null 차등 렌더 강화** [S] — 현재 안내 텍스트만 → 표준과목+주력태그 카드 모드(`HeadlinerSection`).
-- [ ] **② Vision 샘플이미지 갤러리** [L] — `sample_image_urls` 항상 `[]`. Vision 이미지 URL 저장 + `CoreServicesSection` 갤러리 활성화.
+- [x] **① ai_description==null 차등 렌더** [S] — 표준과목+주력태그 카드 모드(`HeadlinerSection`) 완료.
 - [ ] **⑥ 피드백/프로필 엔드포인트 BE** [L] — `/api/feedback/{id}/stats`·`/api/analytics/profile` 미구현(FE는 try-catch로 무시 중).
-- [ ] **⑨ data_sources 동적 산출** [S] — `hospital.py` 현재 `["public_registry"]` 하드코딩 → 실제 시그널 출처 탐지.
+- [x] **⑨ data_sources 동적 산출** [S] — 실제 시그널 출처 동적 산출 완료(`_build_data_sources`).
 - [ ] **신뢰도 라벨·'자칭'·태그 숫자 카피 개선** [S] (UX, 같은 FE 묶음) — `ConfidenceBadge`의 "여러 출처 일치/
   일부 출처 확인/자칭만 확인" + "자칭 컨셉" 용어가 비전문가에 모호. 중립·직관 표현으로(예: "병원 정보만 확인") +
   태그 옆 숫자(= `confidence.score` 0~100 근거점수) 의미 명확화 또는 정리. ★ medical-language-reviewer 검수 필수.
 
-> 다음 세션 우선순위: 필수 ⑤·thumbnail(M) → 중요 ①·⑥·② → 최적화 ⑨·라벨(S). 근거: 2026-06-08 9영역 감사.
+**★ 심평원 공공 신고 데이터 연동 — 2026-06-08 라이브 동작(`feat/hira-public-signals` PR #66).**
+키는 처음부터 승인돼 있었고 ★함정은 **상세 서비스 버전 2.7→2.8**(2.7=403/404, 2.8 이 현행)이었음. 분류 스키마(M1 동결)
+불변 — `PublicData` 확장(`specialists_by_dept`·`total_doctors`·`nonpay_items`·`registered_devices`) + 상세표시·검색필터만.
+- [x] **전문의** `MadmDtlInfoService2.8/getDgsbjtInfo2.8`(dgsbjtCdNm+dgsbjtPrSdrCnt, 0명 과목 포함) → 상세 "심평원 신고
+  기준 ○○과 전문의 N명"·검색필터 `has_specialist`/`specialist_dept`. **의원 간판진실성 라이브 확인**(오스킨성형의원: 피부과
+  표기·전문의 0 / 리드림의원: 정형·성형·산부인과 표기 전부 전문의 0, 실제 내과5·외과1). medical-language 검수 통과.
+- [x] **의료장비** `getMedOftInfo2.8`(oftCdNm) → `registered_devices` → 상세 equipment(source=public_data). **총의사**=base drTotCnt.
+- [x] **비급여** `getNonPaymentItemHospDtlList`(npayKorNm 계층·curAmt) → 상세 비급여 영역 + AI 의도정렬 일반화(`_COSMETIC_FOCUS`
+  → `nonpay_ratio` soft 강등, 하드코딩 fallback·도수 hard제외 제외). **단 의원 커버리지 0%**(강남 의원 158/158=0), 병원급↑만 100%.
+- [~] **강남 PUBLIC 일괄 적재** `backfill_public_data.py`(강남-only·additive, META 무손상) — 진행/완료. 상세·필터가 실데이터로 동작.
+- [ ] (선택) KB 재ingest `run_classification --sigungu 강남구`(룰 LLM0) → nonpay_ratio·specialist 메타 KB 진입(검색 랭킹용 보조).
 
-### D. 표본 확장 + 통합 검증 (Phase F)
-- [ ] 5개구 풀커버 → 풀크롤(자체+외부) → 룰 분류 일괄(트랙 A, LLM 0). 현재 분류·KB는 강남만.
-- [ ] LLM/Vision/`generate_description` 시연 약 500개(트랙 B·C) — 같은 약 500개로 룰 대비 차별 시연 (쿼터 동결 해제 후)
+> 다음 세션 우선순위: 필수 ⑤·thumbnail(M) → 중요 ①·⑥. **★ 공공 신고 = 전문의·장비·비급여 강남 라이브 동작(2.8).**
+
+### D. 통합 검증
 - [ ] 자연어 검색 e2e 10건 / FE→BE→AI→KB→DDB 통합 E2E 5건
-- [ ] 의료법 표현 전수 검수(`medical-language-reviewer`) / 비용 측정 → overview 보정
+- [ ] 의료법 표현 전수 검수(`medical-language-reviewer`)
 - [ ] `shared/models.py` BE·AI 동시 갱신(drift 0)
 
-### E. 인프라·마무리 (Phase G)
-- [ ] systemd 검증 / CloudFront+S3 sync 배포 / `.env.example` 정렬 / README 검수 / PR 단위 4리뷰어
+### E. 마무리
+- [ ] `.env.example` 정렬 / README 검수 / PR 단위 4리뷰어
 
 ---
 
